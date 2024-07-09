@@ -1,0 +1,82 @@
+{{ define "addEntryDialog" }}
+<dialog id="addEntryDialog" class="rounded-md w-4/5">
+
+    <div class="p-4">
+        <div class="relative h-4 w-full">
+            <button type="button" class="absolute top-0 right-0" onclick="closeModal()">
+                &#10006;
+            </button>
+        </div>
+        <form class="flex flex-col" hx-post="/grao" hx-target="#entries-table-body" hx-swap="beforeend">
+            <label for="grain-selector" class="px-2">
+                Grão
+            </label>
+            <!-- <input type="text" name="product" id="product" autofocus class="px-2"> -->
+            {{ template "grainSelector" }}
+            <label for="field" class="px-2 mt-1">
+                Talhão
+            </label>
+            <input type="text" name="field" id="field" class="px-2" required>
+            <label for="harvestYear" class="px-2 mt-1">
+                Data da Safra
+            </label>
+            <input type="date" name="harvestYear" id="harvestYear" class="px-2" required>
+            <label for="vehicle" class="px-2 mt-1">
+                Veículo
+            </label>
+            <input type="text" name="vehicle" id="vehicle" class="px-2" required>
+            <label for="vehiclePlate" class="px-2 mt-1">
+                Placa do Veículo
+            </label>
+            <input type="text" name="vehiclePlate" id="vehiclePlate" class="px-2" required>
+            <label for="grossWeight" class="px-2 mt-1">
+                Peso Bruto
+            </label>
+            <input type="number" name="grossWeight" id="grossWeight" class="px-2" required>
+            <label for="tare" class="px-2 mt-1">
+                Tara
+            </label>
+            <input type="number" name="tare" id="tare" class="px-2" required>
+            <label for="humidity" class="px-2 mt-1">
+                Umidade
+            </label>
+            <input type="text" name="humidity" id="humidity" class="px-2" required>
+            <label for="arrivalDate" class="px-2 mt-1">
+                Data de chegada
+            </label>
+            <input type="date" name="arrivalDate" id="arrivalDate" class="px-2" required>
+            <div class="flex items-center justify-around mt-2 w-52 mx-auto">
+                <button class="cancel-btn" type="button" onclick="closeModal()">Cancelar</button>
+                <button class="add-btn" type="submit">Adicionar</button>
+            </div>
+        </form>
+    </div>
+
+    <script type="module">
+        const dialogEl = document.querySelector("#addEntryDialog")
+        if (dialogEl) {
+            dialogEl.showModal()
+            document.body.addEventListener('htmx:configRequest', function (evt) {
+                const now = new Date()
+                const hy = evt.detail.parameters.get("harvestYear")
+                if (!!hy) {
+                    const unixDate = new Date(hy).setHours(24 + now.getHours(), now.getMinutes())
+                    evt.detail.parameters.set("harvestYear", unixDate)
+                }
+
+                const ad = evt.detail.parameters.get("arrivalDate")
+                if (!!ad) {
+                    const unixDate = new Date(ad).setHours(24 + now.getHours(), now.getMinutes())
+                    evt.detail.parameters.set("arrivalDate", unixDate)
+                }
+            });
+        }
+
+        function closeModal() {
+            dialogEl.close()
+            dialogEl.remove()
+        }
+        window.closeModal = closeModal
+    </script>
+</dialog>
+{{ end }}

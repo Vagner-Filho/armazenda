@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+    .add-btn {
+        @apply btn-shape hover:text-white text-green-500 hover:bg-green-500 ring ring-inset ring-green-500 transition-colors duration-300 ease-in-out
+    }
+    .cancel-btn {
+        @apply btn-shape text-white bg-orange-500 transition-shadow duration-300 ease-in-out
+    }
+}
+
+@layer base {
+   input, select {
+        @apply focus-visible:outline-green-400 bg-gray-100
+   }
+   tr {
+       @apply w-full
+   }
+   th, td {
+        @apply w-1/4
+   }
+}
+
+@layer utilities {
+    .text-xs {
+       font-size: 12px; 
+    }
+    .btn-shape {
+        @apply text-center font-semibold rounded-md py-1 px-2
+    }
+}

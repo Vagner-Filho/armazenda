@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/assets/static/css/output.css" rel="stylesheet">
+    <title>Grãos</title>
+    <script src="https://unpkg.com/htmx.org@2.0.0"
+        integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
+</head>
+
+<body>
+    <nav class="fixed top-0 left-0 w-screen h-10 bg-green-400 text-center leading-10">navegação</nav>
+    <section class="mt-20 px-2">
+        <header>
+            <h1 class="text-center text-xl font-semibold">
+                CONTROLE DE GRÃOS
+            </h1>
+        </header>
+        <!--    {{ template "entryForm" . }} -->
+        <main>
+            {{ template "entryList" . }}
+        </main>
+        <footer class="w-full flex items-center justify-end">
+            <button type="button" class="add-btn flex items-center" hx-get="/grao/form" hx-target="body" hx-swap="beforeend">
+                <iconify-icon icon="ic:baseline-add-circle" class="mr-1"></iconify-icon>
+                Nova Entrada
+            </button>
+        </footer>
+    </section>
+</body>
+
+</html>
+
+{{ define "entryList" }}
+<table class="w-full">
+    <thead class="text-xs sm:text-base whitespace-nowrap bg-gray-300/50">
+        <tr>
+            <th class="py-2">
+                PRODUTO
+            </th>
+            <th class="py-2">
+                TALHÃO
+            </th>
+            <th class="py-2">
+                VEICÚLO
+            </th>
+            <th class="py-2">
+                DATA DE RECEBIMENTO
+            </th>
+        </tr>
+    </thead>
+    <tbody id="entries-table-body">
+        {{ range .Entries }}
+        {{ template "entry" . }}
+        {{ end }}
+    </tbody>
+</table>
+{{ end }}
+
+{{ define "entryForm" }}
+<form action="/grao" method="post" class="flex flex-col">
+    <label for="product">
+        Grão
+    </label>
+    <input type="text" name="product" id="product">
+    <label for="field">
+        Talhão
+    </label>
+    <input type="text" name="field" id="field">
+    <label for="harvestYear">
+        Data da Safra
+    </label>
+    <input type="date" name="harvestYear" id="harvestYear">
+    <label for="vehicle">
+        Veículo
+    </label>
+    <input type="text" name="vehicle" id="vehicle">
+    <label for="vehiclePlate">
+        Placa do Veículo
+    </label>
+    <input type="text" name="vehiclePlate" id="vehiclePlate">
+    <label for="grossWeight">
+        Placa do Veículo
+    </label>
+    <input type="text" name="grossWeight" id="grossWeight">
+    <label for="tare">
+        Tara
+    </label>
+    <input type="text" name="tare" id="tare">
+    <label for="humidity">
+        Umidade
+    </label>
+    <input type="text" name="humidity" id="humidity">
+    <label for="arrivalDate">
+        Data de chegada
+    </label>
+    <input type="date" name="arrivalDate" id="arrivalDate">
+    <button hx-post="/grao" hx-trigger="click" hx-target="#entries-table-body" hx-swap="beforeend">Enviar</button>
+</form>
+{{ end }}
