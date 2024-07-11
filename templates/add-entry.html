@@ -11,24 +11,23 @@
             <label for="grain-selector" class="px-2">
                 Grão
             </label>
-            <!-- <input type="text" name="product" id="product" autofocus class="px-2"> -->
             {{ template "grainSelector" }}
             <label for="field" class="px-2 mt-1">
                 Talhão
             </label>
             <input type="text" name="field" id="field" class="px-2" required>
-            <label for="harvestYear" class="px-2 mt-1">
-                Data da Safra
+            <label for="harvest" class="px-2 mt-1">
+                Safra
             </label>
-            <input type="date" name="harvestYear" id="harvestYear" class="px-2" required>
-            <label for="vehicle" class="px-2 mt-1">
-                Veículo
-            </label>
-            <input type="text" name="vehicle" id="vehicle" class="px-2" required>
+            <input type="text" name="harvest" id="harvest" class="px-2" required>
             <label for="vehiclePlate" class="px-2 mt-1">
                 Placa do Veículo
             </label>
             <input type="text" name="vehiclePlate" id="vehiclePlate" class="px-2" required>
+            <label for="vehicle" class="px-2 mt-1">
+                Veículo (opcional)
+            </label>
+            <input type="text" name="vehicle" id="vehicle" class="px-2">
             <label for="grossWeight" class="px-2 mt-1">
                 Peso Bruto
             </label>
@@ -42,7 +41,7 @@
             </label>
             <input type="text" name="humidity" id="humidity" class="px-2" required>
             <label for="arrivalDate" class="px-2 mt-1">
-                Data de chegada
+                Data de Recebimento
             </label>
             <input type="date" name="arrivalDate" id="arrivalDate" class="px-2" required>
             <div class="flex items-center justify-around mt-2 w-52 mx-auto">
@@ -58,12 +57,6 @@
             dialogEl.showModal()
             document.body.addEventListener('htmx:configRequest', function (evt) {
                 const now = new Date()
-                const hy = evt.detail.parameters.get("harvestYear")
-                if (!!hy) {
-                    const unixDate = new Date(hy).setHours(24 + now.getHours(), now.getMinutes())
-                    evt.detail.parameters.set("harvestYear", unixDate)
-                }
-
                 const ad = evt.detail.parameters.get("arrivalDate")
                 if (!!ad) {
                     const unixDate = new Date(ad).setHours(24 + now.getHours(), now.getMinutes())

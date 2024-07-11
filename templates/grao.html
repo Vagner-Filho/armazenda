@@ -20,7 +20,6 @@
                 CONTROLE DE GRÃOS
             </h1>
         </header>
-        <!--    {{ template "entryForm" . }} -->
         <main>
             {{ template "entryList" . }}
         </main>
@@ -40,13 +39,19 @@
     <thead class="text-xs sm:text-base whitespace-nowrap bg-gray-300/50">
         <tr>
             <th class="py-2">
+                ROMANEIO
+            </th>
+            <th class="py-2">
                 PRODUTO
             </th>
             <th class="py-2">
                 TALHÃO
             </th>
             <th class="py-2">
-                VEICÚLO
+                PLACA
+            </th>
+            <th class="py-2">
+                TARA
             </th>
             <th class="py-2">
                 DATA DE RECEBIMENTO
@@ -59,46 +64,4 @@
         {{ end }}
     </tbody>
 </table>
-{{ end }}
-
-{{ define "entryForm" }}
-<form action="/grao" method="post" class="flex flex-col">
-    <label for="product">
-        Grão
-    </label>
-    <input type="text" name="product" id="product">
-    <label for="field">
-        Talhão
-    </label>
-    <input type="text" name="field" id="field">
-    <label for="harvestYear">
-        Data da Safra
-    </label>
-    <input type="date" name="harvestYear" id="harvestYear">
-    <label for="vehicle">
-        Veículo
-    </label>
-    <input type="text" name="vehicle" id="vehicle">
-    <label for="vehiclePlate">
-        Placa do Veículo
-    </label>
-    <input type="text" name="vehiclePlate" id="vehiclePlate">
-    <label for="grossWeight">
-        Placa do Veículo
-    </label>
-    <input type="text" name="grossWeight" id="grossWeight">
-    <label for="tare">
-        Tara
-    </label>
-    <input type="text" name="tare" id="tare">
-    <label for="humidity">
-        Umidade
-    </label>
-    <input type="text" name="humidity" id="humidity">
-    <label for="arrivalDate">
-        Data de chegada
-    </label>
-    <input type="date" name="arrivalDate" id="arrivalDate">
-    <button hx-post="/grao" hx-trigger="click" hx-target="#entries-table-body" hx-swap="beforeend">Enviar</button>
-</form>
 {{ end }}

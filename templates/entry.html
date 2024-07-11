@@ -1,13 +1,19 @@
 {{ block "entry" . }}
 <tr class="text-center whitespace-nowrap text-sm sm:text-base">
     <td>
+        {{ .Waybill }}
+    </td>
+    <td>
         {{ .Product }}
     </td>
     <td>
         {{ .Field }}
     </td>
     <td>
-        {{ .Vehicle }}
+        {{ .VehiclePlate }}
+    </td>
+    <td>
+        {{ .Tare }}
     </td>
     <td>
         {{ .ArrivalDate }}

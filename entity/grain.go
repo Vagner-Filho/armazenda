@@ -10,9 +10,10 @@ const (
 var GrainMap = make(map[Grain]string)
 
 type GrainEntry struct {
+	Waybill      uint32
 	Product      Grain
 	Field        string
-	HarvestYear  int64
+	Harvest      string
 	Vehicle      string
 	VehiclePlate string
 	GrossWeight  float64

@@ -7,18 +7,22 @@ import (
 )
 
 type SimplifiedGrainEntry struct {
-	Product     string
-	Field       string
-	Vehicle     string
-	ArrivalDate string
+	Waybill      uint32
+	Product      string
+	Field        string
+	VehiclePlate string
+	Tare         float64
+	ArrivalDate  string
 }
 
-func MakeSimplifieidGrainEntry(ge entity.GrainEntry) SimplifiedGrainEntry {
+func MakeSimplifiedGrainEntry(ge entity.GrainEntry) SimplifiedGrainEntry {
 	return SimplifiedGrainEntry{
-		Product:     entity.GrainMap[ge.Product],
-		Field:       ge.Field,
-		Vehicle:     ge.Vehicle,
-		ArrivalDate: time.UnixMilli(ge.ArrivalDate).Format("02/Jan/2006 - 03:04"),
+		Waybill:      ge.Waybill,
+		Product:      entity.GrainMap[ge.Product],
+		Field:        ge.Field,
+		VehiclePlate: ge.VehiclePlate,
+		Tare:         ge.Tare,
+		ArrivalDate:  time.UnixMilli(ge.ArrivalDate).Format("02/Jan/2006 - 03:04"),
 	}
 }
 
@@ -26,7 +30,7 @@ func GetAllGrainEntrySimplified() []SimplifiedGrainEntry {
 	entries := grain_model.GetAllEntries()
 	var simplifiedEntries []SimplifiedGrainEntry
 	for _, entry := range entries {
-		simplifiedEntries = append(simplifiedEntries, MakeSimplifieidGrainEntry(entry))
+		simplifiedEntries = append(simplifiedEntries, MakeSimplifiedGrainEntry(entry))
 	}
 	return simplifiedEntries
 }

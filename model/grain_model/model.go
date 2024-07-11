@@ -5,11 +5,13 @@ import (
 	"time"
 )
 
+var lastWaybill uint32 = 3
 var grain_entry = []entity.GrainEntry{
 	{
+		Waybill:      1,
 		Product:      entity.Corn,
 		Field:        "talhão 1",
-		HarvestYear:  time.Now().UnixMilli(),
+		Harvest:      "Safra Milho 2024",
 		Vehicle:      "Mercedão 1113",
 		VehiclePlate: "APB7755",
 		GrossWeight:  15000,
@@ -18,9 +20,10 @@ var grain_entry = []entity.GrainEntry{
 		ArrivalDate:  time.Now().UnixMilli(),
 	},
 	{
+		Waybill:      2,
 		Product:      entity.Soy,
 		Field:        "talhão 2",
-		HarvestYear:  time.Now().UnixMilli(),
+		Harvest:      "Safra Soja 23/24",
 		Vehicle:      "Mercedão 1113",
 		VehiclePlate: "APB7755",
 		GrossWeight:  15000,
@@ -29,9 +32,10 @@ var grain_entry = []entity.GrainEntry{
 		ArrivalDate:  time.Now().UnixMilli(),
 	},
 	{
+		Waybill:      3,
 		Product:      entity.Corn,
 		Field:        "talhão 3",
-		HarvestYear:  time.Now().UnixMilli(),
+		Harvest:      "Sofra Milho 2024/2",
 		Vehicle:      "Mercedão 1113",
 		VehiclePlate: "APB7755",
 		GrossWeight:  15000,
@@ -57,6 +61,8 @@ func GetAllEntries() []entity.GrainEntry {
 }
 
 func AddGrainEntry(ge entity.GrainEntry) entity.GrainEntry {
+    lastWaybill = lastWaybill + 1
+    ge.Waybill = lastWaybill
 	grain_entry = append(grain_entry, ge)
 	return ge
 }

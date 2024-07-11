@@ -19,7 +19,7 @@
        @apply w-full
    }
    th, td {
-        @apply w-1/4
+        @apply w-1/6
    }
 }
 

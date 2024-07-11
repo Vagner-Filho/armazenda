@@ -11,8 +11,8 @@ import (
 type EntryForm struct {
 	Product      entity.Grain `form:"product" binding:"gte=0"`
 	Field        string       `form:"field" binding:"required"`
-	HarvestYear  int64        `form:"harvestYear" binding:"required"`
-	Vehicle      string       `form:"vehicle" binding:"required"`
+	Harvest      string       `form:"harvest" binding:"required"`
+	Vehicle      string       `form:"vehicle"`
 	VehiclePlate string       `form:"vehiclePlate" binding:"required"`
 	GrossWeight  float64      `form:"grossWeight" binding:"required"`
 	Tare         float64      `form:"tare" binding:"required"`
@@ -34,6 +34,18 @@ func AddGrain(c *gin.Context) {
 		c.String(http.StatusBadRequest, "", err.Error())
 		return
 	}
-    entry := grain_service.AddGrainEntry(entity.GrainEntry(newEntry))
-	c.HTML(http.StatusCreated, "entry", grain_service.MakeSimplifieidGrainEntry(entry))
+    ge := entity.GrainEntry{
+        Product: newEntry.Product,
+        Field: newEntry.Field,
+        Harvest: newEntry.Harvest,
+        Waybill: 0,
+        Vehicle: newEntry.Vehicle,
+        VehiclePlate: newEntry.VehiclePlate,
+        ArrivalDate: newEntry.ArrivalDate,
+        GrossWeight: newEntry.GrossWeight,
+        Tare: newEntry.Tare,
+        Humidity: newEntry.Humidity,
+    }
+	entry := grain_service.AddGrainEntry(ge)
+	c.HTML(http.StatusCreated, "entry", grain_service.MakeSimplifiedGrainEntry(entry))
 }
