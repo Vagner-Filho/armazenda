@@ -1,5 +1,5 @@
 {{ block "entry" . }}
-<tr class="text-center whitespace-nowrap text-sm sm:text-base">
+<tr class="text-center whitespace-nowrap text-sm sm:text-base" id="entry-{{ .Waybill }}">
     <td>
         {{ .Waybill }}
     </td>
@@ -17,6 +17,19 @@
     </td>
     <td>
         {{ .ArrivalDate }}
+    </td>
+    <td>
+        <div class="flex items-center justify-center gap-2">
+            <button type="button" hx-get="/grao/form/{{ .Waybill }}" hx-target="body" hx-swap="beforeend">
+                E
+            </button>
+            <button type="button" hx-trigger="click" hx-delete="/grao/{{ .Waybill }}" hx-target="#entry-{{ .Waybill }}" hx-swap="delete">
+                D
+                <div class="htmx-indicator">
+                    L
+                </div>
+            </button>
+        </div>
     </td>
 </tr>
 {{ end }}

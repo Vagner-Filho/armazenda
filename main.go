@@ -37,7 +37,10 @@ func main() {
 		c.HTML(http.StatusOK, "addEntryDialog", gin.H{})
 	})
 
+    router.GET("/grao/form/:id", grain_router.GetEntryForm)
+
 	router.POST("/grao", grain_router.AddGrain)
+    router.DELETE("/grao/:id", grain_router.DeleteGrain)
 
 	port := os.Getenv("PORT")
 	if port == "" {

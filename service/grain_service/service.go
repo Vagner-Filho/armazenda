@@ -1,7 +1,6 @@
 package grain_service
 
 import (
-	"armazenda/entity"
 	"armazenda/model/grain_model"
 	"time"
 )
@@ -15,10 +14,10 @@ type SimplifiedGrainEntry struct {
 	ArrivalDate  string
 }
 
-func MakeSimplifiedGrainEntry(ge entity.GrainEntry) SimplifiedGrainEntry {
+func MakeSimplifiedGrainEntry(ge grain_model.GrainEntry) SimplifiedGrainEntry {
 	return SimplifiedGrainEntry{
 		Waybill:      ge.Waybill,
-		Product:      entity.GrainMap[ge.Product],
+		Product:      grain_model.GrainMap[ge.Product],
 		Field:        ge.Field,
 		VehiclePlate: ge.VehiclePlate,
 		Tare:         ge.Tare,
@@ -35,6 +34,14 @@ func GetAllGrainEntrySimplified() []SimplifiedGrainEntry {
 	return simplifiedEntries
 }
 
-func AddGrainEntry(ge entity.GrainEntry) entity.GrainEntry {
+func AddGrainEntry(ge grain_model.GrainEntry) grain_model.GrainEntry {
 	return grain_model.AddGrainEntry(ge)
+}
+
+func DeleteGrainEntry(id uint32) int {
+    return grain_model.DeleteGrainEntry(id)
+}
+
+func GetEntry(id uint32) grain_model.GrainEntry {
+    return grain_model.GetEntry(id)
 }

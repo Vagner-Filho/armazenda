@@ -1,15 +1,38 @@
 package grain_model
 
 import (
-	"armazenda/entity"
+	"slices"
 	"time"
 )
 
+type Grain int
+
+const (
+	Corn Grain = iota
+	Soy  Grain = iota
+)
+
+var GrainMap = make(map[Grain]string)
+
+type GrainEntry struct {
+	Waybill      uint32
+	Product      Grain
+	Field        string
+	Harvest      string
+	Vehicle      string
+	VehiclePlate string
+	GrossWeight  float64
+	Tare         float64
+	Humidity     string
+	ArrivalDate  int64
+}
+
 var lastWaybill uint32 = 3
-var grain_entry = []entity.GrainEntry{
+
+var grain_entry = []GrainEntry{
 	{
 		Waybill:      1,
-		Product:      entity.Corn,
+		Product:      Corn,
 		Field:        "talhão 1",
 		Harvest:      "Safra Milho 2024",
 		Vehicle:      "Mercedão 1113",
@@ -21,7 +44,7 @@ var grain_entry = []entity.GrainEntry{
 	},
 	{
 		Waybill:      2,
-		Product:      entity.Soy,
+		Product:      Soy,
 		Field:        "talhão 2",
 		Harvest:      "Safra Soja 23/24",
 		Vehicle:      "Mercedão 1113",
@@ -33,7 +56,7 @@ var grain_entry = []entity.GrainEntry{
 	},
 	{
 		Waybill:      3,
-		Product:      entity.Corn,
+		Product:      Corn,
 		Field:        "talhão 3",
 		Harvest:      "Sofra Milho 2024/2",
 		Vehicle:      "Mercedão 1113",
@@ -52,17 +75,40 @@ func generateArrivalDate(offsetDays int) string {
 }
 
 func InitGrainMap() {
-	entity.GrainMap[entity.Corn] = "Milho"
-	entity.GrainMap[entity.Soy] = "Soja"
+	GrainMap[Corn] = "Milho"
+	GrainMap[Soy] = "Soja"
 }
 
-func GetAllEntries() []entity.GrainEntry {
+func GetAllEntries() []GrainEntry {
 	return grain_entry
 }
 
-func AddGrainEntry(ge entity.GrainEntry) entity.GrainEntry {
-    lastWaybill = lastWaybill + 1
-    ge.Waybill = lastWaybill
+func AddGrainEntry(ge GrainEntry) GrainEntry {
+	lastWaybill = lastWaybill + 1
+	ge.Waybill = lastWaybill
 	grain_entry = append(grain_entry, ge)
 	return ge
+}
+
+func DeleteGrainEntry(id uint32) int {
+	var indexToRemove = -1
+	for i, ge := range grain_entry {
+		if ge.Waybill == id {
+			indexToRemove = i
+		}
+	}
+	if indexToRemove > -1 {
+		grain_entry = slices.Delete(grain_entry, indexToRemove, indexToRemove + 1)
+	}
+    return indexToRemove
+}
+
+func GetEntry(id uint32) GrainEntry {
+    var entry *GrainEntry = nil
+    for _, ge := range grain_entry {
+       if ge.Waybill == id {
+            entry = &ge
+       } 
+    }
+    return *entry
 }
