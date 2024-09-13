@@ -40,6 +40,7 @@ func main() {
     router.GET("/grao/form/:id", grain_router.GetEntryForm)
 
 	router.POST("/grao", grain_router.AddGrain)
+    router.PUT("/grao/:id", grain_router.PutEntry)
     router.DELETE("/grao/:id", grain_router.DeleteGrain)
 
 	port := os.Getenv("PORT")

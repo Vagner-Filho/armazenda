@@ -7,7 +7,8 @@
                 &#10006;
             </button>
         </div>
-        <form class="flex flex-col" hx-post="/grao" hx-target="#entries-table-body" hx-swap="beforeend">
+        <form class="flex flex-col" {{if .Waybill}} hx-put="/grao/{{ .Waybill }}" hx-target="#entry-{{ .Waybill }}"
+            hx-swap="outerHTML" {{else}} hx-post="/grao" hx-target="#entries-table-body" hx-swap="beforeend" {{end}}>
             <label for="grain-selector" class="px-2">
                 Grão
             </label>
@@ -27,7 +28,7 @@
             <label for="vehicle" class="px-2 mt-1">
                 Veículo (opcional)
             </label>
-            <input type="text" name="vehicle" id="vehicle" class="px-2" class="{{ .Vehicle }}">
+            <input type="text" name="vehicle" id="vehicle" class="px-2" value="{{ .Vehicle }}">
             <label for="grossWeight" class="px-2 mt-1">
                 Peso Bruto
             </label>
@@ -36,6 +37,10 @@
                 Tara
             </label>
             <input type="number" name="tare" id="tare" class="px-2" value="{{ .Tare }}" required>
+            <label for="netWeight" class="px-2 mt-1">
+                Peso Líquido
+            </label>
+            <input type="number" name="netWeight" id="netWeight" class="px-2" value="{{ .NetWeight }}" disabled>
             <label for="humidity" class="px-2 mt-1">
                 Umidade
             </label>
@@ -46,7 +51,7 @@
             <input type="date" name="arrivalDate" id="arrivalDate" class="px-2" value="{{ .ArrivalDate }}" required>
             <div class="flex items-center justify-around mt-2 w-52 mx-auto">
                 <button class="cancel-btn" type="button" onclick="closeModal()">Cancelar</button>
-                <button class="add-btn" type="submit">Adicionar</button>
+                <button class="add-btn" type="submit">{{if .Waybill}} Editar {{else}} Adicionar {{end}}</button>
             </div>
         </form>
     </div>
@@ -62,21 +67,45 @@
                     arrivalDateEl.setAttribute("value", new Date(Number(longDate)).toLocaleDateString('en-CA'))
                 }
             }
-            document.body.addEventListener('htmx:configRequest', function (evt) {
+            function configReqListener(evt) {
                 const now = new Date()
                 const ad = evt.detail.parameters.get("arrivalDate")
                 if (!!ad) {
                     const unixDate = new Date(ad).setHours(24 + now.getHours(), now.getMinutes())
                     evt.detail.parameters.set("arrivalDate", unixDate)
                 }
-            });
-        }
+            }
 
-        function closeModal() {
-            dialogEl.close()
-            dialogEl.remove()
+            document.body.addEventListener('htmx:configRequest', configReqListener);
+
+            function closeModal() {
+                dialogEl.close()
+                dialogEl.remove()
+                document.body.removeEventListener('htmx:configRequest', configReqListener)
+            }
+            dialogEl.addEventListener('close', closeModal)
+            window.closeModal = closeModal
+
+            const grossWeightInput = dialogEl.querySelector('input#grossWeight')
+            const tareInput = dialogEl.querySelector('input#tare')
+
+            let grossWeightValue = Number(grossWeightInput ? grossWeightInput.value : 0)
+            let tareValue = Number(tareInput ? tareInput.value : 0)
+
+            const netWeightInput = dialogEl.querySelector('input#netWeight')
+            if (netWeightInput) {
+                grossWeightInput.addEventListener('input', (e) => {
+                    grossWeightValue = Number(e.target.value) ?? 0
+
+                    netWeightInput.value = grossWeightValue - tareValue
+                })
+                tareInput.addEventListener('input', (e) => {
+                    tareValue = Number(e.target.value) ?? 0
+
+                    netWeightInput.value = grossWeightValue - tareValue
+                })
+            }
         }
-        window.closeModal = closeModal
     </script>
 </dialog>
 {{ end }}

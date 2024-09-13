@@ -10,7 +10,7 @@ type SimplifiedGrainEntry struct {
 	Product      string
 	Field        string
 	VehiclePlate string
-	Tare         float64
+	NetWeight    float64
 	ArrivalDate  string
 }
 
@@ -20,7 +20,7 @@ func MakeSimplifiedGrainEntry(ge grain_model.GrainEntry) SimplifiedGrainEntry {
 		Product:      grain_model.GrainMap[ge.Product],
 		Field:        ge.Field,
 		VehiclePlate: ge.VehiclePlate,
-		Tare:         ge.Tare,
+		NetWeight:    ge.NetWeight,
 		ArrivalDate:  time.UnixMilli(ge.ArrivalDate).Format("02/Jan/2006 - 03:04"),
 	}
 }
@@ -39,9 +39,13 @@ func AddGrainEntry(ge grain_model.GrainEntry) grain_model.GrainEntry {
 }
 
 func DeleteGrainEntry(id uint32) int {
-    return grain_model.DeleteGrainEntry(id)
+	return grain_model.DeleteGrainEntry(id)
 }
 
 func GetEntry(id uint32) grain_model.GrainEntry {
-    return grain_model.GetEntry(id)
+	return grain_model.GetEntry(id)
+}
+
+func PutEntry(ge grain_model.GrainEntry) *grain_model.GrainEntry {
+	return grain_model.PutEntry(ge)
 }

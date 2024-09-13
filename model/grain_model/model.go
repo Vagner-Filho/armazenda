@@ -23,6 +23,7 @@ type GrainEntry struct {
 	VehiclePlate string
 	GrossWeight  float64
 	Tare         float64
+	NetWeight    float64
 	Humidity     string
 	ArrivalDate  int64
 }
@@ -40,6 +41,7 @@ var grain_entry = []GrainEntry{
 		GrossWeight:  15000,
 		Tare:         5000,
 		Humidity:     "10%",
+		NetWeight:    15000 - 5000,
 		ArrivalDate:  time.Now().UnixMilli(),
 	},
 	{
@@ -52,6 +54,7 @@ var grain_entry = []GrainEntry{
 		GrossWeight:  15000,
 		Tare:         5000,
 		Humidity:     "10%",
+		NetWeight:    15000 - 5000,
 		ArrivalDate:  time.Now().UnixMilli(),
 	},
 	{
@@ -64,6 +67,7 @@ var grain_entry = []GrainEntry{
 		GrossWeight:  15000,
 		Tare:         5000,
 		Humidity:     "10%",
+		NetWeight:    15000 - 5000,
 		ArrivalDate:  time.Now().UnixMilli(),
 	},
 }
@@ -86,6 +90,9 @@ func GetAllEntries() []GrainEntry {
 func AddGrainEntry(ge GrainEntry) GrainEntry {
 	lastWaybill = lastWaybill + 1
 	ge.Waybill = lastWaybill
+    if ge.GrossWeight - ge.Tare != ge.NetWeight {
+        ge.NetWeight = ge.GrossWeight - ge.Tare
+    }
 	grain_entry = append(grain_entry, ge)
 	return ge
 }
@@ -98,17 +105,28 @@ func DeleteGrainEntry(id uint32) int {
 		}
 	}
 	if indexToRemove > -1 {
-		grain_entry = slices.Delete(grain_entry, indexToRemove, indexToRemove + 1)
+		grain_entry = slices.Delete(grain_entry, indexToRemove, indexToRemove+1)
 	}
-    return indexToRemove
+	return indexToRemove
 }
 
 func GetEntry(id uint32) GrainEntry {
-    var entry *GrainEntry = nil
-    for _, ge := range grain_entry {
-       if ge.Waybill == id {
-            entry = &ge
-       } 
-    }
-    return *entry
+	var entry *GrainEntry = nil
+	for _, ge := range grain_entry {
+		if ge.Waybill == id {
+			entry = &ge
+		}
+	}
+	return *entry
+}
+
+func PutEntry(ge GrainEntry) *GrainEntry {
+	var geIndex = slices.IndexFunc(grain_entry, func(e GrainEntry) bool {
+		return e.Waybill == ge.Waybill
+	})
+	if geIndex > -1 {
+		grain_entry = slices.Replace(grain_entry, geIndex, geIndex+1, ge)
+		return &ge
+	}
+	return nil
 }
