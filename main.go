@@ -3,6 +3,7 @@ package main
 import (
 	"armazenda/model/grain_model"
 	"armazenda/router/grain_router"
+	"armazenda/router/vehicle_router"
 	"embed"
 	"fmt"
 	"html/template"
@@ -42,6 +43,9 @@ func main() {
 	router.POST("/grao", grain_router.AddGrain)
     router.PUT("/grao/:id", grain_router.PutEntry)
     router.DELETE("/grao/:id", grain_router.DeleteGrain)
+
+    router.GET("/vehicle/plate", vehicle_router.GetPlates)
+    router.POST("/vehicle/plate", vehicle_router.PostPlate)
 
 	port := os.Getenv("PORT")
 	if port == "" {
