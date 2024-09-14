@@ -2,6 +2,6 @@ package vehicle_service
 
 import "armazenda/model/vehicle_model"
 
-func GetPlates() []vehicle_model.VehiclePlate {
-    return vehicle_model.GetPlates()
+func GetVehicles() []vehicle_model.Vehicle {
+    return vehicle_model.GetVehicles()
 }

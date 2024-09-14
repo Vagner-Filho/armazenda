@@ -1,8 +1,8 @@
 package main
 
 import (
-	"armazenda/model/grain_model"
-	"armazenda/router/grain_router"
+	"armazenda/model/entry_model"
+	"armazenda/router/entry_router"
 	"armazenda/router/vehicle_router"
 	"embed"
 	"fmt"
@@ -20,7 +20,7 @@ var templatesFS embed.FS
 var assetsFS embed.FS
 
 func main() {
-	grain_model.InitGrainMap()
+	entry_model.InitGrainMap()
 	router := gin.Default()
 	html := template.Must(template.ParseFS(templatesFS, "templates/*"))
 	router.SetHTMLTemplate(html)
@@ -32,19 +32,19 @@ func main() {
 		c.HTML(http.StatusOK, "home", gin.H{})
 	})
 
-	router.GET("/grao", grain_router.GetGrains)
+	router.GET("/grao", entry_router.GetEntries)
 
 	router.GET("/grao/form", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "addEntryDialog", gin.H{})
 	})
 
-    router.GET("/grao/form/:id", grain_router.GetEntryForm)
+    router.GET("/grao/form/:id", entry_router.GetEntryForm)
 
-	router.POST("/grao", grain_router.AddGrain)
-    router.PUT("/grao/:id", grain_router.PutEntry)
-    router.DELETE("/grao/:id", grain_router.DeleteGrain)
+	router.POST("/grao", entry_router.AddEntry)
+    router.PUT("/grao/:id", entry_router.PutEntry)
+    router.DELETE("/grao/:id", entry_router.DeleteEntry)
 
-    router.GET("/vehicle/plate", vehicle_router.GetPlates)
+    router.GET("/vehicle/plate", vehicle_router.GetVehiclesSelector)
     router.POST("/vehicle/plate", vehicle_router.PostPlate)
 
 	port := os.Getenv("PORT")

@@ -7,8 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GetPlates(c *gin.Context) {
-   c.HTML(http.StatusOK, "plateSelector", vehicle_service.GetPlates()) 
+func GetVehiclesSelector(c *gin.Context) {
+   c.HTML(http.StatusOK, "plateSelector", vehicle_service.GetVehicles()) 
 }
 
 func PostPlate(c *gin.Context) {
