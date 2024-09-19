@@ -20,10 +20,10 @@
     </td>
     <td>
         <div class="flex items-center justify-center gap-2">
-            <button type="button" hx-get="/grao/form/{{ .Waybill }}" hx-target="body" hx-swap="beforeend">
+            <button type="button" hx-get="/entry/form/{{ .Waybill }}" hx-target="body" hx-swap="beforeend">
                 E
             </button>
-            <button type="button" hx-trigger="click" hx-delete="/grao/{{ .Waybill }}" hx-target="#entry-{{ .Waybill }}" hx-swap="delete">
+            <button type="button" hx-trigger="click" hx-delete="/entry/{{ .Waybill }}" hx-target="#entry-{{ .Waybill }}" hx-swap="delete">
                 D
                 <div class="htmx-indicator">
                     L

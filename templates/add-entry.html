@@ -7,8 +7,8 @@
                 &#10006;
             </button>
         </div>
-        <form class="flex flex-col" {{if .Waybill}} hx-put="/grao/{{ .Waybill }}" hx-target="#entry-{{ .Waybill }}"
-            hx-swap="outerHTML" {{else}} hx-post="/grao" hx-target="#entries-table-body" hx-swap="beforeend" {{end}}>
+        <form class="flex flex-col" {{ if .Entry.Waybill }} hx-put="/entrada/{{ .Entry.Waybill }}" hx-target="#entry-{{ .Entry.Waybill }}"
+            hx-swap="outerHTML" {{ else }} hx-post="/entrada" hx-target="#entries-table-body" hx-swap="beforeend" {{ end }}>
             <label for="grain-selector" class="px-2">
                 Grão
             </label>
@@ -16,42 +16,34 @@
             <label for="field" class="px-2 mt-1">
                 Talhão
             </label>
-            <input type="text" name="field" id="field" class="px-2" value="{{ .Field }}" required>
-            <label for="harvest" class="px-2 mt-1">
-                Safra
-            </label>
-            <input type="text" name="harvest" id="harvest" value="{{ .Harvest }}" class="px-2" required>
+            {{ template "fieldSelector" .Fields }}
             <label for="vehiclePlate" class="px-2 mt-1">
-                Placa do Veículo
+                Veículo
             </label>
-            <input type="text" name="vehiclePlate" id="vehiclePlate" value="{{ .VehiclePlate }}" class="px-2" required>
-            <label for="vehicle" class="px-2 mt-1">
-                Veículo (opcional)
-            </label>
-            <input type="text" name="vehicle" id="vehicle" class="px-2" value="{{ .Vehicle }}">
+            {{ template "vehicleSelector" .Vehicles }}
             <label for="grossWeight" class="px-2 mt-1">
                 Peso Bruto
             </label>
-            <input type="number" name="grossWeight" id="grossWeight" class="px-2" value="{{ .GrossWeight }}" required>
+            <input type="number" name="grossWeight" id="grossWeight" class="px-2" value="{{ .Entry.GrossWeight }}" required>
             <label for="tare" class="px-2 mt-1">
                 Tara
             </label>
-            <input type="number" name="tare" id="tare" class="px-2" value="{{ .Tare }}" required>
+            <input type="number" name="tare" id="tare" class="px-2" value="{{ .Entry.Tare }}" required>
             <label for="netWeight" class="px-2 mt-1">
                 Peso Líquido
             </label>
-            <input type="number" name="netWeight" id="netWeight" class="px-2" value="{{ .NetWeight }}" disabled>
+            <input type="number" name="netWeight" id="netWeight" class="px-2" value="{{ .Entry.NetWeight }}" disabled>
             <label for="humidity" class="px-2 mt-1">
                 Umidade
             </label>
-            <input type="text" name="humidity" id="humidity" class="px-2" value="{{ .Humidity }}" required>
+            <input type="text" name="humidity" id="humidity" class="px-2" value="{{ .Entry.Humidity }}" required>
             <label for="arrivalDate" class="px-2 mt-1">
                 Data de Recebimento
             </label>
-            <input type="date" name="arrivalDate" id="arrivalDate" class="px-2" value="{{ .ArrivalDate }}" required>
+            <input type="date" name="arrivalDate" id="arrivalDate" class="px-2" value="{{ .Entry.ArrivalDate }}" required>
             <div class="flex items-center justify-around mt-2 w-52 mx-auto">
                 <button class="cancel-btn" type="button" onclick="closeModal()">Cancelar</button>
-                <button class="add-btn" type="submit">{{if .Waybill}} Editar {{else}} Adicionar {{end}}</button>
+                <button class="add-btn" type="submit">{{ if .Entry.Waybill }} Editar {{ else }} Adicionar {{ end }}</button>
             </div>
         </form>
     </div>

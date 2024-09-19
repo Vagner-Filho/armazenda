@@ -22,7 +22,8 @@ var assetsFS embed.FS
 func main() {
 	entry_model.InitGrainMap()
 	router := gin.Default()
-	html := template.Must(template.ParseFS(templatesFS, "templates/*"))
+	html := template.Must(template.ParseFS(templatesFS, "templates/*.html", "templates/**/*.html"))
+    println(html.DefinedTemplates())
 	router.SetHTMLTemplate(html)
 
     router.StaticFS("/public", http.FS(assetsFS))
@@ -32,20 +33,28 @@ func main() {
 		c.HTML(http.StatusOK, "home", gin.H{})
 	})
 
-	router.GET("/grao", entry_router.GetEntries)
+	router.GET("/entrada", entry_router.GetEntries)
 
-	router.GET("/grao/form", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "addEntryDialog", gin.H{})
+	router.GET("/entry/form", func(c *gin.Context) {
+        fields := entry_router.GetFields()
+        vehicles := vehicle_router.GetVehicles()
+		c.HTML(http.StatusOK, "addEntryDialog", gin.H{
+            "Fields": fields,
+            "Vehicles": vehicles,
+        })
 	})
 
-    router.GET("/grao/form/:id", entry_router.GetEntryForm)
+    router.GET("/entry/form/:id", entry_router.GetEntryForm)
 
-	router.POST("/grao", entry_router.AddEntry)
-    router.PUT("/grao/:id", entry_router.PutEntry)
-    router.DELETE("/grao/:id", entry_router.DeleteEntry)
+	router.POST("/entry", entry_router.AddEntry)
+    router.PUT("/entry/:id", entry_router.PutEntry)
+    router.DELETE("/entry/:id", entry_router.DeleteEntry)
 
-    router.GET("/vehicle/plate", vehicle_router.GetVehiclesSelector)
-    router.POST("/vehicle/plate", vehicle_router.PostPlate)
+    router.POST("/entry/field", entry_router.AddField)
+    router.GET("/entry/field/form", entry_router.GetFieldForm)
+
+    router.GET("/vehicle/form", vehicle_router.GetVehiclesForm)
+    router.POST("/vehicle", vehicle_router.AddVehicle)
 
 	port := os.Getenv("PORT")
 	if port == "" {

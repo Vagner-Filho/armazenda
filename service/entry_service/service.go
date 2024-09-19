@@ -49,3 +49,11 @@ func GetEntry(id uint32) entry_model.Entry {
 func PutEntry(ge entry_model.Entry) *entry_model.Entry {
 	return entry_model.PutEntry(ge)
 }
+
+func GetFields() []entry_model.Field {
+    return entry_model.GetFields()
+}
+
+func AddField(name string) uint32 {
+    return entry_model.AddField(name)
+}

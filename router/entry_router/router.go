@@ -4,6 +4,7 @@ import (
 	"armazenda/model/entry_model"
 	"armazenda/model/vehicle_model"
 	"armazenda/service/entry_service"
+	"armazenda/service/vehicle_service"
 	"net/http"
 	"strconv"
 
@@ -30,13 +31,24 @@ func GetEntries(c *gin.Context) {
 	})
 }
 
+type PopulatedEntryForm struct {
+    Entry entry_model.Entry
+    Fields []entry_model.Field
+    Vehicles []vehicle_model.Vehicle
+}
+
 func GetEntryForm(c *gin.Context) {
 	id := c.Param("id")
 	converted, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
 		c.String(http.StatusBadRequest, "", err.Error())
 	}
-	c.HTML(http.StatusOK, "addEntryDialog", entry_service.GetEntry(uint32(converted)))
+
+    entry := entry_service.GetEntry(uint32(converted))
+	fields := entry_service.GetFields()
+	vehicles := vehicle_service.GetVehicles()
+
+    c.HTML(http.StatusOK, "addEntryDialog", PopulatedEntryForm{ Entry: entry, Fields: fields, Vehicles: vehicles })
 }
 
 func AddEntry(c *gin.Context) {
@@ -47,16 +59,16 @@ func AddEntry(c *gin.Context) {
 		return
 	}
 	ge := entry_model.Entry{
-		Product:      newEntry.Product,
-		Field:        entry_model.Field{},
-		Harvest:      newEntry.Harvest,
-		Waybill:      0,
-		Vehicle:      vehicle_model.Vehicle{},
-		ArrivalDate:  newEntry.ArrivalDate,
-		GrossWeight:  newEntry.GrossWeight,
-		Tare:         newEntry.Tare,
-		NetWeight:    newEntry.NetWeight,
-		Humidity:     newEntry.Humidity,
+		Product:     newEntry.Product,
+		Field:       entry_model.Field{},
+		Harvest:     newEntry.Harvest,
+		Waybill:     0,
+		Vehicle:     vehicle_model.Vehicle{},
+		ArrivalDate: newEntry.ArrivalDate,
+		GrossWeight: newEntry.GrossWeight,
+		Tare:        newEntry.Tare,
+		NetWeight:   newEntry.NetWeight,
+		Humidity:    newEntry.Humidity,
 	}
 	entry := entry_service.AddEntry(ge)
 	c.HTML(http.StatusCreated, "entry", entry_service.MakeSimplifiedEntry(entry))
@@ -88,16 +100,16 @@ func PutEntry(c *gin.Context) {
 	}
 
 	ge := entry_model.Entry{
-		Product:      newEntry.Product,
-		Field:        entry_model.Field{},
-		Harvest:      newEntry.Harvest,
-		Vehicle:      vehicle_model.Vehicle{},
-		ArrivalDate:  newEntry.ArrivalDate,
-		GrossWeight:  newEntry.GrossWeight,
-		Tare:         newEntry.Tare,
-		Humidity:     newEntry.Humidity,
-		NetWeight:    newEntry.NetWeight,
-		Waybill:      uint32(converted),
+		Product:     newEntry.Product,
+		Field:       entry_model.Field{},
+		Harvest:     newEntry.Harvest,
+		Vehicle:     vehicle_model.Vehicle{},
+		ArrivalDate: newEntry.ArrivalDate,
+		GrossWeight: newEntry.GrossWeight,
+		Tare:        newEntry.Tare,
+		Humidity:    newEntry.Humidity,
+		NetWeight:   newEntry.NetWeight,
+		Waybill:     uint32(converted),
 	}
 
 	var updatedEntry = entry_service.PutEntry(ge)
@@ -106,4 +118,34 @@ func PutEntry(c *gin.Context) {
 		return
 	}
 	c.HTML(500, "toast", "failed")
+}
+
+func GetFields() []entry_model.Field {
+	return entry_service.GetFields()
+}
+
+func AddField(c *gin.Context) {
+    // get from body
+	name := c.Query("name")
+	if len(name) == 0 {
+		c.HTML(http.StatusBadRequest, "", "")
+		return
+	}
+	newId := entry_service.AddField(name)
+	c.HTML(http.StatusCreated, "", entry_model.Field{Name: name, Id: newId})
+	return
+}
+
+func GetFieldForm(c *gin.Context) {
+	var fields = entry_service.GetFields()
+	var regexPattern string = "^(?!"
+	for i, field := range fields {
+		regexPattern += field.Name + "$"
+		if i < len(fields)-1 {
+			regexPattern += "|"
+		}
+	}
+	regexPattern += ").*"
+
+	c.HTML(http.StatusOK, "fieldForm", regexPattern)
 }

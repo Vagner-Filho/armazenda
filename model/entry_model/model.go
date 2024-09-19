@@ -143,3 +143,13 @@ func PutEntry(ge Entry) *Entry {
 	}
 	return nil
 }
+
+func GetFields() []Field {
+    return fields
+}
+
+func AddField(name string) uint32 {
+    lastField := fields[len(fields)-1]
+    fields = append(fields, Field{ Name: name, Id: lastField.Id + 1 })
+    return lastField.Id + 1
+}

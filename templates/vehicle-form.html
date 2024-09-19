@@ -1,0 +1,30 @@
+{{ block "vehicleForm" . }}
+<dialog id="vehicleFormDialog" class="rounded-md w-72 sm:w-96">
+    <div class="p-4">
+        <div class="relative h-4 w-full">
+            <button type="button" class="absolute top-0 right-0" onclick="closeModal()">
+                &#10006;
+            </button>
+        </div>
+        <form hx-post="/vehicle" hx-target="#vehicle-selector" hx-swap="beforeend" class="p-4">
+            <label for="plate">
+                Placa
+            </label>
+            <input type="text" name="plate" id="vehicle-plate" required pattern="{{ . }}">
+            <label for="name">
+                Nome (opcional)
+            </label>
+            <input type="text" name="name" id="vehicle-name">
+            <button>
+                add veículo
+            </button>
+        </form>
+    </div>
+</dialog>
+<script type="module">
+    const dialogEl = document.querySelector("dialog#vehicleFormDialog")
+    if (dialogEl) {
+        dialogEl.showModal()
+    }
+</script>
+{{ end }}
