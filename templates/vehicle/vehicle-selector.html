@@ -1,0 +1,16 @@
+{{ block "vehicle-selector" . }}
+<div class="flex items-center gap-2 w-full">
+    <select name="vehiclePlate" id="vehicle-selector" class="w-full">
+        {{ range . }}
+        {{ template "vehicle-option" . }}
+        {{ else }}
+        <option value="-1">
+            Nenhum veículo encontrado
+        </option>
+        {{ end }}
+    </select>
+    <button class="stroke-green-500 rounded-full text-transparent text-[24px] h-6 leading-6 focus:text-green-500 focus:stroke-white hover:text-green-500 hover:stroke-white transition-colors duration-300 ease-linear !outline-0" type="button" hx-trigger="click" hx-get="/vehicle/form">
+        <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
+    </button>
+</div>
+{{ end }}

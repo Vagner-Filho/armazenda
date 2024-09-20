@@ -1,0 +1,109 @@
+{{ block "add-entry-dialog" . }}
+<dialog id="addEntryDialog" class="rounded-md w-4/5">
+
+    <div class="p-4">
+        <div class="relative h-4 w-full">
+            <button type="button" class="absolute top-0 right-0" onclick="closeModal()">
+                &#10006;
+            </button>
+        </div>
+        <form class="flex flex-col" {{ if .Entry.Waybill }} hx-put="/entry/{{ .Entry.Waybill }}" hx-target="#entry-{{ .Entry.Waybill }}"
+            hx-swap="outerHTML" {{ else }} hx-post="/entry" hx-target="#entries-table-body" hx-swap="beforeend" {{ end }}>
+            <label for="grain-selector" class="px-2">
+                Grão
+            </label>
+            {{ template "grain-selector" }}
+            <label for="harvest" class="px-2 mt-1">
+                Safra
+            </label>
+            <input type="text" name="harvest" id="harvest" value="{{ .Entry.Harvest }}" required>
+            <label for="field" class="px-2 mt-1">
+                Talhão
+            </label>
+            {{ template "field-selector" .Fields }}
+            <label for="vehiclePlate" class="px-2 mt-1">
+                Veículo
+            </label>
+            {{ template "vehicle-selector" .Vehicles }}
+            <label for="grossWeight" class="px-2 mt-1">
+                Peso Bruto
+            </label>
+            <input type="number" name="grossWeight" id="grossWeight" value="{{ .Entry.GrossWeight }}" required>
+            <label for="tare" class="px-2 mt-1">
+                Tara
+            </label>
+            <input type="number" name="tare" id="tare" value="{{ .Entry.Tare }}" required>
+            <label for="netWeight" class="px-2 mt-1">
+                Peso Líquido
+            </label>
+            <input type="number" name="netWeight" id="netWeight" value="{{ .Entry.NetWeight }}" disabled>
+            <label for="humidity" class="px-2 mt-1">
+                Umidade
+            </label>
+            <input type="text" name="humidity" id="humidity" value="{{ .Entry.Humidity }}" required>
+            <label for="arrivalDate" class="px-2 mt-1">
+                Data de Recebimento
+            </label>
+            <input type="date" name="arrivalDate" id="arrivalDate" value="{{ .Entry.ArrivalDate }}" required>
+            <div class="flex items-center justify-around mt-2 w-52 mx-auto">
+                <button class="cancel-btn" type="button" onclick="closeModal()">Cancelar</button>
+                <button class="add-btn" type="submit">{{ if .Entry.Waybill }} Editar {{ else }} Adicionar {{ end }}</button>
+            </div>
+        </form>
+    </div>
+
+    <script type="module">
+        const dialogEl = document.querySelector("#addEntryDialog")
+        if (dialogEl) {
+            dialogEl.showModal()
+            const arrivalDateEl = dialogEl.querySelector("input#arrivalDate")
+            if (!!arrivalDateEl) {
+                const longDate = arrivalDateEl.getAttribute("value")
+                if (longDate) {
+                    arrivalDateEl.setAttribute("value", new Date(Number(longDate)).toLocaleDateString('en-CA'))
+                } else {
+                    arrivalDateEl.setAttribute("value", new Date().toLocaleDateString('en-CA'))
+                }
+            }
+            function configReqListener(evt) {
+                const now = new Date()
+                const ad = evt.detail.parameters.get("arrivalDate")
+                if (!!ad) {
+                    const unixDate = new Date(ad).setHours(24 + now.getHours(), now.getMinutes())
+                    evt.detail.parameters.set("arrivalDate", unixDate)
+                }
+            }
+
+            document.body.addEventListener('htmx:configRequest', configReqListener);
+
+            function closeModal() {
+                dialogEl.close()
+                dialogEl.remove()
+                document.body.removeEventListener('htmx:configRequest', configReqListener)
+            }
+            dialogEl.addEventListener('close', closeModal)
+            window.closeModal = closeModal
+
+            const grossWeightInput = dialogEl.querySelector('input#grossWeight')
+            const tareInput = dialogEl.querySelector('input#tare')
+
+            let grossWeightValue = Number(grossWeightInput ? grossWeightInput.value : 0)
+            let tareValue = Number(tareInput ? tareInput.value : 0)
+
+            const netWeightInput = dialogEl.querySelector('input#netWeight')
+            if (netWeightInput) {
+                grossWeightInput.addEventListener('input', (e) => {
+                    grossWeightValue = Number(e.target.value) ?? 0
+
+                    netWeightInput.value = grossWeightValue - tareValue
+                })
+                tareInput.addEventListener('input', (e) => {
+                    tareValue = Number(e.target.value) ?? 0
+
+                    netWeightInput.value = grossWeightValue - tareValue
+                })
+            }
+        }
+    </script>
+</dialog>
+{{ end }}

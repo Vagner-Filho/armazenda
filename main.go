@@ -33,12 +33,12 @@ func main() {
 		c.HTML(http.StatusOK, "home", gin.H{})
 	})
 
-	router.GET("/entrada", entry_router.GetEntries)
+	router.GET("/romaneio", entry_router.GetEntries)
 
 	router.GET("/entry/form", func(c *gin.Context) {
         fields := entry_router.GetFields()
         vehicles := vehicle_router.GetVehicles()
-		c.HTML(http.StatusOK, "addEntryDialog", gin.H{
+		c.HTML(http.StatusOK, "add-entry-dialog", gin.H{
             "Fields": fields,
             "Vehicles": vehicles,
         })

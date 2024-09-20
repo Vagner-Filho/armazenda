@@ -1,0 +1,32 @@
+{{ block "field-form" . }}
+<dialog id="fieldFormDialog" class="rounded-md w-72 sm:w-96">
+    <div class="p-2 relative">
+        <button type="button" class="absolute top-1 right-1" onclick="closeModal()">
+            &#10006;
+        </button>
+        <h3 class="text-center px-2 font-semibold">
+            NOVO TALHÃO
+        </h3>
+        <form class="flex flex-col" hx-post="/entry/field" hx-target="#field-selector" hx-swap="beforeend">
+            <label for="field-name">
+                Nome do Talhão
+            </label>
+            <input type="text" name="name" id="field-name" required pattern="{{ . }}">
+            <div class="flex items-center justify-center gap-2 mt-3">
+                <button class="cancel-btn w-1/3">
+                    CANCELAR
+                </button>
+                <button class="add-btn w-1/3">
+                    ADICIONAR
+                </button>
+            </div>
+        </form>
+    </div>
+</dialog>
+<script type="module">
+    const dialogEl = document.querySelector("dialog#fieldFormDialog")
+    if (dialogEl) {
+        dialogEl.showModal()
+    }
+</script>
+{{ end }}

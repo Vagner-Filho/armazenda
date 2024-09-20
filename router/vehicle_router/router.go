@@ -14,7 +14,7 @@ type VehicleForm struct {
 }
 
 func GetVehiclesForm(c *gin.Context) {
-	c.HTML(http.StatusOK, "vehicleForm", vehicle_service.GetVehicles())
+	c.HTML(http.StatusOK, "vehicle-form", vehicle_service.GetVehicles())
 }
 
 func AddVehicle(c *gin.Context) {
@@ -30,7 +30,7 @@ func AddVehicle(c *gin.Context) {
         Plate: newVehicle.Plate,
     })
 
-    c.HTML(http.StatusCreated, "vehicleOption", vehicle)
+    c.HTML(http.StatusCreated, "vehicle-option", vehicle)
 }
 
 func GetVehicles() []vehicle_model.Vehicle {

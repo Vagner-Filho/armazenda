@@ -30,7 +30,7 @@ type FieldForm struct {
 
 func GetEntries(c *gin.Context) {
 	entries := entry_service.GetAllEntrySimplified()
-	c.HTML(http.StatusOK, "grao.html", gin.H{
+	c.HTML(http.StatusOK, "romaneio.html", gin.H{
 		"Entries": entries,
 	})
 }
@@ -52,7 +52,7 @@ func GetEntryForm(c *gin.Context) {
 	fields := entry_service.GetFields()
 	vehicles := vehicle_service.GetVehicles()
 
-	c.HTML(http.StatusOK, "addEntryDialog", PopulatedEntryForm{Entry: entry, Fields: fields, Vehicles: vehicles})
+	c.HTML(http.StatusOK, "add-entry-dialog", PopulatedEntryForm{Entry: entry, Fields: fields, Vehicles: vehicles})
 }
 
 func AddEntry(c *gin.Context) {
@@ -141,7 +141,7 @@ func AddField(c *gin.Context) {
 	}
 
 	newId := entry_service.AddField(newField.Name)
-	c.HTML(http.StatusCreated, "fieldOption", entry_model.Field{Name: newField.Name, Id: newId})
+	c.HTML(http.StatusCreated, "field-option", entry_model.Field{Name: newField.Name, Id: newId})
 	return
 }
 
@@ -156,5 +156,5 @@ func GetFieldForm(c *gin.Context) {
 	}
 	regexPattern += ").*"
 
-	c.HTML(http.StatusOK, "fieldForm", regexPattern)
+	c.HTML(http.StatusOK, "field-form", regexPattern)
 }
