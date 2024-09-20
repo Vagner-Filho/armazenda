@@ -13,15 +13,19 @@ import (
 
 type EntryForm struct {
 	Product      entry_model.Grain `form:"product" binding:"gte=0"`
-	Field        string            `form:"field" binding:"required"`
+	Field        uint32            `form:"field" binding:"required"`
 	Harvest      string            `form:"harvest" binding:"required"`
-	Vehicle      string            `form:"vehicle"`
-	VehiclePlate string            `form:"vehiclePlate" binding:"required"`
+	Vehicle      string            `form:"vehiclePlate"`
 	GrossWeight  float64           `form:"grossWeight" binding:"required"`
 	Tare         float64           `form:"tare" binding:"required"`
 	NetWeight    float64           `form:"netWeight"`
 	Humidity     string            `form:"humidity" binding:"required"`
 	ArrivalDate  int64             `form:"arrivalDate" binding:"required"`
+}
+
+type FieldForm struct {
+	Name string `form:"name" binding:"required"`
+	Id   uint32 `form:"id"`
 }
 
 func GetEntries(c *gin.Context) {
@@ -32,9 +36,9 @@ func GetEntries(c *gin.Context) {
 }
 
 type PopulatedEntryForm struct {
-    Entry entry_model.Entry
-    Fields []entry_model.Field
-    Vehicles []vehicle_model.Vehicle
+	Entry    entry_model.Entry
+	Fields   []entry_model.Field
+	Vehicles []vehicle_model.Vehicle
 }
 
 func GetEntryForm(c *gin.Context) {
@@ -44,11 +48,11 @@ func GetEntryForm(c *gin.Context) {
 		c.String(http.StatusBadRequest, "", err.Error())
 	}
 
-    entry := entry_service.GetEntry(uint32(converted))
+	entry := entry_service.GetEntry(uint32(converted))
 	fields := entry_service.GetFields()
 	vehicles := vehicle_service.GetVehicles()
 
-    c.HTML(http.StatusOK, "addEntryDialog", PopulatedEntryForm{ Entry: entry, Fields: fields, Vehicles: vehicles })
+	c.HTML(http.StatusOK, "addEntryDialog", PopulatedEntryForm{Entry: entry, Fields: fields, Vehicles: vehicles})
 }
 
 func AddEntry(c *gin.Context) {
@@ -60,10 +64,10 @@ func AddEntry(c *gin.Context) {
 	}
 	ge := entry_model.Entry{
 		Product:     newEntry.Product,
-		Field:       entry_model.Field{},
+		Field:       newEntry.Field,
 		Harvest:     newEntry.Harvest,
 		Waybill:     0,
-		Vehicle:     vehicle_model.Vehicle{},
+		Vehicle:     newEntry.Vehicle,
 		ArrivalDate: newEntry.ArrivalDate,
 		GrossWeight: newEntry.GrossWeight,
 		Tare:        newEntry.Tare,
@@ -101,9 +105,9 @@ func PutEntry(c *gin.Context) {
 
 	ge := entry_model.Entry{
 		Product:     newEntry.Product,
-		Field:       entry_model.Field{},
+		Field:       newEntry.Field,
 		Harvest:     newEntry.Harvest,
-		Vehicle:     vehicle_model.Vehicle{},
+		Vehicle:     newEntry.Vehicle,
 		ArrivalDate: newEntry.ArrivalDate,
 		GrossWeight: newEntry.GrossWeight,
 		Tare:        newEntry.Tare,
@@ -125,14 +129,19 @@ func GetFields() []entry_model.Field {
 }
 
 func AddField(c *gin.Context) {
-    // get from body
-	name := c.Query("name")
-	if len(name) == 0 {
+	var newField FieldForm
+	err := c.Bind(&newField)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+	if len(newField.Name) == 0 {
 		c.HTML(http.StatusBadRequest, "", "")
 		return
 	}
-	newId := entry_service.AddField(name)
-	c.HTML(http.StatusCreated, "", entry_model.Field{Name: name, Id: newId})
+
+	newId := entry_service.AddField(newField.Name)
+	c.HTML(http.StatusCreated, "fieldOption", entry_model.Field{Name: newField.Name, Id: newId})
 	return
 }
 

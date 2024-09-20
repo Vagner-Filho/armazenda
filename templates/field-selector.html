@@ -2,15 +2,15 @@
 <div class="flex items-center gap-2">
     <select name="field" id="field-selector">
         {{ range . }}
-        <option value="{{ .Id }}">
-            {{ .Name }}
-        </option>
+        {{ template "fieldOption" . }}
         {{ else }}
         <option value="-1">
             Nenhum talhão encontrado
         </option>
         {{ end }}
     </select>
-    <button type="button" hx-trigger="click" hx-get="/entry/field/form">add</button>
+    <button class="stroke-green-500 rounded-full text-transparent text-2xl hover:text-green-500 hover:stroke-white transition-colors duration-300 ease-linear !outline-0" type="button" hx-trigger="click" hx-get="/entry/field/form">
+        <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
+    </button>
 </div>
 {{ end }}

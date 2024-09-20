@@ -35,3 +35,11 @@ func AddVehicle(v Vehicle) (Vehicle, bool) {
 	vehicles = append(vehicles, Vehicle{Plate: v.Plate, Name: v.Name})
     return v, contains
 }
+
+func GetVehicle(plate string) *Vehicle {
+    vehicleIndex := slices.IndexFunc(vehicles, func(v Vehicle) bool {
+        return v.Plate == plate
+    })
+
+    return &vehicles[vehicleIndex]
+}

@@ -34,9 +34,9 @@ var fields = []Field{
 type Entry struct {
 	Waybill     uint32
 	Product     Grain
-	Field       Field
+	Field       uint32
 	Harvest     string
-	Vehicle     vehicle_model.Vehicle
+	Vehicle     string
 	GrossWeight float64
 	Tare        float64
 	NetWeight   float64
@@ -46,13 +46,15 @@ type Entry struct {
 
 var lastWaybill uint32 = 3
 
+var vehicles = vehicle_model.GetVehicles()
+
 var entries = []Entry{
 	{
 		Waybill:     1,
 		Product:     Corn,
-		Field:       fields[0],
+		Field:       fields[0].Id,
 		Harvest:     "Safra Milho 2024",
-		Vehicle:     vehicle_model.Vehicle{Name: "Mercedão", Plate: "OPA 0192"},
+		Vehicle:     vehicles[0].Plate,
 		GrossWeight: 15000,
 		Tare:        5000,
 		Humidity:    "10%",
@@ -62,9 +64,9 @@ var entries = []Entry{
 	{
 		Waybill:     2,
 		Product:     Soy,
-		Field:       fields[1],
+		Field:       fields[0].Id,
 		Harvest:     "Safra Soja 23/24",
-		Vehicle:     vehicle_model.Vehicle{Name: "Scania", Plate: "EPA 0192"},
+		Vehicle:     vehicles[0].Plate,
 		GrossWeight: 15000,
 		Tare:        5000,
 		Humidity:    "10%",
@@ -74,9 +76,9 @@ var entries = []Entry{
 	{
 		Waybill:     3,
 		Product:     Corn,
-		Field:       fields[0],
+		Field:       fields[0].Id,
 		Harvest:     "Sofra Milho 2024/2",
-		Vehicle:     vehicle_model.Vehicle{Name: "FH400", Plate: "PPK 6969"},
+		Vehicle:     vehicles[0].Plate,
 		GrossWeight: 15000,
 		Tare:        5000,
 		Humidity:    "10%",
@@ -137,6 +139,11 @@ func PutEntry(ge Entry) *Entry {
 	var geIndex = slices.IndexFunc(entries, func(e Entry) bool {
 		return e.Waybill == ge.Waybill
 	})
+
+    if ge.NetWeight != ge.GrossWeight - ge.Tare {
+        ge.NetWeight = ge.GrossWeight - ge.Tare
+    }
+
 	if geIndex > -1 {
 		entries = slices.Replace(entries, geIndex, geIndex+1, ge)
 		return &ge
@@ -152,4 +159,12 @@ func AddField(name string) uint32 {
     lastField := fields[len(fields)-1]
     fields = append(fields, Field{ Name: name, Id: lastField.Id + 1 })
     return lastField.Id + 1
+}
+
+func GetField(id uint32) *Field {
+    fieldIndex := slices.IndexFunc(fields, func(e Field) bool {
+        return e.Id == id
+    })
+
+    return &fields[fieldIndex]
 }

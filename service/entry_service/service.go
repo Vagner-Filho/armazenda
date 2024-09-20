@@ -2,6 +2,7 @@ package entry_service
 
 import (
 	"armazenda/model/entry_model"
+	"armazenda/model/vehicle_model"
 	"time"
 )
 
@@ -15,11 +16,13 @@ type SimplifiedEntry struct {
 }
 
 func MakeSimplifiedEntry(ge entry_model.Entry) SimplifiedEntry {
+    field := entry_model.GetField(ge.Field)
+    vehicle := vehicle_model.GetVehicle(ge.Vehicle) 
 	return SimplifiedEntry{
 		Waybill:      ge.Waybill,
 		Product:      entry_model.GrainMap[ge.Product],
-		Field:        ge.Field.Name,
-		VehiclePlate: ge.Vehicle.Plate,
+		Field:        field.Name,
+		VehiclePlate: vehicle.Plate,
 		NetWeight:    ge.NetWeight,
 		ArrivalDate:  time.UnixMilli(ge.ArrivalDate).Format("02/Jan/2006 - 03:04"),
 	}

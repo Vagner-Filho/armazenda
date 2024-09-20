@@ -7,12 +7,16 @@
                 &#10006;
             </button>
         </div>
-        <form class="flex flex-col" {{ if .Entry.Waybill }} hx-put="/entrada/{{ .Entry.Waybill }}" hx-target="#entry-{{ .Entry.Waybill }}"
-            hx-swap="outerHTML" {{ else }} hx-post="/entrada" hx-target="#entries-table-body" hx-swap="beforeend" {{ end }}>
+        <form class="flex flex-col" {{ if .Entry.Waybill }} hx-put="/entry/{{ .Entry.Waybill }}" hx-target="#entry-{{ .Entry.Waybill }}"
+            hx-swap="outerHTML" {{ else }} hx-post="/entry" hx-target="#entries-table-body" hx-swap="beforeend" {{ end }}>
             <label for="grain-selector" class="px-2">
                 Grão
             </label>
             {{ template "grainSelector" }}
+            <label for="harvest" class="px-2 mt-1">
+                Safra
+            </label>
+            <input type="text" name="harvest" id="harvest" value="{{ .Entry.Harvest }}" class="px-2" required>
             <label for="field" class="px-2 mt-1">
                 Talhão
             </label>
