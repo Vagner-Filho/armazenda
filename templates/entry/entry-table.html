@@ -1,0 +1,34 @@
+{{ block "entry-table" . }}
+<table class="w-full">
+    <thead class="text-xs sm:text-base whitespace-nowrap bg-gray-300/50">
+        <tr>
+            <th class="py-2">
+                ROMANEIO
+            </th>
+            <th class="py-2">
+                PRODUTO
+            </th>
+            <th class="py-2">
+                TALHÃO
+            </th>
+            <th class="py-2">
+                PLACA
+            </th>
+            <th class="py-2">
+                PESO LÍQUIDO
+            </th>
+            <th class="py-2">
+                DATA DE RECEBIMENTO
+            </th>
+            <th class="py-2">
+                AÇÕES
+            </th>
+        </tr>
+    </thead>
+    <tbody id="entries-table-body">
+        {{ range . }}
+        {{ template "entry-list-item" . }}
+        {{ end }}
+    </tbody>
+</table>
+{{ end }}

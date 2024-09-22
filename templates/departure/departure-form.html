@@ -1,0 +1,86 @@
+{{ block "departure-form" . }}
+<dialog id="departure-form-dialog" class="rounded-md w-4/5">
+    <div class="p-4 relative">
+        <button type="button"
+            class="absolute top-0 right-3 text-[2.5em] w-8 h-8 flex items-center justify-center text-stone-400 hover:text-orange-700 transition-colors duration-300"
+            onclick="closeModal()">
+            &times;
+        </button>
+        <form class="flex flex-col" {{ if .Departure.Manifest }} hx-put="/entry/{{ .Departure.Manifest }}"
+            hx-target="#departure-{{ .Departure.Manifest }}" hx-swap="outerHTML" {{ else }} hx-post="/departure"
+            hx-target="#departure-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#btns-container">
+            <label for="grain-selector" class="px-2">
+                Grão
+            </label>
+            {{ template "grain-selector" }}
+            <label for="vehiclePlate" class="px-2 mt-1">
+                Veículo
+            </label>
+            {{ template "vehicle-selector" .Vehicles }}
+            <label for="weight" class="px-2 mt-1">
+                Peso
+            </label>
+            <input type="number" name="weight" id="weight" value="{{ .Departure.Weight }}" required>
+            <label for="departureDate" class="px-2 mt-1">
+                Data de Saída
+            </label>
+            <input type="date" name="departureDate" id="departureDate" value="{{ .Departure.DepartureDate }}" required>
+            <div class="flex items-center justify-around mt-2 w-52 mx-auto" id="btns-container">
+                <button class="cancel-btn" type="button" onclick="closeModal()">Cancelar</button>
+                <button class="add-btn" type="submit">
+                    {{ if .Departure.Manifest }} Editar {{ else }} Adicionar {{ end }}
+                </button>
+                <img class="htmx-indicator" src="/public/assets/static/spinner.svg" alt="...">
+            </div>
+        </form>
+    </div>
+
+    <script type="module">
+        const dialogEl = document.querySelector("#departure-form-dialog")
+        if (dialogEl) {
+            dialogEl.showModal()
+            const departureDateEl = dialogEl.querySelector("input#departureDate")
+            if (!!departureDateEl) {
+                const longDate = departureDateEl.getAttribute("value")
+                if (longDate) {
+                    departureDateEl.setAttribute("value", new Date(Number(longDate)).toLocaleDateString('en-CA'))
+                } else {
+                    departureDateEle.setAttribute("value", new Date().toLocaleDateString('en-CA'))
+                }
+            }
+            function configReqListener(evt) {
+                const now = new Date()
+                const dd = evt.detail.parameters.get("departureDate")
+                if (!!dd) {
+                    const unixDate = new Date(dd).setHours(24 + now.getHours(), now.getMinutes())
+                    evt.detail.parameters.set("departureDate", unixDate)
+                }
+            }
+
+            document.body.addEventListener('htmx:configRequest', configReqListener);
+
+            function closeModal() {
+                dialogEl.close()
+                dialogEl.remove()
+                document.body.removeEventListener('htmx:configRequest', configReqListener)
+            }
+            dialogEl.addEventListener('close', closeModal)
+            window.closeModal = closeModal
+        }
+    </script>
+</dialog>
+
+<style>
+    .htmx-indicator {
+        display: none;
+    }
+
+    .htmx-request button {
+        display: none;
+    }
+
+    .htmx-request .htmx-indicator {
+        display: block
+    }
+</style>
+{{ end }}

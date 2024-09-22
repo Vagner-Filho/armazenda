@@ -1,0 +1,39 @@
+{{ block "entry-list-item" . }}
+<tr class="text-center whitespace-nowrap text-sm sm:text-base" id="entry-{{ .Waybill }}">
+    <td>
+        {{ .Waybill }}
+    </td>
+    <td>
+        {{ .Product }}
+    </td>
+    <td>
+        {{ .Field }}
+    </td>
+    <td>
+        {{ .VehiclePlate }}
+    </td>
+    <td>
+        {{ .NetWeight }}
+    </td>
+    <td>
+        {{ .ArrivalDate }}
+    </td>
+    <td>
+        <div class="flex items-center justify-center gap-2 text-green-500">
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+            <button type="button" hx-get="/entry/form/{{ .Waybill }}" hx-target="body" hx-swap="beforeend">
+                <iconify-icon icon="la:pen"></iconify-icon>
+            </button>
+            <button type="button" hx-trigger="confirmed" hx-delete="/entry/{{ .Waybill }}" hx-target="#entry-{{ .Waybill }}"
+                hx-swap="delete" onClick="Swal.fire({title: 'Excluir', text:'Deseja excluir o romaneio de entrada {{ .Waybill }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
+                    if (result.isConfirmed) {
+                        htmx.trigger(this, 'confirmed');  
+                    } 
+                })"
+            >
+                <iconify-icon icon="la:trash-alt-solid"></iconify-icon>
+            </button>
+        </div>
+    </td>
+</tr>
+{{ end }}

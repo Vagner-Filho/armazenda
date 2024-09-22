@@ -1,0 +1,31 @@
+{{ block "departure-table" . }}
+<table class="w-full">
+    <thead class="text-xs sm:text-base whitespace-nowrap bg-gray-300/50">
+        <tr>
+            <th class="py-2">
+                ROMANEIO
+            </th>
+            <th class="py-2">
+                PRODUTO
+            </th>
+            <th class="py-2">
+                PLACA
+            </th>
+            <th class="py-2">
+                PESO
+            </th>
+            <th class="py-2">
+                DATA DE SAÍDA
+            </th>
+            <th class="py-2">
+                AÇÕES
+            </th>
+        </tr>
+    </thead>
+    <tbody id="departure-table-body">
+        {{ range . }}
+        {{ template "departure-list-item" . }}
+        {{ end }}
+    </tbody>
+</table>
+{{ end }}

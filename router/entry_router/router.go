@@ -30,9 +30,11 @@ type FieldForm struct {
 
 func GetEntries(c *gin.Context) {
 	entries := entry_service.GetAllEntrySimplified()
-	c.HTML(http.StatusOK, "romaneio.html", gin.H{
-		"Entries": entries,
-	})
+	c.HTML(http.StatusOK, "romaneio.html", entries)
+}
+
+func GetEntriesTable(c *gin.Context) {
+	c.HTML(http.StatusOK, "entry-table", entry_service.GetAllEntrySimplified())
 }
 
 type PopulatedEntryForm struct {

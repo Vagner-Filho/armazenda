@@ -2,6 +2,7 @@ package main
 
 import (
 	"armazenda/model/entry_model"
+	"armazenda/router/departure_router"
 	"armazenda/router/entry_router"
 	"armazenda/router/vehicle_router"
 	"embed"
@@ -35,6 +36,8 @@ func main() {
 
 	router.GET("/romaneio", entry_router.GetEntries)
 
+	router.GET("/entry/list", entry_router.GetEntriesTable)
+
 	router.GET("/entry/form", func(c *gin.Context) {
         fields := entry_router.GetFields()
         vehicles := vehicle_router.GetVehicles()
@@ -52,6 +55,10 @@ func main() {
 
     router.POST("/entry/field", entry_router.AddField)
     router.GET("/entry/field/form", entry_router.GetFieldForm)
+
+    router.GET("/departure/list", departure_router.GetDepartures)
+    router.GET("/departure/form", departure_router.GetDepartureForm)
+    router.GET("/departure/form/:id", departure_router.GetDepartures)
 
     router.GET("/vehicle/form", vehicle_router.GetVehiclesForm)
     router.POST("/vehicle", vehicle_router.AddVehicle)

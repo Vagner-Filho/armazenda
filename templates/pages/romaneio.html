@@ -20,11 +20,27 @@
                 CONTROLE DE ROMANEIO
             </h1>
         </header>
+        <div class="flex items-center justify-center w-full py-2">
+            <button type="button"
+                class="h-8 px-2 text-base rounded-md rounded-r-none text-white bg-green-400 ring-1 ring-green-400"
+                hx-trigger="click" hx-get="/entry/list" hx-target="table" hx-swap="outerHTML">
+                Entrada
+            </button>
+            <div class="h-8 w-[2px] bg-green-400">
+            </div>
+            <button type="button" id="show-departure-manifest"
+                class="h-8 px-2 text-base rounded-md rounded-l-none text-green-400 ring-1 ring-green-400"
+                hx-trigger="click" hx-get="/departure/list" hx-target="table" hx-swap="outerHTML"
+                onclick="handleShowDeparture()">
+                Saída
+            </button>
+        </div>
         <main>
-            {{ template "entry-list" . }}
+            {{ template "entry-table" . }}
         </main>
         <footer class="w-full flex items-center justify-end">
-            <button type="button" class="add-btn flex items-center" hx-get="/entry/form" hx-target="body" hx-swap="beforeend">
+            <button id="form" type="button" class="add-btn flex items-center" hx-get="/entry/form" hx-target="body"
+                hx-swap="beforeend">
                 <iconify-icon icon="ic:baseline-add-circle" class="mr-1"></iconify-icon>
                 Nova Entrada
             </button>
@@ -34,37 +50,16 @@
 
 </html>
 
-{{ define "entry-list" }}
-<table class="w-full">
-    <thead class="text-xs sm:text-base whitespace-nowrap bg-gray-300/50">
-        <tr>
-            <th class="py-2">
-                ROMANEIO
-            </th>
-            <th class="py-2">
-                PRODUTO
-            </th>
-            <th class="py-2">
-                TALHÃO
-            </th>
-            <th class="py-2">
-                PLACA
-            </th>
-            <th class="py-2">
-                PESO LÍQUIDO
-            </th>
-            <th class="py-2">
-                DATA DE RECEBIMENTO
-            </th>
-            <th class="py-2">
-                AÇÕES
-            </th>
-        </tr>
-    </thead>
-    <tbody id="entries-table-body">
-        {{ range .Entries }}
-        {{ template "entry" . }}
-        {{ end }}
-    </tbody>
-</table>
-{{ end }}
+<script type="module">
+    function handleShowDeparture() {
+        const btnEl = document.querySelector('#show-departure-manifest');
+        if (btnEl) {
+            btnEl.classList.add('bg-green-400', '!text-white')
+        }
+        const formBtnEl = document.querySelector('button#form');
+        if (formBtnEl) {
+            formBtnEl.setAttribute('hx-get', '/departure/form')
+        }
+    }
+    window.handleShowDeparture = handleShowDeparture
+</script>
