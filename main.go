@@ -39,7 +39,6 @@ func main() {
 	router.GET("/entry/list", entry_router.GetEntriesTable)
 
 	router.GET("/entry/form", func(c *gin.Context) {
-		// fields := entry_router.GetFields()
 		var fields []entry_router.Field
 		for _, field := range entry_router.GetFields() {
 			newF := entry_router.Field{}
@@ -48,7 +47,6 @@ func main() {
             newF.Id = field.Id
 			fields = append(fields, newF)
 		}
-		// vehicles := vehicle_router.GetVehicles()
         var vehicles []entry_router.Vehicle
         for _, vehicle := range vehicle_router.GetVehicles() {
             newV := entry_router.Vehicle{}
