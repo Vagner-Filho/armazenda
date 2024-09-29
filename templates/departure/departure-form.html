@@ -2,8 +2,8 @@
 <dialog id="departure-form-dialog" class="rounded-md w-4/5">
     <div class="p-4 relative">
         {{ template "close-dialog-btn" "dialog#departure-form-dialog" }}
-        <form class="flex flex-col" {{ if .Departure.Manifest }} hx-put="/entry/{{ .Departure.Manifest }}"
-            hx-target="#departure-{{ .Departure.Manifest }}" hx-swap="outerHTML" {{ else }} hx-post="/departure"
+        <form class="flex flex-col" {{ if .Departure.Manifest }} hx-put="/departure/{{ .Manifest }}"
+            hx-target="#departure-{{ .Manifest }}" hx-swap="outerHTML" {{ else }} hx-post="/departure"
             hx-target="#departure-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#btns-container">
             <label for="grain-selector" class="px-2">
                 Grão
@@ -16,15 +16,15 @@
             <label for="weight" class="px-2 mt-1">
                 Peso
             </label>
-            <input type="number" name="weight" id="weight" value="{{ .Departure.Weight }}" required>
+            <input type="number" name="weight" id="weight" value="{{ .Weight }}" required>
             <label for="departureDate" class="px-2 mt-1">
                 Data de Saída
             </label>
-            <input type="date" name="departureDate" id="departureDate" value="{{ .Departure.DepartureDate }}" required>
+            <input type="date" name="departureDate" id="departureDate" value="{{ .DepartureDate }}" required>
             <div class="flex items-center justify-around mt-2 w-52 mx-auto" id="btns-container">
                 <button class="cancel-btn" type="button" onclick="closeModal()">Cancelar</button>
                 <button class="add-btn" type="submit">
-                    {{ if .Departure.Manifest }} Editar {{ else }} Adicionar {{ end }}
+                    {{ if .Manifest }} Editar {{ else }} Adicionar {{ end }}
                 </button>
                 <img class="htmx-indicator" src="/public/assets/static/spinner.svg" alt="...">
             </div>

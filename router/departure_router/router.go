@@ -7,6 +7,7 @@ import (
 	"armazenda/router/entry_router"
 	"armazenda/router/vehicle_router"
 	"armazenda/service/departure_service"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -26,39 +27,43 @@ func GetDepartureForm(c *gin.Context) {
 		vehicles = append(vehicles, newV)
 	}
 	c.HTML(http.StatusOK, "departure-form", gin.H{
-        "Vehicles": vehicles,
-    })
+		"Vehicles": vehicles,
+	})
 }
 
 type FilledDeparture struct {
-    departure_model.Departure
-    entry_router.Vehicle
+	departure_model.Departure
+	Vehicles []entry_router.Vehicle
 }
 
-func GetFileldDepartureForm(c *gin.Context) {
-    id := c.Param("id")
+func GetFilledDepartureForm(c *gin.Context) {
+	id := c.Param("id")
 	converted, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
 		c.String(http.StatusBadRequest, "", err.Error())
 	}
 
-    departure, notFound := departure_service.GetDeparture(uint32(converted))
-    if notFound {}
+	departure, notFound := departure_service.GetDeparture(uint32(converted))
+	if notFound {
+		c.HTML(http.StatusBadRequest, "toast", gin.H{})
+	}
 
-    var vehicles []entry_router.Vehicle
-    for _, vehicle := range vehicle_router.GetVehicles() {
-        vehicles = append(vehicles, entry_router.Vehicle{
-            Selected: departure.VehiclePlate == vehicle.Plate,
-            Vehicle: vehicle_model.Vehicle{
-                Plate: vehicle.Plate,
-                Name: vehicle.Name,
-            },
-        })
-    }
-    filledDeparture := FilledDeparture{
-        Departure: departure,
-        Vehicle: ,
-    }
+	var vehicles []entry_router.Vehicle
+	for _, vehicle := range vehicle_router.GetVehicles() {
+		vehicles = append(vehicles, entry_router.Vehicle{
+			Selected: departure.VehiclePlate == vehicle.Plate,
+			Vehicle: vehicle_model.Vehicle{
+				Plate: vehicle.Plate,
+				Name:  vehicle.Name,
+			},
+		})
+	}
+	filledDeparture := FilledDeparture{
+		Departure: departure,
+		Vehicles:  vehicles,
+	}
+
+	c.HTML(http.StatusOK, "departure-form", filledDeparture)
 }
 
 type DepartureForm struct {
@@ -86,4 +91,39 @@ func AddDeparture(c *gin.Context) {
 
 	var newDeparture = departure_service.AddDeparture(bd)
 	c.HTML(http.StatusOK, "departure-list-item", departure_service.MakeReadableDeparture(newDeparture))
+}
+
+func PutDeparture(c *gin.Context) {
+	id := c.Param("id")
+	converted, parseErr := strconv.ParseUint(id, 10, 32)
+	if parseErr != nil {
+		c.String(http.StatusBadRequest, "", parseErr.Error())
+		return
+	}
+
+	var df DepartureForm
+	err := c.Bind(&df)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+	df.Manifest = uint32(converted)
+
+	toUpdate := departure_model.Departure{
+		Manifest: df.Manifest,
+		BaseDeparture: departure_model.BaseDeparture{
+			Weight:        df.Weight,
+			Product:       df.Product,
+			VehiclePlate:  df.VehiclePlate,
+			DepartureDate: df.DepartureDate,
+		},
+	}
+
+	updatedDeparture, notFound := departure_service.PutDeparture(toUpdate)
+    fmt.Printf("%+v\n", updatedDeparture)
+    if notFound {
+        // handle not found
+    }
+
+    c.HTML(http.StatusOK, "departure-list-item", departure_service.MakeReadableDeparture(updatedDeparture))
 }

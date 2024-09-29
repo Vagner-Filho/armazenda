@@ -32,9 +32,13 @@ func GetDeparture(manifest uint32) (departure_model.Departure, bool) {
 	if departure == nil {
 		return departure_model.Departure{}, true
 	}
-	return departure_model.Departure{}, false
+	return *departure, false
 }
 
 func AddDeparture(bd departure_model.BaseDeparture) departure_model.Departure {
 	return departure_model.AddDeparture(bd)
+}
+
+func PutDeparture(d departure_model.Departure) (departure_model.Departure, bool) {
+    return departure_model.PutDeparture(d)
 }

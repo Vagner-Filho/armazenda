@@ -73,8 +73,9 @@ func main() {
 
 	router.GET("/departure/list", departure_router.GetDepartures)
 	router.GET("/departure/form", departure_router.GetDepartureForm)
-	router.GET("/departure/form/:id", departure_router.GetDepartureForm)
+	router.GET("/departure/form/:id", departure_router.GetFilledDepartureForm)
     router.POST("/departure", departure_router.AddDeparture)
+    router.PUT("/departure/:id", departure_router.PutDeparture)
 
 	router.GET("/vehicle/form", vehicle_router.GetVehiclesForm)
 	router.POST("/vehicle", vehicle_router.AddVehicle)

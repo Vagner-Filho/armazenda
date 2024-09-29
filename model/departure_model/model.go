@@ -59,3 +59,17 @@ func AddDeparture(bd BaseDeparture) Departure {
 	})
     return departures[len(departures)-1]
 }
+
+func PutDeparture(d Departure) (Departure, bool) {
+    dIndex := slices.IndexFunc(departures, func(id Departure) bool {
+        return d.Manifest == id.Manifest
+    })
+
+    if dIndex == -1 {
+        return Departure{}, true
+    }
+
+    departures = slices.Replace(departures, dIndex, dIndex + 1, d)
+
+    return d, false
+}
