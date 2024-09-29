@@ -18,11 +18,11 @@
     <td>
         <div class="flex items-center justify-center gap-2 text-green-500">
             <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-            <button type="button" hx-get="/entry/form/{{ .Manifest }}" hx-target="body" hx-swap="beforeend">
+            <button type="button" hx-get="/departure/form/{{ .Manifest }}" hx-target="body" hx-swap="beforeend">
                 <iconify-icon icon="la:pen"></iconify-icon>
             </button>
-            <button type="button" hx-trigger="confirmed" hx-delete="/entry/{{ .Manifest }}"
-                hx-target="#entry-{{ .Manifest }}" hx-swap="delete" onClick="Swal.fire({title: 'Excluir', text: 'Deseja excluir o romaneio de saída {{ .Manifest }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
+            <button type="button" hx-trigger="confirmed" hx-delete="/departure/{{ .Manifest }}"
+                hx-target="#departure-{{ .Manifest }}" hx-swap="delete" onClick="Swal.fire({title: 'Excluir', text: 'Deseja excluir o romaneio de saída {{ .Manifest }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
                     if (result.isConfirmed) {
                         htmx.trigger(this, 'confirmed');  
                     } 

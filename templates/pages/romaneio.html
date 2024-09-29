@@ -21,44 +21,40 @@
             </h1>
         </header>
         <div class="flex items-center justify-center w-full py-2">
-            <button type="button"
-                class="h-8 px-2 text-base rounded-md rounded-r-none text-white bg-green-400 ring-1 ring-green-400"
-                hx-trigger="click" hx-get="/entry/list" hx-target="table" hx-swap="outerHTML">
+            <button type="button" id="show-entry-manifest"
+                class="h-8 px-2 text-base rounded-md rounded-r-none ring-1 ring-green-400 text-white bg-green-400 transition-colors duration-300"
+                hx-trigger="click" hx-get="/entry/list" hx-target="main"
+                onclick="handleShowDeparture('button#show-entry-manifest', 'button#show-departure-manifest')">
                 Entrada
             </button>
             <div class="h-8 w-[2px] bg-green-400">
             </div>
             <button type="button" id="show-departure-manifest"
-                class="h-8 px-2 text-base rounded-md rounded-l-none text-green-400 ring-1 ring-green-400"
-                hx-trigger="click" hx-get="/departure/list" hx-target="table" hx-swap="outerHTML"
-                onclick="handleShowDeparture()">
+                class="h-8 px-2 text-base rounded-md rounded-l-none ring-1 ring-green-400 text-green-400 transition-colors duration-300"
+                hx-trigger="click" hx-get="/departure/list" hx-target="main"
+                onclick="handleShowDeparture('button#show-departure-manifest', 'button#show-entry-manifest')">
                 Saída
             </button>
         </div>
         <main>
             {{ template "entry-table" . }}
         </main>
-        <footer class="w-full flex items-center justify-end">
-            <button id="form" type="button" class="add-btn flex items-center" hx-get="/entry/form" hx-target="body"
-                hx-swap="beforeend">
-                <iconify-icon icon="ic:baseline-add-circle" class="mr-1"></iconify-icon>
-                Nova Entrada
-            </button>
-        </footer>
     </section>
 </body>
 
 </html>
 
 <script type="module">
-    function handleShowDeparture() {
-        const btnEl = document.querySelector('#show-departure-manifest');
-        if (btnEl) {
-            btnEl.classList.add('bg-green-400', '!text-white')
+    function handleShowDeparture(selectorAdd, selectorRemove) {
+        const elToAddClass = document.querySelector(selectorAdd);
+        if (elToAddClass) {
+            elToAddClass.classList.add('bg-green-400', 'text-white')
+            elToAddClass.classList.remove('text-green-400')
         }
-        const formBtnEl = document.querySelector('button#form');
-        if (formBtnEl) {
-            formBtnEl.setAttribute('hx-get', '/departure/form')
+        const elToRemoveClass = document.querySelector(selectorRemove);
+        if (elToRemoveClass) {
+            elToRemoveClass.classList.remove('bg-green-400', 'text-white')
+            elToRemoveClass.classList.add('text-green-400')
         }
     }
     window.handleShowDeparture = handleShowDeparture

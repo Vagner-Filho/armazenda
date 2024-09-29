@@ -24,10 +24,10 @@ func main() {
 	entry_model.InitGrainMap()
 	router := gin.Default()
 	html := template.Must(template.ParseFS(templatesFS, "templates/*.html", "templates/**/*.html"))
-    println(html.DefinedTemplates())
+	println(html.DefinedTemplates())
 	router.SetHTMLTemplate(html)
 
-    router.StaticFS("/public", http.FS(assetsFS))
+	router.StaticFS("/public", http.FS(assetsFS))
 	// router.Static("/assets/static/css", "./assets/static/css")
 	// router.LoadHTMLGlob("templates/*")
 	router.GET("/", func(c *gin.Context) {
@@ -39,40 +39,56 @@ func main() {
 	router.GET("/entry/list", entry_router.GetEntriesTable)
 
 	router.GET("/entry/form", func(c *gin.Context) {
-        fields := entry_router.GetFields()
-        vehicles := vehicle_router.GetVehicles()
+		// fields := entry_router.GetFields()
+		var fields []entry_router.Field
+		for _, field := range entry_router.GetFields() {
+			newF := entry_router.Field{}
+            newF.Selected = false
+            newF.Name = field.Name
+            newF.Id = field.Id
+			fields = append(fields, newF)
+		}
+		// vehicles := vehicle_router.GetVehicles()
+        var vehicles []entry_router.Vehicle
+        for _, vehicle := range vehicle_router.GetVehicles() {
+            newV := entry_router.Vehicle{}
+            newV.Name = vehicle.Name
+            newV.Plate = vehicle.Plate
+            vehicles = append(vehicles, newV)
+        }
 		c.HTML(http.StatusOK, "add-entry-dialog", gin.H{
-            "Fields": fields,
-            "Vehicles": vehicles,
-        })
+			"Fields":   fields,
+			"Vehicles": vehicles,
+		})
 	})
 
-    router.GET("/entry/form/:id", entry_router.GetEntryForm)
+	router.GET("/entry/form/:id", entry_router.GetEntryForm)
 
 	router.POST("/entry", entry_router.AddEntry)
-    router.PUT("/entry/:id", entry_router.PutEntry)
-    router.DELETE("/entry/:id", entry_router.DeleteEntry)
+	router.PUT("/entry/:id", entry_router.PutEntry)
+	router.DELETE("/entry/:id", entry_router.DeleteEntry)
 
-    router.POST("/entry/field", entry_router.AddField)
-    router.GET("/entry/field/form", entry_router.GetFieldForm)
+	router.POST("/entry/field", entry_router.AddField)
+	router.GET("/entry/field/form", entry_router.GetFieldForm)
 
-    router.GET("/departure/list", departure_router.GetDepartures)
-    router.GET("/departure/form", departure_router.GetDepartureForm)
-    router.GET("/departure/form/:id", departure_router.GetDepartures)
+	router.GET("/departure/list", departure_router.GetDepartures)
+	router.GET("/departure/form", departure_router.GetDepartureForm)
+	router.GET("/departure/form/:id", departure_router.GetDepartureForm)
+    router.POST("/departure", departure_router.AddDeparture)
 
-    router.GET("/vehicle/form", vehicle_router.GetVehiclesForm)
-    router.POST("/vehicle", vehicle_router.AddVehicle)
+	router.GET("/vehicle/form", vehicle_router.GetVehiclesForm)
+	router.POST("/vehicle", vehicle_router.AddVehicle)
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8100"
 	}
 
-    ipv6Addr := "::" // Listen on all IPv6 addresses
+	ipv6Addr := "::" // Listen on all IPv6 addresses
 	if envIP := os.Getenv("IP"); envIP != "" {
 		ipv6Addr = envIP
 	}
 
-    address := fmt.Sprintf("[%s]:%s", ipv6Addr, port)
+	address := fmt.Sprintf("[%s]:%s", ipv6Addr, port)
 	router.Run(address)
 }

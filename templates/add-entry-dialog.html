@@ -1,11 +1,7 @@
 {{ block "add-entry-dialog" . }}
 <dialog id="addEntryDialog" class="rounded-md w-4/5">
     <div class="p-4 relative">
-        <button type="button"
-            class="absolute top-0 right-3 text-[2.5em] w-8 h-8 flex items-center justify-center text-stone-400 hover:text-orange-700 transition-colors duration-300"
-            onclick="closeModal()">
-            &times;
-        </button>
+        {{ template "close-dialog-btn" "dialog#addEntryDialog" }}
         <form class="flex flex-col" {{ if .Entry.Waybill }} hx-put="/entry/{{ .Entry.Waybill }}"
             hx-target="#entry-{{ .Entry.Waybill }}" hx-swap="outerHTML" {{ else }} hx-post="/entry"
             hx-target="#entries-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#btns-container">
@@ -46,7 +42,7 @@
             </label>
             <input type="date" name="arrivalDate" id="arrivalDate" value="{{ .Entry.ArrivalDate }}" required>
             <div class="flex items-center justify-around mt-2 w-52 mx-auto" id="btns-container">
-                <button class="cancel-btn" type="button" onclick="closeModal()">Cancelar</button>
+                <button class="cancel-btn" type="button" onclick="closeEntryFormDialog()">Cancelar</button>
                 <button class="add-btn" type="submit">
                     {{ if .Entry.Waybill }} Editar {{ else }} Adicionar {{ end }}
                 </button>
@@ -79,13 +75,13 @@
 
             document.body.addEventListener('htmx:configRequest', configReqListener);
 
-            function closeModal() {
+            function closeEntryFormDialog() {
                 dialogEl.close()
                 dialogEl.remove()
                 document.body.removeEventListener('htmx:configRequest', configReqListener)
             }
-            dialogEl.addEventListener('close', closeModal)
-            window.closeModal = closeModal
+            dialogEl.addEventListener('close', closeEntryFormDialog)
+            window.closeEntryFormDialog = closeEntryFormDialog
 
             const grossWeightInput = dialogEl.querySelector('input#grossWeight')
             const tareInput = dialogEl.querySelector('input#tare')
@@ -108,19 +104,18 @@
             }
         }
     </script>
+    <style>
+        .htmx-indicator {
+            display: none;
+        }
+
+        .htmx-request button {
+            display: none;
+        }
+
+        .htmx-request .htmx-indicator {
+            display: block
+        }
+    </style>
 </dialog>
-
-<style>
-    .htmx-indicator {
-        display: none;
-    }
-
-    .htmx-request button {
-        display: none;
-    }
-
-    .htmx-request .htmx-indicator {
-        display: block
-    }
-</style>
 {{ end }}

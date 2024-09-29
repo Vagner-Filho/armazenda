@@ -1,11 +1,7 @@
 {{ block "departure-form" . }}
 <dialog id="departure-form-dialog" class="rounded-md w-4/5">
     <div class="p-4 relative">
-        <button type="button"
-            class="absolute top-0 right-3 text-[2.5em] w-8 h-8 flex items-center justify-center text-stone-400 hover:text-orange-700 transition-colors duration-300"
-            onclick="closeModal()">
-            &times;
-        </button>
+        {{ template "close-dialog-btn" "dialog#departure-form-dialog" }}
         <form class="flex flex-col" {{ if .Departure.Manifest }} hx-put="/entry/{{ .Departure.Manifest }}"
             hx-target="#departure-{{ .Departure.Manifest }}" hx-swap="outerHTML" {{ else }} hx-post="/departure"
             hx-target="#departure-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#btns-container">
@@ -45,7 +41,7 @@
                 if (longDate) {
                     departureDateEl.setAttribute("value", new Date(Number(longDate)).toLocaleDateString('en-CA'))
                 } else {
-                    departureDateEle.setAttribute("value", new Date().toLocaleDateString('en-CA'))
+                    departureDateEl.setAttribute("value", new Date().toLocaleDateString('en-CA'))
                 }
             }
             function configReqListener(evt) {

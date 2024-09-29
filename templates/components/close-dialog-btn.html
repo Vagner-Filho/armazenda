@@ -1,0 +1,14 @@
+{{ block "close-dialog-btn" . }}
+<button type="button" class="close-dialog-btn" onclick="closeModal('{{ . }}')">
+    &times;
+</button>
+<script>
+    function closeModal(selector) {
+        const dialogEl = document.querySelector(selector)
+        if (dialogEl) {
+            dialogEl.close()
+            dialogEl.remove()
+        }
+    }
+</script>
+{{ end }}

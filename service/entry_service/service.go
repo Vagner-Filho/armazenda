@@ -3,7 +3,7 @@ package entry_service
 import (
 	"armazenda/model/entry_model"
 	"armazenda/model/vehicle_model"
-	"time"
+    "armazenda/utils"
 )
 
 type SimplifiedEntry struct {
@@ -24,7 +24,7 @@ func MakeSimplifiedEntry(ge entry_model.Entry) SimplifiedEntry {
 		Field:        field.Name,
 		VehiclePlate: vehicle.Plate,
 		NetWeight:    ge.NetWeight,
-		ArrivalDate:  time.UnixMilli(ge.ArrivalDate).Format("02/Jan/2006 - 03:04"),
+		ArrivalDate:  utils.GetReadableDate(ge.ArrivalDate),
 	}
 }
 

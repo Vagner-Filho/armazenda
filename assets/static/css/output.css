@@ -446,7 +446,8 @@ video {
   display: none;
 }
 
-input, select {
+input,
+    select {
   height: 1.75rem;
   border-radius: 0.125rem;
   --tw-bg-opacity: 1;
@@ -462,7 +463,8 @@ input, select {
   transition-timing-function: linear;
 }
 
-input:focus-visible, select:focus-visible {
+input:focus-visible,
+    select:focus-visible {
   outline-color: #4ade80;
 }
 
@@ -656,12 +658,30 @@ button {
   color: rgb(255 255 255 / var(--tw-text-opacity));
 }
 
-.fixed {
-  position: fixed;
+.close-dialog-btn {
+  position: absolute;
+  top: 0px;
+  right: 0.75rem;
+  display: flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5em;
+  --tw-text-opacity: 1;
+  color: rgb(168 162 158 / var(--tw-text-opacity));
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
 }
 
-.absolute {
-  position: absolute;
+.close-dialog-btn:hover {
+  --tw-text-opacity: 1;
+  color: rgb(194 65 12 / var(--tw-text-opacity));
+}
+
+.fixed {
+  position: fixed;
 }
 
 .relative {
@@ -672,24 +692,8 @@ button {
   left: 0px;
 }
 
-.right-0 {
-  right: 0px;
-}
-
-.right-1 {
-  right: 0.25rem;
-}
-
 .top-0 {
   top: 0px;
-}
-
-.top-1 {
-  top: 0.25rem;
-}
-
-.right-3 {
-  right: 0.75rem;
 }
 
 .mx-auto {
@@ -733,16 +737,8 @@ button {
   height: 2.5rem;
 }
 
-.h-4 {
-  height: 1rem;
-}
-
 .h-6 {
   height: 1.5rem;
-}
-
-.h-12 {
-  height: 3rem;
 }
 
 .h-8 {
@@ -765,28 +761,16 @@ button {
   width: 18rem;
 }
 
+.w-\[2px\] {
+  width: 2px;
+}
+
 .w-full {
   width: 100%;
 }
 
 .w-screen {
   width: 100vw;
-}
-
-.w-12 {
-  width: 3rem;
-}
-
-.w-8 {
-  width: 2rem;
-}
-
-.w-\[1px\] {
-  width: 1px;
-}
-
-.w-\[2px\] {
-  width: 2px;
 }
 
 .appearance-none {
@@ -819,10 +803,6 @@ button {
   gap: 0.5rem;
 }
 
-.gap-3 {
-  gap: 0.75rem;
-}
-
 .whitespace-nowrap {
   white-space: nowrap;
 }
@@ -835,14 +815,14 @@ button {
   border-radius: 0.375rem;
 }
 
-.rounded-r-none {
-  border-top-right-radius: 0px;
-  border-bottom-right-radius: 0px;
-}
-
 .rounded-l-none {
   border-top-left-radius: 0px;
   border-bottom-left-radius: 0px;
+}
+
+.rounded-r-none {
+  border-top-right-radius: 0px;
+  border-bottom-right-radius: 0px;
 }
 
 .bg-gray-300\/50 {
@@ -852,11 +832,6 @@ button {
 .bg-green-400 {
   --tw-bg-opacity: 1;
   background-color: rgb(74 222 128 / var(--tw-bg-opacity));
-}
-
-.bg-green-500 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(34 197 94 / var(--tw-bg-opacity));
 }
 
 .stroke-green-500 {
@@ -894,6 +869,11 @@ button {
   font-size: 24px;
 }
 
+.text-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
 .text-sm {
   font-size: 0.875rem;
   line-height: 1.25rem;
@@ -909,19 +889,6 @@ button {
   line-height: 1rem;
 }
 
-.text-\[33px\] {
-  font-size: 33px;
-}
-
-.text-\[2\.5em\] {
-  font-size: 2.5em;
-}
-
-.text-base {
-  font-size: 1rem;
-  line-height: 1.5rem;
-}
-
 .font-semibold {
   font-weight: 600;
 }
@@ -934,6 +901,11 @@ button {
   line-height: 1.5rem;
 }
 
+.text-green-400 {
+  --tw-text-opacity: 1;
+  color: rgb(74 222 128 / var(--tw-text-opacity));
+}
+
 .text-green-500 {
   --tw-text-opacity: 1;
   color: rgb(34 197 94 / var(--tw-text-opacity));
@@ -943,29 +915,9 @@ button {
   color: transparent;
 }
 
-.text-stone-200 {
-  --tw-text-opacity: 1;
-  color: rgb(231 229 228 / var(--tw-text-opacity));
-}
-
-.text-stone-400 {
-  --tw-text-opacity: 1;
-  color: rgb(168 162 158 / var(--tw-text-opacity));
-}
-
 .text-white {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity));
-}
-
-.text-green-400 {
-  --tw-text-opacity: 1;
-  color: rgb(74 222 128 / var(--tw-text-opacity));
-}
-
-.\!text-white {
-  --tw-text-opacity: 1 !important;
-  color: rgb(255 255 255 / var(--tw-text-opacity)) !important;
 }
 
 .\!outline-0 {
@@ -1008,11 +960,6 @@ button {
 .hover\:text-green-500:hover {
   --tw-text-opacity: 1;
   color: rgb(34 197 94 / var(--tw-text-opacity));
-}
-
-.hover\:text-orange-700:hover {
-  --tw-text-opacity: 1;
-  color: rgb(194 65 12 / var(--tw-text-opacity));
 }
 
 .focus\:stroke-white:focus {

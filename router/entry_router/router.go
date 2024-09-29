@@ -12,15 +12,15 @@ import (
 )
 
 type EntryForm struct {
-	Product      entry_model.Grain `form:"product" binding:"gte=0"`
-	Field        uint32            `form:"field" binding:"required"`
-	Harvest      string            `form:"harvest" binding:"required"`
-	Vehicle      string            `form:"vehiclePlate"`
-	GrossWeight  float64           `form:"grossWeight" binding:"required"`
-	Tare         float64           `form:"tare" binding:"required"`
-	NetWeight    float64           `form:"netWeight"`
-	Humidity     string            `form:"humidity" binding:"required"`
-	ArrivalDate  int64             `form:"arrivalDate" binding:"required"`
+	Product     entry_model.Grain `form:"product" binding:"gte=0"`
+	Field       uint32            `form:"field" binding:"required"`
+	Harvest     string            `form:"harvest" binding:"required"`
+	Vehicle     string            `form:"vehiclePlate"`
+	GrossWeight float64           `form:"grossWeight" binding:"required"`
+	Tare        float64           `form:"tare" binding:"required"`
+	NetWeight   float64           `form:"netWeight"`
+	Humidity    string            `form:"humidity" binding:"required"`
+	ArrivalDate int64             `form:"arrivalDate" binding:"required"`
 }
 
 type FieldForm struct {
@@ -37,10 +37,20 @@ func GetEntriesTable(c *gin.Context) {
 	c.HTML(http.StatusOK, "entry-table", entry_service.GetAllEntrySimplified())
 }
 
+type Field struct {
+	Selected bool
+	entry_model.Field
+}
+
+type Vehicle struct {
+	Selected bool
+	vehicle_model.Vehicle
+}
+
 type PopulatedEntryForm struct {
 	Entry    entry_model.Entry
-	Fields   []entry_model.Field
-	Vehicles []vehicle_model.Vehicle
+	Fields   []Field
+	Vehicles []Vehicle
 }
 
 func GetEntryForm(c *gin.Context) {
@@ -51,10 +61,31 @@ func GetEntryForm(c *gin.Context) {
 	}
 
 	entry := entry_service.GetEntry(uint32(converted))
-	fields := entry_service.GetFields()
-	vehicles := vehicle_service.GetVehicles()
+	//fields := entry_service.GetFields()
+	var fields []Field
+	for _, field := range entry_service.GetFields() {
+		newF := Field{}
+		newF.Id = field.Id
+		newF.Selected = field.Id == entry.Field
+		newF.Name = field.Name
+		fields = append(fields, newF)
+	}
+	//vehicles := vehicle_service.GetVehicles()
 
-	c.HTML(http.StatusOK, "add-entry-dialog", PopulatedEntryForm{Entry: entry, Fields: fields, Vehicles: vehicles})
+	var vehicles []Vehicle
+	for _, vehicle := range vehicle_service.GetVehicles() {
+		newV := Vehicle{}
+		newV.Selected = entry.Vehicle == vehicle.Plate
+		newV.Name = vehicle.Name
+		newV.Plate = vehicle.Plate
+		vehicles = append(vehicles, newV)
+	}
+
+	c.HTML(
+		http.StatusOK,
+		"add-entry-dialog",
+		PopulatedEntryForm{Entry: entry, Fields: fields, Vehicles: vehicles},
+	)
 }
 
 func AddEntry(c *gin.Context) {
@@ -77,7 +108,7 @@ func AddEntry(c *gin.Context) {
 		Humidity:    newEntry.Humidity,
 	}
 	entry := entry_service.AddEntry(ge)
-	c.HTML(http.StatusCreated, "entry", entry_service.MakeSimplifiedEntry(entry))
+	c.HTML(http.StatusCreated, "entry-list-item", entry_service.MakeSimplifiedEntry(entry))
 }
 
 func DeleteEntry(c *gin.Context) {
@@ -120,7 +151,7 @@ func PutEntry(c *gin.Context) {
 
 	var updatedEntry = entry_service.PutEntry(ge)
 	if updatedEntry != nil {
-		c.HTML(http.StatusOK, "entry", entry_service.MakeSimplifiedEntry(*updatedEntry))
+		c.HTML(http.StatusOK, "entry-list-item", entry_service.MakeSimplifiedEntry(*updatedEntry))
 		return
 	}
 	c.HTML(500, "toast", "failed")
