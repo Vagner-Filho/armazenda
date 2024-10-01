@@ -4,6 +4,7 @@ import (
 	"armazenda/model/entry_model"
 	"armazenda/router/departure_router"
 	"armazenda/router/entry_router"
+	"armazenda/router/user_router"
 	"armazenda/router/vehicle_router"
 	"embed"
 	"fmt"
@@ -31,8 +32,10 @@ func main() {
 	// router.Static("/assets/static/css", "./assets/static/css")
 	// router.LoadHTMLGlob("templates/*")
 	router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "home", gin.H{})
+		c.HTML(http.StatusOK, "login.html", gin.H{})
 	})
+
+	user_router.UserRoutes(router)
 
 	router.GET("/romaneio", entry_router.GetEntries)
 
@@ -42,18 +45,18 @@ func main() {
 		var fields []entry_router.Field
 		for _, field := range entry_router.GetFields() {
 			newF := entry_router.Field{}
-            newF.Selected = false
-            newF.Name = field.Name
-            newF.Id = field.Id
+			newF.Selected = false
+			newF.Name = field.Name
+			newF.Id = field.Id
 			fields = append(fields, newF)
 		}
-        var vehicles []entry_router.Vehicle
-        for _, vehicle := range vehicle_router.GetVehicles() {
-            newV := entry_router.Vehicle{}
-            newV.Name = vehicle.Name
-            newV.Plate = vehicle.Plate
-            vehicles = append(vehicles, newV)
-        }
+		var vehicles []entry_router.Vehicle
+		for _, vehicle := range vehicle_router.GetVehicles() {
+			newV := entry_router.Vehicle{}
+			newV.Name = vehicle.Name
+			newV.Plate = vehicle.Plate
+			vehicles = append(vehicles, newV)
+		}
 		c.HTML(http.StatusOK, "add-entry-dialog", gin.H{
 			"Fields":   fields,
 			"Vehicles": vehicles,
