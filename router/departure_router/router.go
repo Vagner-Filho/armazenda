@@ -127,3 +127,13 @@ func PutDeparture(c *gin.Context) {
 
     c.HTML(http.StatusOK, "departure-list-item", departure_service.MakeReadableDeparture(updatedDeparture))
 }
+
+func DeleteDeparture(c *gin.Context) {
+	id := c.Param("id")
+	converted, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+	}
+
+	c.String(http.StatusOK, "", departure_service.DeleteDeparture(uint32(converted)))
+}

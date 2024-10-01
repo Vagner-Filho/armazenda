@@ -42,3 +42,7 @@ func AddDeparture(bd departure_model.BaseDeparture) departure_model.Departure {
 func PutDeparture(d departure_model.Departure) (departure_model.Departure, bool) {
     return departure_model.PutDeparture(d)
 }
+
+func DeleteDeparture(manifest uint32) int {
+    return departure_model.DeleteDeparture(manifest)
+}

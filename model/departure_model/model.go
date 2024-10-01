@@ -73,3 +73,15 @@ func PutDeparture(d Departure) (Departure, bool) {
 
     return d, false
 }
+
+func DeleteDeparture(manifest uint32) int {
+    dIndex := slices.IndexFunc(departures, func(d Departure) bool {
+        return manifest == d.Manifest
+    })
+
+    if dIndex > -1 {
+        departures = slices.Delete(departures, dIndex, dIndex + 1)
+    }
+
+    return dIndex 
+}

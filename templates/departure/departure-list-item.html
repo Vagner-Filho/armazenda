@@ -22,7 +22,7 @@
                 <iconify-icon icon="la:pen"></iconify-icon>
             </button>
             <button type="button" hx-trigger="confirmed" hx-delete="/departure/{{ .Manifest }}"
-                hx-target="#departure-{{ .Manifest }}" hx-swap="delete" onClick="Swal.fire({title: 'Excluir', text: 'Deseja excluir o romaneio de saída {{ .Manifest }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
+                hx-target="#departure-{{ .Manifest }}" hx-swap="outerHTML" onClick="Swal.fire({title: 'Excluir', text: 'Deseja excluir o romaneio de saída {{ .Manifest }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
                     if (result.isConfirmed) {
                         htmx.trigger(this, 'confirmed');  
                     } 
