@@ -1,0 +1,5 @@
+{{ block "selected-destination-option" . }}
+<option value="{{ .Document }}" {{ if .Selected }} selected {{ end }}>
+    {{ .Address }}
+</option>
+{{ end }}

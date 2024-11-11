@@ -4,16 +4,10 @@ import (
 	"armazenda/model/vehicle_model"
 	"slices"
 	"time"
+    "armazenda/entity/public"
 )
 
-type Grain int
-
-const (
-	Corn Grain = iota
-	Soy  Grain = iota
-)
-
-var GrainMap = make(map[Grain]string)
+var GrainMap = make(map[entity_public.Grain]string)
 
 type Field struct {
 	Id   uint32
@@ -33,7 +27,7 @@ var fields = []Field{
 
 type Entry struct {
 	Waybill     uint32
-	Product     Grain
+	Product     entity_public.Grain
 	Field       uint32
 	Harvest     string
 	Vehicle     string
@@ -51,7 +45,7 @@ var vehicles = vehicle_model.GetVehicles()
 var entries = []Entry{
 	{
 		Waybill:     1,
-		Product:     Corn,
+		Product:     entity_public.Corn,
 		Field:       fields[0].Id,
 		Harvest:     "Safra Milho 2024",
 		Vehicle:     vehicles[0].Plate,
@@ -63,7 +57,7 @@ var entries = []Entry{
 	},
 	{
 		Waybill:     2,
-		Product:     Soy,
+		Product:     entity_public.Soy,
 		Field:       fields[0].Id,
 		Harvest:     "Safra Soja 23/24",
 		Vehicle:     vehicles[0].Plate,
@@ -75,7 +69,7 @@ var entries = []Entry{
 	},
 	{
 		Waybill:     3,
-		Product:     Corn,
+		Product:     entity_public.Corn,
 		Field:       fields[0].Id,
 		Harvest:     "Sofra Milho 2024/2",
 		Vehicle:     vehicles[0].Plate,
@@ -94,8 +88,8 @@ func generateArrivalDate(offsetDays int) string {
 }
 
 func InitGrainMap() {
-	GrainMap[Corn] = "Milho"
-	GrainMap[Soy] = "Soja"
+	GrainMap[entity_public.Corn] = "Milho"
+	GrainMap[entity_public.Soy] = "Soja"
 }
 
 func GetAllEntries() []Entry {

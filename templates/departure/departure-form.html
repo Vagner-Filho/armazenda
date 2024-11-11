@@ -2,13 +2,17 @@
 <dialog id="departure-form-dialog" class="rounded-md w-4/5">
     <div class="p-4 relative">
         {{ template "close-dialog-btn" "dialog#departure-form-dialog" }}
-        <form class="flex flex-col" {{ if .Departure.Manifest }} hx-put="/departure/{{ .Manifest }}"
+        <form class="flex flex-col" {{ if .Manifest }} hx-put="/departure/{{ .Manifest }}"
             hx-target="#departure-{{ .Manifest }}" hx-swap="outerHTML" {{ else }} hx-post="/departure"
             hx-target="#departure-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#btns-container">
             <label for="grain-selector" class="px-2">
                 Grão
             </label>
             {{ template "grain-selector" }}
+            <label for="destination">
+                Destino
+            </label>
+            {{ template "buyer-selector" .Buyers }}
             <label for="vehiclePlate" class="px-2 mt-1">
                 Veículo
             </label>
@@ -64,19 +68,18 @@
             window.closeModal = closeModal
         }
     </script>
+    <style>
+        .htmx-indicator {
+            display: none;
+        }
+
+        .htmx-request button {
+            display: none;
+        }
+
+        .htmx-request .htmx-indicator {
+            display: block
+        }
+    </style>
 </dialog>
-
-<style>
-    .htmx-indicator {
-        display: none;
-    }
-
-    .htmx-request button {
-        display: none;
-    }
-
-    .htmx-request .htmx-indicator {
-        display: block
-    }
-</style>
 {{ end }}

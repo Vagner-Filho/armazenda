@@ -1,0 +1,68 @@
+{{ block "buyer-form" . }}
+<dialog id="buyerFormDialog" class="rounded-md w-72 sm:w-96">
+    <div class="p-2 relative">
+        {{ template "close-dialog-btn" "dialog#buyerFormDialog" }}
+        <h3 class="text-center px-2 font-semibold">
+            NOVO COMPRADOR
+        </h3>
+        <div class="flex items-center justify-center">
+            <div>
+                <label for="isPessoaFisica" class="peer-checked:text-green-400">
+                    Pessoa Física
+                </label>
+                <input type="checkbox" class="hidden peer" name="isPessoaFisica" id="isPessoaFisica" onchange="toggleForm">
+            </div>
+            <div>
+                <label for="isPessoaJuridica" class="peer-checked:text-green-400">
+                    Pessoa Jurídica
+                </label>
+                <input type="checkbox" class="hidden peer" name="isPessoaJuridica" id="isPessoaJuridica" onchange="toggleForm">
+            </div>
+        </div>
+        <form class="flex flex-col" hx-post="/buyer" hx-target="#buyer-selector"
+            hx-swap="beforeend">
+            <label for="plate" class="px-2">
+                Nome ou Razão Social
+            </label>
+            <input type="text" name="name" id="buyer-name" required pattern="{{ . }}">
+            <label for="name" class="px-2">
+                Nome Fantasia (opcional)
+            </label>
+            <input type="text" name="fantasyName" id="fantasy-name">
+            <label for="document">
+                CPF ou CNPJ
+            </label>
+            <input type="text" name="document" id="document" required>
+            <label for="address">
+                Endereço
+            </label>
+            <input type="text" name="address" id="address" required>
+            <div class="flex items-center justify-center gap-2 mt-3">
+                <button type="button" class="cancel-btn w-1/3" onclick="closeBuyerForm()">
+                    CANCELAR
+                </button>
+                <button class="add-btn w-1/3">
+                    ADICIONAR
+                </button>
+            </div>
+        </form>
+    </div>
+    <script type="module">
+        const dialogEl = document.querySelector("dialog#buyerFormDialog")
+        if (dialogEl) {
+            dialogEl.showModal()
+
+            function closeBuyerForm() {
+                dialogEl.close()
+                dialogEl.remove()
+                window.closeBuyerForm = undefined
+            }
+            window.closeBuyerForm = closeBuyerForm
+        }
+
+        function toggleForm() {
+
+        }
+    </script>
+</dialog>
+{{ end }}

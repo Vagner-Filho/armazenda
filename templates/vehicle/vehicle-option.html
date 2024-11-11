@@ -1,5 +1,5 @@
 {{ block "vehicle-option" . }}
-<option value="{{ .Plate }}" {{ if .Selected }} selected {{ end }}>
+<option value="{{ .Plate }}">
     {{ .Plate }} | {{ .Name }}
 </option>
 {{ end }}

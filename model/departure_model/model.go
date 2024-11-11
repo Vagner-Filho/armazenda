@@ -1,87 +1,80 @@
 package departure_model
 
-import "slices"
+import (
+	entity_public "armazenda/entity/public"
+	"slices"
+)
 
-var departures = []Departure{
+var departures = []entity_public.Departure{
 	{
-		Manifest: 1,
-		BaseDeparture: BaseDeparture{
-			DepartureDate: 1726967334411,
-			Product:       0,
-			VehiclePlate:  "OPA 2312",
-			Weight:        20392,
-		},
+		Manifest:      0,
+		DepartureDate: 1726967334411,
+		Product:       0,
+		VehiclePlate:  "OPA 2312",
+		Weight:        20392,
+		Address:       0,
 	},
 	{
-		Manifest: 2,
-		BaseDeparture: BaseDeparture{
-			DepartureDate: 1726967334411,
-			Product:       1,
-			VehiclePlate:  "OPA 2312",
-			Weight:        12398,
-		},
+		Manifest:      1,
+		DepartureDate: 1726967334411,
+		Product:       0,
+		VehiclePlate:  "OPA 2312",
+		Weight:        20392,
+		Address:       1,
 	},
 	{
-		Manifest: 3,
-		BaseDeparture: BaseDeparture{
-			DepartureDate: 1726967334411,
-			Product:       0,
-			VehiclePlate:  "OPA 2312",
-			Weight:        40242,
-		},
+		Manifest:      2,
+		DepartureDate: 1726967334411,
+		Product:       0,
+		VehiclePlate:  "OPA 2312",
+		Weight:        20392,
+		Address:       2,
 	},
 }
 
-func GetDepartures() []Departure {
+func GetDepartures() []entity_public.Departure {
 	return departures
 }
 
-func GetDeparture(manifest uint32) *Departure {
-    index := slices.IndexFunc(departures, func(d Departure) bool {
-        return d.Manifest == manifest
-    })
-    if index > -1 {
-        return &departures[index]
-    }
-    return nil
-}
-
-func AddDeparture(bd BaseDeparture) Departure {
-	lastManifest := departures[len(departures)-1]
-	departures = append(departures, Departure{
-		Manifest: lastManifest.Manifest + 1,
-		BaseDeparture: BaseDeparture{
-			DepartureDate: bd.DepartureDate,
-			Product:       bd.Product,
-			Weight:        bd.Weight,
-			VehiclePlate:  bd.VehiclePlate,
-		},
+func GetDeparture(manifest uint32) *entity_public.Departure {
+	index := slices.IndexFunc(departures, func(d entity_public.Departure) bool {
+		return d.Manifest == manifest
 	})
-    return departures[len(departures)-1]
+	if index > -1 {
+		return &departures[index]
+	}
+	return nil
 }
 
-func PutDeparture(d Departure) (Departure, bool) {
-    dIndex := slices.IndexFunc(departures, func(id Departure) bool {
-        return d.Manifest == id.Manifest
-    })
+func AddDeparture(bd entity_public.Departure) entity_public.Departure {
+	lastManifest := departures[len(departures)-1]
+    bd.Manifest = lastManifest.Manifest + 1
+	departures = append(departures, bd)
+	return departures[len(departures)-1]
+}
 
-    if dIndex == -1 {
-        return Departure{}, true
-    }
+func PutDeparture(d entity_public.Departure) (entity_public.Departure, bool) {
+	dIndex := slices.IndexFunc(departures, func(id entity_public.Departure) bool {
+		return d.Manifest == id.Manifest
+	})
 
-    departures = slices.Replace(departures, dIndex, dIndex + 1, d)
+	if dIndex == -1 {
+		return entity_public.Departure{}, true
+	}
 
-    return d, false
+	departures = slices.Replace(departures, dIndex, dIndex+1, d)
+
+	return d, false
 }
 
 func DeleteDeparture(manifest uint32) int {
-    dIndex := slices.IndexFunc(departures, func(d Departure) bool {
-        return manifest == d.Manifest
-    })
+	dIndex := slices.IndexFunc(departures, func(d entity_public.Departure) bool {
+		return manifest == d.Manifest
+	})
 
-    if dIndex > -1 {
-        departures = slices.Delete(departures, dIndex, dIndex + 1)
-    }
+	if dIndex > -1 {
+		departures = slices.Delete(departures, dIndex, dIndex+1)
+	}
 
-    return dIndex 
+	return dIndex
 }

@@ -74,8 +74,10 @@ func main() {
 
 	router.GET("/departure/list", departure_router.GetDepartures)
 	router.GET("/departure/form", departure_router.GetDepartureForm)
+	router.GET("/departure/destination/form", departure_router.GetNewDestinationForm)
 	router.GET("/departure/form/:id", departure_router.GetFilledDepartureForm)
     router.POST("/departure", departure_router.AddDeparture)
+    router.POST("/departure/destination", departure_router.AddDestination)
     router.PUT("/departure/:id", departure_router.PutDeparture)
     router.DELETE("/departure/:id", departure_router.DeleteDeparture)
 

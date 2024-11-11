@@ -1,12 +1,13 @@
 package departure_service
 
 import (
+	"armazenda/entity/public"
 	"armazenda/model/departure_model"
 	"armazenda/model/entry_model"
 	"armazenda/utils"
 )
 
-func MakeReadableDeparture(gd departure_model.Departure) ReadableDeparture {
+func MakeReadableDeparture(gd entity_public.Departure) ReadableDeparture {
 	return ReadableDeparture{
 		Manifest:      gd.Manifest,
 		Product:       entry_model.GrainMap[gd.Product],
@@ -27,22 +28,22 @@ func GetDepartures() []ReadableDeparture {
 	return readable
 }
 
-func GetDeparture(manifest uint32) (departure_model.Departure, bool) {
+func GetDeparture(manifest uint32) (entity_public.Departure, bool) {
 	departure := departure_model.GetDeparture(manifest)
 	if departure == nil {
-		return departure_model.Departure{}, true
+		return entity_public.Departure{}, true
 	}
 	return *departure, false
 }
 
-func AddDeparture(bd departure_model.BaseDeparture) departure_model.Departure {
+func AddDeparture(bd entity_public.Departure) entity_public.Departure {
 	return departure_model.AddDeparture(bd)
 }
 
-func PutDeparture(d departure_model.Departure) (departure_model.Departure, bool) {
-    return departure_model.PutDeparture(d)
+func PutDeparture(d entity_public.Departure) (entity_public.Departure, bool) {
+	return departure_model.PutDeparture(d)
 }
 
 func DeleteDeparture(manifest uint32) int {
-    return departure_model.DeleteDeparture(manifest)
+	return departure_model.DeleteDeparture(manifest)
 }
