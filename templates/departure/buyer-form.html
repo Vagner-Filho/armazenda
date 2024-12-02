@@ -1,43 +1,82 @@
 {{ block "buyer-form" . }}
-<dialog id="buyerFormDialog" class="rounded-md w-72 sm:w-96">
+<dialog id="buyerFormDialog" class="rounded-md w-72 sm:w-[700px]">
     <div class="p-2 relative">
         {{ template "close-dialog-btn" "dialog#buyerFormDialog" }}
         <h3 class="text-center px-2 font-semibold">
             NOVO COMPRADOR
         </h3>
-        <div class="flex items-center justify-center">
-            <div>
-                <label for="isPessoaFisica" class="peer-checked:text-green-400">
-                    Pessoa Física
-                </label>
-                <input type="checkbox" class="hidden peer" name="isPessoaFisica" id="isPessoaFisica" onchange="toggleForm">
+        <div class="flex items-center justify-center w-full py-2">
+            <button type="button" id="pessoa-juridica-btn"
+                class="h-8 px-2 text-base rounded-md rounded-r-none ring-1 ring-green-400 text-white bg-green-400 transition-colors duration-300"
+                onclick="toggleForm()">
+                Pessoa Jurídica
+            </button>
+            <div class="h-8 w-[2px] bg-green-400">
             </div>
-            <div>
-                <label for="isPessoaJuridica" class="peer-checked:text-green-400">
-                    Pessoa Jurídica
-                </label>
-                <input type="checkbox" class="hidden peer" name="isPessoaJuridica" id="isPessoaJuridica" onchange="toggleForm">
-            </div>
+            <button type="button" id="pessoa-fisica-btn"
+                class="h-8 px-2 text-base rounded-md rounded-l-none ring-1 ring-green-400 text-green-400 transition-colors duration-300"
+                onclick="toggleForm()">
+                Pessoa Fisica
+            </button>
         </div>
-        <form class="flex flex-col" hx-post="/buyer" hx-target="#buyer-selector"
+        <form id="pessoa-juridica-form" hx-post="/buyer/company" hx-target="#buyer-selector"
+            hx-swap="beforeend" class="flex flex-wrap">
+            <fieldset class="flex flex-col">
+                <legend>
+                    <h3 class="text-lg px-2">
+                        Geral Pessoa Jurídica
+                    </h3>
+                </legend>
+                <label for="plate" class="px-2 required-star">
+                    Razão Social
+                </label>
+                <input type="text" name="companyName" id="buyer-name" required>
+                <label for="name" class="px-2">
+                    Nome Fantasia
+                </label>
+                <input type="text" name="fantasyName" id="fantasy-name">
+                <label for="document" class="px-2 required-star">
+                    CNPJ
+                </label>
+                <input type="text" name="cnpj" id="document" required maxlength="14">
+                <label for="inscricaoEstadual" class="px-2 required-star">
+                    Inscrição Estadual
+                </label>
+                <input type="text" name="inscricaoEstadual" id="address" required>
+            </fieldset>
+
+            {{ template "address-fields" .Address }}
+
+            <div class="flex items-center justify-center gap-2 mt-3 w-full">
+                <button type="button" class="cancel-btn w-1/3" onclick="closeBuyerForm()">
+                    CANCELAR
+                </button>
+                <button class="add-btn w-1/3">
+                    ADICIONAR
+                </button>
+            </div>
+        </form>
+        <form class="hidden flex flex-wrap" id="pessoa-fisica-form" hx-post="/buyer/personal" hx-target="#buyer-selector"
             hx-swap="beforeend">
-            <label for="plate" class="px-2">
-                Nome ou Razão Social
-            </label>
-            <input type="text" name="name" id="buyer-name" required pattern="{{ . }}">
-            <label for="name" class="px-2">
-                Nome Fantasia (opcional)
-            </label>
-            <input type="text" name="fantasyName" id="fantasy-name">
-            <label for="document">
-                CPF ou CNPJ
-            </label>
-            <input type="text" name="document" id="document" required>
-            <label for="address">
-                Endereço
-            </label>
-            <input type="text" name="address" id="address" required>
-            <div class="flex items-center justify-center gap-2 mt-3">
+            <fieldset class="flex flex-col">
+                <legend>
+                    <h3 class="text-lg px-2">
+                        Geral Pessoa Física
+                    </h3>
+                </legend>
+                <label for="plate" class="px-2 required-star">
+                    Nome
+                </label>
+                <input type="text" name="name" id="buyer-name" required>
+                <label for="cpf" class="px-2 required-star">
+                    CPF
+                </label>
+                <input type="text" name="cpf" id="document" required maxlength="11">
+            </fieldset>
+
+            {{ template "address-fields" .Address }}
+
+            <div class="flex items-center justify-center gap-2 mt-3 w-full">
                 <button type="button" class="cancel-btn w-1/3" onclick="closeBuyerForm()">
                     CANCELAR
                 </button>
@@ -57,12 +96,46 @@
                 dialogEl.remove()
                 window.closeBuyerForm = undefined
             }
+            dialogEl.addEventListener('close', closeBuyerForm)
             window.closeBuyerForm = closeBuyerForm
         }
 
-        function toggleForm() {
+        let pessoaJuridicaForm = document.querySelector('form#pessoa-juridica-form')
+        let pessoaJuridicaBtn = document.querySelector('button#pessoa-juridica-btn')
+        let pessoaFisicaForm = document.querySelector('form#pessoa-fisica-form')
+        let pessoaFisicaBtn = document.querySelector('button#pessoa-fisica-btn')
 
+        function toggleForm() {
+            if (pessoaFisicaForm && pessoaFisicaForm.classList.contains('hidden')) {
+                pessoaJuridicaForm.classList.add('hidden')
+                pessoaFisicaForm.classList.remove('hidden')
+
+                pessoaJuridicaBtn.classList.remove('text-white')
+                pessoaJuridicaBtn.classList.remove('bg-green-400')
+                pessoaJuridicaBtn.classList.add('text-green-400')
+                pessoaFisicaBtn.classList.remove('text-green-400')
+                pessoaFisicaBtn.classList.add(...['text-white', 'bg-green-400'])
+
+                return
+            }
+                pessoaFisicaForm.classList.add('hidden')
+                pessoaJuridicaForm.classList.remove('hidden')
+
+                pessoaFisicaBtn.classList.remove('text-white')
+                pessoaFisicaBtn.classList.remove('bg-green-400')
+                pessoaFisicaBtn.classList.add('text-green-400')
+                pessoaJuridicaBtn.classList.remove('text-green-400')
+                pessoaJuridicaBtn.classList.add(...['text-white', 'bg-green-400'])
         }
+
+        window.toggleForm = toggleForm
     </script>
+    <style>
+        fieldset {
+            width: 50%;
+            padding-right: 4px;
+            padding-left: 4px;
+        }
+    </style>
 </dialog>
 {{ end }}

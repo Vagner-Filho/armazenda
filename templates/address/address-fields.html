@@ -1,0 +1,35 @@
+{{ block "address-fields" . }}
+<fieldset class="flex flex-col" name="address">
+    <legend>
+        <h3 class="text-lg px-2">
+            Endereço
+        </h3>
+    </legend>
+    <label for="cep" class="px-2 required-star">CEP</label>
+    <input type="number" name="cep" id="cep-input" class="" required>
+
+    <label for="neighborhood" class="px-2 required-star">Bairro</label>
+    <input type="text" name="neighborhood" id="neighborhood-input" required>
+
+    <label for="street" class="px-2 required-star">Rua</label>
+    <input type="text" name="street" id="street-input" required>
+
+    <label for="number" class="px-2">Número</label>
+    <input type="number" name="number" id="number-input">
+
+    <label for="complement" class="px-2">Complemento</label>
+    <input type="text" name="complement" id="complement-input">
+
+    <label for="city" class="px-2 required-star">Cidade</label>
+    <input type="text" name="city" id="city-input" required>
+
+    <label for="state" class="px-2 required-star">Estado</label>
+    <input type="text" name="state" id="state-input" required>
+
+    <label for="email" class="px-2">E-mail</label>
+    <input type="text" name="email" id="email-input">
+
+    <label for="phoneNumber" class="px-2">Celular</label>
+    <input type="number" name="phoneNumber" id="phoneNumber-input">
+</fieldset>
+{{ end }}

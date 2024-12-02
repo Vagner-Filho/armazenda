@@ -9,7 +9,7 @@
         </option>
         {{ end }}
     </select>
-    <button class="stroke-green-500 rounded-full text-transparent text-[24px] h-6 leading-6 focus:text-green-500 focus:stroke-white hover:text-green-500 hover:stroke-white transition-colors duration-300 ease-linear !outline-0" type="button" hx-trigger="click" hx-get="/vehicle/form">
+    <button class="stroke-green-500 rounded-full text-transparent text-[24px] h-6 leading-6 focus:text-green-500 focus:stroke-white hover:text-green-500 hover:stroke-white transition-colors duration-300 ease-linear !outline-0" type="button" hx-get="/vehicle/form" hx-target="body" hx-swap="beforeend">
         <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
     </button>
 </div>

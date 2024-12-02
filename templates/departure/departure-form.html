@@ -26,7 +26,7 @@
             </label>
             <input type="date" name="departureDate" id="departureDate" value="{{ .DepartureDate }}" required>
             <div class="flex items-center justify-around mt-2 w-52 mx-auto" id="btns-container">
-                <button class="cancel-btn" type="button" onclick="closeModal()">Cancelar</button>
+                <button class="cancel-btn" type="button" onclick="closeDepartureForm()">Cancelar</button>
                 <button class="add-btn" type="submit">
                     {{ if .Manifest }} Editar {{ else }} Adicionar {{ end }}
                 </button>
@@ -59,13 +59,13 @@
 
             document.body.addEventListener('htmx:configRequest', configReqListener);
 
-            function closeModal() {
+            function closeDepartureForm() {
                 dialogEl.close()
                 dialogEl.remove()
                 document.body.removeEventListener('htmx:configRequest', configReqListener)
             }
-            dialogEl.addEventListener('close', closeModal)
-            window.closeModal = closeModal
+            dialogEl.addEventListener('close', closeDepartureForm)
+            window.closeDepartureForm = closeDepartureForm
         }
     </script>
     <style>

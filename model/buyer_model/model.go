@@ -44,7 +44,7 @@ var companies = []entity_public.Company{
 	{
 		Id:                0,
 		CompanyName:       "Company A",
-		FantasyName:       "Fantasy A",
+		FantasyName:       "Empresa A",
 		Cnpj:              "12345678901",
 		Address:           Buyer_addresses[0],
 		InscricaoEstadual: "123456789",
@@ -52,7 +52,7 @@ var companies = []entity_public.Company{
 	{
 		Id:                1,
 		CompanyName:       "Company B",
-		FantasyName:       "Fantasy B",
+		FantasyName:       "Empresa B",
 		Cnpj:              "12345678901",
 		Address:           Buyer_addresses[1],
 		InscricaoEstadual: "987654321",
@@ -60,7 +60,7 @@ var companies = []entity_public.Company{
 	{
 		Id:                2,
 		CompanyName:       "Company C",
-		FantasyName:       "Fantasy C",
+		FantasyName:       "Empresa C",
 		Cnpj:              "12345678901",
 		Address:           Buyer_addresses[2],
 		InscricaoEstadual: "789012345",
@@ -82,36 +82,42 @@ var personals = []entity_public.Personal{
 	},
 	{
 		Id:      2,
-		Name:    "marie curie",
+		Name:    "maria cunha",
 		Cpf:     "90123456789",
 		Address: Buyer_addresses[0],
 	},
 }
 
 func AddBuyerCompany(bc entity_public.Company) entity_public.Company {
+	newId := companies[len(companies)-1].Id + 1
+	bc.Id = newId
 	companies = append(companies, bc)
+
+	newAddressId := Buyer_addresses[len(Buyer_addresses)-1].Id + 1
+	bc.Address.Id = newAddressId
+	Buyer_addresses = append(Buyer_addresses, bc.Address)
 	return bc
 }
 
 func AddBuyerPersonal(bp entity_public.Personal) entity_public.Personal {
+	newId := personals[len(personals)-1].Id + 1
+	bp.Id = newId
 	personals = append(personals, bp)
+
+	newAddressId := Buyer_addresses[len(Buyer_addresses)-1].Id + 1
+	bp.Address.Id = newAddressId
+	Buyer_addresses = append(Buyer_addresses, bp.Address)
 	return bp
 }
 
 func GetBuyers() []entity_public.Buyer {
 	var buyers []entity_public.Buyer
 	for _, buyer := range companies {
-		buyers = append(buyers, entity_public.Company{
-			Id:   buyer.GetId(),
-			FantasyName: buyer.GetName(),
-		})
+		buyers = append(buyers, buyer.GetBuyer())
 	}
 
 	for _, buyer := range personals {
-		buyers = append(buyers, entity_public.Personal{
-			Id:   buyer.GetId(),
-			Name: buyer.GetName(),
-		})
+		buyers = append(buyers, buyer.GetBuyer())
 	}
 
 	return buyers

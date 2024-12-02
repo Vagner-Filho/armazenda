@@ -3,8 +3,9 @@ package vehicle_model
 import "slices"
 
 type Vehicle struct {
-	Plate string
-	Name  string
+	Plate    string
+	Name     string
+	Selected bool
 }
 
 var vehicles = []Vehicle{
@@ -27,19 +28,19 @@ func GetVehicles() []Vehicle {
 }
 
 func AddVehicle(v Vehicle) (Vehicle, bool) {
-    var contains = slices.Contains(vehicles, v)
-    if contains {
-        return v, contains
-    }
+	var contains = slices.Contains(vehicles, v)
+	if contains {
+		return v, contains
+	}
 
 	vehicles = append(vehicles, Vehicle{Plate: v.Plate, Name: v.Name})
-    return v, contains
+	return v, contains
 }
 
 func GetVehicle(plate string) *Vehicle {
-    vehicleIndex := slices.IndexFunc(vehicles, func(v Vehicle) bool {
-        return v.Plate == plate
-    })
+	vehicleIndex := slices.IndexFunc(vehicles, func(v Vehicle) bool {
+		return v.Plate == plate
+	})
 
-    return &vehicles[vehicleIndex]
+	return &vehicles[vehicleIndex]
 }

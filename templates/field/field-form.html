@@ -29,6 +29,7 @@
                 dialogEl.remove()
                 window.closeFieldForm = undefined
             }
+            dialogEl.addEventListener('close', closeFieldForm)
             window.closeFieldForm = closeFieldForm
         }
     </script>

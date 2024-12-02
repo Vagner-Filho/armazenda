@@ -2,33 +2,35 @@ package departure_model
 
 import (
 	entity_public "armazenda/entity/public"
+	"armazenda/model/vehicle_model"
 	"slices"
 )
 
+var vehicles = vehicle_model.GetVehicles()
 var departures = []entity_public.Departure{
 	{
 		Manifest:      0,
 		DepartureDate: 1726967334411,
 		Product:       0,
-		VehiclePlate:  "OPA 2312",
+		VehiclePlate:  vehicles[0].Plate,
 		Weight:        20392,
-		Address:       0,
+		Buyer:         "0-12345678901",
 	},
 	{
 		Manifest:      1,
 		DepartureDate: 1726967334411,
 		Product:       0,
-		VehiclePlate:  "OPA 2312",
+		VehiclePlate:  vehicles[1].Plate,
 		Weight:        20392,
-		Address:       1,
+		Buyer:         "0-12345678901",
 	},
 	{
 		Manifest:      2,
 		DepartureDate: 1726967334411,
 		Product:       0,
-		VehiclePlate:  "OPA 2312",
+		VehiclePlate:  vehicles[2].Plate,
 		Weight:        20392,
-		Address:       2,
+		Buyer:         "0-12345678901",
 	},
 }
 
@@ -48,7 +50,7 @@ func GetDeparture(manifest uint32) *entity_public.Departure {
 
 func AddDeparture(bd entity_public.Departure) entity_public.Departure {
 	lastManifest := departures[len(departures)-1]
-    bd.Manifest = lastManifest.Manifest + 1
+	bd.Manifest = lastManifest.Manifest + 1
 	departures = append(departures, bd)
 	return departures[len(departures)-1]
 }
