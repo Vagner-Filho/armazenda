@@ -6,5 +6,5 @@ type Departure struct {
 	Product       Grain   `form:"product"  binding:"gte=0"`
 	VehiclePlate  string  `form:"vehiclePlate" binding:"required"`
 	Weight        float64 `form:"weight" binding:"required"`
-	Address       int8    `form:"address" binding:"required"`
+	Buyer         string  `form:"buyer" binding:"required"`
 }

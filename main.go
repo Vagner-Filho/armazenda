@@ -2,6 +2,7 @@ package main
 
 import (
 	"armazenda/model/entry_model"
+	"armazenda/router/buyer_router"
 	"armazenda/router/departure_router"
 	"armazenda/router/entry_router"
 	"armazenda/router/user_router"
@@ -25,7 +26,7 @@ func main() {
 	entry_model.InitGrainMap()
 	router := gin.Default()
 	html := template.Must(template.ParseFS(templatesFS, "templates/*.html", "templates/**/*.html"))
-	println(html.DefinedTemplates())
+	//println(html.DefinedTemplates())
 	router.SetHTMLTemplate(html)
 
 	router.StaticFS("/public", http.FS(assetsFS))
@@ -74,12 +75,13 @@ func main() {
 
 	router.GET("/departure/list", departure_router.GetDepartures)
 	router.GET("/departure/form", departure_router.GetDepartureForm)
-	router.GET("/departure/destination/form", departure_router.GetNewDestinationForm)
+	router.GET("/buyer/form", buyer_router.GetBuyerForm)
 	router.GET("/departure/form/:id", departure_router.GetFilledDepartureForm)
-    router.POST("/departure", departure_router.AddDeparture)
-    router.POST("/departure/destination", departure_router.AddDestination)
-    router.PUT("/departure/:id", departure_router.PutDeparture)
-    router.DELETE("/departure/:id", departure_router.DeleteDeparture)
+	router.POST("/departure", departure_router.AddDeparture)
+	router.POST("/buyer/personal", buyer_router.AddBuyerPerson)
+	router.POST("/buyer/company", buyer_router.AddBuyerCompany)
+	router.PUT("/departure/:id", departure_router.PutDeparture)
+	router.DELETE("/departure/:id", departure_router.DeleteDeparture)
 
 	router.GET("/vehicle/form", vehicle_router.GetVehiclesForm)
 	router.POST("/vehicle", vehicle_router.AddVehicle)

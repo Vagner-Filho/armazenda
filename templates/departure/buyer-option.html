@@ -1,5 +1,5 @@
 {{ block "buyer-option" . }}
-<option value="{{ .Id }}">
+<option value="{{ .Id }}" {{ if .Selected }} selected {{ end }}>
     {{ .Name }}
 </option>
 {{ end }}

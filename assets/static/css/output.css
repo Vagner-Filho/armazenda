@@ -803,6 +803,10 @@ button {
   flex-direction: column;
 }
 
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
 .items-center {
   align-items: center;
 }
@@ -926,6 +930,11 @@ button {
   line-height: 1.5rem;
 }
 
+.text-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
 .text-sm {
   font-size: 0.875rem;
   line-height: 1.25rem;
@@ -1019,6 +1028,14 @@ button {
   font-size: 12px;
 }
 
+.required-star::after {
+  margin-left: 0.125rem;
+  --tw-text-opacity: 1;
+  color: rgb(239 68 68 / var(--tw-text-opacity));
+  --tw-content: '*';
+  content: var(--tw-content);
+}
+
 .hover\:bg-green-500:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(34 197 94 / var(--tw-bg-opacity));
@@ -1058,14 +1075,13 @@ button {
   --tw-ring-color: rgb(74 222 128 / var(--tw-ring-opacity));
 }
 
-.peer:checked ~ .peer-checked\:text-green-400 {
-  --tw-text-opacity: 1;
-  color: rgb(74 222 128 / var(--tw-text-opacity));
-}
-
 @media (min-width: 640px) {
   .sm\:w-96 {
     width: 24rem;
+  }
+
+  .sm\:w-\[700px\] {
+    width: 700px;
   }
 
   .sm\:text-base {

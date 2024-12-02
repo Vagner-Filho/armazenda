@@ -24,7 +24,6 @@
             </div>
         </form>
     </div>
-</dialog>
 <script type="module">
     const dialogEl = document.querySelector("dialog#vehicleFormDialog")
     if (dialogEl) {
@@ -35,7 +34,9 @@
             dialogEl.remove()
             window.closeVehicleForm = undefined
         }
+        dialogEl.addEventListener('close', closeVehicleForm)
         window.closeVehicleForm = closeVehicleForm
     }
 </script>
+</dialog>
 {{ end }}

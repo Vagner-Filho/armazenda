@@ -1,6 +1,7 @@
 package entry_router
 
 import (
+	entity_public "armazenda/entity/public"
 	"armazenda/model/entry_model"
 	"armazenda/model/vehicle_model"
 	"armazenda/service/entry_service"
@@ -12,15 +13,15 @@ import (
 )
 
 type EntryForm struct {
-	Product     entry_model.Grain `form:"product" binding:"gte=0"`
-	Field       uint32            `form:"field" binding:"required"`
-	Harvest     string            `form:"harvest" binding:"required"`
-	Vehicle     string            `form:"vehiclePlate"`
-	GrossWeight float64           `form:"grossWeight" binding:"required"`
-	Tare        float64           `form:"tare" binding:"required"`
-	NetWeight   float64           `form:"netWeight"`
-	Humidity    string            `form:"humidity" binding:"required"`
-	ArrivalDate int64             `form:"arrivalDate" binding:"required"`
+	Product     entity_public.Grain `form:"product" binding:"gte=0"`
+	Field       uint32              `form:"field" binding:"required"`
+	Harvest     string              `form:"harvest" binding:"required"`
+	Vehicle     string              `form:"vehiclePlate"`
+	GrossWeight float64             `form:"grossWeight" binding:"required"`
+	Tare        float64             `form:"tare" binding:"required"`
+	NetWeight   float64             `form:"netWeight"`
+	Humidity    string              `form:"humidity" binding:"required"`
+	ArrivalDate int64               `form:"arrivalDate" binding:"required"`
 }
 
 type FieldForm struct {

@@ -44,4 +44,8 @@
     .btn-shape {
         @apply text-center font-semibold rounded-md py-1 px-2
     }
+
+    .required-star {
+        @apply after:content-['*'] after:ml-0.5 after:text-red-500
+    }
 }

@@ -2,12 +2,13 @@ package departure_router
 
 import (
 	entity_public "armazenda/entity/public"
+	"armazenda/model/buyer_model"
 	"armazenda/model/vehicle_model"
 	"armazenda/router/entry_router"
 	"armazenda/router/vehicle_router"
 	"armazenda/service/departure_service"
+	"armazenda/service/vehicle_service"
 	"armazenda/view/departure"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -15,16 +16,20 @@ import (
 )
 
 func GetDepartures(c *gin.Context) {
-	c.HTML(http.StatusOK, "departure-table", departure_service.GetDepartures())
+	c.HTML(http.StatusOK, "departure-table", departure_view.GetDepartures())
 }
 
 func GetDepartureForm(c *gin.Context) {
-	c.HTML(http.StatusOK, "departure-form", departure_view.GetNewDepartureForm())
+	c.HTML(http.StatusOK, "departure-form", gin.H{
+		"Vehicles": vehicle_service.GetVehicles(),
+		"Buyers":   buyer_model.GetBuyers(),
+	})
 }
 
 type FilledDeparture struct {
 	entity_public.Departure
 	Vehicles []entry_router.Vehicle
+	Buyers   []entity_public.Buyer
 }
 
 func GetFilledDepartureForm(c *gin.Context) {
@@ -49,9 +54,19 @@ func GetFilledDepartureForm(c *gin.Context) {
 			},
 		})
 	}
+
+	var buyers []entity_public.Buyer
+	for _, buyer := range buyer_model.GetBuyers() {
+		buyers = append(buyers, entity_public.Buyer{
+			Selected: departure.Buyer == buyer.Id,
+			Name:     buyer.Name,
+			Id:       buyer.Id,
+		})
+	}
 	filledDeparture := FilledDeparture{
 		Departure: departure,
 		Vehicles:  vehicles,
+		Buyers:    buyers,
 	}
 
 	c.HTML(http.StatusOK, "departure-form", filledDeparture)
@@ -66,7 +81,7 @@ func AddDeparture(c *gin.Context) {
 	}
 
 	var newDeparture = departure_service.AddDeparture(df)
-	c.HTML(http.StatusOK, "departure-list-item", departure_service.MakeReadableDeparture(newDeparture))
+	c.HTML(http.StatusOK, "departure-list-item", departure_view.MakeReadableDeparture(newDeparture))
 }
 
 func PutDeparture(c *gin.Context) {
@@ -83,15 +98,15 @@ func PutDeparture(c *gin.Context) {
 		c.String(http.StatusBadRequest, "", err.Error())
 		return
 	}
+
 	df.Manifest = uint32(converted)
 
 	updatedDeparture, notFound := departure_service.PutDeparture(df)
-	fmt.Printf("%+v\n", updatedDeparture)
 	if notFound {
 		// handle not found
 	}
 
-	c.HTML(http.StatusOK, "departure-list-item", departure_service.MakeReadableDeparture(updatedDeparture))
+	c.HTML(http.StatusOK, "departure-list-item", departure_view.MakeReadableDeparture(updatedDeparture))
 }
 
 func DeleteDeparture(c *gin.Context) {

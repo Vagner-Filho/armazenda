@@ -1,38 +1,45 @@
 package entity_public
 
+import "strconv"
+
 type Company struct {
-	Id                int8    `form:"id"`
+	Id                uint8   `form:"id"`
 	CompanyName       string  `form:"companyName" binding:"required"`
-	FantasyName       string  `form:"fantasyName" binding:"required"`
+	FantasyName       string  `form:"fantasyName"`
 	Cnpj              string  `form:"cnpj" binding:"required"`
 	Address           Address `form:"address" binding:"required"`
 	InscricaoEstadual string  `form:"inscricaoEstadual" binding:"required"`
 }
 
-func (c Company) GetName() string {
-    return c.FantasyName
-}
-
-func (c Company) GetId() int8 {
-    return c.Id
+func (c Company) GetBuyer() Buyer {
+	if len(c.FantasyName) == 0 {
+		return Buyer{
+			Name: c.CompanyName,
+			Id:   strconv.Itoa(int(c.Id)) + "-" + c.Cnpj,
+		}
+	}
+	return Buyer{
+		Name: c.FantasyName,
+		Id:   strconv.Itoa(int(c.Id)) + "-" + c.Cnpj,
+	}
 }
 
 type Personal struct {
-	Id      int8    `form:"id"`
+	Id      uint8   `form:"id"`
 	Name    string  `form:"name" binding:"required"`
 	Cpf     string  `form:"cpf" binding:"required"`
 	Address Address `form:"address" binding:"required"`
 }
 
-func (p Personal) GetName() string {
-    return p.Name
+func (p Personal) GetBuyer() Buyer {
+	return Buyer{
+		Name: p.Name,
+		Id:   strconv.Itoa(int(p.Id)) + "-" + p.Cpf,
+	}
 }
 
-func (p Personal) GetId() int8 {
-    return p.Id
-}
-
-type Buyer interface {
-	GetName() string
-	GetId() int8
+type Buyer struct {
+	Name     string
+	Id       string
+	Selected bool
 }
