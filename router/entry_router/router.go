@@ -12,18 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type EntryForm struct {
-	Product     entity_public.Grain `form:"product" binding:"gte=0"`
-	Field       uint32              `form:"field" binding:"required"`
-	Harvest     string              `form:"harvest" binding:"required"`
-	Vehicle     string              `form:"vehiclePlate"`
-	GrossWeight float64             `form:"grossWeight" binding:"required"`
-	Tare        float64             `form:"tare" binding:"required"`
-	NetWeight   float64             `form:"netWeight"`
-	Humidity    string              `form:"humidity" binding:"required"`
-	ArrivalDate int64               `form:"arrivalDate" binding:"required"`
-}
-
 type FieldForm struct {
 	Name string `form:"name" binding:"required"`
 	Id   uint32 `form:"id"`
@@ -49,7 +37,7 @@ type Vehicle struct {
 }
 
 type PopulatedEntryForm struct {
-	Entry    entry_model.Entry
+	Entry    entity_public.Entry
 	Fields   []Field
 	Vehicles []Vehicle
 }
@@ -84,19 +72,19 @@ func GetEntryForm(c *gin.Context) {
 
 	c.HTML(
 		http.StatusOK,
-		"add-entry-dialog",
+		"entry-form",
 		PopulatedEntryForm{Entry: entry, Fields: fields, Vehicles: vehicles},
 	)
 }
 
 func AddEntry(c *gin.Context) {
-	var newEntry EntryForm
+	var newEntry entity_public.Entry
 	err := c.Bind(&newEntry)
 	if err != nil {
 		c.String(http.StatusBadRequest, "", err.Error())
 		return
 	}
-	ge := entry_model.Entry{
+	ge := entity_public.Entry{
 		Product:     newEntry.Product,
 		Field:       newEntry.Field,
 		Harvest:     newEntry.Harvest,
@@ -130,14 +118,14 @@ func PutEntry(c *gin.Context) {
 		return
 	}
 
-	var newEntry EntryForm
+	var newEntry entity_public.Entry
 	err := c.Bind(&newEntry)
 	if err != nil {
 		c.String(http.StatusBadRequest, "", err.Error())
 		return
 	}
 
-	ge := entry_model.Entry{
+	ge := entity_public.Entry{
 		Product:     newEntry.Product,
 		Field:       newEntry.Field,
 		Harvest:     newEntry.Harvest,

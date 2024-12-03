@@ -25,24 +25,11 @@ var fields = []Field{
 	},
 }
 
-type Entry struct {
-	Manifest    uint32
-	Product     entity_public.Grain
-	Field       uint32
-	Harvest     string
-	Vehicle     string
-	GrossWeight float64
-	Tare        float64
-	NetWeight   float64
-	Humidity    string
-	ArrivalDate int64
-}
-
 var lastManifest uint32 = 3
 
 var vehicles = vehicle_model.GetVehicles()
 
-var entries = []Entry{
+var entries = []entity_public.Entry{
 	{
 		Manifest:    1,
 		Product:     entity_public.Corn,
@@ -92,11 +79,11 @@ func InitGrainMap() {
 	GrainMap[entity_public.Soy] = "Soja"
 }
 
-func GetAllEntries() []Entry {
+func GetAllEntries() []entity_public.Entry {
 	return entries
 }
 
-func AddEntry(ge Entry) Entry {
+func AddEntry(ge entity_public.Entry) entity_public.Entry {
 	lastManifest = lastManifest + 1
 	ge.Manifest = lastManifest
 	if ge.GrossWeight-ge.Tare != ge.NetWeight {
@@ -119,8 +106,8 @@ func DeleteEntry(id uint32) int {
 	return indexToRemove
 }
 
-func GetEntry(id uint32) Entry {
-	var entry *Entry = nil
+func GetEntry(id uint32) entity_public.Entry {
+	var entry *entity_public.Entry = nil
 	for _, ge := range entries {
 		if ge.Manifest == id {
 			entry = &ge
@@ -129,8 +116,8 @@ func GetEntry(id uint32) Entry {
 	return *entry
 }
 
-func PutEntry(ge Entry) *Entry {
-	var geIndex = slices.IndexFunc(entries, func(e Entry) bool {
+func PutEntry(ge entity_public.Entry) *entity_public.Entry {
+	var geIndex = slices.IndexFunc(entries, func(e entity_public.Entry) bool {
 		return e.Manifest == ge.Manifest
 	})
 

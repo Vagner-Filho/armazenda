@@ -1,6 +1,7 @@
 package entry_service
 
 import (
+	entity_public "armazenda/entity/public"
 	"armazenda/model/entry_model"
 	"armazenda/model/vehicle_model"
 	"armazenda/utils"
@@ -15,7 +16,7 @@ type SimplifiedEntry struct {
 	ArrivalDate  string
 }
 
-func MakeSimplifiedEntry(ge entry_model.Entry) SimplifiedEntry {
+func MakeSimplifiedEntry(ge entity_public.Entry) SimplifiedEntry {
 	field := entry_model.GetField(ge.Field)
 	vehicle := vehicle_model.GetVehicle(ge.Vehicle)
 	return SimplifiedEntry{
@@ -37,7 +38,7 @@ func GetAllEntrySimplified() []SimplifiedEntry {
 	return simplifiedEntries
 }
 
-func AddEntry(ge entry_model.Entry) entry_model.Entry {
+func AddEntry(ge entity_public.Entry) entity_public.Entry {
 	return entry_model.AddEntry(ge)
 }
 
@@ -45,11 +46,11 @@ func DeleteEntry(id uint32) int {
 	return entry_model.DeleteEntry(id)
 }
 
-func GetEntry(id uint32) entry_model.Entry {
+func GetEntry(id uint32) entity_public.Entry {
 	return entry_model.GetEntry(id)
 }
 
-func PutEntry(ge entry_model.Entry) *entry_model.Entry {
+func PutEntry(ge entity_public.Entry) *entity_public.Entry {
 	return entry_model.PutEntry(ge)
 }
 

@@ -58,7 +58,7 @@ func main() {
 			newV.Plate = vehicle.Plate
 			vehicles = append(vehicles, newV)
 		}
-		c.HTML(http.StatusOK, "add-entry-dialog", gin.H{
+		c.HTML(http.StatusOK, "entry-form", gin.H{
 			"Fields":   fields,
 			"Vehicles": vehicles,
 		})
