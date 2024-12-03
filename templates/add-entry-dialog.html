@@ -2,8 +2,8 @@
 <dialog id="addEntryDialog" class="rounded-md w-4/5">
     <div class="p-4 relative">
         {{ template "close-dialog-btn" "dialog#addEntryDialog" }}
-        <form class="flex flex-col" {{ if .Entry.Waybill }} hx-put="/entry/{{ .Entry.Waybill }}"
-            hx-target="#entry-{{ .Entry.Waybill }}" hx-swap="outerHTML" {{ else }} hx-post="/entry"
+        <form class="flex flex-col" {{ if .Entry.Manifest }} hx-put="/entry/{{ .Entry.Manifest }}"
+            hx-target="#entry-{{ .Entry.Manifest }}" hx-swap="outerHTML" {{ else }} hx-post="/entry"
             hx-target="#entries-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#btns-container">
             <label for="grain-selector" class="px-2">
                 Grão
@@ -44,7 +44,7 @@
             <div class="flex items-center justify-around mt-2 w-52 mx-auto" id="btns-container">
                 <button class="cancel-btn" type="button" onclick="closeEntryFormDialog()">Cancelar</button>
                 <button class="add-btn" type="submit">
-                    {{ if .Entry.Waybill }} Editar {{ else }} Adicionar {{ end }}
+                    {{ if .Entry.Manifest }} Editar {{ else }} Adicionar {{ end }}
                 </button>
                 <img class="htmx-indicator" src="/public/assets/static/spinner.svg" alt="...">
             </div>

@@ -3,11 +3,11 @@ package entry_service
 import (
 	"armazenda/model/entry_model"
 	"armazenda/model/vehicle_model"
-    "armazenda/utils"
+	"armazenda/utils"
 )
 
 type SimplifiedEntry struct {
-	Waybill      uint32
+	Manifest     uint32
 	Product      string
 	Field        string
 	VehiclePlate string
@@ -16,10 +16,10 @@ type SimplifiedEntry struct {
 }
 
 func MakeSimplifiedEntry(ge entry_model.Entry) SimplifiedEntry {
-    field := entry_model.GetField(ge.Field)
-    vehicle := vehicle_model.GetVehicle(ge.Vehicle) 
+	field := entry_model.GetField(ge.Field)
+	vehicle := vehicle_model.GetVehicle(ge.Vehicle)
 	return SimplifiedEntry{
-		Waybill:      ge.Waybill,
+		Manifest:     ge.Manifest,
 		Product:      entry_model.GrainMap[ge.Product],
 		Field:        field.Name,
 		VehiclePlate: vehicle.Plate,
@@ -54,9 +54,9 @@ func PutEntry(ge entry_model.Entry) *entry_model.Entry {
 }
 
 func GetFields() []entry_model.Field {
-    return entry_model.GetFields()
+	return entry_model.GetFields()
 }
 
 func AddField(name string) uint32 {
-    return entry_model.AddField(name)
+	return entry_model.AddField(name)
 }

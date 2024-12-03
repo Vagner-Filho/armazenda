@@ -1,10 +1,10 @@
 package entry_model
 
 import (
+	"armazenda/entity/public"
 	"armazenda/model/vehicle_model"
 	"slices"
 	"time"
-    "armazenda/entity/public"
 )
 
 var GrainMap = make(map[entity_public.Grain]string)
@@ -26,7 +26,7 @@ var fields = []Field{
 }
 
 type Entry struct {
-	Waybill     uint32
+	Manifest    uint32
 	Product     entity_public.Grain
 	Field       uint32
 	Harvest     string
@@ -38,13 +38,13 @@ type Entry struct {
 	ArrivalDate int64
 }
 
-var lastWaybill uint32 = 3
+var lastManifest uint32 = 3
 
 var vehicles = vehicle_model.GetVehicles()
 
 var entries = []Entry{
 	{
-		Waybill:     1,
+		Manifest:    1,
 		Product:     entity_public.Corn,
 		Field:       fields[0].Id,
 		Harvest:     "Safra Milho 2024",
@@ -56,7 +56,7 @@ var entries = []Entry{
 		ArrivalDate: time.Now().UnixMilli(),
 	},
 	{
-		Waybill:     2,
+		Manifest:    2,
 		Product:     entity_public.Soy,
 		Field:       fields[0].Id,
 		Harvest:     "Safra Soja 23/24",
@@ -68,7 +68,7 @@ var entries = []Entry{
 		ArrivalDate: time.Now().UnixMilli(),
 	},
 	{
-		Waybill:     3,
+		Manifest:    3,
 		Product:     entity_public.Corn,
 		Field:       fields[0].Id,
 		Harvest:     "Sofra Milho 2024/2",
@@ -97,8 +97,8 @@ func GetAllEntries() []Entry {
 }
 
 func AddEntry(ge Entry) Entry {
-	lastWaybill = lastWaybill + 1
-	ge.Waybill = lastWaybill
+	lastManifest = lastManifest + 1
+	ge.Manifest = lastManifest
 	if ge.GrossWeight-ge.Tare != ge.NetWeight {
 		ge.NetWeight = ge.GrossWeight - ge.Tare
 	}
@@ -109,7 +109,7 @@ func AddEntry(ge Entry) Entry {
 func DeleteEntry(id uint32) int {
 	var indexToRemove = -1
 	for i, ge := range entries {
-		if ge.Waybill == id {
+		if ge.Manifest == id {
 			indexToRemove = i
 		}
 	}
@@ -122,7 +122,7 @@ func DeleteEntry(id uint32) int {
 func GetEntry(id uint32) Entry {
 	var entry *Entry = nil
 	for _, ge := range entries {
-		if ge.Waybill == id {
+		if ge.Manifest == id {
 			entry = &ge
 		}
 	}
@@ -131,12 +131,12 @@ func GetEntry(id uint32) Entry {
 
 func PutEntry(ge Entry) *Entry {
 	var geIndex = slices.IndexFunc(entries, func(e Entry) bool {
-		return e.Waybill == ge.Waybill
+		return e.Manifest == ge.Manifest
 	})
 
-    if ge.NetWeight != ge.GrossWeight - ge.Tare {
-        ge.NetWeight = ge.GrossWeight - ge.Tare
-    }
+	if ge.NetWeight != ge.GrossWeight-ge.Tare {
+		ge.NetWeight = ge.GrossWeight - ge.Tare
+	}
 
 	if geIndex > -1 {
 		entries = slices.Replace(entries, geIndex, geIndex+1, ge)
@@ -146,19 +146,19 @@ func PutEntry(ge Entry) *Entry {
 }
 
 func GetFields() []Field {
-    return fields
+	return fields
 }
 
 func AddField(name string) uint32 {
-    lastField := fields[len(fields)-1]
-    fields = append(fields, Field{ Name: name, Id: lastField.Id + 1 })
-    return lastField.Id + 1
+	lastField := fields[len(fields)-1]
+	fields = append(fields, Field{Name: name, Id: lastField.Id + 1})
+	return lastField.Id + 1
 }
 
 func GetField(id uint32) *Field {
-    fieldIndex := slices.IndexFunc(fields, func(e Field) bool {
-        return e.Id == id
-    })
+	fieldIndex := slices.IndexFunc(fields, func(e Field) bool {
+		return e.Id == id
+	})
 
-    return &fields[fieldIndex]
+	return &fields[fieldIndex]
 }

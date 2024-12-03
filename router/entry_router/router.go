@@ -100,7 +100,7 @@ func AddEntry(c *gin.Context) {
 		Product:     newEntry.Product,
 		Field:       newEntry.Field,
 		Harvest:     newEntry.Harvest,
-		Waybill:     0,
+		Manifest:    0,
 		Vehicle:     newEntry.Vehicle,
 		ArrivalDate: newEntry.ArrivalDate,
 		GrossWeight: newEntry.GrossWeight,
@@ -147,7 +147,7 @@ func PutEntry(c *gin.Context) {
 		Tare:        newEntry.Tare,
 		Humidity:    newEntry.Humidity,
 		NetWeight:   newEntry.NetWeight,
-		Waybill:     uint32(converted),
+		Manifest:    uint32(converted),
 	}
 
 	var updatedEntry = entry_service.PutEntry(ge)
