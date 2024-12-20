@@ -7,7 +7,6 @@ import (
 	"armazenda/model/entry_model"
 	"armazenda/model/vehicle_model"
 	"armazenda/service/vehicle_service"
-	"armazenda/utils"
 )
 
 type departureFormView struct {
@@ -38,7 +37,7 @@ func MakeReadableDeparture(gd entity_public.Departure) ReadableDeparture {
 		Product:       entry_model.GrainMap[gd.Product],
 		VehiclePlate:  gd.VehiclePlate,
 		Weight:        gd.Weight,
-		DepartureDate: utils.GetReadableDate(gd.DepartureDate),
+		DepartureDate: gd.DepartureDate,
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"armazenda/model/vehicle_model"
 	"armazenda/service/entry_service"
 	"armazenda/service/vehicle_service"
+	entry_view "armazenda/view/entry"
 	"net/http"
 	"strconv"
 
@@ -18,12 +19,12 @@ type FieldForm struct {
 }
 
 func GetEntries(c *gin.Context) {
-	entries := entry_service.GetAllEntrySimplified()
+	entries := entry_view.GetAllEntrySimplified()
 	c.HTML(http.StatusOK, "romaneio.html", entries)
 }
 
 func GetEntriesTable(c *gin.Context) {
-	c.HTML(http.StatusOK, "entry-table", entry_service.GetAllEntrySimplified())
+	c.HTML(http.StatusOK, "entry-table", entry_view.GetAllEntrySimplified())
 }
 
 type Field struct {
@@ -97,7 +98,7 @@ func AddEntry(c *gin.Context) {
 		Humidity:    newEntry.Humidity,
 	}
 	entry := entry_service.AddEntry(ge)
-	c.HTML(http.StatusCreated, "entry-list-item", entry_service.MakeSimplifiedEntry(entry))
+	c.HTML(http.StatusCreated, "entry-list-item", entry_view.MakeSimplifiedEntry(entry))
 }
 
 func DeleteEntry(c *gin.Context) {
@@ -140,7 +141,7 @@ func PutEntry(c *gin.Context) {
 
 	var updatedEntry = entry_service.PutEntry(ge)
 	if updatedEntry != nil {
-		c.HTML(http.StatusOK, "entry-list-item", entry_service.MakeSimplifiedEntry(*updatedEntry))
+		c.HTML(http.StatusOK, "entry-list-item", entry_view.MakeSimplifiedEntry(*updatedEntry))
 		return
 	}
 	c.HTML(500, "toast", "failed")
@@ -179,4 +180,27 @@ func GetFieldForm(c *gin.Context) {
 	regexPattern += ").*"
 
 	c.HTML(http.StatusOK, "field-form", regexPattern)
+}
+
+func FilterEntries(c *gin.Context) {
+	var entryFilter entity_public.EntryFilter
+	err := c.Bind(&entryFilter)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+
+	rawEntries := entry_model.FilterEntries(entryFilter)
+	if len(rawEntries) == 0 {
+		c.Status(http.StatusNoContent)
+		return
+	}
+
+	var simpleEntries []entry_view.SimplifiedEntry
+
+	for _, entry := range rawEntries {
+		simpleEntries = append(simpleEntries, entry_view.MakeSimplifiedEntry(entry))
+	}
+
+	c.HTML(http.StatusOK, "entry-table", simpleEntries)
 }

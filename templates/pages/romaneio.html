@@ -36,7 +36,14 @@
                 Saída
             </button>
         </div>
-        <main>
+        <div>
+            <form class="flex items-center" hx-post="/entry/filter" hx-target="main#list">
+                <input type="datetime-local" name="arrivalDateFrom" />
+                <input type="datetime-local" name="arrivalDateTo" />
+                <button type="submit">Filtrar</button>
+            </form>
+        </div>
+        <main id="list">
             {{ template "entry-table" . }}
         </main>
     </section>

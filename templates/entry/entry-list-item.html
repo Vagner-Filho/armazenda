@@ -15,7 +15,7 @@
     <td>
         {{ .NetWeight }}
     </td>
-    <td>
+    <td id="arrivalDate">
         {{ .ArrivalDate }}
     </td>
     <td>
@@ -35,5 +35,10 @@
             </button>
         </div>
     </td>
+    <script type="module">
+        const itemRow = document.querySelector("tr#entry-{{ .Manifest }}")
+        const date = new Date({{ .ArrivalDate }})
+        itemRow.querySelector("td#arrivalDate").textContent = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date)
+    </script>
 </tr>
 {{ end }}

@@ -4,13 +4,14 @@ import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/vehicle_model"
 	"slices"
+	"time"
 )
 
 var vehicles = vehicle_model.GetVehicles()
 var departures = []entity_public.Departure{
 	{
 		Manifest:      0,
-		DepartureDate: 1726967334411,
+		DepartureDate: time.Now().Format(time.RFC3339),
 		Product:       0,
 		VehiclePlate:  vehicles[0].Plate,
 		Weight:        20392,
@@ -18,7 +19,7 @@ var departures = []entity_public.Departure{
 	},
 	{
 		Manifest:      1,
-		DepartureDate: 1726967334411,
+		DepartureDate: time.Now().Format(time.RFC3339),
 		Product:       0,
 		VehiclePlate:  vehicles[1].Plate,
 		Weight:        20392,
@@ -26,7 +27,7 @@ var departures = []entity_public.Departure{
 	},
 	{
 		Manifest:      2,
-		DepartureDate: 1726967334411,
+		DepartureDate: time.Now().Format(time.RFC3339),
 		Product:       0,
 		VehiclePlate:  vehicles[2].Plate,
 		Weight:        20392,

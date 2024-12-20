@@ -65,11 +65,10 @@ func main() {
 	})
 
 	router.GET("/entry/form/:id", entry_router.GetEntryForm)
-
 	router.POST("/entry", entry_router.AddEntry)
 	router.PUT("/entry/:id", entry_router.PutEntry)
 	router.DELETE("/entry/:id", entry_router.DeleteEntry)
-
+	router.POST("/entry/filter", entry_router.FilterEntries)
 	router.POST("/entry/field", entry_router.AddField)
 	router.GET("/entry/field/form", entry_router.GetFieldForm)
 

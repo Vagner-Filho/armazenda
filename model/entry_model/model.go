@@ -40,7 +40,7 @@ var entries = []entity_public.Entry{
 		Tare:        5000,
 		Humidity:    "10%",
 		NetWeight:   15000 - 5000,
-		ArrivalDate: time.Now().UnixMilli(),
+		ArrivalDate: time.Now().AddDate(0, -1, -3).Format(time.RFC3339),
 	},
 	{
 		Manifest:    2,
@@ -52,7 +52,7 @@ var entries = []entity_public.Entry{
 		Tare:        5000,
 		Humidity:    "10%",
 		NetWeight:   15000 - 5000,
-		ArrivalDate: time.Now().UnixMilli(),
+		ArrivalDate: time.Now().Format(time.RFC3339),
 	},
 	{
 		Manifest:    3,
@@ -64,14 +64,8 @@ var entries = []entity_public.Entry{
 		Tare:        5000,
 		Humidity:    "10%",
 		NetWeight:   15000 - 5000,
-		ArrivalDate: time.Now().UnixMilli(),
+		ArrivalDate: time.Now().Format(time.RFC3339),
 	},
-}
-
-func generateArrivalDate(offsetDays int) string {
-	today := time.Now()
-	arrivalDate := today.AddDate(0, 0, offsetDays)
-	return arrivalDate.Local().Format("02/Jan/2006 - 03:04")
 }
 
 func InitGrainMap() {
@@ -148,4 +142,19 @@ func GetField(id uint32) *Field {
 	})
 
 	return &fields[fieldIndex]
+}
+
+func FilterEntries(filter entity_public.EntryFilter) []entity_public.Entry {
+	var filteredEntries []entity_public.Entry
+
+	arrivalFrom, _ := time.Parse(time.RFC3339, filter.ArrivalDateFrom)
+	arrivalTo, _ := time.Parse(time.RFC3339, filter.ArrivalDateTo)
+
+	for _, entry := range entries {
+		arrivalFiltered, _ := time.Parse(time.RFC3339, entry.ArrivalDate)
+		if arrivalFrom.Before(arrivalFiltered) && arrivalTo.After(arrivalFiltered) {
+			filteredEntries = append(filteredEntries, entry)
+		}
+	}
+	return filteredEntries
 }
