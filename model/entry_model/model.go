@@ -3,6 +3,7 @@ package entry_model
 import (
 	"armazenda/entity/public"
 	"armazenda/model/vehicle_model"
+	"armazenda/utils"
 	"slices"
 	"time"
 )
@@ -10,8 +11,9 @@ import (
 var GrainMap = make(map[entity_public.Grain]string)
 
 type Field struct {
-	Id   uint32
-	Name string
+	Id       uint32
+	Name     string
+	Selected bool
 }
 
 var fields = []Field{
@@ -21,7 +23,11 @@ var fields = []Field{
 	},
 	{
 		Id:   2,
-		Name: "bom dia talhão 2",
+		Name: "2º talhão",
+	},
+	{
+		Id:   3,
+		Name: "Terceiro talhão",
 	},
 }
 
@@ -36,35 +42,35 @@ var entries = []entity_public.Entry{
 		Field:       fields[0].Id,
 		Harvest:     "Safra Milho 2024",
 		Vehicle:     vehicles[0].Plate,
-		GrossWeight: 15000,
+		GrossWeight: 17000,
 		Tare:        5000,
 		Humidity:    "10%",
-		NetWeight:   15000 - 5000,
-		ArrivalDate: time.Now().AddDate(0, -1, -3).Format(time.RFC3339),
+		NetWeight:   17000 - 5000,
+		ArrivalDate: time.Now().AddDate(0, -1, -3).Format(utils.TimeLayout),
 	},
 	{
 		Manifest:    2,
 		Product:     entity_public.Soy,
-		Field:       fields[0].Id,
+		Field:       fields[1].Id,
 		Harvest:     "Safra Soja 23/24",
-		Vehicle:     vehicles[0].Plate,
+		Vehicle:     vehicles[1].Plate,
 		GrossWeight: 15000,
-		Tare:        5000,
+		Tare:        8000,
 		Humidity:    "10%",
-		NetWeight:   15000 - 5000,
-		ArrivalDate: time.Now().Format(time.RFC3339),
+		NetWeight:   15000 - 8000,
+		ArrivalDate: time.Now().Format(utils.TimeLayout),
 	},
 	{
 		Manifest:    3,
 		Product:     entity_public.Corn,
-		Field:       fields[0].Id,
+		Field:       fields[2].Id,
 		Harvest:     "Sofra Milho 2024/2",
-		Vehicle:     vehicles[0].Plate,
-		GrossWeight: 15000,
-		Tare:        5000,
+		Vehicle:     vehicles[2].Plate,
+		GrossWeight: 23000,
+		Tare:        5981,
 		Humidity:    "10%",
-		NetWeight:   15000 - 5000,
-		ArrivalDate: time.Now().Format(time.RFC3339),
+		NetWeight:   23000 - 5981,
+		ArrivalDate: time.Now().Format(utils.TimeLayout),
 	},
 }
 
@@ -144,17 +150,61 @@ func GetField(id uint32) *Field {
 	return &fields[fieldIndex]
 }
 
-func FilterEntries(filter entity_public.EntryFilter) []entity_public.Entry {
+var availableEntryFilters = map[string]func(e entity_public.Entry, ef entity_public.EntryFilter) bool{
+	"ArrivalDateMin": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
+		entryArrival, entryDateError := time.Parse(utils.TimeLayout, e.ArrivalDate)
+		arrivalFrom, entryFilterDateError := time.Parse(utils.TimeLayout, ef.ArrivalDateMin)
+		if entryDateError != nil || entryFilterDateError != nil {
+			return false
+		}
+		return arrivalFrom.Before(entryArrival)
+	},
+	"ArrivalDateMax": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
+		entryArrival, entryDateError := time.Parse(utils.TimeLayout, e.ArrivalDate)
+		arrivalTo, entryFilterDateError := time.Parse(utils.TimeLayout, ef.ArrivalDateMax)
+		if entryDateError != nil || entryFilterDateError != nil {
+			return false
+		}
+		return arrivalTo.After(entryArrival)
+	},
+	"VehiclePlate": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
+		return e.Vehicle == ef.VehiclePlate
+	},
+	"Product": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
+		return e.Product == ef.Product
+	},
+	"Field": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
+		return e.Field == ef.Field
+	},
+	"NetWeightMin": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
+		return e.NetWeight > ef.NetWeightMin
+	},
+	"NetWeightMax": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
+		return e.NetWeight < ef.NetWeightMax
+	},
+}
+
+func FilterEntries(filter entity_public.EntryFilter) ([]entity_public.Entry, error) {
 	var filteredEntries []entity_public.Entry
 
-	arrivalFrom, _ := time.Parse(time.RFC3339, filter.ArrivalDateFrom)
-	arrivalTo, _ := time.Parse(time.RFC3339, filter.ArrivalDateTo)
-
+	filters := filter.GetFilters(availableEntryFilters)
 	for _, entry := range entries {
-		arrivalFiltered, _ := time.Parse(time.RFC3339, entry.ArrivalDate)
-		if arrivalFrom.Before(arrivalFiltered) && arrivalTo.After(arrivalFiltered) {
+		include := true
+		for f := range filters {
+			fff := filters[f]
+
+			if fff == nil {
+				continue
+			}
+
+			include = fff(entry, filter)
+			if !include {
+				break
+			}
+		}
+		if include {
 			filteredEntries = append(filteredEntries, entry)
 		}
 	}
-	return filteredEntries
+	return filteredEntries, nil
 }

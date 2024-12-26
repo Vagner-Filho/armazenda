@@ -1,0 +1,17 @@
+{{ define "filter-entry-date" }}
+<fieldset class="grid grid-cols-2 gap-1">
+    <legend class="w-full text-center font-medium hidden sm:block text-xs sm:text-sm">
+        Data de recebimento
+    </legend>
+    <div class="flex flex-col-reverse w-full sm:max-w-40 lg:max-w-44">
+        <input type="datetime-local" id="arrivalMin" name="arrivalDateMin" class="text-sm peer w-full" aria-placeholder="Data de recebimento mínimo" />
+        <label for="arrivalMin" class="px-2 text-xs label-peer sm:hidden">Recebido de:</label>
+        <label for="arrivalMin" class="px-2 text-xs label-peer hidden sm:block">de:</label>
+    </div>
+    <div class="flex flex-col-reverse w-full sm:max-w-40 lg:max-w-44">
+        <input type="datetime-local" id="arrivalMax" name="arrivalDateMax" class="text-sm peer w-full" aria-placeholder="Data de recebimento máximo" />
+        <label for="arrivalMax" class="px-2 text-xs label-peer sm:hidden">Recebido até:</label>
+        <label for="arrivalMax" class="px-2 text-xs label-peer hidden sm:block">até:</label>
+    </div>
+</fieldset>
+{{ end }}

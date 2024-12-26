@@ -18,29 +18,32 @@ type FieldForm struct {
 	Id   uint32 `form:"id"`
 }
 
-func GetEntries(c *gin.Context) {
+type entryFilters struct {
+	Fields   []entry_model.Field
+	Vehicles []vehicle_model.Vehicle
+}
+
+func GetRomaneioPage(c *gin.Context) {
 	entries := entry_view.GetAllEntrySimplified()
-	c.HTML(http.StatusOK, "romaneio.html", entries)
+	vehicles := vehicle_service.GetVehicles()
+	fields := GetFields()
+	c.HTML(http.StatusOK, "romaneio.html", gin.H{
+		"Entries": entries,
+		"Filters": entryFilters{
+			Vehicles: vehicles,
+			Fields:   fields,
+		},
+	})
 }
 
 func GetEntriesTable(c *gin.Context) {
 	c.HTML(http.StatusOK, "entry-table", entry_view.GetAllEntrySimplified())
 }
 
-type Field struct {
-	Selected bool
-	entry_model.Field
-}
-
-type Vehicle struct {
-	Selected bool
-	vehicle_model.Vehicle
-}
-
 type PopulatedEntryForm struct {
 	Entry    entity_public.Entry
-	Fields   []Field
-	Vehicles []Vehicle
+	Fields   []entry_model.Field
+	Vehicles []vehicle_model.Vehicle
 }
 
 func GetEntryForm(c *gin.Context) {
@@ -52,9 +55,9 @@ func GetEntryForm(c *gin.Context) {
 
 	entry := entry_service.GetEntry(uint32(converted))
 	//fields := entry_service.GetFields()
-	var fields []Field
+	var fields []entry_model.Field
 	for _, field := range entry_service.GetFields() {
-		newF := Field{}
+		newF := entry_model.Field{}
 		newF.Id = field.Id
 		newF.Selected = field.Id == entry.Field
 		newF.Name = field.Name
@@ -62,9 +65,9 @@ func GetEntryForm(c *gin.Context) {
 	}
 	//vehicles := vehicle_service.GetVehicles()
 
-	var vehicles []Vehicle
+	var vehicles []vehicle_model.Vehicle
 	for _, vehicle := range vehicle_service.GetVehicles() {
-		newV := Vehicle{}
+		newV := vehicle_model.Vehicle{}
 		newV.Selected = entry.Vehicle == vehicle.Plate
 		newV.Name = vehicle.Name
 		newV.Plate = vehicle.Plate
@@ -190,9 +193,15 @@ func FilterEntries(c *gin.Context) {
 		return
 	}
 
-	rawEntries := entry_model.FilterEntries(entryFilter)
+	rawEntries, err := entry_model.FilterEntries(entryFilter)
+
+	if err != nil {
+		c.HTML(http.StatusBadRequest, "toast", err.Error())
+		return
+	}
+
 	if len(rawEntries) == 0 {
-		c.Status(http.StatusNoContent)
+		c.HTML(http.StatusOK, "no-entry-found-for-filter", gin.H{})
 		return
 	}
 
@@ -203,4 +212,15 @@ func FilterEntries(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "entry-table", simpleEntries)
+}
+
+func GetEntryFiltersForm(c *gin.Context) {
+	vehicles := vehicle_service.GetVehicles()
+	fields := GetFields()
+	filters := entryFilters{
+		Vehicles: vehicles,
+		Fields:   fields,
+	}
+	c.HTML(http.StatusOK, "entry-filter-form", filters)
+	return
 }

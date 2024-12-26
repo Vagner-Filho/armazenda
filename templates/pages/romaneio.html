@@ -14,7 +14,7 @@
 
 <body>
     <nav class="fixed top-0 left-0 w-screen h-10 bg-green-400 text-center leading-10">navegação</nav>
-    <section class="mt-20 px-2">
+    <section class="mt-20 px-2 max-w-screen-xl mx-auto">
         <header>
             <h1 class="text-center text-xl font-semibold">
                 CONTROLE DE ROMANEIO
@@ -36,15 +36,15 @@
                 Saída
             </button>
         </div>
-        <div>
-            <form class="flex items-center" hx-post="/entry/filter" hx-target="main#list">
-                <input type="datetime-local" name="arrivalDateFrom" />
-                <input type="datetime-local" name="arrivalDateTo" />
-                <button type="submit">Filtrar</button>
-            </form>
+        {{ template "entry-filters" .Filters }}
+        <div class="w-full flex items-center justify-end py-1">
+            <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/entry/form" hx-target="body" hx-swap="beforeend">
+                <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
+                Nova Entrada
+            </button>
         </div>
-        <main id="list">
-            {{ template "entry-table" . }}
+        <main id="list" class="overflow-x-auto">
+            {{ template "entry-table" .Entries }}
         </main>
     </section>
 </body>

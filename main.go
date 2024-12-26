@@ -2,6 +2,7 @@ package main
 
 import (
 	"armazenda/model/entry_model"
+	"armazenda/model/vehicle_model"
 	"armazenda/router/buyer_router"
 	"armazenda/router/departure_router"
 	"armazenda/router/entry_router"
@@ -26,34 +27,33 @@ func main() {
 	entry_model.InitGrainMap()
 	router := gin.Default()
 	html := template.Must(template.ParseFS(templatesFS, "templates/*.html", "templates/**/*.html"))
-	//println(html.DefinedTemplates())
 	router.SetHTMLTemplate(html)
 
 	router.StaticFS("/public", http.FS(assetsFS))
-	// router.Static("/assets/static/css", "./assets/static/css")
-	// router.LoadHTMLGlob("templates/*")
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "login.html", gin.H{})
 	})
 
 	user_router.UserRoutes(router)
 
-	router.GET("/romaneio", entry_router.GetEntries)
+	router.GET("/romaneio", entry_router.GetRomaneioPage)
 
 	router.GET("/entry/list", entry_router.GetEntriesTable)
 
+	router.GET("/entry/filters", entry_router.GetEntryFiltersForm)
+
 	router.GET("/entry/form", func(c *gin.Context) {
-		var fields []entry_router.Field
+		var fields []entry_model.Field
 		for _, field := range entry_router.GetFields() {
-			newF := entry_router.Field{}
+			newF := entry_model.Field{}
 			newF.Selected = false
 			newF.Name = field.Name
 			newF.Id = field.Id
 			fields = append(fields, newF)
 		}
-		var vehicles []entry_router.Vehicle
+		var vehicles []vehicle_model.Vehicle
 		for _, vehicle := range vehicle_router.GetVehicles() {
-			newV := entry_router.Vehicle{}
+			newV := vehicle_model.Vehicle{}
 			newV.Name = vehicle.Name
 			newV.Plate = vehicle.Plate
 			vehicles = append(vehicles, newV)

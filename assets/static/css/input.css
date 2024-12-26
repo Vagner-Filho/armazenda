@@ -7,6 +7,10 @@
         @apply btn-shape text-green-500 hover:text-white hover:bg-green-500 focus:text-white focus:bg-green-500 ring ring-inset ring-green-500 transition-colors duration-300 ease-in-out
     }
 
+    .icon-btn {
+        @apply text-green-500 hover:scale-125 hover:text-green-700 focus:scale-125 focus:text-green-700 transition-all duration-300 ease-in-out
+    }
+
     .cancel-btn {
         @apply btn-shape text-orange-500 ring ring-inset ring-orange-500 transition-shadow duration-300 ease-in-out hover:text-white hover:bg-orange-500 focus:text-white focus:bg-orange-500
     }
@@ -18,17 +22,13 @@
 
 @layer base {
 
+    body {
+        @apply bg-stone-100
+    }
+
     input,
     select {
-        @apply transition-all duration-300 ease-linear outline-transparent focus-visible:outline-green-400 bg-stone-200 rounded-sm h-7 px-2 text-gray-700
-    }
-
-    tr {
-        @apply w-full
-    }
-
-    th, td {
-        @apply w-1/6
+        @apply transition-all duration-300 ease-linear outline-0 bg-stone-200 rounded-md h-7 px-2 text-gray-700 focus:ring-green-600 focus:ring-2 focus:ring-inset
     }
 
     button {
@@ -37,6 +37,10 @@
 }
 
 @layer utilities {
+    .label-peer {
+        @apply peer-focus:text-green-600 peer-focus:font-bold transition-all duration-300 ease-linear
+    }
+
     .text-xs {
         font-size: 12px;
     }

@@ -1,0 +1,19 @@
+{{ block "filter-entry-vehicle" . }}
+<div class="w-full sm:max-w-28 lg:max-w-36 flex flex-col-reverse">
+    <select name="vehiclePlate" id="vehicle-filter" class="w-full text-sm peer">
+        <option value="" selected>
+            Nenhum
+        </option>
+        {{ range . }}
+        {{ template "vehicle-option" . }}
+        {{ else }}
+        <option value="-1">
+            Nenhum veículo encontrado
+        </option>
+        {{ end }}
+    </select>
+    <label for="vehicle-filter" class="px-2 text-xs label-peer">
+        Veículo
+    </label>
+</div>
+{{ end }}

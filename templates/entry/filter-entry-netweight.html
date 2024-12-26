@@ -1,0 +1,17 @@
+{{ define "filter-entry-netweight" }}
+<fieldset class="flex gap-1">
+    <legend class="w-full text-center text-xs sm:text-sm font-medium hidden sm:block">
+        Peso líquido
+    </legend>
+    <div class="flex flex-col-reverse w-full sm:max-w-20 lg:max-w-24">
+        <input type="number" name="netWeightMin" id="net-min-filter" aria-placeholder="Peso líquido mínimo em kg" placeholder="em kg" class="w-full text-sm peer" />
+        <label for="net-min-filter" class="px-2 text-xs label-peer hidden sm:block">Mínimo</label>
+        <label for="net-min-filter" class="px-2 text-xs label-peer sm:hidden">Peso líquido mínimo</label>
+    </div>
+    <div class="flex flex-col-reverse w-full sm:max-w-20 lg:max-w-24">
+        <input type="number" name="netWeightMax" id="net-max-filter" aria-placeholder="Peso líquido máximo" class="w-full text-sm peer" placeholder="em kg" />
+        <label for="net-to-filter" class="px-2 text-xs label-peer hidden sm:block">Máximo</label>
+        <label for="net-to-filter" class="px-2 text-xs label-peer sm:hidden">Peso líquido máximo</label>
+    </div>
+</fieldset>
+{{ end }}
