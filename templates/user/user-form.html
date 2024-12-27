@@ -1,0 +1,44 @@
+{{ define "user-form" }}
+<dialog id="new-user-dialog">
+    <form hx-post="/user" class="p-6 sm:w-[500px] lg:w-[600px]">
+        {{ template "close-dialog-btn" "dialog#new-user-dialog" }}
+        <fieldset>
+            <legend class="mx-auto">
+                <h1 class="sm:text-lg lg:text-xl">
+                    Nova Conta
+                </h1>
+            </legend>
+            <div class="flex flex-col-reverse py-1">
+                <input type="email" id="email" required class="peer px-2" name="email" aria-placeholder="email de cadastro">
+                <label for="email" class="label-peer">E-mail</label>
+            </div>
+            <div class="flex flex-col-reverse py-1">
+                <input type="password" id="psswd" required class="peer px-2" name="psswd" aria-placeholder="senha de acesso">
+                <label for="psswd" class="label-peer">Senha</label>
+            </div>
+            <div class="flex flex-col-reverse py-1">
+                <input type="password" id="psswdConfim" required class="peer px-2" name="psswdConfirm" aria-placeholder="repita a senha de acesso">
+                <label for="psswdConfirm" class="label-peer">Repita a senha</label>
+            </div>
+            <div class="flex flex-col-reverse py-1">
+                <input type="text" id="inscEstadual" required class="peer px-2" name="inscricaoEstadual" aria-placeholder="inscrição estadual">
+                <label for="inscEstadual" class="label-peer">Inscrição Estadual</label>
+            </div>
+        </fieldset>
+        <fieldset class="text-center w-full pt-2">
+            <button type="button" class="cancel-btn" onclick="closeUserForm()">Cancelar</button>
+            <button type="submit" class="add-btn">Cadastrar</button>
+        </fieldset>
+    </form>
+    <script type="module">
+        const dialog = document.querySelector("dialog#new-user-dialog");
+        if (dialog) {
+            dialog.showModal();
+            window.closeUserForm = function() {
+                dialog.close();
+                window.closeUserForm = undefined;
+            }
+        }
+    </script>
+</dialog>
+{{ end }}

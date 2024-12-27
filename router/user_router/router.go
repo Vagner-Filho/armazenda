@@ -24,3 +24,8 @@ func UserRoutes(router *gin.Engine) {
 		}
 	})
 }
+
+func GetUserForm(c *gin.Context) {
+	c.HTML(http.StatusOK, "user-form", gin.H{})
+	return
+}

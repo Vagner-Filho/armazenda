@@ -36,6 +36,8 @@ func main() {
 
 	user_router.UserRoutes(router)
 
+	router.GET("/user/form", user_router.GetUserForm)
+
 	router.GET("/romaneio", entry_router.GetRomaneioPage)
 
 	router.GET("/entry/list", entry_router.GetEntriesTable)

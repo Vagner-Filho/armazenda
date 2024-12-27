@@ -11,28 +11,29 @@
     </head>
 
     <body class="bg-gray-200 h-screen flex justify-center items-center">
-        <div class="bg-white p-8 w-96 rounded">
-            <h2 class="text-2xl font-bold mb-8 text-center text-green-500">Login</h2>
+        <main class="bg-white p-8 pb-4 w-96 rounded shadow-lg">
+            <h2 class="text-2xl font-bold mb-2 text-center text-green-500">Login</h2>
             <form hx-post="/validate" hx-target="#error-indicator-space">
-                <div class="mb-6">
-                    <label for="username" class="block text-gray-700 font-semibold">Username:</label>
-                    <input type="text" id="username" name="username" value="{{.Username}}" 
-                        class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-400"> 
+                <div class="mb-4 flex flex-col-reverse">
+                    <input type="email" id="email" name="email" required aria-placeholder="email" placeholder="meuemail@email.com"
+                        class="w-full px-2 peer">
+                    <label for="email" class="px-2 label-peer">E-mail</label>
                 </div>
-                <div class="mb-6">
-                    <label for="password" class="block text-gray-700 font-semibold">Password:</label>
-                    <input type="password" id="password" name="password" value="{{.Password}}" 
-                        class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-400">
+                <div class="mb-4 flex flex-col-reverse">
+                    <input type="password" id="password" name="password" required aria-placeholder="senha" placeholder="*********"
+                        class="w-full px-2 peer">
+                    <label for="password" class="px-2 label-peer">Senha</label>
                 </div>
-                <div class="mb-6">
-                    <button type="submit" class="w-full bg-green-400 text-white py-2 rounded hover:bg-green-500 transition-colors">Login</button>
-                </div>
+                    <button type="submit" class="w-full add-btn">Entrar</button>
             </form>
-
+                <p class="text-sm text-center text-gray-500 pt-4">
+                    Novo por aqui?
+                    <button type="button" class="hover:text-green-600 focus:text-green-600 transition-all duration-300 ease-in-out hover:font-bold focus:font-bold" hx-trigger="click" hx-get="/user/form" hx-target="body" hx-swap="beforeend">Crie uma conta!</button>
+                </p>
             <div id="error-indicator-space" class="flex justify-center">
                 <!-- Message error login -->
             </div>
-        </div>
+        </main>
     </body>
 
     <script>
