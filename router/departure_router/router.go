@@ -3,6 +3,7 @@ package departure_router
 import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/buyer_model"
+	"armazenda/model/departure_model"
 	"armazenda/model/vehicle_model"
 	"armazenda/router/vehicle_router"
 	"armazenda/service/departure_service"
@@ -14,8 +15,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GetDepartures(c *gin.Context) {
-	c.HTML(http.StatusOK, "departure-table", departure_view.GetDepartures())
+func GetDepartureContent(c *gin.Context) {
+	c.HTML(http.StatusOK, "departure-content", gin.H{
+		"Departures": departure_view.GetDepartures(),
+	})
 }
 
 func GetDepartureForm(c *gin.Context) {
@@ -114,4 +117,33 @@ func DeleteDeparture(c *gin.Context) {
 	}
 
 	c.String(http.StatusOK, "", departure_service.DeleteDeparture(uint32(converted)))
+}
+
+func FilterDepartures(c *gin.Context) {
+	var departureFilter entity_public.DepartureFilter
+	err := c.Bind(&departureFilter)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+
+	rawDepartures, err := departure_model.FilterDepartures(departureFilter)
+
+	if err != nil {
+		c.HTML(http.StatusBadRequest, "toast", err.Error())
+		return
+	}
+
+	if len(rawDepartures) == 0 {
+		c.HTML(http.StatusOK, "no-departure-found-for-filter", gin.H{})
+		return
+	}
+
+	var simpleDepartures []departure_view.ReadableDeparture
+
+	for _, departure := range rawDepartures {
+		simpleDepartures = append(simpleDepartures, departure_view.MakeReadableDeparture(departure))
+	}
+
+	c.HTML(http.StatusOK, "departure-table", simpleDepartures)
 }

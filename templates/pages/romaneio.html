@@ -23,7 +23,7 @@
         <div class="flex items-center justify-center w-full py-2">
             <button type="button" id="show-entry-manifest"
                 class="h-8 px-2 text-base rounded-md rounded-r-none ring-1 ring-green-400 text-white bg-green-400 transition-colors duration-300"
-                hx-trigger="click" hx-get="/entry/list" hx-target="main"
+                hx-trigger="click" hx-get="/entry/list" hx-target="#content-container"
                 onclick="handleShowDeparture('button#show-entry-manifest', 'button#show-departure-manifest')">
                 Entrada
             </button>
@@ -31,21 +31,14 @@
             </div>
             <button type="button" id="show-departure-manifest"
                 class="h-8 px-2 text-base rounded-md rounded-l-none ring-1 ring-green-400 text-green-400 transition-colors duration-300"
-                hx-trigger="click" hx-get="/departure/list" hx-target="main"
+                hx-trigger="click" hx-get="/departure/list" hx-target="#content-container"
                 onclick="handleShowDeparture('button#show-departure-manifest', 'button#show-entry-manifest')">
                 Saída
             </button>
         </div>
-        {{ template "entry-filters" .Filters }}
-        <div class="w-full flex items-center justify-end py-1">
-            <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/entry/form" hx-target="body" hx-swap="beforeend">
-                <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
-                Nova Entrada
-            </button>
+        <div id="content-container">
+            {{ template "entry-content" . }}
         </div>
-        <main id="list" class="overflow-x-auto">
-            {{ template "entry-table" .Entries }}
-        </main>
     </section>
 </body>
 

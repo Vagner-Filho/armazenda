@@ -35,8 +35,10 @@ type EntryFilter struct {
 	ArrivalDateMax string  `form:"arrivalDateMax"`
 }
 
-func (ef EntryFilter) GetFilters(filters map[string]func(e Entry, ef EntryFilter) bool) map[string]func(e Entry, ef EntryFilter) bool {
-	mp := make(map[string]func(e Entry, ef EntryFilter) bool)
+type filterCollection map[string]func(e Entry, ef EntryFilter) bool
+
+func (ef EntryFilter) GetFilters(availableFilters filterCollection) filterCollection {
+	userFilters := make(filterCollection)
 
 	values := reflect.ValueOf(ef)
 
@@ -46,8 +48,8 @@ func (ef EntryFilter) GetFilters(filters map[string]func(e Entry, ef EntryFilter
 		fieldValue := values.Field(i)
 
 		if !fieldValue.IsZero() {
-			mp[fieldName] = filters[fieldName]
+			userFilters[fieldName] = availableFilters[fieldName]
 		}
 	}
-	return mp
+	return userFilters
 }

@@ -18,26 +18,12 @@ type FieldForm struct {
 	Id   uint32 `form:"id"`
 }
 
-type entryFilters struct {
-	Fields   []entry_model.Field
-	Vehicles []vehicle_model.Vehicle
-}
-
 func GetRomaneioPage(c *gin.Context) {
-	entries := entry_view.GetAllEntrySimplified()
-	vehicles := vehicle_service.GetVehicles()
-	fields := GetFields()
-	c.HTML(http.StatusOK, "romaneio.html", gin.H{
-		"Entries": entries,
-		"Filters": entryFilters{
-			Vehicles: vehicles,
-			Fields:   fields,
-		},
-	})
+	c.HTML(http.StatusOK, "romaneio.html", entry_view.GetEntryContent())
 }
 
-func GetEntriesTable(c *gin.Context) {
-	c.HTML(http.StatusOK, "entry-table", entry_view.GetAllEntrySimplified())
+func GetEntryContent(c *gin.Context) {
+	c.HTML(http.StatusOK, "entry-content", entry_view.GetEntryContent())
 }
 
 type PopulatedEntryForm struct {
@@ -215,12 +201,6 @@ func FilterEntries(c *gin.Context) {
 }
 
 func GetEntryFiltersForm(c *gin.Context) {
-	vehicles := vehicle_service.GetVehicles()
-	fields := GetFields()
-	filters := entryFilters{
-		Vehicles: vehicles,
-		Fields:   fields,
-	}
-	c.HTML(http.StatusOK, "entry-filter-form", filters)
+	c.HTML(http.StatusOK, "entry-filter-form", entry_view.GetEntryContent())
 	return
 }

@@ -1,0 +1,12 @@
+{{ block "departure-content" . }}
+        {{ template "departure-filters" .Filters }}
+        <div class="w-full flex items-center justify-end py-1">
+            <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/departure/form" hx-target="body" hx-swap="beforeend">
+                <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
+                Nova Saída
+            </button>
+        </div>
+        <main id="list" class="overflow-x-auto">
+            {{ template "departure-table" .Departures }}
+        </main>
+{{ end }}

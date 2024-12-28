@@ -9,6 +9,40 @@ import (
 )
 
 var vehicles = vehicle_model.GetVehicles()
+
+var availableDepartureFilters = map[string]func(e entity_public.Departure, ef entity_public.DepartureFilter) bool{
+	"DepartureDateMin": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
+		departureDate, departureDateError := time.Parse(utils.TimeLayout, d.DepartureDate)
+		departureMin, departureFilterDateError := time.Parse(utils.TimeLayout, df.DepartureDateMin)
+		if departureDateError != nil || departureFilterDateError != nil {
+			return false
+		}
+		return departureMin.Before(departureDate)
+	},
+	"DepartureDateMax": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
+		departureDate, departureDateError := time.Parse(utils.TimeLayout, d.DepartureDate)
+		departureMax, departureFilterDateError := time.Parse(utils.TimeLayout, df.DepartureDateMax)
+		if departureDateError != nil || departureFilterDateError != nil {
+			return false
+		}
+		return departureMax.After(departureDate)
+	},
+	"VehiclePlate": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
+		return d.VehiclePlate == df.VehiclePlate
+	},
+	"Product": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
+		return d.Product == df.Product
+	},
+	"WeightMin": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
+		return d.Weight > df.WeightMin
+	},
+	"WeightMax": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
+		return d.Weight < df.WeightMax
+	},
+	"Buyer": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
+		return d.Buyer == df.Buyer
+	},
+}
 var departures = []entity_public.Departure{
 	{
 		Manifest:      0,
@@ -34,6 +68,31 @@ var departures = []entity_public.Departure{
 		Weight:        20392,
 		Buyer:         "0-12345678901",
 	},
+}
+
+func FilterDepartures(filter entity_public.DepartureFilter) ([]entity_public.Departure, error) {
+	var filteredDepartures []entity_public.Departure
+
+	filters := filter.GetFilters(availableDepartureFilters)
+	for _, departure := range departures {
+		include := true
+		for f := range filters {
+			fff := filters[f]
+
+			if fff == nil {
+				continue
+			}
+
+			include = fff(departure, filter)
+			if !include {
+				break
+			}
+		}
+		if include {
+			filteredDepartures = append(filteredDepartures, departure)
+		}
+	}
+	return filteredDepartures, nil
 }
 
 func GetDepartures() []entity_public.Departure {

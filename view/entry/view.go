@@ -4,6 +4,7 @@ import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/entry_model"
 	"armazenda/model/vehicle_model"
+	"armazenda/service/vehicle_service"
 )
 
 type SimplifiedEntry struct {
@@ -13,6 +14,16 @@ type SimplifiedEntry struct {
 	VehiclePlate string
 	NetWeight    float64
 	ArrivalDate  string
+}
+
+type entryFilters struct {
+	Fields   []entry_model.Field
+	Vehicles []vehicle_model.Vehicle
+}
+
+type entryContent struct {
+	Entries []SimplifiedEntry
+	Filters entryFilters
 }
 
 func MakeSimplifiedEntry(ge entity_public.Entry) SimplifiedEntry {
@@ -35,4 +46,15 @@ func GetAllEntrySimplified() []SimplifiedEntry {
 		simplifiedEntries = append(simplifiedEntries, MakeSimplifiedEntry(entry))
 	}
 	return simplifiedEntries
+}
+
+func GetEntryContent() entryContent {
+	entries := GetAllEntrySimplified()
+	return entryContent{
+		Entries: entries,
+		Filters: entryFilters{
+			Vehicles: vehicle_service.GetVehicles(),
+			Fields:   entry_model.GetFields(),
+		},
+	}
 }

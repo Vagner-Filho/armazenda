@@ -40,7 +40,7 @@ func main() {
 
 	router.GET("/romaneio", entry_router.GetRomaneioPage)
 
-	router.GET("/entry/list", entry_router.GetEntriesTable)
+	router.GET("/entry/list", entry_router.GetEntryContent)
 
 	router.GET("/entry/filters", entry_router.GetEntryFiltersForm)
 
@@ -74,7 +74,8 @@ func main() {
 	router.POST("/entry/field", entry_router.AddField)
 	router.GET("/entry/field/form", entry_router.GetFieldForm)
 
-	router.GET("/departure/list", departure_router.GetDepartures)
+	router.POST("/departure/filter", departure_router.FilterDepartures)
+	router.GET("/departure/list", departure_router.GetDepartureContent)
 	router.GET("/departure/form", departure_router.GetDepartureForm)
 	router.GET("/buyer/form", buyer_router.GetBuyerForm)
 	router.GET("/departure/form/:id", departure_router.GetFilledDepartureForm)
