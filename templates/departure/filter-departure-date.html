@@ -1,0 +1,17 @@
+{{ define "filter-departure-date" }}
+<fieldset class="grid grid-cols-2 gap-1">
+    <legend class="w-full text-center font-medium hidden sm:block text-xs sm:text-sm">
+        Data de saída
+    </legend>
+    <div class="flex flex-col-reverse w-full sm:max-w-40 lg:max-w-44">
+        <input type="datetime-local" id="departureMin" name="departureDateMin" class="text-sm peer w-full" aria-placeholder="Data de saída mínima" />
+        <label for="departureMin" class="px-2 text-xs label-peer sm:hidden">Saiu a partir de:</label>
+        <label for="departureMin" class="px-2 text-xs label-peer hidden sm:block">de:</label>
+    </div>
+    <div class="flex flex-col-reverse w-full sm:max-w-40 lg:max-w-44">
+        <input type="datetime-local" id="departureMax" name="departureDateMax" class="text-sm peer w-full" aria-placeholder="Data de saída máxima" />
+        <label for="departureMax" class="px-2 text-xs label-peer sm:hidden">Saiu até</label>
+        <label for="departureMax" class="px-2 text-xs label-peer hidden sm:block">até:</label>
+    </div>
+</fieldset>
+{{ end }}

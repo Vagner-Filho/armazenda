@@ -16,9 +16,7 @@ import (
 )
 
 func GetDepartureContent(c *gin.Context) {
-	c.HTML(http.StatusOK, "departure-content", gin.H{
-		"Departures": departure_view.GetDepartures(),
-	})
+	c.HTML(http.StatusOK, "departure-content", departure_view.GetDepartureContent())
 }
 
 func GetDepartureForm(c *gin.Context) {

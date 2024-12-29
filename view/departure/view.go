@@ -41,7 +41,16 @@ func MakeReadableDeparture(gd entity_public.Departure) ReadableDeparture {
 	}
 }
 
-func GetDepartures() []ReadableDeparture {
+type departureFilter struct {
+	Buyers   []entity_public.Buyer
+	Vehicles []vehicle_model.Vehicle
+}
+type departureContent struct {
+	Departures []ReadableDeparture
+	Filters    departureFilter
+}
+
+func GetDepartureContent() departureContent {
 	var readable = []ReadableDeparture{}
 
 	departures := departure_model.GetDepartures()
@@ -49,5 +58,11 @@ func GetDepartures() []ReadableDeparture {
 	for _, gd := range departures {
 		readable = append(readable, MakeReadableDeparture(gd))
 	}
-	return readable
+	return departureContent{
+		Departures: readable,
+		Filters: departureFilter{
+			Buyers:   buyer_model.GetBuyers(),
+			Vehicles: vehicle_model.GetVehicles(),
+		},
+	}
 }

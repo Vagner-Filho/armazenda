@@ -34,10 +34,10 @@ var availableDepartureFilters = map[string]func(e entity_public.Departure, ef en
 		return d.Product == df.Product
 	},
 	"WeightMin": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
-		return d.Weight > df.WeightMin
+		return d.Weight >= df.WeightMin
 	},
 	"WeightMax": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
-		return d.Weight < df.WeightMax
+		return d.Weight <= df.WeightMax
 	},
 	"Buyer": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
 		return d.Buyer == df.Buyer
@@ -46,26 +46,26 @@ var availableDepartureFilters = map[string]func(e entity_public.Departure, ef en
 var departures = []entity_public.Departure{
 	{
 		Manifest:      0,
-		DepartureDate: time.Now().Format(utils.TimeLayout),
-		Product:       0,
+		DepartureDate: time.Now().AddDate(0, -1, -3).Format(utils.TimeLayout),
+		Product:       2,
 		VehiclePlate:  vehicles[0].Plate,
-		Weight:        20392,
+		Weight:        5000,
 		Buyer:         "0-12345678901",
 	},
 	{
 		Manifest:      1,
-		DepartureDate: time.Now().Format(utils.TimeLayout),
-		Product:       0,
+		DepartureDate: time.Now().AddDate(0, 0, -15).Format(utils.TimeLayout),
+		Product:       2,
 		VehiclePlate:  vehicles[1].Plate,
-		Weight:        20392,
+		Weight:        10000,
 		Buyer:         "0-12345678901",
 	},
 	{
 		Manifest:      2,
-		DepartureDate: time.Now().Format(utils.TimeLayout),
-		Product:       0,
+		DepartureDate: time.Now().AddDate(0, 0, -7).Format(utils.TimeLayout),
+		Product:       1,
 		VehiclePlate:  vehicles[2].Plate,
-		Weight:        20392,
+		Weight:        15000,
 		Buyer:         "0-12345678901",
 	},
 }

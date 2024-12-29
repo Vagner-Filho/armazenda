@@ -1,0 +1,17 @@
+{{ define "filter-departure-weight" }}
+<fieldset class="flex gap-1">
+    <legend class="w-full text-center text-xs sm:text-sm font-medium hidden sm:block">
+        Peso
+    </legend>
+    <div class="flex flex-col-reverse w-full sm:max-w-20 lg:max-w-24">
+        <input type="number" name="weightMin" id="weight-min-filter" aria-placeholder="Peso mínimo em kilos" placeholder="em kg" class="w-full text-sm peer" />
+        <label for="weight-min-filter" class="px-2 text-xs label-peer hidden sm:block">Mínimo</label>
+        <label for="weight-min-filter" class="px-2 text-xs label-peer sm:hidden">Peso mínimo</label>
+    </div>
+    <div class="flex flex-col-reverse w-full sm:max-w-20 lg:max-w-24">
+        <input type="number" name="weightMax" id="weight-max-filter" aria-placeholder="Peso máximo em kilos" class="w-full text-sm peer" placeholder="em kg" />
+        <label for="weight-max-filter" class="px-2 text-xs label-peer hidden sm:block">Máximo</label>
+        <label for="weight-max-filter" class="px-2 text-xs label-peer sm:hidden">Peso máximo</label>
+    </div>
+</fieldset>
+{{ end }}

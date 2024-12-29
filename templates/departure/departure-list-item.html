@@ -12,7 +12,7 @@
     <td>
         {{ .Weight }}
     </td>
-    <td>
+    <td id="departureDate">
         {{ .DepartureDate }}
     </td>
     <td>
@@ -31,5 +31,10 @@
             </button>
         </div>
     </td>
+    <script type="module">
+        const itemRow = document.querySelector("tr#departure-{{ .Manifest }}")
+        const date = new Date({{ .DepartureDate }})
+        itemRow.querySelector("td#departureDate").textContent = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date)
+    </script>
 </tr>
 {{ end }}

@@ -757,6 +757,14 @@ button {
   top: 0px;
 }
 
+.bottom-\[2px\] {
+  bottom: 2px;
+}
+
+.right-1 {
+  right: 0.25rem;
+}
+
 .mx-auto {
   margin-left: auto;
   margin-right: auto;
@@ -1039,6 +1047,14 @@ button {
   padding-top: 1rem;
 }
 
+.pr-\[30px\] {
+  padding-right: 30px;
+}
+
+.pr-\[34px\] {
+  padding-right: 34px;
+}
+
 .text-center {
   text-align: center;
 }
@@ -1317,6 +1333,39 @@ button {
 .group[open] .group-open\:marker\:content-\[\'-\'\]::marker {
   --tw-content: '-';
   content: var(--tw-content);
+}
+
+.has-\[\:focus\]\:cursor-not-allowed:has(:focus) {
+  cursor: not-allowed;
+}
+
+.has-\[\:disabled\]\:cursor-not-allowed:has(:disabled) {
+  cursor: not-allowed;
+}
+
+.has-\[\:focus\]\:font-bold:has(:focus) {
+  font-weight: 700;
+}
+
+.has-\[\:focus\]\:text-green-600:has(:focus) {
+  --tw-text-opacity: 1;
+  color: rgb(22 163 74 / var(--tw-text-opacity, 1));
+}
+
+.has-\[\:focus\]\:text-stone-400\/50:has(:focus) {
+  color: rgb(168 162 158 / 0.5);
+}
+
+.has-\[\:disabled\]\:text-stone-400\/50:has(:disabled) {
+  color: rgb(168 162 158 / 0.5);
+}
+
+.has-\[\:focus\]\:line-through:has(:focus) {
+  text-decoration-line: line-through;
+}
+
+.has-\[\:disabled\]\:line-through:has(:disabled) {
+  text-decoration-line: line-through;
 }
 
 @media (min-width: 640px) {

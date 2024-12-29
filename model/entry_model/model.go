@@ -177,10 +177,10 @@ var availableEntryFilters = map[string]func(e entity_public.Entry, ef entity_pub
 		return e.Field == ef.Field
 	},
 	"NetWeightMin": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
-		return e.NetWeight > ef.NetWeightMin
+		return e.NetWeight >= ef.NetWeightMin
 	},
 	"NetWeightMax": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
-		return e.NetWeight < ef.NetWeightMax
+		return e.NetWeight <= ef.NetWeightMax
 	},
 }
 
