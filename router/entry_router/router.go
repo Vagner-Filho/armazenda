@@ -201,6 +201,6 @@ func FilterEntries(c *gin.Context) {
 }
 
 func GetEntryFiltersForm(c *gin.Context) {
-	c.HTML(http.StatusOK, "entry-filter-form", entry_view.GetEntryContent())
+	c.HTML(http.StatusOK, "entry-filter-form", entry_view.GetFiltersForm())
 	return
 }

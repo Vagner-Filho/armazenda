@@ -1,57 +1,72 @@
 {{ block "entry-form" . }}
-<dialog id="addEntryDialog" class="rounded-md w-4/5">
+<dialog id="addEntryDialog" class="rounded-md w-full max-w-3xl bg-stone-100">
     <div class="p-4 relative">
         {{ template "close-dialog-btn" "dialog#addEntryDialog" }}
         <h1 class="text-center font-medium text-xl">
             Nova Entrada
         </h1>
-        <form class="flex flex-col" {{ if .Entry.Manifest }} hx-put="/entry/{{ .Entry.Manifest }}"
+        <form class="flex flex-col gap-4" {{ if .Entry.Manifest }} hx-put="/entry/{{ .Entry.Manifest }}"
             hx-target="#entry-{{ .Entry.Manifest }}" hx-swap="outerHTML" {{ else }} hx-post="/entry"
             hx-target="#entries-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#btns-container">
-            <div class="flex flex-col-reverse">
-                {{ template "grain-selector" }}
-                <label for="grain-selector" class="label-peer">
-                    Grão
-                </label>
-            </div>
-            <div class="flex flex-col-reverse">
-                <input type="text" name="harvest" id="harvest" class="peer" value="{{ .Entry.Harvest }}" required>
-                <label for="harvest" class="label-peer">
-                    Safra
-                </label>
-            </div>
-            {{ template "field-selector" .Fields }}
-            {{ template "vehicle-selector" .Vehicles }}
-            <div class="flex flex-col-reverse">
-                <input type="number" name="grossWeight" id="grossWeight" class="peer" value="{{ .Entry.GrossWeight }}" required>
-                <label for="grossWeight" class="label-peer">
-                    Peso Bruto
-                </label>
-            </div>
-            <div class="flex flex-col-reverse">
-                <input type="number" name="tare" id="tare" class="peer" value="{{ .Entry.Tare }}" required>
-                <label for="tare" class="label-peer">
-                    Tara
-                </label>
-            </div>
-            <div class="flex flex-col-reverse">
-                <input type="number" name="netWeight" id="netWeight" class="peer" value="{{ .Entry.NetWeight }}" disabled>
-                <label for="netWeight" class="label-peer">
-                    Peso Líquido
-                </label>
-            </div>
-            <div class="flex flex-col-reverse">
-                <input type="text" name="humidity" id="humidity" class="peer" value="{{ .Entry.Humidity }}" required>
-                <label for="humidity" class="label-peer">
-                    Umidade
-                </label>
-            </div>
-            <div class="flex flex-col-reverse">
-                <input type="date" name="arrivalDate" id="arrivalDate" class="peer" value="{{ .Entry.ArrivalDate }}" required>
-                <label for="arrivalDate" class="label-peer">
-                    Data de Recebimento
-                </label>
-            </div>
+            <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
+                <legend class="text-lg uppercase rounded-t-lg bg-white px-2 font-light">
+                    Identificação
+                </legend>
+                <div class="flex flex-col-reverse">
+                    {{ template "grain-selector" }}
+                    <label for="grain-selector" class="label-peer">
+                        Grão
+                    </label>
+                </div>
+                <div class="flex flex-col-reverse">
+                    <input type="text" name="harvest" id="harvest" class="peer" value="{{ .Entry.Harvest }}" required>
+                    <label for="harvest" class="label-peer">
+                        Safra
+                    </label>
+                </div>
+                {{ template "field-selector" .Fields }}
+            </fieldset>
+            <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
+                <legend class="text-lg uppercase rounded-t-lg bg-white px-2 font-light">
+                    Análise
+                </legend>
+                <div class="flex flex-col-reverse">
+                    <input type="text" name="humidity" id="humidity" class="peer" value="{{ .Entry.Humidity }}" required>
+                    <label for="humidity" class="label-peer">
+                        Umidade
+                    </label>
+                </div>
+            </fieldset>
+            <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
+                <legend class="text-lg uppercase rounded-t-lg bg-white px-2 font-light">
+                    Recebimento
+                </legend>
+                {{ template "vehicle-selector" .Vehicles }}
+                <div class="flex flex-col-reverse">
+                    <input type="number" name="grossWeight" id="grossWeight" class="peer" value="{{ .Entry.GrossWeight }}" required>
+                    <label for="grossWeight" class="label-peer">
+                        Peso Bruto
+                    </label>
+                </div>
+                <div class="flex flex-col-reverse">
+                    <input type="number" name="tare" id="tare" class="peer" value="{{ .Entry.Tare }}" required>
+                    <label for="tare" class="label-peer">
+                        Tara
+                    </label>
+                </div>
+                <div class="flex flex-col-reverse">
+                    <input type="number" name="netWeight" id="netWeight" class="peer cursor-not-allowed" value="{{ .Entry.NetWeight }}" disabled>
+                    <label for="netWeight" class="label-peer">
+                        Peso Líquido (preenchimento automático)
+                    </label>
+                </div>
+                <div class="flex flex-col-reverse">
+                    <input type="datetime-local" name="arrivalDate" id="arrivalDate" class="peer" value="{{ .Entry.ArrivalDate }}" required>
+                    <label for="arrivalDate" class="label-peer">
+                        Data de Recebimento
+                    </label>
+                </div>
+            </fieldset>
             <div class="flex items-center justify-around mt-2 w-52 mx-auto" id="btns-container">
                 <button class="cancel-btn" type="button" onclick="closeEntryFormDialog()">Cancelar</button>
                 <button class="add-btn" type="submit">
@@ -68,28 +83,20 @@
             dialogEl.showModal()
             const arrivalDateEl = dialogEl.querySelector("input#arrivalDate")
             if (!!arrivalDateEl) {
-                const longDate = arrivalDateEl.getAttribute("value")
-                if (longDate) {
-                    arrivalDateEl.setAttribute("value", new Date(Number(longDate)).toLocaleDateString('en-CA'))
+                const existingDate = arrivalDateEl.getAttribute("value")
+                if (existingDate) {
+                    arrivalDateEl.setAttribute("value", existingDate)
                 } else {
-                    arrivalDateEl.setAttribute("value", new Date().toLocaleDateString('en-CA'))
+                    const nowDateTime = new Intl.DateTimeFormat('en-CA', { dateStyle: 'short', timeStyle: 'short' }).format(new Date()).split(",")
+                    const date = nowDateTime[0]
+                    const time = nowDateTime[1].trim().split(" ")[0]
+                    arrivalDateEl.setAttribute("value", `${date}T${time}`)
                 }
             }
-            function configReqListener(evt) {
-                const now = new Date()
-                const ad = evt.detail.parameters.get("arrivalDate")
-                if (!!ad) {
-                    const unixDate = new Date(ad).setHours(24 + now.getHours(), now.getMinutes())
-                    evt.detail.parameters.set("arrivalDate", unixDate)
-                }
-            }
-
-            document.body.addEventListener('htmx:configRequest', configReqListener);
 
             function closeEntryFormDialog() {
                 dialogEl.close()
                 dialogEl.remove()
-                document.body.removeEventListener('htmx:configRequest', configReqListener)
             }
             dialogEl.addEventListener('close', closeEntryFormDialog)
             window.closeEntryFormDialog = closeEntryFormDialog

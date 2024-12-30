@@ -48,13 +48,17 @@ func GetAllEntrySimplified() []SimplifiedEntry {
 	return simplifiedEntries
 }
 
+func GetFiltersForm() entryFilters {
+	return entryFilters{
+		Vehicles: vehicle_service.GetVehicles(),
+		Fields:   entry_model.GetFields(),
+	}
+}
+
 func GetEntryContent() entryContent {
 	entries := GetAllEntrySimplified()
 	return entryContent{
 		Entries: entries,
-		Filters: entryFilters{
-			Vehicles: vehicle_service.GetVehicles(),
-			Fields:   entry_model.GetFields(),
-		},
+		Filters: GetFiltersForm(),
 	}
 }

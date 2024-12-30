@@ -23,18 +23,13 @@
 @layer base {
 
     label {
-        @apply text-gray-600 h-5
+        @apply text-gray-500 h-5
     }
 
     input,
     select {
         @apply transition-all duration-300 ease-linear outline-0 rounded-md h-7 px-2 text-gray-700 focus:ring-green-600 focus:ring-2 focus:ring-inset bg-stone-100
     }
-
-    input:disabled, select:disabled {
-        @apply bg-stone-50 placeholder-stone-400/50 cursor-not-allowed
-    }
-
 
     button {
         @apply outline-0
@@ -43,7 +38,7 @@
 
 @layer utilities {
     .label-peer {
-        @apply peer-focus:text-green-600 peer-focus:font-bold transition-all duration-300 ease-linear px-2 peer-disabled:line-through peer-disabled:text-stone-400/50 peer-disabled:cursor-not-allowed
+        @apply peer-focus:text-green-600 peer-focus:font-bold transition-all duration-300 ease-linear px-2
     }
 
     .text-xs {
