@@ -21,10 +21,10 @@ func PutEntry(ge entity_public.Entry) *entity_public.Entry {
 	return entry_model.PutEntry(ge)
 }
 
-func GetFields() []entry_model.Field {
+func GetFields() []entity_public.Field {
 	return entry_model.GetFields()
 }
 
-func AddField(name string) uint32 {
+func AddField(name string) uint16 {
 	return entry_model.AddField(name)
 }

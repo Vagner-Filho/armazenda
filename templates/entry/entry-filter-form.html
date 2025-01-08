@@ -1,9 +1,10 @@
 {{ block "entry-filter-form" . }}
 <form class="flex flex-col sm:flex-row flex-wrap items-start sm:items-end gap-1 justify-center" id="entry-filters-form" hx-post="/entry/filter" hx-target="main#list">
         {{ template "filter-entry-date" }}
-        {{ template "filter-entry-vehicle" .Vehicles }}
+        {{ template "filter-entry-crop" .Crops }}
         {{ template "filter-entry-grain" }}
         {{ template "filter-entry-field" .Fields }}
+        {{ template "filter-entry-vehicle" .Vehicles }}
         {{ template "filter-entry-netweight" }}
     </form>
 {{ end }}

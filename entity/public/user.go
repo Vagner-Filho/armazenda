@@ -1,6 +1,6 @@
 package entity_public
 
-type NewUser struct {
+type User struct {
 	Email             string `form:"email" binding:"required"`
 	Passwd            string `form:"passwd" binding:"required"`
 	PasswdConfirm     string `form:"passwdConfirm" binding:"required"`

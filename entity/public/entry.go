@@ -7,8 +7,8 @@ import (
 type Entry struct {
 	Manifest    uint32  `form:"manifest"`
 	Product     Grain   `form:"product" binding:"gte=0"`
-	Field       uint32  `form:"field" binding:"required"`
-	Harvest     string  `form:"harvest" binding:"required"`
+	Field       uint16  `form:"field" binding:"required"`
+	Crop        uint8   `form:"crop" binding:"required"`
 	Vehicle     string  `form:"vehiclePlate"`
 	GrossWeight float64 `form:"grossWeight" binding:"required"`
 	Tare        float64 `form:"tare" binding:"required"`
@@ -20,8 +20,8 @@ type Entry struct {
 type EntryFilter struct {
 	Manifest       uint32  `form:"manifest"`
 	Product        Grain   `form:"product"`
-	Field          uint32  `form:"field"`
-	Harvest        string  `form:"harvest"`
+	Field          uint16  `form:"field"`
+	Crop           uint8   `form:"crop" binding:"gte=0"`
 	VehiclePlate   string  `form:"vehiclePlate"`
 	GrossWeightMin float64 `form:"grossWeightMin"`
 	GrossWeightMax float64 `form:"grossWeightMax"`

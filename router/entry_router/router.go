@@ -28,7 +28,7 @@ func GetEntryContent(c *gin.Context) {
 
 type PopulatedEntryForm struct {
 	Entry    entity_public.Entry
-	Fields   []entry_model.Field
+	Fields   []entity_public.Field
 	Vehicles []vehicle_model.Vehicle
 }
 
@@ -41,9 +41,9 @@ func GetEntryForm(c *gin.Context) {
 
 	entry := entry_service.GetEntry(uint32(converted))
 	//fields := entry_service.GetFields()
-	var fields []entry_model.Field
+	var fields []entity_public.Field
 	for _, field := range entry_service.GetFields() {
-		newF := entry_model.Field{}
+		newF := entity_public.Field{}
 		newF.Id = field.Id
 		newF.Selected = field.Id == entry.Field
 		newF.Name = field.Name
@@ -77,7 +77,7 @@ func AddEntry(c *gin.Context) {
 	ge := entity_public.Entry{
 		Product:     newEntry.Product,
 		Field:       newEntry.Field,
-		Harvest:     newEntry.Harvest,
+		Crop:        newEntry.Crop,
 		Manifest:    0,
 		Vehicle:     newEntry.Vehicle,
 		ArrivalDate: newEntry.ArrivalDate,
@@ -118,7 +118,7 @@ func PutEntry(c *gin.Context) {
 	ge := entity_public.Entry{
 		Product:     newEntry.Product,
 		Field:       newEntry.Field,
-		Harvest:     newEntry.Harvest,
+		Crop:        newEntry.Crop,
 		Vehicle:     newEntry.Vehicle,
 		ArrivalDate: newEntry.ArrivalDate,
 		GrossWeight: newEntry.GrossWeight,
@@ -136,7 +136,7 @@ func PutEntry(c *gin.Context) {
 	c.HTML(500, "toast", "failed")
 }
 
-func GetFields() []entry_model.Field {
+func GetFields() []entity_public.Field {
 	return entry_service.GetFields()
 }
 
@@ -153,7 +153,7 @@ func AddField(c *gin.Context) {
 	}
 
 	newId := entry_service.AddField(newField.Name)
-	c.HTML(http.StatusCreated, "field-option", entry_model.Field{Name: newField.Name, Id: newId})
+	c.HTML(http.StatusCreated, "field-option", entity_public.Field{Name: newField.Name, Id: newId})
 	return
 }
 

@@ -1,0 +1,5 @@
+{{ block "crop-option" . }}
+<option value="{{ .Id }}" {{ if .Selected }} selected {{ end }}>
+    {{ .Name }}
+</option>
+{{ end }}

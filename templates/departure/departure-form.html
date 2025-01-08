@@ -1,30 +1,43 @@
 {{ block "departure-form" . }}
-<dialog id="departure-form-dialog" class="rounded-md w-4/5">
+<dialog id="departure-form-dialog" class="rounded-md w-full max-w-3xl bg-stone-100">
     <div class="p-4 relative">
         {{ template "close-dialog-btn" "dialog#departure-form-dialog" }}
-        <form class="flex flex-col" {{ if .Manifest }} hx-put="/departure/{{ .Manifest }}"
+        <h1 class="text-center font-medium text-xl">
+            Nova Saída
+        </h1>
+        <form class="flex flex-col gap-4" {{ if .Manifest }} hx-put="/departure/{{ .Manifest }}"
             hx-target="#departure-{{ .Manifest }}" hx-swap="outerHTML" {{ else }} hx-post="/departure"
             hx-target="#departure-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#btns-container">
-            <label for="grain-selector" class="px-2">
-                Grão
-            </label>
-            {{ template "grain-selector" }}
-            <label for="destination">
-                Destino
-            </label>
-            {{ template "buyer-selector" .Buyers }}
-            <label for="vehiclePlate" class="px-2 mt-1">
-                Veículo
-            </label>
-            {{ template "vehicle-selector" .Vehicles }}
-            <label for="weight" class="px-2 mt-1">
-                Peso
-            </label>
-            <input type="number" name="weight" id="weight" value="{{ .Weight }}" required>
-            <label for="departureDate" class="px-2 mt-1">
-                Data de Saída
-            </label>
-            <input type="date" name="departureDate" id="departureDate" value="{{ .DepartureDate }}" required>
+            <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
+                <legend class="text-lg uppercase rounded-t-lg bg-white px-2 font-light">
+                    Identificação
+                </legend>
+                <div class="flex flex-col-reverse">
+                    {{ template "grain-selector" }}
+                    <label for="grain-selector" class="px-2">
+                        Grão
+                    </label>
+                </div>
+                {{ template "buyer-selector" .Buyers }}
+                <div class="flex flex-col-reverse">
+                    <input type="number" name="weight" id="weight" class="peer" value="{{ .Weight }}" required>
+                    <label for="weight" class="label-peer">
+                        Peso
+                    </label>
+                </div>
+            </fieldset>
+            <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
+                <legend class="text-lg uppercase rounded-t-lg bg-white px-2 font-light">
+                    Saída
+                </legend>
+                {{ template "vehicle-selector" .Vehicles }}
+                <div class="flex flex-col-reverse">
+                    <input type="datetime-local" name="departureDate" id="departure-input" class="peer" value="{{ .DepartureDate }}" required>
+                    <label for="departure-input" class="label-peer">
+                        Data de Saída
+                    </label>
+                </div>
+            </fieldset>
             <div class="flex items-center justify-around mt-2 w-52 mx-auto" id="btns-container">
                 <button class="cancel-btn" type="button" onclick="closeDepartureForm()">Cancelar</button>
                 <button class="add-btn" type="submit">
@@ -41,11 +54,14 @@
             dialogEl.showModal()
             const departureDateEl = dialogEl.querySelector("input#departureDate")
             if (!!departureDateEl) {
-                const longDate = departureDateEl.getAttribute("value")
-                if (longDate) {
-                    departureDateEl.setAttribute("value", new Date(Number(longDate)).toLocaleDateString('en-CA'))
+                const existingDate = departureDateEl.getAttribute("value")
+                if (existingDate) {
+                    departureDateEl.setAttribute("value", existingDate)
                 } else {
-                    departureDateEl.setAttribute("value", new Date().toLocaleDateString('en-CA'))
+                    const nowDateTime = new Intl.DateTimeFormat('en-CA', { dateStyle: 'short', timeStyle: 'short', hour12: false }).format(new Date()).split(",")
+                    const date = nowDateTime[0]
+                    const time = nowDateTime[1].trim().split(" ")[0]
+                    departureDateEl.setAttribute("value", `${date}T${time}`)
                 }
             }
             function configReqListener(evt) {

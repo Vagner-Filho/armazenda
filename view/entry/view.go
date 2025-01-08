@@ -2,6 +2,7 @@ package entry_view
 
 import (
 	entity_public "armazenda/entity/public"
+	"armazenda/model/crop_model"
 	"armazenda/model/entry_model"
 	"armazenda/model/vehicle_model"
 	"armazenda/service/vehicle_service"
@@ -17,8 +18,9 @@ type SimplifiedEntry struct {
 }
 
 type entryFilters struct {
-	Fields   []entry_model.Field
+	Fields   []entity_public.Field
 	Vehicles []vehicle_model.Vehicle
+	Crops    []entity_public.Crop
 }
 
 type entryContent struct {
@@ -52,6 +54,7 @@ func GetFiltersForm() entryFilters {
 	return entryFilters{
 		Vehicles: vehicle_service.GetVehicles(),
 		Fields:   entry_model.GetFields(),
+		Crops:    crop_model.GetCrops(),
 	}
 }
 

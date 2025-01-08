@@ -23,3 +23,5 @@ temp/
 # Go workspace file
 go.work
 go.work.sum
+
+.env

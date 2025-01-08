@@ -1,0 +1,19 @@
+{{ block "filter-entry-crop" . }}
+<div class="w-full sm:max-w-28 lg:max-w-36 flex flex-col-reverse">
+    <select name="crop" id="crop-filter" class="w-full text-sm peer">
+        <option value="">
+            Nenhuma
+        </option>
+        {{ range . }}
+        {{ template "crop-option" . }}
+        {{ else }}
+        <option value="-1">
+            Nenhuma safra encontrada
+        </option>
+        {{ end }}
+    </select>
+    <label for="crop-filter" class="px-2 text-xs label-peer">
+        Safra
+    </label>
+</div>
+{{ end }}

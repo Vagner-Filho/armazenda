@@ -18,12 +18,7 @@
                         Grão
                     </label>
                 </div>
-                <div class="flex flex-col-reverse">
-                    <input type="text" name="harvest" id="harvest" class="peer" value="{{ .Entry.Harvest }}" required>
-                    <label for="harvest" class="label-peer">
-                        Safra
-                    </label>
-                </div>
+                {{ template "crop-selector" .Crops }}
                 {{ template "field-selector" .Fields }}
             </fieldset>
             <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
@@ -61,8 +56,8 @@
                     </label>
                 </div>
                 <div class="flex flex-col-reverse">
-                    <input type="datetime-local" name="arrivalDate" id="arrivalDate" class="peer" value="{{ .Entry.ArrivalDate }}" required>
-                    <label for="arrivalDate" class="label-peer">
+                    <input type="datetime-local" name="arrivalDate" id="arrival-date" class="peer" value="{{ .Entry.ArrivalDate }}" required>
+                    <label for="arrival-date" class="label-peer">
                         Data de Recebimento
                     </label>
                 </div>
@@ -87,7 +82,7 @@
                 if (existingDate) {
                     arrivalDateEl.setAttribute("value", existingDate)
                 } else {
-                    const nowDateTime = new Intl.DateTimeFormat('en-CA', { dateStyle: 'short', timeStyle: 'short' }).format(new Date()).split(",")
+                    const nowDateTime = new Intl.DateTimeFormat('en-CA', { dateStyle: 'short', timeStyle: 'short', hour12: false }).format(new Date()).split(",")
                     const date = nowDateTime[0]
                     const time = nowDateTime[1].trim().split(" ")[0]
                     arrivalDateEl.setAttribute("value", `${date}T${time}`)

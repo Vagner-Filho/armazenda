@@ -1,13 +1,18 @@
 package main
 
 import (
+	entity_public "armazenda/entity/public"
+	"armazenda/model/armazenda_database"
+	"armazenda/model/crop_model"
 	"armazenda/model/entry_model"
 	"armazenda/model/vehicle_model"
 	"armazenda/router/buyer_router"
+	"armazenda/router/crop_router"
 	"armazenda/router/departure_router"
 	"armazenda/router/entry_router"
 	"armazenda/router/user_router"
 	"armazenda/router/vehicle_router"
+	"context"
 	"embed"
 	"fmt"
 	"html/template"
@@ -15,6 +20,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 )
 
 //go:embed templates/*
@@ -24,6 +30,18 @@ var templatesFS embed.FS
 var assetsFS embed.FS
 
 func main() {
+
+	conn, err := pgx.Connect(context.Background(), "postgres://postgres:armazendapsswd@localhost:5432/postgres")
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+
+	defer conn.Close(context.Background())
+
+	armazenda_database.InitDb(conn)
+
 	entry_model.InitGrainMap()
 	router := gin.Default()
 	html := template.Must(template.ParseFS(templatesFS, "templates/*.html", "templates/**/*.html"))
@@ -45,9 +63,9 @@ func main() {
 	router.GET("/entry/filters", entry_router.GetEntryFiltersForm)
 
 	router.GET("/entry/form", func(c *gin.Context) {
-		var fields []entry_model.Field
+		var fields []entity_public.Field
 		for _, field := range entry_router.GetFields() {
-			newF := entry_model.Field{}
+			newF := entity_public.Field{}
 			newF.Selected = false
 			newF.Name = field.Name
 			newF.Id = field.Id
@@ -60,11 +78,17 @@ func main() {
 			newV.Plate = vehicle.Plate
 			vehicles = append(vehicles, newV)
 		}
+
+		var crops = crop_model.GetCrops()
 		c.HTML(http.StatusOK, "entry-form", gin.H{
 			"Fields":   fields,
 			"Vehicles": vehicles,
+			"Crops":    crops,
 		})
 	})
+
+	router.GET("/crop/form", crop_router.GetCropForm)
+	router.POST("/crop", crop_router.AddCrop)
 
 	router.GET("/entry/form/:id", entry_router.GetEntryForm)
 	router.POST("/entry", entry_router.AddEntry)

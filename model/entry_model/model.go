@@ -2,6 +2,7 @@ package entry_model
 
 import (
 	"armazenda/entity/public"
+	"armazenda/model/crop_model"
 	"armazenda/model/vehicle_model"
 	"armazenda/utils"
 	"slices"
@@ -10,13 +11,7 @@ import (
 
 var GrainMap = make(map[entity_public.Grain]string)
 
-type Field struct {
-	Id       uint32
-	Name     string
-	Selected bool
-}
-
-var fields = []Field{
+var fields = []entity_public.Field{
 	{
 		Id:   1,
 		Name: "Talhão 1",
@@ -35,12 +30,14 @@ var lastManifest uint32 = 3
 
 var vehicles = vehicle_model.GetVehicles()
 
+var crops = crop_model.GetCrops()
+
 var entries = []entity_public.Entry{
 	{
 		Manifest:    1,
 		Product:     entity_public.Corn,
 		Field:       fields[0].Id,
-		Harvest:     "Safra Milho 2024",
+		Crop:        crops[0].Id,
 		Vehicle:     vehicles[0].Plate,
 		GrossWeight: 17000,
 		Tare:        5000,
@@ -52,7 +49,7 @@ var entries = []entity_public.Entry{
 		Manifest:    2,
 		Product:     entity_public.Soy,
 		Field:       fields[1].Id,
-		Harvest:     "Safra Soja 23/24",
+		Crop:        crops[1].Id,
 		Vehicle:     vehicles[1].Plate,
 		GrossWeight: 15000,
 		Tare:        8000,
@@ -64,7 +61,7 @@ var entries = []entity_public.Entry{
 		Manifest:    3,
 		Product:     entity_public.Corn,
 		Field:       fields[2].Id,
-		Harvest:     "Sofra Milho 2024/2",
+		Crop:        crops[2].Id,
 		Vehicle:     vehicles[2].Plate,
 		GrossWeight: 23000,
 		Tare:        5981,
@@ -132,18 +129,18 @@ func PutEntry(ge entity_public.Entry) *entity_public.Entry {
 	return nil
 }
 
-func GetFields() []Field {
+func GetFields() []entity_public.Field {
 	return fields
 }
 
-func AddField(name string) uint32 {
+func AddField(name string) uint16 {
 	lastField := fields[len(fields)-1]
-	fields = append(fields, Field{Name: name, Id: lastField.Id + 1})
+	fields = append(fields, entity_public.Field{Name: name, Id: lastField.Id + 1})
 	return lastField.Id + 1
 }
 
-func GetField(id uint32) *Field {
-	fieldIndex := slices.IndexFunc(fields, func(e Field) bool {
+func GetField(id uint16) *entity_public.Field {
+	fieldIndex := slices.IndexFunc(fields, func(e entity_public.Field) bool {
 		return e.Id == id
 	})
 
@@ -181,6 +178,9 @@ var availableEntryFilters = map[string]func(e entity_public.Entry, ef entity_pub
 	},
 	"NetWeightMax": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
 		return e.NetWeight <= ef.NetWeightMax
+	},
+	"Crop": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
+		return e.Crop == ef.Crop
 	},
 }
 
