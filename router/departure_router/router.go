@@ -4,8 +4,6 @@ import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/buyer_model"
 	"armazenda/model/departure_model"
-	"armazenda/model/vehicle_model"
-	"armazenda/router/vehicle_router"
 	"armazenda/service/departure_service"
 	"armazenda/service/vehicle_service"
 	"armazenda/view/departure"
@@ -20,15 +18,16 @@ func GetDepartureContent(c *gin.Context) {
 }
 
 func GetDepartureForm(c *gin.Context) {
+	vehicles, _ := vehicle_service.GetVehicles()
 	c.HTML(http.StatusOK, "departure-form", gin.H{
-		"Vehicles": vehicle_service.GetVehicles(),
+		"Vehicles": vehicles,
 		"Buyers":   buyer_model.GetBuyers(),
 	})
 }
 
 type FilledDeparture struct {
 	entity_public.Departure
-	Vehicles []vehicle_model.Vehicle
+	Vehicles []entity_public.Vehicle
 	Buyers   []entity_public.Buyer
 }
 
@@ -44,13 +43,11 @@ func GetFilledDepartureForm(c *gin.Context) {
 		c.HTML(http.StatusBadRequest, "toast", gin.H{})
 	}
 
-	var vehicles []vehicle_model.Vehicle
-	for _, vehicle := range vehicle_router.GetVehicles() {
-		vehicles = append(vehicles, vehicle_model.Vehicle{
-			Selected: departure.VehiclePlate == vehicle.Plate,
-			Plate:    vehicle.Plate,
-			Name:     vehicle.Name,
-		})
+	vehicles, _ := vehicle_service.GetVehicles()
+	for i, vehicle := range vehicles {
+		if departure.VehiclePlate == vehicle.Plate {
+			vehicles[i].Selected = true
+		}
 	}
 
 	var buyers []entity_public.Buyer

@@ -2,149 +2,90 @@ package entry_model
 
 import (
 	"armazenda/entity/public"
-	"armazenda/model/crop_model"
-	"armazenda/model/vehicle_model"
+	model_error "armazenda/model/error"
 	"armazenda/utils"
-	"slices"
+	"context"
+	"errors"
+	"fmt"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
+type entryModel struct {
+	conn *pgx.Conn
+}
+
+var entryModelImpl *entryModel
+
+func InitEntryModel(conn *pgx.Conn) (*entryModel, error) {
+	if conn == nil {
+		return nil, errors.New("conn cant be null")
+	}
+
+	if entryModelImpl == nil {
+		entryModelImpl = &entryModel{
+			conn: conn,
+		}
+	}
+
+	return entryModelImpl, nil
+}
+
+func GetEntryModel() (*entryModel, error) {
+	if entryModelImpl == nil {
+		return nil, errors.New("entry model hasnt been initialized")
+	}
+	return entryModelImpl, nil
+}
+
 var GrainMap = make(map[entity_public.Grain]string)
-
-var fields = []entity_public.Field{
-	{
-		Id:   1,
-		Name: "Talhão 1",
-	},
-	{
-		Id:   2,
-		Name: "2º talhão",
-	},
-	{
-		Id:   3,
-		Name: "Terceiro talhão",
-	},
-}
-
-var lastManifest uint32 = 3
-
-var vehicles = vehicle_model.GetVehicles()
-
-var crops = crop_model.GetCrops()
-
-var entries = []entity_public.Entry{
-	{
-		Manifest:    1,
-		Product:     entity_public.Corn,
-		Field:       fields[0].Id,
-		Crop:        crops[0].Id,
-		Vehicle:     vehicles[0].Plate,
-		GrossWeight: 17000,
-		Tare:        5000,
-		Humidity:    "10%",
-		NetWeight:   17000 - 5000,
-		ArrivalDate: time.Now().AddDate(0, -1, -3).Format(utils.TimeLayout),
-	},
-	{
-		Manifest:    2,
-		Product:     entity_public.Soy,
-		Field:       fields[1].Id,
-		Crop:        crops[1].Id,
-		Vehicle:     vehicles[1].Plate,
-		GrossWeight: 15000,
-		Tare:        8000,
-		Humidity:    "10%",
-		NetWeight:   15000 - 8000,
-		ArrivalDate: time.Now().Format(utils.TimeLayout),
-	},
-	{
-		Manifest:    3,
-		Product:     entity_public.Corn,
-		Field:       fields[2].Id,
-		Crop:        crops[2].Id,
-		Vehicle:     vehicles[2].Plate,
-		GrossWeight: 23000,
-		Tare:        5981,
-		Humidity:    "10%",
-		NetWeight:   23000 - 5981,
-		ArrivalDate: time.Now().Format(utils.TimeLayout),
-	},
-}
 
 func InitGrainMap() {
 	GrainMap[entity_public.Corn] = "Milho"
 	GrainMap[entity_public.Soy] = "Soja"
 }
 
-func GetAllEntries() []entity_public.Entry {
-	return entries
-}
-
-func AddEntry(ge entity_public.Entry) entity_public.Entry {
-	lastManifest = lastManifest + 1
-	ge.Manifest = lastManifest
-	if ge.GrossWeight-ge.Tare != ge.NetWeight {
-		ge.NetWeight = ge.GrossWeight - ge.Tare
-	}
-	entries = append(entries, ge)
-	return ge
-}
-
-func DeleteEntry(id uint32) int {
-	var indexToRemove = -1
-	for i, ge := range entries {
-		if ge.Manifest == id {
-			indexToRemove = i
-		}
-	}
-	if indexToRemove > -1 {
-		entries = slices.Delete(entries, indexToRemove, indexToRemove+1)
-	}
-	return indexToRemove
-}
-
-func GetEntry(id uint32) entity_public.Entry {
-	var entry *entity_public.Entry = nil
-	for _, ge := range entries {
-		if ge.Manifest == id {
-			entry = &ge
-		}
-	}
-	return *entry
-}
-
-func PutEntry(ge entity_public.Entry) *entity_public.Entry {
-	var geIndex = slices.IndexFunc(entries, func(e entity_public.Entry) bool {
-		return e.Manifest == ge.Manifest
-	})
-
-	if ge.NetWeight != ge.GrossWeight-ge.Tare {
-		ge.NetWeight = ge.GrossWeight - ge.Tare
+func (em *entryModel) GetAllEntriesSimplified() ([]entity_public.SimplifiedEntry, *model_error.ModelError) {
+	rows, queryErr := em.conn.Query(context.Background(), "SELECT id, product, field, vehicle, netWeight, arrivalDate FROM entry")
+	if queryErr != nil {
+		fmt.Printf("\n queryErr: %v\n", queryErr.Error())
+		return []entity_public.SimplifiedEntry{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
-	if geIndex > -1 {
-		entries = slices.Replace(entries, geIndex, geIndex+1, ge)
-		return &ge
+	entries, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.SimplifiedEntry])
+	if collectErr != nil {
+		fmt.Printf("\n collectErr: %v\n", collectErr.Error())
+		return []entity_public.SimplifiedEntry{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
-	return nil
+
+	return entries, nil
 }
 
-func GetFields() []entity_public.Field {
-	return fields
+func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.Entry, *model_error.ModelError) {
+	row, queryErr := em.conn.Query(context.Background(), `INSERT INTO entry (product, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate) VALUES (@product, @field, @crop, @vehicle, @grossweight, @tare, @netweight, @humidity, @arrivalDate) RETURNING product, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate`)
+
+	if queryErr != nil {
+		return entity_public.Entry{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	entry, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.Entry])
+	if collectErr != nil {
+		return entity_public.Entry{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+	return entry, nil
+
 }
 
-func AddField(name string) uint16 {
-	lastField := fields[len(fields)-1]
-	fields = append(fields, entity_public.Field{Name: name, Id: lastField.Id + 1})
-	return lastField.Id + 1
+func (em *entryModel) DeleteEntry(id uint32) {
 }
 
-func GetField(id uint16) *entity_public.Field {
-	fieldIndex := slices.IndexFunc(fields, func(e entity_public.Field) bool {
-		return e.Id == id
-	})
+func (em *entryModel) GetEntry(id uint32) {
 
-	return &fields[fieldIndex]
+}
+
+func (em *entryModel) PutEntry(ge entity_public.Entry) {
+
 }
 
 var availableEntryFilters = map[string]func(e entity_public.Entry, ef entity_public.EntryFilter) bool{
@@ -187,8 +128,9 @@ var availableEntryFilters = map[string]func(e entity_public.Entry, ef entity_pub
 func FilterEntries(filter entity_public.EntryFilter) ([]entity_public.Entry, error) {
 	var filteredEntries []entity_public.Entry
 
+	bomdia := []entity_public.Entry{}
 	filters := filter.GetFilters(availableEntryFilters)
-	for _, entry := range entries {
+	for _, entry := range bomdia {
 		include := true
 		for f := range filters {
 			fff := filters[f]

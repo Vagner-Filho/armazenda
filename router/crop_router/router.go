@@ -3,7 +3,6 @@ package crop_router
 import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/crop_model"
-	"armazenda/utils"
 	"net/http"
 	"time"
 
@@ -29,14 +28,32 @@ func AddCrop(c *gin.Context) {
 
 	startDateTime, startDateErr := time.Parse("2006-01-02", newCrop.StartDate)
 	if startDateErr != nil {
-		c.String(http.StatusBadRequest, "", err.Error())
+		c.String(http.StatusBadRequest, "", startDateErr.Error())
 		return
 	}
 
-	addedCrop := crop_model.AddCrop(entity_public.Crop{
+	cropModel, _ := crop_model.GetCropModel()
+	addedCrop, addErr := cropModel.AddCrop(entity_public.Crop{
 		Name:      newCrop.Name,
-		StartDate: startDateTime.Format(utils.TimeLayout),
+		StartDate: startDateTime,
 	})
 
+	if addErr != nil {
+		if addErr.IsServerErr == true {
+			c.HTML(http.StatusInternalServerError, "toast", gin.H{
+				"Message": addErr.Error(),
+				"IsError": true,
+			})
+			return
+		}
+
+		t := entity_public.GetWarningToast(addErr.Error(), "")
+		c.Header("HX-Trigger", string(t.ToJson()))
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	t := entity_public.GetSuccessToast("Safra Cadastrada", "")
+	c.Header("HX-Trigger", string(t.ToJson()))
 	c.HTML(http.StatusCreated, "crop-option", addedCrop)
 }

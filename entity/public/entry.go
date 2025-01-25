@@ -4,8 +4,17 @@ import (
 	"reflect"
 )
 
+type SimplifiedEntry struct {
+	Id          uint32
+	Product     string
+	Field       string
+	Vehicle     string
+	NetWeight   float64
+	ArrivalDate string
+}
+
 type Entry struct {
-	Manifest    uint32  `form:"manifest"`
+	Id          uint32  `form:"id"`
 	Product     Grain   `form:"product" binding:"gte=0"`
 	Field       uint16  `form:"field" binding:"required"`
 	Crop        uint8   `form:"crop" binding:"required"`
@@ -18,7 +27,7 @@ type Entry struct {
 }
 
 type EntryFilter struct {
-	Manifest       uint32  `form:"manifest"`
+	Id             uint32  `form:"id"`
 	Product        Grain   `form:"product"`
 	Field          uint16  `form:"field"`
 	Crop           uint8   `form:"crop" binding:"gte=0"`

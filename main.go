@@ -1,17 +1,19 @@
 package main
 
 import (
-	entity_public "armazenda/entity/public"
 	"armazenda/model/armazenda_database"
 	"armazenda/model/crop_model"
 	"armazenda/model/entry_model"
+	"armazenda/model/field_model"
 	"armazenda/model/vehicle_model"
 	"armazenda/router/buyer_router"
 	"armazenda/router/crop_router"
 	"armazenda/router/departure_router"
 	"armazenda/router/entry_router"
+	"armazenda/router/field_router"
 	"armazenda/router/user_router"
 	"armazenda/router/vehicle_router"
+	"armazenda/service/vehicle_service"
 	"context"
 	"embed"
 	"fmt"
@@ -20,7 +22,6 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
 )
 
 //go:embed templates/*
@@ -31,19 +32,30 @@ var assetsFS embed.FS
 
 func main() {
 
-	conn, err := pgx.Connect(context.Background(), "postgres://postgres:armazendapsswd@localhost:5432/postgres")
+	conn, connErr := armazenda_database.GetDbConnection()
 
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
+	if connErr != nil {
+		fmt.Printf("db connection error: %v \n", connErr.Error())
+		return
+	}
+
+	if conn == nil {
+		fmt.Print("db connection nil\n")
+		return
 	}
 
 	defer conn.Close(context.Background())
 
 	armazenda_database.InitDb(conn)
+	crop_model.InitCropModel(conn)
+	field_model.InitFieldModel(conn)
+	vehicle_model.InitVehicleModel(conn)
+	entry_model.InitEntryModel(conn)
 
 	entry_model.InitGrainMap()
+
 	router := gin.Default()
+
 	html := template.Must(template.ParseFS(templatesFS, "templates/*.html", "templates/**/*.html"))
 	router.SetHTMLTemplate(html)
 
@@ -63,23 +75,13 @@ func main() {
 	router.GET("/entry/filters", entry_router.GetEntryFiltersForm)
 
 	router.GET("/entry/form", func(c *gin.Context) {
-		var fields []entity_public.Field
-		for _, field := range entry_router.GetFields() {
-			newF := entity_public.Field{}
-			newF.Selected = false
-			newF.Name = field.Name
-			newF.Id = field.Id
-			fields = append(fields, newF)
-		}
-		var vehicles []vehicle_model.Vehicle
-		for _, vehicle := range vehicle_router.GetVehicles() {
-			newV := vehicle_model.Vehicle{}
-			newV.Name = vehicle.Name
-			newV.Plate = vehicle.Plate
-			vehicles = append(vehicles, newV)
-		}
+		vehicles, _ := vehicle_service.GetVehicles()
 
-		var crops = crop_model.GetCrops()
+		cropModel, _ := crop_model.GetCropModel()
+		crops, _ := cropModel.GetCrops()
+
+		fieldModel, _ := field_model.GetFieldModel()
+		fields, _ := fieldModel.GetFields()
 		c.HTML(http.StatusOK, "entry-form", gin.H{
 			"Fields":   fields,
 			"Vehicles": vehicles,
@@ -95,8 +97,8 @@ func main() {
 	router.PUT("/entry/:id", entry_router.PutEntry)
 	router.DELETE("/entry/:id", entry_router.DeleteEntry)
 	router.POST("/entry/filter", entry_router.FilterEntries)
-	router.POST("/entry/field", entry_router.AddField)
-	router.GET("/entry/field/form", entry_router.GetFieldForm)
+	router.POST("/field", field_router.AddField)
+	router.GET("/entry/field/form", field_router.GetFieldForm)
 
 	router.POST("/departure/filter", departure_router.FilterDepartures)
 	router.GET("/departure/list", departure_router.GetDepartureContent)

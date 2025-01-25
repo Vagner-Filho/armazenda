@@ -6,25 +6,36 @@ import (
 )
 
 func AddEntry(ge entity_public.Entry) entity_public.Entry {
-	return entry_model.AddEntry(ge)
+	eModel, getModelErr := entry_model.GetEntryModel()
+	if getModelErr != nil {
+	}
+
+	newEntry, addErr := eModel.AddEntry(ge)
+	if addErr != nil {
+	}
+	return newEntry
 }
 
 func DeleteEntry(id uint32) int {
-	return entry_model.DeleteEntry(id)
+	eModel, getModelErr := entry_model.GetEntryModel()
+	if getModelErr != nil {
+	}
+	eModel.DeleteEntry(id)
+	return 111
 }
 
 func GetEntry(id uint32) entity_public.Entry {
-	return entry_model.GetEntry(id)
+	eModel, getModelErr := entry_model.GetEntryModel()
+	if getModelErr != nil {
+	}
+	eModel.GetEntry(id)
+	return entity_public.Entry{}
 }
 
 func PutEntry(ge entity_public.Entry) *entity_public.Entry {
-	return entry_model.PutEntry(ge)
-}
-
-func GetFields() []entity_public.Field {
-	return entry_model.GetFields()
-}
-
-func AddField(name string) uint16 {
-	return entry_model.AddField(name)
+	eModel, getModelErr := entry_model.GetEntryModel()
+	if getModelErr != nil {
+	}
+	eModel.PutEntry(ge)
+	return &entity_public.Entry{}
 }

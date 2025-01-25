@@ -2,28 +2,43 @@ package armazenda_database
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func handleStmtExec(c *pgx.Conn, stmt *pgconn.StatementDescription, err error) {
+	if c == nil {
+		fmt.Printf("missing db connection: %v\n", stmt.Name)
+		return
+	}
+
+	if stmt == nil {
+		fmt.Printf("missing db statement")
+		return
+	}
+
 	if err != nil {
+		fmt.Printf("stmt name: %v\n", stmt.Name)
 		fmt.Printf("prepare stmt err %v\n", err.Error())
+		return
 	}
 
 	_, execErr := c.Exec(context.Background(), stmt.SQL)
 
 	if execErr != nil {
-		fmt.Printf("prepare stmt err %v\n", execErr.Error())
+		fmt.Printf("stmt name: %v\n", stmt.Name)
+		fmt.Printf("exec stmt err %v\n", execErr.Error())
 	}
 }
 
 func initProduct(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init product table", `
 	CREATE TABLE IF NOT EXISTS product (
-    		id SMALLINT PRIMARY KEY,
+    		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     		name VARCHAR(255) NOT NULL
 	);
 	`)
@@ -34,7 +49,7 @@ func initProduct(c *pgx.Conn) {
 func initField(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init field table", `
 	CREATE TABLE IF NOT EXISTS field (
-    		id SMALLINT PRIMARY KEY,
+    		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		name VARCHAR(255) NOT NULL
 	);
 	`)
@@ -45,8 +60,8 @@ func initField(c *pgx.Conn) {
 func initCrop(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init crop table", `
 	CREATE TABLE IF NOT EXISTS crop (
-		id SMALLINT PRIMARY KEY,
-		name VARCHAR(255) NOT NULL,
+		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+		name VARCHAR(255) UNIQUE NOT NULL,
 		startDate DATE NOT NULL
 	);
 	`)
@@ -151,7 +166,7 @@ func initDepartureBuyer(c *pgx.Conn) {
 	CREATE TABLE IF NOT EXISTS departureBuyer (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		departureId INTEGER UNIQUE NOT NULL,
-		buyerId VARCHAR(255) NOT NULL,
+		buyerId INTEGER NOT NULL,
 		FOREIGN KEY (buyerId) REFERENCES buyer(id),
 		FOREIGN KEY (departureId) REFERENCES departure(id)
 	);
@@ -163,7 +178,7 @@ func initDepartureBuyer(c *pgx.Conn) {
 func initAddrress(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init address table", `
 	CREATE TABLE IF NOT EXISTS address (
-		id SMALLINT PRIMARY KEY,
+		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		street VARCHAR(255) NOT NULL,
 		cep VARCHAR(255) NOT NULL,
 		number INTEGER,
@@ -179,7 +194,7 @@ func initAddrress(c *pgx.Conn) {
 func initAddrressComplement(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init addressComplement table", `
 	CREATE TABLE IF NOT EXISTS addressComplement (
-		id SMALLINT PRIMARY KEY,
+		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		complement TEXT NOT NULL,
 		addressId SMALLINT UNIQUE NOT NULL,
 		FOREIGN KEY (addressId) REFERENCES address(id)
@@ -192,7 +207,7 @@ func initAddrressComplement(c *pgx.Conn) {
 func initContact(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init contact table", `
 	CREATE TABLE IF NOT EXISTS contact (
-		id SMALLINT PRIMARY KEY,
+		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		email VARCHAR(255) NOT NULL,
 		phoneNumber VARCHAR(255) NOT NULL
 	);
@@ -216,4 +231,22 @@ func InitDb(c *pgx.Conn) {
 	initContact(c)
 	initAddrress(c)
 	initAddrressComplement(c)
+}
+
+var dbc *pgx.Conn
+
+func GetDbConnection() (*pgx.Conn, error) {
+	if dbc == nil {
+		dbc, err := pgx.Connect(context.Background(), "postgres://postgres:armazendapsswd@localhost:5432/postgres")
+
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+			os.Exit(1)
+
+			return nil, errors.New("Falha em conectar ao banco")
+		}
+
+		return dbc, nil
+	}
+	return dbc, nil
 }

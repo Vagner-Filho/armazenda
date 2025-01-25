@@ -1,8 +1,9 @@
 package vehicle_router
 
 import (
-	"armazenda/model/vehicle_model"
+	entity_public "armazenda/entity/public"
 	"armazenda/service/vehicle_service"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,7 +15,9 @@ type VehicleForm struct {
 }
 
 func GetVehiclesForm(c *gin.Context) {
-	c.HTML(http.StatusOK, "vehicle-form", vehicle_service.GetVehicles())
+	//vehicles, _ := vehicle_service.GetVehicles()
+	//c.HTML(http.StatusOK, "vehicle-form", vehicles)
+	c.HTML(http.StatusOK, "vehicle-form", nil)
 }
 
 func AddVehicle(c *gin.Context) {
@@ -25,14 +28,20 @@ func AddVehicle(c *gin.Context) {
 		return
 	}
 
-    vehicle, _ := vehicle_service.AddVehicle(vehicle_model.Vehicle{
-        Name: newVehicle.Name,
-        Plate: newVehicle.Plate,
-    })
+	vehicle, addErr := vehicle_service.AddVehicle(entity_public.Vehicle{
+		Name:  newVehicle.Name,
+		Plate: newVehicle.Plate,
+	})
 
-    c.HTML(http.StatusCreated, "vehicle-option", vehicle)
-}
+	if addErr != nil {
+		fmt.Printf("%v", addErr)
+		t := entity_public.GetWarningToast(addErr.Error(), "")
+		c.Header("HX-Trigger", string(t.ToJson()))
+		c.Status(http.StatusBadRequest)
+		return
+	}
 
-func GetVehicles() []vehicle_model.Vehicle {
-	return vehicle_service.GetVehicles()
+	t := entity_public.GetSuccessToast("Veículo Cadastrado", "")
+	c.Header("HX-Trigger", string(t.ToJson()))
+	c.HTML(http.StatusCreated, "vehicle-option", vehicle)
 }

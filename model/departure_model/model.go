@@ -2,13 +2,10 @@ package departure_model
 
 import (
 	entity_public "armazenda/entity/public"
-	"armazenda/model/vehicle_model"
 	"armazenda/utils"
 	"slices"
 	"time"
 )
-
-var vehicles = vehicle_model.GetVehicles()
 
 var availableDepartureFilters = map[string]func(e entity_public.Departure, ef entity_public.DepartureFilter) bool{
 	"DepartureDateMin": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
@@ -48,7 +45,6 @@ var departures = []entity_public.Departure{
 		Manifest:      0,
 		DepartureDate: time.Now().AddDate(0, -1, -3).Format(utils.TimeLayout),
 		Product:       2,
-		VehiclePlate:  vehicles[0].Plate,
 		Weight:        5000,
 		Buyer:         "0-12345678901",
 	},
@@ -56,7 +52,6 @@ var departures = []entity_public.Departure{
 		Manifest:      1,
 		DepartureDate: time.Now().AddDate(0, 0, -15).Format(utils.TimeLayout),
 		Product:       2,
-		VehiclePlate:  vehicles[1].Plate,
 		Weight:        10000,
 		Buyer:         "0-12345678901",
 	},
@@ -64,7 +59,6 @@ var departures = []entity_public.Departure{
 		Manifest:      2,
 		DepartureDate: time.Now().AddDate(0, 0, -7).Format(utils.TimeLayout),
 		Product:       1,
-		VehiclePlate:  vehicles[2].Plate,
 		Weight:        15000,
 		Buyer:         "0-12345678901",
 	},

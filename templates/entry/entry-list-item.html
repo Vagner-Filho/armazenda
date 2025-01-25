@@ -1,7 +1,7 @@
 {{ block "entry-list-item" . }}
-<tr class="text-center whitespace-nowrap text-sm sm:text-base" id="entry-{{ .Manifest }}">
+<tr class="text-center whitespace-nowrap text-sm sm:text-base" id="entry-{{ .Id }}">
     <td>
-        {{ .Manifest }}
+        {{ .Id }}
     </td>
     <td>
         {{ .Product }}
@@ -21,11 +21,11 @@
     <td>
         <div class="flex items-center justify-center gap-2 text-green-500">
             <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-            <button type="button" hx-get="/entry/form/{{ .Manifest }}" hx-target="body" hx-swap="beforeend">
+            <button type="button" hx-get="/entry/form/{{ .Id }}" hx-target="body" hx-swap="beforeend">
                 <iconify-icon icon="la:pen"></iconify-icon>
             </button>
-            <button type="button" hx-trigger="confirmed" hx-delete="/entry/{{ .Manifest }}" hx-target="#entry-{{ .Manifest }}"
-                hx-swap="delete" onClick="Swal.fire({title: 'Excluir', text:'Deseja excluir o romaneio de entrada {{ .Manifest }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
+            <button type="button" hx-trigger="confirmed" hx-delete="/entry/{{ .Id }}" hx-target="#entry-{{ .Id }}"
+                hx-swap="delete" onClick="Swal.fire({title: 'Excluir', text:'Deseja excluir o romaneio de entrada {{ .Id }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
                     if (result.isConfirmed) {
                         htmx.trigger(this, 'confirmed');  
                     } 
@@ -36,7 +36,7 @@
         </div>
     </td>
     <script type="module">
-        const itemRow = document.querySelector("tr#entry-{{ .Manifest }}")
+        const itemRow = document.querySelector("tr#entry-{{ .Id }}")
         const date = new Date({{ .ArrivalDate }})
         itemRow.querySelector("td#arrivalDate").textContent = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date)
     </script>

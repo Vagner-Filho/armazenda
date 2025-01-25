@@ -1,8 +1,10 @@
 package entity_public
 
+import "time"
+
 type Crop struct {
 	Id        uint8
 	Name      string
-	StartDate string
-	Selected  bool
+	StartDate time.Time
+	Selected  bool `db:"-"`
 }

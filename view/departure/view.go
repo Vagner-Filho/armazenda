@@ -5,19 +5,19 @@ import (
 	"armazenda/model/buyer_model"
 	"armazenda/model/departure_model"
 	"armazenda/model/entry_model"
-	"armazenda/model/vehicle_model"
 	"armazenda/service/vehicle_service"
 )
 
 type departureFormView struct {
-	Vehicles []vehicle_model.Vehicle
+	Vehicles []entity_public.Vehicle
 	Buyers   []entity_public.Buyer
 	entity_public.Departure
 }
 
 func GetNewDepartureForm() departureFormView {
+	vehicles, _ := vehicle_service.GetVehicles()
 	return departureFormView{
-		Vehicles:  vehicle_service.GetVehicles(),
+		Vehicles:  vehicles,
 		Buyers:    buyer_model.GetBuyers(),
 		Departure: entity_public.Departure{},
 	}
@@ -43,7 +43,7 @@ func MakeReadableDeparture(gd entity_public.Departure) ReadableDeparture {
 
 type departureFilter struct {
 	Buyers   []entity_public.Buyer
-	Vehicles []vehicle_model.Vehicle
+	Vehicles []entity_public.Vehicle
 }
 type departureContent struct {
 	Departures []ReadableDeparture
@@ -58,11 +58,13 @@ func GetDepartureContent() departureContent {
 	for _, gd := range departures {
 		readable = append(readable, MakeReadableDeparture(gd))
 	}
+
+	vehicles, _ := vehicle_service.GetVehicles()
 	return departureContent{
 		Departures: readable,
 		Filters: departureFilter{
 			Buyers:   buyer_model.GetBuyers(),
-			Vehicles: vehicle_model.GetVehicles(),
+			Vehicles: vehicles,
 		},
 	}
 }

@@ -3,7 +3,7 @@ package entry_router
 import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/entry_model"
-	"armazenda/model/vehicle_model"
+	"armazenda/model/field_model"
 	"armazenda/service/entry_service"
 	"armazenda/service/vehicle_service"
 	entry_view "armazenda/view/entry"
@@ -29,7 +29,7 @@ func GetEntryContent(c *gin.Context) {
 type PopulatedEntryForm struct {
 	Entry    entity_public.Entry
 	Fields   []entity_public.Field
-	Vehicles []vehicle_model.Vehicle
+	Vehicles []entity_public.Vehicle
 }
 
 func GetEntryForm(c *gin.Context) {
@@ -40,24 +40,20 @@ func GetEntryForm(c *gin.Context) {
 	}
 
 	entry := entry_service.GetEntry(uint32(converted))
-	//fields := entry_service.GetFields()
-	var fields []entity_public.Field
-	for _, field := range entry_service.GetFields() {
-		newF := entity_public.Field{}
-		newF.Id = field.Id
-		newF.Selected = field.Id == entry.Field
-		newF.Name = field.Name
-		fields = append(fields, newF)
-	}
-	//vehicles := vehicle_service.GetVehicles()
 
-	var vehicles []vehicle_model.Vehicle
-	for _, vehicle := range vehicle_service.GetVehicles() {
-		newV := vehicle_model.Vehicle{}
-		newV.Selected = entry.Vehicle == vehicle.Plate
-		newV.Name = vehicle.Name
-		newV.Plate = vehicle.Plate
-		vehicles = append(vehicles, newV)
+	fModel, _ := field_model.GetFieldModel()
+	fields, _ := fModel.GetFields()
+	for i, field := range fields {
+		if field.Id == entry.Field {
+			fields[i].Selected = true
+		}
+	}
+
+	vehicles, _ := vehicle_service.GetVehicles()
+	for i, vehicle := range vehicles {
+		if entry.Vehicle == vehicle.Plate {
+			vehicles[i].Selected = true
+		}
 	}
 
 	c.HTML(
@@ -78,7 +74,6 @@ func AddEntry(c *gin.Context) {
 		Product:     newEntry.Product,
 		Field:       newEntry.Field,
 		Crop:        newEntry.Crop,
-		Manifest:    0,
 		Vehicle:     newEntry.Vehicle,
 		ArrivalDate: newEntry.ArrivalDate,
 		GrossWeight: newEntry.GrossWeight,
@@ -87,7 +82,7 @@ func AddEntry(c *gin.Context) {
 		Humidity:    newEntry.Humidity,
 	}
 	entry := entry_service.AddEntry(ge)
-	c.HTML(http.StatusCreated, "entry-list-item", entry_view.MakeSimplifiedEntry(entry))
+	c.HTML(http.StatusCreated, "entry-list-item", entry)
 }
 
 func DeleteEntry(c *gin.Context) {
@@ -125,50 +120,15 @@ func PutEntry(c *gin.Context) {
 		Tare:        newEntry.Tare,
 		Humidity:    newEntry.Humidity,
 		NetWeight:   newEntry.NetWeight,
-		Manifest:    uint32(converted),
+		Id:          uint32(converted),
 	}
 
 	var updatedEntry = entry_service.PutEntry(ge)
 	if updatedEntry != nil {
-		c.HTML(http.StatusOK, "entry-list-item", entry_view.MakeSimplifiedEntry(*updatedEntry))
+		c.HTML(http.StatusOK, "entry-list-item", *updatedEntry)
 		return
 	}
 	c.HTML(500, "toast", "failed")
-}
-
-func GetFields() []entity_public.Field {
-	return entry_service.GetFields()
-}
-
-func AddField(c *gin.Context) {
-	var newField FieldForm
-	err := c.Bind(&newField)
-	if err != nil {
-		c.String(http.StatusBadRequest, "", err.Error())
-		return
-	}
-	if len(newField.Name) == 0 {
-		c.HTML(http.StatusBadRequest, "", "")
-		return
-	}
-
-	newId := entry_service.AddField(newField.Name)
-	c.HTML(http.StatusCreated, "field-option", entity_public.Field{Name: newField.Name, Id: newId})
-	return
-}
-
-func GetFieldForm(c *gin.Context) {
-	var fields = entry_service.GetFields()
-	var regexPattern string = "^(?!"
-	for i, field := range fields {
-		regexPattern += field.Name + "$"
-		if i < len(fields)-1 {
-			regexPattern += "|"
-		}
-	}
-	regexPattern += ").*"
-
-	c.HTML(http.StatusOK, "field-form", regexPattern)
 }
 
 func FilterEntries(c *gin.Context) {
@@ -191,13 +151,7 @@ func FilterEntries(c *gin.Context) {
 		return
 	}
 
-	var simpleEntries []entry_view.SimplifiedEntry
-
-	for _, entry := range rawEntries {
-		simpleEntries = append(simpleEntries, entry_view.MakeSimplifiedEntry(entry))
-	}
-
-	c.HTML(http.StatusOK, "entry-table", simpleEntries)
+	c.HTML(http.StatusOK, "entry-table", rawEntries)
 }
 
 func GetEntryFiltersForm(c *gin.Context) {

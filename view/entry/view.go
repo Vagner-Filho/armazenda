@@ -4,64 +4,64 @@ import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/crop_model"
 	"armazenda/model/entry_model"
-	"armazenda/model/vehicle_model"
+	"armazenda/model/field_model"
 	"armazenda/service/vehicle_service"
+	"fmt"
 )
-
-type SimplifiedEntry struct {
-	Manifest     uint32
-	Product      string
-	Field        string
-	VehiclePlate string
-	NetWeight    float64
-	ArrivalDate  string
-}
 
 type entryFilters struct {
 	Fields   []entity_public.Field
-	Vehicles []vehicle_model.Vehicle
+	Vehicles []entity_public.Vehicle
 	Crops    []entity_public.Crop
 }
 
 type entryContent struct {
-	Entries []SimplifiedEntry
-	Filters entryFilters
+	Entries   []entity_public.SimplifiedEntry
+	Filters   entryFilters
+	NoContent bool
 }
 
-func MakeSimplifiedEntry(ge entity_public.Entry) SimplifiedEntry {
-	field := entry_model.GetField(ge.Field)
-	vehicle := vehicle_model.GetVehicle(ge.Vehicle)
-	return SimplifiedEntry{
-		Manifest:     ge.Manifest,
-		Product:      entry_model.GrainMap[ge.Product],
-		Field:        field.Name,
-		VehiclePlate: vehicle.Plate,
-		NetWeight:    ge.NetWeight,
-		ArrivalDate:  ge.ArrivalDate,
+func GetAllEntrySimplified() []entity_public.SimplifiedEntry {
+	eModel, getModelErr := entry_model.GetEntryModel()
+	if getModelErr != nil {
+		fmt.Printf("%v", getModelErr.Error())
 	}
-}
-
-func GetAllEntrySimplified() []SimplifiedEntry {
-	entries := entry_model.GetAllEntries()
-	var simplifiedEntries []SimplifiedEntry
-	for _, entry := range entries {
-		simplifiedEntries = append(simplifiedEntries, MakeSimplifiedEntry(entry))
+	entries, getDataErr := eModel.GetAllEntriesSimplified()
+	if getDataErr != nil {
+		return []entity_public.SimplifiedEntry{}
 	}
-	return simplifiedEntries
+	return entries
 }
 
 func GetFiltersForm() entryFilters {
+	cropModel, _ := crop_model.GetCropModel()
+	crops, cropsErr := cropModel.GetCrops()
+
+	fieldModel, _ := field_model.GetFieldModel()
+	fields, fieldsErr := fieldModel.GetFields()
+
+	vehicles, _ := vehicle_service.GetVehicles()
+
+	if cropsErr != nil {
+		fmt.Printf("cropsErr: %v\n", cropsErr.Error())
+	}
+
+	if fieldsErr != nil {
+		fmt.Printf("fieldsErr: %v\n", fieldsErr.Error())
+	}
+
 	return entryFilters{
-		Vehicles: vehicle_service.GetVehicles(),
-		Fields:   entry_model.GetFields(),
-		Crops:    crop_model.GetCrops(),
+		Vehicles: vehicles,
+		Fields:   fields,
+		Crops:    crops,
 	}
 }
 
 func GetEntryContent() entryContent {
 	entries := GetAllEntrySimplified()
 	return entryContent{
-		Entries: entries,
-		Filters: GetFiltersForm(),
+		Entries:   entries,
+		NoContent: len(entries) == 0,
+		Filters:   GetFiltersForm(),
 	}
 }
