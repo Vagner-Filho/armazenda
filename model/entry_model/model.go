@@ -47,7 +47,14 @@ func InitGrainMap() {
 }
 
 func (em *entryModel) GetAllEntriesSimplified() ([]entity_public.SimplifiedEntry, *model_error.ModelError) {
-	rows, queryErr := em.conn.Query(context.Background(), "SELECT id, product, field, vehicle, netWeight, arrivalDate FROM entry")
+	rows, queryErr := em.conn.Query(context.Background(), `
+		SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate
+			FROM entry e
+			JOIN product p ON e.product = p.id
+			JOIN field f ON e.field = f.id
+			JOIN crop c ON e.crop = c.id
+			ORDER BY c.startdate DESC
+		`)
 	if queryErr != nil {
 		fmt.Printf("\n queryErr: %v\n", queryErr.Error())
 		return []entity_public.SimplifiedEntry{}, &model_error.ModelError{Message: queryErr.Error()}
@@ -63,50 +70,67 @@ func (em *entryModel) GetAllEntriesSimplified() ([]entity_public.SimplifiedEntry
 }
 
 func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.Entry, *model_error.ModelError) {
-	row, queryErr := em.conn.Query(context.Background(), `INSERT INTO entry (product, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate) VALUES (@product, @field, @crop, @vehicle, @grossweight, @tare, @netweight, @humidity, @arrivalDate) RETURNING product, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate`)
+	row, queryErr := em.conn.Query(context.Background(), `INSERT INTO entry (product, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate) VALUES (@product, @field, @crop, @vehicle, @grossweight, @tare, @netweight, @humidity, @arrivalDate) RETURNING id, product, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate`, pgx.NamedArgs{"product": ge.Product, "field": ge.Field, "crop": ge.Crop, "vehicle": ge.Vehicle, "grossweight": ge.GrossWeight, "tare": ge.Tare, "netweight": ge.NetWeight, "humidity": ge.Humidity, "arrivalDate": ge.ArrivalDate})
 
 	if queryErr != nil {
+		model_error.Logger(em.conn, queryErr.Error())
 		return entity_public.Entry{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
 	entry, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.Entry])
 	if collectErr != nil {
+		model_error.Logger(em.conn, collectErr.Error())
 		return entity_public.Entry{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
 	return entry, nil
-
 }
 
 func (em *entryModel) DeleteEntry(id uint32) {
 }
 
 func (em *entryModel) GetEntry(id uint32) {
-
+	// TODO: select entry by id
 }
 
-func (em *entryModel) PutEntry(ge entity_public.Entry) {
+func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.Entry, *model_error.ModelError) {
+	row, queryErr := em.conn.Query(context.Background(), `
+		UPDATE entry SET
+			(product, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate)
+		VALUES (@product, @field, @crop, @vehicle, @grossweight, @tare, @netweight, @humidity, @arrivalDate)
+		WHERE id = @id
+		RETURNING id, product, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate
+		`, pgx.NamedArgs{"id": ge.Id, "product": ge.Product, "field": ge.Field, "crop": ge.Crop, "vehicle": ge.Vehicle, "grossweight": ge.GrossWeight, "tare": ge.Tare, "netweight": ge.NetWeight, "humidity": ge.Humidity, "arrivalDate": ge.ArrivalDate})
 
+	if queryErr != nil {
+		model_error.Logger(em.conn, queryErr.Error())
+		return entity_public.Entry{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	entry, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.Entry])
+	if collectErr != nil {
+		model_error.Logger(em.conn, collectErr.Error())
+		return entity_public.Entry{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+	return entry, nil
 }
 
 var availableEntryFilters = map[string]func(e entity_public.Entry, ef entity_public.EntryFilter) bool{
 	"ArrivalDateMin": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
-		entryArrival, entryDateError := time.Parse(utils.TimeLayout, e.ArrivalDate)
 		arrivalFrom, entryFilterDateError := time.Parse(utils.TimeLayout, ef.ArrivalDateMin)
-		if entryDateError != nil || entryFilterDateError != nil {
+		if entryFilterDateError != nil {
 			return false
 		}
-		return arrivalFrom.Before(entryArrival)
+		return arrivalFrom.Before(e.ArrivalDate)
 	},
 	"ArrivalDateMax": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
-		entryArrival, entryDateError := time.Parse(utils.TimeLayout, e.ArrivalDate)
 		arrivalTo, entryFilterDateError := time.Parse(utils.TimeLayout, ef.ArrivalDateMax)
-		if entryDateError != nil || entryFilterDateError != nil {
+		if entryFilterDateError != nil {
 			return false
 		}
-		return arrivalTo.After(entryArrival)
+		return arrivalTo.After(e.ArrivalDate)
 	},
-	"VehiclePlate": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
-		return e.Vehicle == ef.VehiclePlate
+	"Vehicle": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
+		return e.Vehicle == ef.Vehicle
 	},
 	"Product": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
 		return e.Product == ef.Product

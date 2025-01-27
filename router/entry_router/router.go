@@ -70,18 +70,18 @@ func AddEntry(c *gin.Context) {
 		c.String(http.StatusBadRequest, "", err.Error())
 		return
 	}
-	ge := entity_public.Entry{
-		Product:     newEntry.Product,
-		Field:       newEntry.Field,
-		Crop:        newEntry.Crop,
-		Vehicle:     newEntry.Vehicle,
-		ArrivalDate: newEntry.ArrivalDate,
-		GrossWeight: newEntry.GrossWeight,
-		Tare:        newEntry.Tare,
-		NetWeight:   newEntry.NetWeight,
-		Humidity:    newEntry.Humidity,
+
+	entry, toast := entry_service.AddEntry(newEntry)
+	c.Header("HX-Trigger", string(toast.ToJson()))
+
+	if toast.Type == entity_public.WarningToast {
+		c.Status(http.StatusBadRequest)
+		return
 	}
-	entry := entry_service.AddEntry(ge)
+	if toast.Type == entity_public.ErrorToast {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
 	c.HTML(http.StatusCreated, "entry-list-item", entry)
 }
 
@@ -96,39 +96,32 @@ func DeleteEntry(c *gin.Context) {
 }
 
 func PutEntry(c *gin.Context) {
-	id := c.Param("id")
-	converted, parseErr := strconv.ParseUint(id, 10, 32)
-	if parseErr != nil {
-		c.String(http.StatusBadRequest, "", parseErr.Error())
-		return
-	}
+	//id := c.Param("id")
+	//converted, parseErr := strconv.ParseUint(id, 10, 32)
+	//if parseErr != nil {
+	//	c.String(http.StatusBadRequest, "", parseErr.Error())
+	//	return
+	//}
 
-	var newEntry entity_public.Entry
-	err := c.Bind(&newEntry)
+	var entry entity_public.Entry
+	err := c.Bind(&entry)
 	if err != nil {
 		c.String(http.StatusBadRequest, "", err.Error())
 		return
 	}
 
-	ge := entity_public.Entry{
-		Product:     newEntry.Product,
-		Field:       newEntry.Field,
-		Crop:        newEntry.Crop,
-		Vehicle:     newEntry.Vehicle,
-		ArrivalDate: newEntry.ArrivalDate,
-		GrossWeight: newEntry.GrossWeight,
-		Tare:        newEntry.Tare,
-		Humidity:    newEntry.Humidity,
-		NetWeight:   newEntry.NetWeight,
-		Id:          uint32(converted),
-	}
+	var updatedEntry, toast = entry_service.PutEntry(entry)
+	c.Header("HX-Trigger", string(toast.ToJson()))
 
-	var updatedEntry = entry_service.PutEntry(ge)
-	if updatedEntry != nil {
-		c.HTML(http.StatusOK, "entry-list-item", *updatedEntry)
+	if toast.Type == entity_public.WarningToast {
+		c.Status(http.StatusBadRequest)
 		return
 	}
-	c.HTML(500, "toast", "failed")
+	if toast.Type == entity_public.ErrorToast {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	c.HTML(http.StatusOK, "entry-list-item", updatedEntry)
 }
 
 func FilterEntries(c *gin.Context) {

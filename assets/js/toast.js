@@ -41,7 +41,7 @@ const iconMp = new Map([
 class ToastManager {
 	makeToast(message, hint, type) {
 		const container = document.createElement('div')
-		container.classList.add(...["max-w-xs", "bg-white", "border", "border-gray-200", "rounded-xl", "shadow-lg", "dark:bg-neutral-800", "dark:border-neutral-700", "fixed"])
+		container.classList.add(...["max-w-xs", "bg-white", "border", "border-gray-200", "rounded-xl", "shadow-lg", "fixed"])
 
 		container.setAttribute("style", "top: 8px; right: 8px;")
 		container.setAttribute("role", "alert")
@@ -65,7 +65,7 @@ class ToastManager {
 		messageContainer.classList.add('ms-3')
 
 		const messageParagraph = document.createElement('p')
-		messageParagraph.classList.add(...["text-sm", "text-gray-700", "dark:text-neutral-400"])
+		messageParagraph.classList.add(...["text-sm", "text-gray-700"])
 		messageParagraph.setAttribute('id', 'armazenda-toast')
 		messageParagraph.textContent = message
 

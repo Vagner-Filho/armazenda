@@ -15,7 +15,8 @@
                 Começar agora
             </button>
         </div>
-    {{ else }}
+    {{ end }}
+    <div class="{{ if .NoContent }} hidden {{ end }}">
         {{ template "entry-filters" .Filters }}
         <div class="w-full flex items-center justify-end py-1">
             <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/entry/form" hx-target="body" hx-swap="beforeend">
@@ -26,5 +27,5 @@
         <main id="list" class="overflow-x-auto">
             {{ template "entry-table" .Entries }}
         </main>
-    {{ end }}
+    </div>
 {{ end }}

@@ -2,6 +2,7 @@ package entity_public
 
 import (
 	"reflect"
+	"time"
 )
 
 type SimplifiedEntry struct {
@@ -10,20 +11,20 @@ type SimplifiedEntry struct {
 	Field       string
 	Vehicle     string
 	NetWeight   float64
-	ArrivalDate string
+	ArrivalDate time.Time
 }
 
 type Entry struct {
-	Id          uint32  `form:"id"`
-	Product     Grain   `form:"product" binding:"gte=0"`
-	Field       uint16  `form:"field" binding:"required"`
-	Crop        uint8   `form:"crop" binding:"required"`
-	Vehicle     string  `form:"vehiclePlate"`
-	GrossWeight float64 `form:"grossWeight" binding:"required"`
-	Tare        float64 `form:"tare" binding:"required"`
-	NetWeight   float64 `form:"netWeight"`
-	Humidity    string  `form:"humidity" binding:"required"`
-	ArrivalDate string  `form:"arrivalDate" binding:"required"`
+	Id          uint32    `form:"id"`
+	Product     Grain     `form:"product" binding:"gte=0"`
+	Field       uint16    `form:"field" binding:"required"`
+	Crop        uint8     `form:"crop" binding:"required"`
+	Vehicle     string    `form:"vehiclePlate"`
+	GrossWeight float64   `form:"grossWeight" binding:"required"`
+	Tare        float64   `form:"tare" binding:"required"`
+	NetWeight   float64   `form:"netWeight"`
+	Humidity    string    `form:"humidity" binding:"required"`
+	ArrivalDate time.Time `form:"arrivalDate" binding:"required" time_format:"2006-01-02T15:04"`
 }
 
 type EntryFilter struct {
@@ -31,7 +32,7 @@ type EntryFilter struct {
 	Product        Grain   `form:"product"`
 	Field          uint16  `form:"field"`
 	Crop           uint8   `form:"crop" binding:"gte=0"`
-	VehiclePlate   string  `form:"vehiclePlate"`
+	Vehicle        string  `form:"vehiclePlate"`
 	GrossWeightMin float64 `form:"grossWeightMin"`
 	GrossWeightMax float64 `form:"grossWeightMax"`
 	TareMin        float64 `form:"tareMin"`

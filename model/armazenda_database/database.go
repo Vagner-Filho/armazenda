@@ -43,6 +43,16 @@ func initProduct(c *pgx.Conn) {
 	);
 	`)
 
+	if err == nil {
+		var products uint8
+		c.QueryRow(context.Background(), "SELECT COUNT(*) FROM product").Scan(&products)
+		if products == 0 {
+			_, insertProductErr := c.Exec(context.Background(), "INSERT INTO product (name) VALUES ('Milho'), ('Soja')")
+			if insertProductErr != nil {
+				panic(insertProductErr.Error())
+			}
+		}
+	}
 	handleStmtExec(c, stmt, err)
 }
 
@@ -92,7 +102,7 @@ func initEntry(c *pgx.Conn) {
 		tare DOUBLE PRECISION,
 		netWeight DOUBLE PRECISION NOT NULL,
 		humidity DOUBLE PRECISION,
-		arrivalDate DATE NOT NULL,
+		arrivalDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 		FOREIGN KEY (product) REFERENCES product(id),
 		FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
 		FOREIGN KEY (field) REFERENCES field(id),
@@ -107,7 +117,7 @@ func initDeparture(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init departure table", `
 	CREATE TABLE IF NOT EXISTS departure (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-		departureDate DATE NOT NULL,
+		departureDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 		product SMALLINT NOT NULl,
 		vehicle VARCHAR(255),
 		crop SMALLINT NOT NULL,
@@ -216,6 +226,18 @@ func initContact(c *pgx.Conn) {
 	handleStmtExec(c, stmt, err)
 }
 
+func initLogTable(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init log table", `
+	CREATE TABLE IF NOT EXISTS sys_log (
+		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+		content VARCHAR(255) NOT NULL,
+		at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+	);
+	`)
+
+	handleStmtExec(c, stmt, err)
+}
+
 func InitDb(c *pgx.Conn) {
 	initProduct(c)
 	initCrop(c)
@@ -231,6 +253,7 @@ func InitDb(c *pgx.Conn) {
 	initContact(c)
 	initAddrress(c)
 	initAddrressComplement(c)
+	initLogTable(c)
 }
 
 var dbc *pgx.Conn
