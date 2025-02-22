@@ -2,10 +2,7 @@ package entry_router
 
 import (
 	entity_public "armazenda/entity/public"
-	"armazenda/model/entry_model"
-	"armazenda/model/field_model"
 	"armazenda/service/entry_service"
-	"armazenda/service/vehicle_service"
 	entry_view "armazenda/view/entry"
 	"net/http"
 	"strconv"
@@ -26,12 +23,6 @@ func GetEntryContent(c *gin.Context) {
 	c.HTML(http.StatusOK, "entry-content", entry_view.GetEntryContent())
 }
 
-type PopulatedEntryForm struct {
-	Entry    entity_public.Entry
-	Fields   []entity_public.Field
-	Vehicles []entity_public.Vehicle
-}
-
 func GetEntryForm(c *gin.Context) {
 	id := c.Param("id")
 	converted, err := strconv.ParseUint(id, 10, 32)
@@ -39,27 +30,18 @@ func GetEntryForm(c *gin.Context) {
 		c.String(http.StatusBadRequest, "", err.Error())
 	}
 
-	entry := entry_service.GetEntry(uint32(converted))
+	entryForm, toasts := entry_view.GetExistingEntryForm(uint32(converted))
 
-	fModel, _ := field_model.GetFieldModel()
-	fields, _ := fModel.GetFields()
-	for i, field := range fields {
-		if field.Id == entry.Field {
-			fields[i].Selected = true
-		}
-	}
-
-	vehicles, _ := vehicle_service.GetVehicles()
-	for i, vehicle := range vehicles {
-		if entry.Vehicle == vehicle.Plate {
-			vehicles[i].Selected = true
+	for _, t := range toasts {
+		if t != nil {
+			c.Header("HX-Trigger", string(t.ToJson()))
 		}
 	}
 
 	c.HTML(
 		http.StatusOK,
 		"entry-form",
-		PopulatedEntryForm{Entry: entry, Fields: fields, Vehicles: vehicles},
+		entryForm,
 	)
 }
 
@@ -92,7 +74,9 @@ func DeleteEntry(c *gin.Context) {
 		c.String(http.StatusBadRequest, "", err.Error())
 	}
 
-	c.String(http.StatusOK, "", entry_service.DeleteEntry(uint32(converted)))
+	toast := entry_service.DeleteEntry(uint32(converted))
+	c.Header("HX-Trigger", string(toast.ToJson()))
+	c.Status(http.StatusOK)
 }
 
 func PutEntry(c *gin.Context) {
@@ -132,22 +116,33 @@ func FilterEntries(c *gin.Context) {
 		return
 	}
 
-	rawEntries, err := entry_model.FilterEntries(entryFilter)
+	//rawEntries, err := entry_model.FilterEntries(entryFilter)
 
-	if err != nil {
-		c.HTML(http.StatusBadRequest, "toast", err.Error())
-		return
-	}
+	//if err != nil {
+	//	c.HTML(http.StatusBadRequest, "toast", err.Error())
+	//	return
+	//}
 
-	if len(rawEntries) == 0 {
-		c.HTML(http.StatusOK, "no-entry-found-for-filter", gin.H{})
-		return
-	}
+	//if len(rawEntries) == 0 {
+	//	c.HTML(http.StatusOK, "no-entry-found-for-filter", gin.H{})
+	//	return
+	//}
 
-	c.HTML(http.StatusOK, "entry-table", rawEntries)
+	c.HTML(http.StatusOK, "entry-table", gin.H{})
 }
 
 func GetEntryFiltersForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "entry-filter-form", entry_view.GetFiltersForm())
 	return
+}
+
+func GetEmptyEntryForm(c *gin.Context) {
+	formMembers, toasts := entry_view.GetEntryForm()
+
+	for _, t := range toasts {
+		if t != nil {
+			c.Header("HX-Trigger", string(t.ToJson()))
+		}
+	}
+	c.HTML(http.StatusOK, "entry-form", formMembers)
 }

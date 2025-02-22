@@ -2,123 +2,94 @@ package buyer_model
 
 import (
 	entity_public "armazenda/entity/public"
+	model_error "armazenda/model/error"
+	"context"
+	"errors"
+
+	"github.com/jackc/pgx/v5"
 )
 
-var Buyer_addresses = []entity_public.Address{
-	{
-		Street:       "Rua A",
-		Cep:          "12345-678",
-		Number:       10,
-		Complement:   "Ap 101",
-		Neighborhood: "Bairro A",
-		City:         "Cidade A",
-		State:        "Estado A",
-		Email:        "a@example.com",
-		PhoneNumber:  "1234567890",
-	},
-	{
-		Street:       "Rua B",
-		Cep:          "87654-321",
-		Number:       20,
-		Complement:   "",
-		Neighborhood: "Bairro B",
-		City:         "Cidade B",
-		State:        "Estado B",
-		Email:        "b@example.com",
-		PhoneNumber:  "9876543210",
-	},
-	{
-		Street:       "Rua C",
-		Cep:          "54321-098",
-		Number:       30,
-		Complement:   "Sala 302",
-		Neighborhood: "Bairro C",
-		City:         "Cidade C",
-		State:        "Estado C",
-		Email:        "c@example.com",
-		PhoneNumber:  "0123456789",
-	},
+type buyerModel struct {
+	conn *pgx.Conn
 }
 
-var companies = []entity_public.Company{
-	{
-		Id:                0,
-		CompanyName:       "Company A",
-		FantasyName:       "Empresa A",
-		Cnpj:              "12345678901",
-		Address:           Buyer_addresses[0],
-		InscricaoEstadual: "123456789",
-	},
-	{
-		Id:                1,
-		CompanyName:       "Company B",
-		FantasyName:       "Empresa B",
-		Cnpj:              "12345678901",
-		Address:           Buyer_addresses[1],
-		InscricaoEstadual: "987654321",
-	},
-	{
-		Id:                2,
-		CompanyName:       "Company C",
-		FantasyName:       "Empresa C",
-		Cnpj:              "12345678901",
-		Address:           Buyer_addresses[2],
-		InscricaoEstadual: "789012345",
-	},
-}
+var buyerModelImpl *buyerModel
 
-var personals = []entity_public.Personal{
-	{
-		Id:      0,
-		Name:    "macunaima",
-		Cpf:     "12345678901",
-		Address: Buyer_addresses[2],
-	},
-	{
-		Id:      1,
-		Name:    "joao da silva",
-		Cpf:     "01234567890",
-		Address: Buyer_addresses[2],
-	},
-	{
-		Id:      2,
-		Name:    "maria cunha",
-		Cpf:     "90123456789",
-		Address: Buyer_addresses[0],
-	},
-}
-
-func AddBuyerCompany(bc entity_public.Company) entity_public.Company {
-	newId := companies[len(companies)-1].Id + 1
-	bc.Id = newId
-	companies = append(companies, bc)
-
-	newAddressId := Buyer_addresses[len(Buyer_addresses)-1].Id + 1
-	bc.Address.Id = newAddressId
-	Buyer_addresses = append(Buyer_addresses, bc.Address)
-	return bc
-}
-
-func AddBuyerPersonal(bp entity_public.Personal) entity_public.Personal {
-	newId := personals[len(personals)-1].Id + 1
-	bp.Id = newId
-	personals = append(personals, bp)
-
-	newAddressId := Buyer_addresses[len(Buyer_addresses)-1].Id + 1
-	bp.Address.Id = newAddressId
-	Buyer_addresses = append(Buyer_addresses, bp.Address)
-	return bp
-}
-
-func GetBuyers() []entity_public.Buyer {
-	var buyers []entity_public.Buyer
-	for _, buyer := range companies {
-		buyers = append(buyers, buyer.GetBuyer())
+func InitBuyerModel(conn *pgx.Conn) (*buyerModel, error) {
+	if conn == nil {
+		return nil, errors.New("conn cant be null")
 	}
 
-	for _, buyer := range personals {
-		buyers = append(buyers, buyer.GetBuyer())
+	if buyerModelImpl == nil {
+		buyerModelImpl = &buyerModel{
+			conn: conn,
+		}
 	}
 
-	return buyers
+	return buyerModelImpl, nil
+}
+
+func GetBuyerModel() *buyerModel {
+	if buyerModelImpl == nil {
+		panic("\nbuyer model hasnt been initialized\n")
+	}
+	return buyerModelImpl
+}
+
+func (bm *buyerModel) AddBuyerCompany(bc entity_public.BuyerCompany) (entity_public.BuyerDisplay, *model_error.ModelError) {
+	row, queryErr := bm.conn.Query(context.Background(), `
+			SELECT * FROM add_get_buyer_company(@ie, @cnpj, @fantasyName, @companyName)
+		`, pgx.NamedArgs{"ie": bc.InscricaoEstadual, "cnpj": bc.Cnpj, "fantasyName": bc.FantasyName, "companyName": bc.CompanyName})
+	if queryErr != nil {
+		model_error.Logger(bm.conn, queryErr.Error())
+		return entity_public.BuyerDisplay{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	buyer, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.BuyerDisplay])
+	if collectErr != nil {
+		model_error.Logger(bm.conn, collectErr.Error())
+		return entity_public.BuyerDisplay{}, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
+	}
+
+	return buyer, nil
+}
+
+func (bm *buyerModel) AddBuyerPerson(bp entity_public.BuyerPerson) (entity_public.BuyerDisplay, *model_error.ModelError) {
+	row, queryErr := bm.conn.Query(context.Background(), `
+			SELECT * FROM add_get_buyer_person(@ie, @cpf, @name)
+		`, pgx.NamedArgs{"ie": bp.InscricaoEstadual, "cpf": bp.Cpf, "name": bp.Name})
+	if queryErr != nil {
+		model_error.Logger(bm.conn, queryErr.Error())
+		return entity_public.BuyerDisplay{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	buyer, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.BuyerDisplay])
+	if collectErr != nil {
+		model_error.Logger(bm.conn, collectErr.Error())
+		return entity_public.BuyerDisplay{}, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
+	}
+
+	return buyer, nil
+}
+
+func (bm *buyerModel) GetBuyers() ([]entity_public.BuyerDisplay, *model_error.ModelError) {
+	rows, queryErr := bm.conn.Query(context.Background(), `
+		SELECT b.id, bc.companyname AS name FROM buyer b
+		JOIN buyercompany bc ON b.id = bc.buyerid
+		UNION
+		SELECT b.id, bp.name FROM buyer b
+		JOIN buyerperson bp ON b.id = bp.buyerid;
+	`)
+	if queryErr != nil {
+		model_error.Logger(bm.conn, queryErr.Error())
+		return []entity_public.BuyerDisplay{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	buyers, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.BuyerDisplay])
+	if collectErr != nil {
+		model_error.Logger(bm.conn, collectErr.Error())
+		return []entity_public.BuyerDisplay{}, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
+	}
+
+	return buyers, nil
 }

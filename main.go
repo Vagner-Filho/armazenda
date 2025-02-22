@@ -2,9 +2,12 @@ package main
 
 import (
 	"armazenda/model/armazenda_database"
+	"armazenda/model/buyer_model"
 	"armazenda/model/crop_model"
+	"armazenda/model/departure_model"
 	"armazenda/model/entry_model"
 	"armazenda/model/field_model"
+	"armazenda/model/product_model"
 	"armazenda/model/vehicle_model"
 	"armazenda/router/buyer_router"
 	"armazenda/router/crop_router"
@@ -13,7 +16,6 @@ import (
 	"armazenda/router/field_router"
 	"armazenda/router/user_router"
 	"armazenda/router/vehicle_router"
-	"armazenda/service/vehicle_service"
 	"context"
 	"embed"
 	"fmt"
@@ -51,8 +53,9 @@ func main() {
 	field_model.InitFieldModel(conn)
 	vehicle_model.InitVehicleModel(conn)
 	entry_model.InitEntryModel(conn)
-
-	entry_model.InitGrainMap()
+	departure_model.InitDepartureModel(conn)
+	product_model.InitProductModel(conn)
+	buyer_model.InitBuyerModel(conn)
 
 	router := gin.Default()
 
@@ -74,20 +77,7 @@ func main() {
 
 	router.GET("/entry/filters", entry_router.GetEntryFiltersForm)
 
-	router.GET("/entry/form", func(c *gin.Context) {
-		vehicles, _ := vehicle_service.GetVehicles()
-
-		cropModel, _ := crop_model.GetCropModel()
-		crops, _ := cropModel.GetCrops()
-
-		fieldModel, _ := field_model.GetFieldModel()
-		fields, _ := fieldModel.GetFields()
-		c.HTML(http.StatusOK, "entry-form", gin.H{
-			"Fields":   fields,
-			"Vehicles": vehicles,
-			"Crops":    crops,
-		})
-	})
+	router.GET("/entry/form", entry_router.GetEmptyEntryForm)
 
 	router.GET("/crop/form", crop_router.GetCropForm)
 	router.POST("/crop", crop_router.AddCrop)

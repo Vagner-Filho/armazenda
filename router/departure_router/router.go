@@ -2,11 +2,10 @@ package departure_router
 
 import (
 	entity_public "armazenda/entity/public"
-	"armazenda/model/buyer_model"
 	"armazenda/model/departure_model"
 	"armazenda/service/departure_service"
-	"armazenda/service/vehicle_service"
 	"armazenda/view/departure"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -14,21 +13,25 @@ import (
 )
 
 func GetDepartureContent(c *gin.Context) {
-	c.HTML(http.StatusOK, "departure-content", departure_view.GetDepartureContent())
+	content, toasts := departure_view.GetDepartureContent()
+	for _, toast := range toasts {
+		if toast != nil {
+			c.Header("HX-Trigger", string(toast.ToJson()))
+		}
+	}
+	c.HTML(http.StatusOK, "departure-content", content)
 }
 
 func GetDepartureForm(c *gin.Context) {
-	vehicles, _ := vehicle_service.GetVehicles()
-	c.HTML(http.StatusOK, "departure-form", gin.H{
-		"Vehicles": vehicles,
-		"Buyers":   buyer_model.GetBuyers(),
-	})
-}
+	form, toasts := departure_view.GetNewDepartureForm()
 
-type FilledDeparture struct {
-	entity_public.Departure
-	Vehicles []entity_public.Vehicle
-	Buyers   []entity_public.Buyer
+	for _, toast := range toasts {
+		if toast != nil {
+			c.Header("HX-Trigger", string(toast.ToJson()))
+		}
+	}
+
+	c.HTML(http.StatusOK, "departure-form", form)
 }
 
 func GetFilledDepartureForm(c *gin.Context) {
@@ -38,33 +41,15 @@ func GetFilledDepartureForm(c *gin.Context) {
 		c.String(http.StatusBadRequest, "", err.Error())
 	}
 
-	departure, notFound := departure_service.GetDeparture(uint32(converted))
-	if notFound {
-		c.HTML(http.StatusBadRequest, "toast", gin.H{})
-	}
+	form, toasts := departure_view.GetExistingDepartureForm(uint32(converted))
 
-	vehicles, _ := vehicle_service.GetVehicles()
-	for i, vehicle := range vehicles {
-		if departure.VehiclePlate == vehicle.Plate {
-			vehicles[i].Selected = true
+	for _, t := range toasts {
+		if t != nil {
+			c.Header("HX-Trigger", string(t.ToJson()))
 		}
 	}
 
-	var buyers []entity_public.Buyer
-	for _, buyer := range buyer_model.GetBuyers() {
-		buyers = append(buyers, entity_public.Buyer{
-			Selected: departure.Buyer == buyer.Id,
-			Name:     buyer.Name,
-			Id:       buyer.Id,
-		})
-	}
-	filledDeparture := FilledDeparture{
-		Departure: departure,
-		Vehicles:  vehicles,
-		Buyers:    buyers,
-	}
-
-	c.HTML(http.StatusOK, "departure-form", filledDeparture)
+	c.HTML(http.StatusOK, "departure-form", form)
 }
 
 func AddDeparture(c *gin.Context) {
@@ -75,8 +60,14 @@ func AddDeparture(c *gin.Context) {
 		return
 	}
 
-	var newDeparture = departure_service.AddDeparture(df)
-	c.HTML(http.StatusOK, "departure-list-item", departure_view.MakeReadableDeparture(newDeparture))
+	departure, toast := departure_service.AddDeparture(df)
+	if toast != nil {
+		json := string(toast.ToJson())
+		fmt.Printf("\n%v\n", json)
+		c.Header("HX-Trigger", json)
+	}
+
+	c.HTML(http.StatusOK, "departure-list-item", departure)
 }
 
 func PutDeparture(c *gin.Context) {
@@ -94,14 +85,14 @@ func PutDeparture(c *gin.Context) {
 		return
 	}
 
-	df.Manifest = uint32(converted)
+	df.Id = uint32(converted)
 
 	updatedDeparture, notFound := departure_service.PutDeparture(df)
 	if notFound {
 		// handle not found
 	}
 
-	c.HTML(http.StatusOK, "departure-list-item", departure_view.MakeReadableDeparture(updatedDeparture))
+	c.HTML(http.StatusOK, "departure-list-item", updatedDeparture)
 }
 
 func DeleteDeparture(c *gin.Context) {
@@ -109,9 +100,12 @@ func DeleteDeparture(c *gin.Context) {
 	converted, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
 		c.String(http.StatusBadRequest, "", err.Error())
+		return
 	}
 
-	c.String(http.StatusOK, "", departure_service.DeleteDeparture(uint32(converted)))
+	toast := departure_service.DeleteDeparture(uint32(converted))
+	c.Header("HX-Trigger", string(toast.ToJson()))
+	c.Status(http.StatusNoContent)
 }
 
 func FilterDepartures(c *gin.Context) {
@@ -134,11 +128,5 @@ func FilterDepartures(c *gin.Context) {
 		return
 	}
 
-	var simpleDepartures []departure_view.ReadableDeparture
-
-	for _, departure := range rawDepartures {
-		simpleDepartures = append(simpleDepartures, departure_view.MakeReadableDeparture(departure))
-	}
-
-	c.HTML(http.StatusOK, "departure-table", simpleDepartures)
+	c.HTML(http.StatusOK, "departure-table", rawDepartures)
 }

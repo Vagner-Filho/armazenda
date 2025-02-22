@@ -72,6 +72,10 @@
                     CPF
                 </label>
                 <input type="text" name="cpf" id="document" required maxlength="11">
+                <label for="inscricaoEstadual" class="px-2 required-star">
+                    Inscrição Estadual
+                </label>
+                <input type="text" name="inscricaoEstadual" id="ie" required>
             </fieldset>
 
             {{ template "address-fields" .Address }}

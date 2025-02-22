@@ -10,14 +10,17 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-func handleStmtExec(c *pgx.Conn, stmt *pgconn.StatementDescription, err error) {
+func handleStmtExec(c *pgx.Conn, stmt *pgconn.StatementDescription, err error, operationName string) {
 	if c == nil {
-		fmt.Printf("missing db connection: %v\n", stmt.Name)
+		fmt.Printf("\nmissing db connection: %v\n", stmt.Name)
 		return
 	}
 
 	if stmt == nil {
-		fmt.Printf("missing db statement")
+		fmt.Printf("\nmissing db statement for: %v\n", operationName)
+		if err != nil {
+			fmt.Printf("prepare stmt err %v\n", err.Error())
+		}
 		return
 	}
 
@@ -53,7 +56,7 @@ func initProduct(c *pgx.Conn) {
 			}
 		}
 	}
-	handleStmtExec(c, stmt, err)
+	handleStmtExec(c, stmt, err, "create product")
 }
 
 func initField(c *pgx.Conn) {
@@ -64,7 +67,7 @@ func initField(c *pgx.Conn) {
 	);
 	`)
 
-	handleStmtExec(c, stmt, err)
+	handleStmtExec(c, stmt, err, "create field")
 }
 
 func initCrop(c *pgx.Conn) {
@@ -72,11 +75,13 @@ func initCrop(c *pgx.Conn) {
 	CREATE TABLE IF NOT EXISTS crop (
 		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		name VARCHAR(255) UNIQUE NOT NULL,
-		startDate DATE NOT NULL
+		product SMALLINT NOT NULL,
+		startDate DATE NOT NULL,
+		FOREIGN KEY (product) REFERENCES product(id)
 	);
 	`)
 
-	handleStmtExec(c, stmt, err)
+	handleStmtExec(c, stmt, err, "create crop")
 }
 
 func initVehicle(c *pgx.Conn) {
@@ -87,14 +92,13 @@ func initVehicle(c *pgx.Conn) {
 	);
 	`)
 
-	handleStmtExec(c, stmt, err)
+	handleStmtExec(c, stmt, err, "create vehicle")
 }
 
 func initEntry(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init entry table", `
 	CREATE TABLE IF NOT EXISTS entry (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-		product SMALLINT NOT NULL,
 		field SMALLINT NOT NULL,
 		crop SMALLINT NOT NULL,
 		vehicle VARCHAR(255) NOT NULL,
@@ -103,14 +107,25 @@ func initEntry(c *pgx.Conn) {
 		netWeight DOUBLE PRECISION NOT NULL,
 		humidity DOUBLE PRECISION,
 		arrivalDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-		FOREIGN KEY (product) REFERENCES product(id),
 		FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
 		FOREIGN KEY (field) REFERENCES field(id),
 		FOREIGN KEY (crop) REFERENCES crop(id)
 	);
 	`)
 
-	handleStmtExec(c, stmt, err)
+	handleStmtExec(c, stmt, err, "create entry")
+}
+
+func initInactiveEntry(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init inactive_entry table", `
+	CREATE TABLE IF NOT EXISTS inactive_entry (
+		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+		entry_id INTEGER UNIQUE NOT NULL,
+		FOREIGN KEY (entry_id) REFERENCES entry(id)
+	);
+	`)
+
+	handleStmtExec(c, stmt, err, "create inactive entry")
 }
 
 func initDeparture(c *pgx.Conn) {
@@ -118,7 +133,6 @@ func initDeparture(c *pgx.Conn) {
 	CREATE TABLE IF NOT EXISTS departure (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		departureDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-		product SMALLINT NOT NULl,
 		vehicle VARCHAR(255),
 		crop SMALLINT NOT NULL,
 		weight DOUBLE PRECISION NOT NULL,
@@ -128,7 +142,19 @@ func initDeparture(c *pgx.Conn) {
 	);
 	`)
 
-	handleStmtExec(c, stmt, err)
+	handleStmtExec(c, stmt, err, "create departure")
+}
+
+func initInactiveDeparture(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init inactive_departure table", `
+	CREATE TABLE IF NOT EXISTS inactive_departure (
+		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+		departure_id INTEGER UNIQUE NOT NULL,
+		FOREIGN KEY (departure_id) REFERENCES departure(id)
+	);
+	`)
+
+	handleStmtExec(c, stmt, err, "create inactive departure")
 }
 
 func initBuyer(c *pgx.Conn) {
@@ -139,7 +165,7 @@ func initBuyer(c *pgx.Conn) {
 	);
 	`)
 
-	handleStmtExec(c, stmt, err)
+	handleStmtExec(c, stmt, err, "create buyer")
 }
 
 func initBuyerPerson(c *pgx.Conn) {
@@ -153,7 +179,7 @@ func initBuyerPerson(c *pgx.Conn) {
 	);
 	`)
 
-	handleStmtExec(c, stmt, err)
+	handleStmtExec(c, stmt, err, "create buyerPerson")
 }
 
 func initBuyerCompany(c *pgx.Conn) {
@@ -168,7 +194,7 @@ func initBuyerCompany(c *pgx.Conn) {
 	);
 	`)
 
-	handleStmtExec(c, stmt, err)
+	handleStmtExec(c, stmt, err, "create buyerCompany")
 }
 
 func initDepartureBuyer(c *pgx.Conn) {
@@ -182,7 +208,7 @@ func initDepartureBuyer(c *pgx.Conn) {
 	);
 	`)
 
-	handleStmtExec(c, stmt, err)
+	handleStmtExec(c, stmt, err, "create departureBuyer")
 }
 
 func initAddrress(c *pgx.Conn) {
@@ -198,7 +224,7 @@ func initAddrress(c *pgx.Conn) {
 	);
 	`)
 
-	handleStmtExec(c, stmt, err)
+	handleStmtExec(c, stmt, err, "create address")
 }
 
 func initAddrressComplement(c *pgx.Conn) {
@@ -211,7 +237,7 @@ func initAddrressComplement(c *pgx.Conn) {
 	);
 	`)
 
-	handleStmtExec(c, stmt, err)
+	handleStmtExec(c, stmt, err, "create addressComplement")
 }
 
 func initContact(c *pgx.Conn) {
@@ -223,7 +249,7 @@ func initContact(c *pgx.Conn) {
 	);
 	`)
 
-	handleStmtExec(c, stmt, err)
+	handleStmtExec(c, stmt, err, "create contact")
 }
 
 func initLogTable(c *pgx.Conn) {
@@ -231,11 +257,88 @@ func initLogTable(c *pgx.Conn) {
 	CREATE TABLE IF NOT EXISTS sys_log (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		content VARCHAR(255) NOT NULL,
-		at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+		at TIMESTAMP WITHOUT TIME ZONE NOT NULL
 	);
 	`)
 
-	handleStmtExec(c, stmt, err)
+	handleStmtExec(c, stmt, err, "create sys_log")
+}
+
+func initAddDepartureProcedure(c *pgx.Conn) {
+	_, err := c.Exec(context.Background(), `
+		CREATE OR REPLACE FUNCTION add_get_departure(
+			IN crop SMALLINT,
+			IN buyerId INTEGER,
+			OUT departureId INTEGER,
+			OUT productName VARCHAR(255),
+			INOUT vehicle VARCHAR(255),
+			INOUT weight FLOAT,
+			INOUT departureDate TIMESTAMP WITHOUT TIME ZONE
+		)
+		LANGUAGE plpgsql AS $$
+		DECLARE departure_id INTEGER;
+		BEGIN
+			INSERT INTO departure (departureDate, vehicle, crop, weight) VALUES (departureDate, vehicle, crop, weight) RETURNING id INTO departure_id;
+			INSERT INTO departurebuyer (departureId, buyerId) VALUES (departure_id, buyerId);
+
+			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = crop INTO productName;
+			departureId := departure_id;
+		END;
+		$$;
+	`)
+
+	if err != nil {
+		fmt.Printf("\n error at function add_get_departure:\n%v", err.Error())
+	}
+}
+
+func initAddBuyerPerson(c *pgx.Conn) {
+	_, err := c.Exec(context.Background(), `
+		CREATE OR REPLACE FUNCTION add_get_buyer_person(
+			IN ie VARCHAR(255),
+			IN cpf VARCHAR(255),
+			OUT buyerId INTEGER,
+			INOUT name VARCHAR(255)
+		)
+		LANGUAGE plpgsql AS $$
+		DECLARE buyer_id INTEGER;
+		BEGIN
+			INSERT INTO buyer (ie) VALUES (ie) RETURNING id INTO buyer_id;
+			INSERT INTO buyerperson (name, cpf, buyerid) VALUES (name, cpf, buyer_id);
+			
+			buyerId := buyer_id;
+		END;
+		$$;
+	`)
+
+	if err != nil {
+		fmt.Printf("\n error at function add_get_buyer_person:\n%v", err.Error())
+	}
+}
+
+func initAddBuyerCompany(c *pgx.Conn) {
+	_, err := c.Exec(context.Background(), `
+		CREATE OR REPLACE FUNCTION add_get_buyer_company(
+			IN ie VARCHAR(255),
+			IN cnpj VARCHAR(255),
+			IN fantasyName VARCHAR(255),
+			OUT buyerId INTEGER,
+			INOUT companyName VARCHAR(255)
+		)
+		LANGUAGE plpgsql AS $$
+		DECLARE buyer_id INTEGER;
+		BEGIN
+			INSERT INTO buyer (ie) VALUES (ie) RETURNING id INTO buyer_id;
+			INSERT INTO buyercompany (cnpj, companyname, fantasyname, buyerid) VALUES (cnpj, companyName, fantasyName, buyer_id);
+			
+			buyerId := buyer_id;
+		END;
+		$$;
+	`)
+
+	if err != nil {
+		fmt.Printf("\n error at function add_get_buyer_company:\n%v", err.Error())
+	}
 }
 
 func InitDb(c *pgx.Conn) {
@@ -245,7 +348,6 @@ func InitDb(c *pgx.Conn) {
 	initField(c)
 	initEntry(c)
 	initDeparture(c)
-	initDeparture(c)
 	initBuyer(c)
 	initDepartureBuyer(c)
 	initBuyerPerson(c)
@@ -254,6 +356,11 @@ func InitDb(c *pgx.Conn) {
 	initAddrress(c)
 	initAddrressComplement(c)
 	initLogTable(c)
+	initInactiveDeparture(c)
+	initInactiveEntry(c)
+	initAddDepartureProcedure(c)
+	initAddBuyerPerson(c)
+	initAddBuyerCompany(c)
 }
 
 var dbc *pgx.Conn

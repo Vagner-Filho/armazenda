@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -32,27 +33,22 @@ func InitEntryModel(conn *pgx.Conn) (*entryModel, error) {
 	return entryModelImpl, nil
 }
 
-func GetEntryModel() (*entryModel, error) {
+func GetEntryModel() *entryModel {
 	if entryModelImpl == nil {
-		return nil, errors.New("entry model hasnt been initialized")
+		panic("entry model hasnt been initialized")
 	}
-	return entryModelImpl, nil
-}
-
-var GrainMap = make(map[entity_public.Grain]string)
-
-func InitGrainMap() {
-	GrainMap[entity_public.Corn] = "Milho"
-	GrainMap[entity_public.Soy] = "Soja"
+	return entryModelImpl
 }
 
 func (em *entryModel) GetAllEntriesSimplified() ([]entity_public.SimplifiedEntry, *model_error.ModelError) {
 	rows, queryErr := em.conn.Query(context.Background(), `
 		SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate
 			FROM entry e
-			JOIN product p ON e.product = p.id
 			JOIN field f ON e.field = f.id
 			JOIN crop c ON e.crop = c.id
+			JOIN product p ON c.product = p.id
+			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
+			WHERE ie.entry_id IS NULL
 			ORDER BY c.startdate DESC
 		`)
 	if queryErr != nil {
@@ -70,7 +66,11 @@ func (em *entryModel) GetAllEntriesSimplified() ([]entity_public.SimplifiedEntry
 }
 
 func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.Entry, *model_error.ModelError) {
-	row, queryErr := em.conn.Query(context.Background(), `INSERT INTO entry (product, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate) VALUES (@product, @field, @crop, @vehicle, @grossweight, @tare, @netweight, @humidity, @arrivalDate) RETURNING id, product, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate`, pgx.NamedArgs{"product": ge.Product, "field": ge.Field, "crop": ge.Crop, "vehicle": ge.Vehicle, "grossweight": ge.GrossWeight, "tare": ge.Tare, "netweight": ge.NetWeight, "humidity": ge.Humidity, "arrivalDate": ge.ArrivalDate})
+	row, queryErr := em.conn.Query(context.Background(), `
+		INSERT INTO entry (field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate)
+		VALUES (@field, @crop, @vehicle, @grossweight, @tare, @netweight, @humidity, @arrivalDate)
+		RETURNING id, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate
+		`, pgx.NamedArgs{"field": ge.Field, "crop": ge.Crop, "vehicle": ge.Vehicle, "grossweight": ge.GrossWeight, "tare": ge.Tare, "netweight": ge.NetWeight, "humidity": ge.Humidity, "arrivalDate": ge.ArrivalDate})
 
 	if queryErr != nil {
 		model_error.Logger(em.conn, queryErr.Error())
@@ -85,21 +85,38 @@ func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.Entry, *mo
 	return entry, nil
 }
 
-func (em *entryModel) DeleteEntry(id uint32) {
+func (em *entryModel) DeleteEntry(id uint32) error {
+	_, err := em.conn.Exec(context.Background(), "INSERT INTO inactive_entry (entry_id) VALUES (@entryId)", pgx.NamedArgs{"entryId": id})
+
+	if err != nil {
+		model_error.Logger(em.conn, err.Error())
+	}
+
+	return nil
 }
 
-func (em *entryModel) GetEntry(id uint32) {
-	// TODO: select entry by id
+func (em *entryModel) GetEntry(id uint32) (entity_public.Entry, *model_error.ModelError) {
+	rows, queryErr := em.conn.Query(context.Background(), "SELECT * FROM entry WHERE id = @id", pgx.NamedArgs{"id": id})
+	if queryErr != nil {
+		return entity_public.Entry{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	entry, collectErr := pgx.CollectExactlyOneRow(rows, pgx.RowToStructByPos[entity_public.Entry])
+	if collectErr != nil {
+		return entity_public.Entry{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+	fmt.Printf("\n%+v\n", entry)
+	return entry, nil
 }
 
 func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.Entry, *model_error.ModelError) {
 	row, queryErr := em.conn.Query(context.Background(), `
 		UPDATE entry SET
-			(product, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate)
-		VALUES (@product, @field, @crop, @vehicle, @grossweight, @tare, @netweight, @humidity, @arrivalDate)
+			(field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate)
+		VALUES (@field, @crop, @vehicle, @grossweight, @tare, @netweight, @humidity, @arrivalDate)
 		WHERE id = @id
-		RETURNING id, product, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate
-		`, pgx.NamedArgs{"id": ge.Id, "product": ge.Product, "field": ge.Field, "crop": ge.Crop, "vehicle": ge.Vehicle, "grossweight": ge.GrossWeight, "tare": ge.Tare, "netweight": ge.NetWeight, "humidity": ge.Humidity, "arrivalDate": ge.ArrivalDate})
+		RETURNING id, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate
+		`, pgx.NamedArgs{"id": ge.Id, "field": ge.Field, "crop": ge.Crop, "vehicle": ge.Vehicle, "grossweight": ge.GrossWeight, "tare": ge.Tare, "netweight": ge.NetWeight, "humidity": ge.Humidity, "arrivalDate": ge.ArrivalDate})
 
 	if queryErr != nil {
 		model_error.Logger(em.conn, queryErr.Error())
@@ -114,7 +131,7 @@ func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.Entry, *mo
 	return entry, nil
 }
 
-var availableEntryFilters = map[string]func(e entity_public.Entry, ef entity_public.EntryFilter) bool{
+var availableEntryFilters = map[string]func(e entity_public.Entry, ef entity_public.EntryFilter) string{
 	"ArrivalDateMin": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
 		arrivalFrom, entryFilterDateError := time.Parse(utils.TimeLayout, ef.ArrivalDateMin)
 		if entryFilterDateError != nil {
@@ -133,7 +150,8 @@ var availableEntryFilters = map[string]func(e entity_public.Entry, ef entity_pub
 		return e.Vehicle == ef.Vehicle
 	},
 	"Product": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
-		return e.Product == ef.Product
+		//return e.Product == ef.Product
+		return false
 	},
 	"Field": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
 		return e.Field == ef.Field
@@ -141,36 +159,28 @@ var availableEntryFilters = map[string]func(e entity_public.Entry, ef entity_pub
 	"NetWeightMin": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
 		return e.NetWeight >= ef.NetWeightMin
 	},
-	"NetWeightMax": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
-		return e.NetWeight <= ef.NetWeightMax
+	"NetWeightMax": func(e entity_public.Entry, ef entity_public.EntryFilter) string {
+		return "e.netweight <= " + strconv.FormatFloat(ef.NetWeightMax, 'f', -1, 64)
 	},
-	"Crop": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
-		return e.Crop == ef.Crop
+	"Crop": func(e entity_public.Entry, ef entity_public.EntryFilter) string {
+		return "c.id = " + string(ef.Crop)
 	},
 }
 
-func FilterEntries(filter entity_public.EntryFilter) ([]entity_public.Entry, error) {
-	var filteredEntries []entity_public.Entry
+func (em *entryModel) FilterEntries(filter entity_public.EntryFilter) ([]entity_public.SimplifiedEntry, error) {
+	//filters := filter.GetFilters(availableEntryFilters)
+	//rows, queryErr := em.conn.Query(context.Background(), `
 
-	bomdia := []entity_public.Entry{}
-	filters := filter.GetFilters(availableEntryFilters)
-	for _, entry := range bomdia {
-		include := true
-		for f := range filters {
-			fff := filters[f]
+	//`)
 
-			if fff == nil {
-				continue
-			}
-
-			include = fff(entry, filter)
-			if !include {
-				break
-			}
-		}
-		if include {
-			filteredEntries = append(filteredEntries, entry)
-		}
-	}
-	return filteredEntries, nil
+	stmt := `SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate
+			FROM entry e
+			JOIN field f ON e.field = f.id
+			JOIN crop c ON e.crop = c.id
+			JOIN product p ON c.product = p.id
+			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
+			WHERE ie.entry_id IS NULL
+			ORDER BY c.startdate DESC
+		`
+	return []entity_public.SimplifiedEntry{}, nil
 }

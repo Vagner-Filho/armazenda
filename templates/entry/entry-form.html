@@ -12,12 +12,12 @@
                 <legend class="text-lg uppercase rounded-t-lg bg-white px-2 font-light">
                     Identificação
                 </legend>
-                <div class="flex flex-col-reverse">
-                    {{ template "grain-selector" }}
+                <!--<div class="flex flex-col-reverse">
+                    {{ template "grain-selector" .Products }}
                     <label for="grain-selector" class="label-peer">
                         Grão
                     </label>
-                </div>
+                </div>-->
                 {{ template "crop-selector" .Crops }}
                 {{ template "field-selector" .Fields }}
             </fieldset>
@@ -73,20 +73,15 @@
     </div>
 
     <script type="module">
+        import { formatDateToInput } from "/public/assets/js/date.js"
+        const dateVal = formatDateToInput({{ .Entry.ArrivalDate }})
+
         const dialogEl = document.querySelector("#addEntryDialog")
         if (dialogEl) {
             dialogEl.showModal()
             const arrivalDateEl = dialogEl.querySelector("input#arrival-date")
             if (!!arrivalDateEl) {
-                const existingDate = arrivalDateEl.getAttribute("value")
-                if (existingDate) {
-                    arrivalDateEl.setAttribute("value", existingDate)
-                } else {
-                    const nowDateTime = new Intl.DateTimeFormat('en-CA', { dateStyle: 'short', timeStyle: 'short', hour12: false }).format(new Date()).split(",")
-                    const date = nowDateTime[0]
-                    const time = nowDateTime[1].trim().split(" ")[0]
-                    arrivalDateEl.setAttribute("value", `${date}T${time}`)
-                }
+                arrivalDateEl.setAttribute("value", dateVal)
             }
 
             function closeEntryFormDialog() {

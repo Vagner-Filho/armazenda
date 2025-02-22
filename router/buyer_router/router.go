@@ -2,33 +2,40 @@ package buyer_router
 
 import (
 	entity_public "armazenda/entity/public"
-	"armazenda/model/buyer_model"
+	buyer_service "armazenda/service/buyer"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 func AddBuyerCompany(c *gin.Context) {
-	var newCompany entity_public.Company
+	var newCompany entity_public.BuyerCompany
 	err := c.Bind(&newCompany)
 	if err != nil {
 		c.String(http.StatusBadRequest, "", err.Error())
 		return
 	}
-	var nc = buyer_model.AddBuyerCompany(newCompany)
-	c.HTML(http.StatusCreated, "buyer-option", nc.GetBuyer())
+
+	buyer, toast := buyer_service.AddBuyerCompany(newCompany)
+	if toast != nil {
+		c.Header("HX-Trigger", string(toast.ToJson()))
+	}
+	c.HTML(http.StatusCreated, "buyer-option", buyer)
 }
 
 func AddBuyerPerson(c *gin.Context) {
-	var newPersonal entity_public.Personal
+	var newPersonal entity_public.BuyerPerson
 	err := c.Bind(&newPersonal)
 	if err != nil {
 		c.String(http.StatusBadRequest, "", err.Error())
 		return
 	}
 
-	var np = buyer_model.AddBuyerPersonal(newPersonal)
-	c.HTML(http.StatusOK, "buyer-option", np.GetBuyer())
+	buyer, toast := buyer_service.AddBuyerPerson(newPersonal)
+	if toast != nil {
+		c.Header("HX-Trigger", string(toast.ToJson()))
+	}
+	c.HTML(http.StatusOK, "buyer-option", buyer)
 }
 
 func GetBuyerForm(c *gin.Context) {

@@ -1,20 +1,31 @@
 package entity_public
 
-import "reflect"
+import (
+	"reflect"
+	"time"
+)
 
 type Departure struct {
-	Manifest      uint32  `form:"manifest"`
-	DepartureDate string  `form:"departureDate" binding:"required"`
-	Product       Grain   `form:"product"  binding:"gte=0"`
-	VehiclePlate  string  `form:"vehiclePlate" binding:"required"`
-	Weight        float64 `form:"weight" binding:"required"`
-	Buyer         string  `form:"buyer" binding:"required"`
+	Id            uint32    `form:"id"`
+	DepartureDate time.Time `form:"departureDate" binding:"required" time_format:"2006-01-02T15:04"`
+	VehiclePlate  string    `form:"vehiclePlate" binding:"required"`
+	Crop          uint8     `form:"crop" binding:"required"`
+	Weight        float64   `form:"weight" binding:"required"`
+	Buyer         string    `form:"buyer" binding:"required"`
+}
+
+type DisplayDeparture struct {
+	Id            uint32
+	Product       string
+	VehiclePlate  string
+	Weight        float64
+	DepartureDate time.Time
 }
 
 type DepartureFilter struct {
 	DepartureDateMin string  `form:"departureDateMin"`
 	DepartureDateMax string  `form:"departureDateMax"`
-	Product          Grain   `form:"product"`
+	Product          uint8   `form:"product"`
 	VehiclePlate     string  `form:"vehiclePlate"`
 	WeightMin        float64 `form:"weightMin"`
 	WeightMax        float64 `form:"weightMax"`

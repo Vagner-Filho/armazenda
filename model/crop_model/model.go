@@ -43,7 +43,11 @@ func (cm *cropModel) AddCrop(c entity_public.Crop) (entity_public.Crop, *model_e
 	var id uint8
 	var name string
 	var startDateAsTime time.Time
-	scanErr := cm.conn.QueryRow(context.Background(), "INSERT INTO crop (name, startDate) VALUES (@name, @startDate) RETURNING id, name, startDate", pgx.NamedArgs{"name": c.Name, "startDate": c.StartDate}).Scan(&id, &name, &startDateAsTime)
+	var product uint8
+	scanErr := cm.conn.QueryRow(context.Background(), `
+		INSERT INTO crop (name, startDate, product)
+		VALUES (@name, @startDate, @product) RETURNING id, name, startDate, product
+		`, pgx.NamedArgs{"name": c.Name, "startDate": c.StartDate, "product": c.Product}).Scan(&id, &name, &startDateAsTime, &product)
 
 	if scanErr != nil {
 		var pgErr *pgconn.PgError
@@ -57,6 +61,7 @@ func (cm *cropModel) AddCrop(c entity_public.Crop) (entity_public.Crop, *model_e
 		Id:        id,
 		Name:      name,
 		StartDate: startDateAsTime,
+		Product:   product,
 	}, nil
 }
 
@@ -72,27 +77,4 @@ func (cm *cropModel) GetCrops() ([]entity_public.Crop, error) {
 	}
 
 	return crops, nil
-}
-
-var crops = []entity_public.Crop{
-	{
-		Id:        0,
-		Name:      "Safra 2024",
-		StartDate: time.Now().AddDate(0, -9, -3),
-	},
-	{
-		Id:        1,
-		Name:      "Safra 2023",
-		StartDate: time.Now().AddDate(-1, -5, -7),
-	},
-	{
-		Id:        2,
-		Name:      "Safra 2022",
-		StartDate: time.Now().AddDate(-2, 0, -7),
-	},
-	{
-		Id:        3,
-		Name:      "Entressafra 2024",
-		StartDate: time.Now(),
-	},
 }

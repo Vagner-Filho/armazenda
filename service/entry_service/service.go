@@ -6,9 +6,7 @@ import (
 )
 
 func AddEntry(ge entity_public.Entry) (entity_public.Entry, entity_public.Toast) {
-	eModel, getModelErr := entry_model.GetEntryModel()
-	if getModelErr != nil {
-	}
+	eModel := entry_model.GetEntryModel()
 
 	if ge.NetWeight == 0 {
 		ge.NetWeight = ge.GrossWeight - ge.Tare
@@ -24,26 +22,23 @@ func AddEntry(ge entity_public.Entry) (entity_public.Entry, entity_public.Toast)
 	return newEntry, entity_public.GetSuccessToast("Entrada adicionada", "")
 }
 
-func DeleteEntry(id uint32) int {
-	eModel, getModelErr := entry_model.GetEntryModel()
-	if getModelErr != nil {
-	}
-	eModel.DeleteEntry(id)
-	return 111
-}
+func GetEntry(id uint32) (entity_public.Entry, *entity_public.Toast) {
+	eModel := entry_model.GetEntryModel()
 
-func GetEntry(id uint32) entity_public.Entry {
-	eModel, getModelErr := entry_model.GetEntryModel()
-	if getModelErr != nil {
+	entry, err := eModel.GetEntry(id)
+	if err != nil {
+		if err.IsServerErr == true {
+			toast := entity_public.GetErrorToast("Houve um erro interno ao buscar a entrada :(", "")
+			return entity_public.Entry{}, &toast
+		}
+		toast := entity_public.GetWarningToast(err.Message, "")
+		return entity_public.Entry{}, &toast
 	}
-	eModel.GetEntry(id)
-	return entity_public.Entry{}
+	return entry, nil
 }
 
 func PutEntry(ge entity_public.Entry) (entity_public.Entry, entity_public.Toast) {
-	eModel, getModelErr := entry_model.GetEntryModel()
-	if getModelErr != nil {
-	}
+	eModel := entry_model.GetEntryModel()
 
 	entry, putErr := eModel.PutEntry(ge)
 	if putErr != nil {
@@ -53,4 +48,16 @@ func PutEntry(ge entity_public.Entry) (entity_public.Entry, entity_public.Toast)
 		return entity_public.Entry{}, entity_public.GetWarningToast(putErr.Message, "")
 	}
 	return entry, entity_public.GetSuccessToast("Entrada adicionada", "")
+}
+
+func DeleteEntry(id uint32) *entity_public.Toast {
+	dModel := entry_model.GetEntryModel()
+	err := dModel.DeleteEntry(id)
+
+	if err != nil {
+
+	}
+
+	toast := entity_public.GetSuccessToast("Entrada deletada", "")
+	return &toast
 }

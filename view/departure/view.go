@@ -2,69 +2,60 @@ package departure_view
 
 import (
 	entity_public "armazenda/entity/public"
-	"armazenda/model/buyer_model"
-	"armazenda/model/departure_model"
-	"armazenda/model/entry_model"
+	buyer_service "armazenda/service/buyer"
+	crop_service "armazenda/service/crop"
+	"armazenda/service/departure_service"
 	"armazenda/service/vehicle_service"
 )
 
-type departureFormView struct {
-	Vehicles []entity_public.Vehicle
-	Buyers   []entity_public.Buyer
-	entity_public.Departure
+type DepartureForm struct {
+	Vehicles  []entity_public.Vehicle
+	Buyers    []entity_public.BuyerDisplay
+	Departure entity_public.Departure
+	Crops     []entity_public.Crop
 }
 
-func GetNewDepartureForm() departureFormView {
-	vehicles, _ := vehicle_service.GetVehicles()
-	return departureFormView{
+func GetNewDepartureForm() (DepartureForm, []*entity_public.Toast) {
+	vehicles, vtoast := vehicle_service.GetVehicles()
+	crops, ctoast := crop_service.GetCrops()
+	buyers, btoast := buyer_service.GetBuyers()
+
+	return DepartureForm{
 		Vehicles:  vehicles,
-		Buyers:    buyer_model.GetBuyers(),
+		Buyers:    buyers,
 		Departure: entity_public.Departure{},
-	}
+		Crops:     crops,
+	}, []*entity_public.Toast{vtoast, ctoast, btoast}
 }
 
-type ReadableDeparture struct {
-	Manifest      uint32
-	DepartureDate string
-	Product       string
-	VehiclePlate  string
-	Weight        float64
-}
+func GetExistingDepartureForm(departureId uint32) (DepartureForm, []*entity_public.Toast) {
+	form, toasts := GetNewDepartureForm()
+	departure, toast := departure_service.GetDeparture(departureId)
 
-func MakeReadableDeparture(gd entity_public.Departure) ReadableDeparture {
-	return ReadableDeparture{
-		Manifest:      gd.Manifest,
-		Product:       entry_model.GrainMap[gd.Product],
-		VehiclePlate:  gd.VehiclePlate,
-		Weight:        gd.Weight,
-		DepartureDate: gd.DepartureDate,
-	}
+	form.Departure = departure
+	toasts = append(toasts, toast)
+	return form, toasts
 }
 
 type departureFilter struct {
-	Buyers   []entity_public.Buyer
+	Buyers   []entity_public.BuyerDisplay
 	Vehicles []entity_public.Vehicle
 }
 type departureContent struct {
-	Departures []ReadableDeparture
+	Departures []entity_public.DisplayDeparture
 	Filters    departureFilter
 }
 
-func GetDepartureContent() departureContent {
-	var readable = []ReadableDeparture{}
+func GetDepartureContent() (departureContent, []*entity_public.Toast) {
+	departures, dtoast := departure_service.GetDisplayDepartures()
+	vehicles, vtoast := vehicle_service.GetVehicles()
+	buyers, btoast := buyer_service.GetBuyers()
 
-	departures := departure_model.GetDepartures()
-
-	for _, gd := range departures {
-		readable = append(readable, MakeReadableDeparture(gd))
-	}
-
-	vehicles, _ := vehicle_service.GetVehicles()
 	return departureContent{
-		Departures: readable,
+		Departures: departures,
 		Filters: departureFilter{
-			Buyers:   buyer_model.GetBuyers(),
+			Buyers:   buyers,
 			Vehicles: vehicles,
 		},
-	}
+	}, []*entity_public.Toast{dtoast, vtoast, btoast}
 }

@@ -3,6 +3,7 @@ package crop_router
 import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/crop_model"
+	crop_view "armazenda/view/crop"
 	"net/http"
 	"time"
 
@@ -11,11 +12,16 @@ import (
 
 type CropForm struct {
 	Name      string `form:"name"`
+	Product   uint8  `form:"product"`
 	StartDate string `form:"startDate"`
 }
 
 func GetCropForm(c *gin.Context) {
-	c.HTML(http.StatusOK, "crop-form", nil)
+	cropForm, toast := crop_view.GetCropForm()
+	if toast != nil {
+		c.Header("HX-Trigger", string(toast.ToJson()))
+	}
+	c.HTML(http.StatusOK, "crop-form", cropForm)
 }
 
 func AddCrop(c *gin.Context) {
@@ -36,14 +42,13 @@ func AddCrop(c *gin.Context) {
 	addedCrop, addErr := cropModel.AddCrop(entity_public.Crop{
 		Name:      newCrop.Name,
 		StartDate: startDateTime,
+		Product:   newCrop.Product,
 	})
 
 	if addErr != nil {
 		if addErr.IsServerErr == true {
-			c.HTML(http.StatusInternalServerError, "toast", gin.H{
-				"Message": addErr.Error(),
-				"IsError": true,
-			})
+			toast := entity_public.GetErrorToast(addErr.Error(), "")
+			c.Header("HX-Trigger", string(toast.ToJson()))
 			return
 		}
 

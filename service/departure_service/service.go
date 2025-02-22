@@ -5,22 +5,64 @@ import (
 	"armazenda/model/departure_model"
 )
 
-func GetDeparture(manifest uint32) (entity_public.Departure, bool) {
-	departure := departure_model.GetDeparture(manifest)
-	if departure == nil {
-		return entity_public.Departure{}, true
+func GetDeparture(manifest uint32) (entity_public.Departure, *entity_public.Toast) {
+	dModel := departure_model.GetDepartureModel()
+
+	departure, err := dModel.GetDeparture(manifest)
+	if err != nil {
+		if err.IsServerErr == true {
+			toast := entity_public.GetErrorToast("Houve um erro interno ao buscar a saída", "")
+			return entity_public.Departure{}, &toast
+		}
+		toast := entity_public.GetWarningToast(err.Message, "")
+		return entity_public.Departure{}, &toast
 	}
-	return *departure, false
+	return departure, nil
 }
 
-func AddDeparture(bd entity_public.Departure) entity_public.Departure {
-	return departure_model.AddDeparture(bd)
+func GetDisplayDepartures() ([]entity_public.DisplayDeparture, *entity_public.Toast) {
+	dModel := departure_model.GetDepartureModel()
+
+	departure, err := dModel.GetDisplayDepartures()
+	if err != nil {
+		if err.IsServerErr == true {
+			toast := entity_public.GetErrorToast("Houve um erro interno ao buscar a saída", "")
+			return []entity_public.DisplayDeparture{}, &toast
+		}
+		toast := entity_public.GetWarningToast(err.Message, "")
+		return []entity_public.DisplayDeparture{}, &toast
+	}
+	return departure, nil
+}
+
+func AddDeparture(bd entity_public.Departure) (entity_public.DisplayDeparture, *entity_public.Toast) {
+	dModel := departure_model.GetDepartureModel()
+
+	departure, err := dModel.AddDeparture(bd)
+	if err != nil {
+		if err.IsServerErr == true {
+			toast := entity_public.GetErrorToast("Houve um erro interno ao adicionar a saída", "")
+			return entity_public.DisplayDeparture{}, &toast
+		}
+		toast := entity_public.GetWarningToast(err.Message, "")
+		return entity_public.DisplayDeparture{}, &toast
+	}
+	toast := entity_public.GetSuccessToast("Saída cadastrada", "")
+	return departure, &toast
 }
 
 func PutDeparture(d entity_public.Departure) (entity_public.Departure, bool) {
 	return departure_model.PutDeparture(d)
 }
 
-func DeleteDeparture(manifest uint32) int {
-	return departure_model.DeleteDeparture(manifest)
+func DeleteDeparture(id uint32) *entity_public.Toast {
+	dModel := departure_model.GetDepartureModel()
+	err := dModel.DeleteDeparture(id)
+
+	if err != nil {
+
+	}
+
+	toast := entity_public.GetSuccessToast("Saída deletada", "")
+	return &toast
 }

@@ -5,12 +5,13 @@ import (
 	"armazenda/model/vehicle_model"
 )
 
-func GetVehicles() ([]entity_public.Vehicle, error) {
+func GetVehicles() ([]entity_public.Vehicle, *entity_public.Toast) {
 	vModel, _ := vehicle_model.GetVehicleModel()
 
 	vehicles, err := vModel.GetVehicles()
 	if err != nil {
-		return []entity_public.Vehicle{}, err
+		toast := entity_public.GetErrorToast(err.Error(), "")
+		return []entity_public.Vehicle{}, &toast
 	}
 
 	return vehicles, nil

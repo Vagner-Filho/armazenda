@@ -16,7 +16,6 @@ type SimplifiedEntry struct {
 
 type Entry struct {
 	Id          uint32    `form:"id"`
-	Product     Grain     `form:"product" binding:"gte=0"`
 	Field       uint16    `form:"field" binding:"required"`
 	Crop        uint8     `form:"crop" binding:"required"`
 	Vehicle     string    `form:"vehiclePlate"`
@@ -29,7 +28,7 @@ type Entry struct {
 
 type EntryFilter struct {
 	Id             uint32  `form:"id"`
-	Product        Grain   `form:"product"`
+	Product        uint8   `form:"product"`
 	Field          uint16  `form:"field"`
 	Crop           uint8   `form:"crop" binding:"gte=0"`
 	Vehicle        string  `form:"vehiclePlate"`

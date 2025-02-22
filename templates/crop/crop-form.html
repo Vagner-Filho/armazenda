@@ -7,9 +7,15 @@
         </h3>
         <form class="flex flex-col gap-4" hx-post="/crop" hx-target="#crop-selector" hx-swap="beforeend">
             <div class="flex flex-col-reverse">
-                <input type="text" name="name" id="crop-name" class="peer" required {{ if . }} pattern="{{ . }}" {{ end }}>
+                <input type="text" name="name" id="crop-name" class="peer" required {{ if .Pattern }} pattern="{{ .Pattern }}" {{ end }}>
                 <label for="crop-name" class="label-peer">
                     Nome da Safra
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                {{ template "grain-selector" .Products }}
+                <label for="grain-selector" class="label-peer">
+                    Grão
                 </label>
             </div>
             <div class="flex flex-col-reverse">
@@ -29,8 +35,12 @@
         </form>
     </div>
     <script type="module">
+        import { setTodayDatetimeInput } from "/public/assets/js/date.js"
+
         const dialogEl = document.querySelector("dialog#cropFormDialog")
         if (dialogEl) {
+            setTodayDatetimeInput("input#start-date", true)
+
             dialogEl.showModal()
             function closeCropForm() {
                 dialogEl.close()
