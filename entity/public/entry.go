@@ -27,24 +27,24 @@ type Entry struct {
 }
 
 type EntryFilter struct {
-	Id             uint32  `form:"id"`
-	Product        uint8   `form:"product"`
-	Field          uint16  `form:"field"`
-	Crop           uint8   `form:"crop" binding:"gte=0"`
-	Vehicle        string  `form:"vehiclePlate"`
-	GrossWeightMin float64 `form:"grossWeightMin"`
-	GrossWeightMax float64 `form:"grossWeightMax"`
-	TareMin        float64 `form:"tareMin"`
-	TareMax        float64 `form:"tareMax"`
-	NetWeightMin   float64 `form:"netWeightMin"`
-	NetWeightMax   float64 `form:"netWeightMax"`
-	HumidityMin    string  `form:"humidityMin"`
-	HumidityMax    string  `form:"humidityMax"`
-	ArrivalDateMin string  `form:"arrivalDateMin"`
-	ArrivalDateMax string  `form:"arrivalDateMax"`
+	Id             uint32    `form:"id"`
+	Product        uint8     `form:"product"`
+	Field          uint16    `form:"field"`
+	Crop           uint8     `form:"crop" binding:"gte=0"`
+	Vehicle        string    `form:"vehiclePlate"`
+	GrossWeightMin float64   `form:"grossWeightMin"`
+	GrossWeightMax float64   `form:"grossWeightMax"`
+	TareMin        float64   `form:"tareMin"`
+	TareMax        float64   `form:"tareMax"`
+	NetWeightMin   float64   `form:"netWeightMin"`
+	NetWeightMax   float64   `form:"netWeightMax"`
+	HumidityMin    string    `form:"humidityMin"`
+	HumidityMax    string    `form:"humidityMax"`
+	ArrivalDateMin time.Time `form:"arrivalDateMin" time_format:"2006-01-02T15:04"`
+	ArrivalDateMax time.Time `form:"arrivalDateMax" time_format:"2006-01-02T15:04"`
 }
 
-type filterCollection map[string]func(e Entry, ef EntryFilter) bool
+type filterCollection map[string]func(ef EntryFilter) string
 
 func (ef EntryFilter) GetFilters(availableFilters filterCollection) filterCollection {
 	userFilters := make(filterCollection)

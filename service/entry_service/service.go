@@ -61,3 +61,9 @@ func DeleteEntry(id uint32) *entity_public.Toast {
 	toast := entity_public.GetSuccessToast("Entrada deletada", "")
 	return &toast
 }
+
+func FilterEntries(ef entity_public.EntryFilter) {
+	eModel := entry_model.GetEntryModel()
+
+	eModel.FilterEntries(ef)
+}

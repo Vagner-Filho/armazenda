@@ -3,12 +3,10 @@ package entry_model
 import (
 	"armazenda/entity/public"
 	model_error "armazenda/model/error"
-	"armazenda/utils"
 	"context"
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -131,47 +129,35 @@ func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.Entry, *mo
 	return entry, nil
 }
 
-var availableEntryFilters = map[string]func(e entity_public.Entry, ef entity_public.EntryFilter) string{
-	"ArrivalDateMin": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
-		arrivalFrom, entryFilterDateError := time.Parse(utils.TimeLayout, ef.ArrivalDateMin)
-		if entryFilterDateError != nil {
-			return false
-		}
-		return arrivalFrom.Before(e.ArrivalDate)
+var availableEntryFilters = map[string]func(ef entity_public.EntryFilter) string{
+	"ArrivalDateMin": func(ef entity_public.EntryFilter) string {
+		return fmt.Sprintf("e.arrivalDate >= %v", ef.ArrivalDateMin)
 	},
-	"ArrivalDateMax": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
-		arrivalTo, entryFilterDateError := time.Parse(utils.TimeLayout, ef.ArrivalDateMax)
-		if entryFilterDateError != nil {
-			return false
-		}
-		return arrivalTo.After(e.ArrivalDate)
+	"ArrivalDateMax": func(ef entity_public.EntryFilter) string {
+		return fmt.Sprintf("e.arrivalDate <= %v", ef.ArrivalDateMax)
 	},
-	"Vehicle": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
-		return e.Vehicle == ef.Vehicle
+	"Vehicle": func(ef entity_public.EntryFilter) string {
+		return fmt.Sprintf("e.vehicle = '%s'", ef.Vehicle)
 	},
-	"Product": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
-		//return e.Product == ef.Product
-		return false
+	"Product": func(ef entity_public.EntryFilter) string {
+		return "p.id = " + strconv.FormatInt(int64(ef.Product), 10)
 	},
-	"Field": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
-		return e.Field == ef.Field
+	"Field": func(ef entity_public.EntryFilter) string {
+		return "e.field = " + strconv.FormatInt(int64(ef.Field), 10)
 	},
-	"NetWeightMin": func(e entity_public.Entry, ef entity_public.EntryFilter) bool {
-		return e.NetWeight >= ef.NetWeightMin
+	"NetWeightMin": func(ef entity_public.EntryFilter) string {
+		return "e.netweight >= " + strconv.FormatFloat(ef.NetWeightMin, 'f', -1, 64)
 	},
-	"NetWeightMax": func(e entity_public.Entry, ef entity_public.EntryFilter) string {
+	"NetWeightMax": func(ef entity_public.EntryFilter) string {
 		return "e.netweight <= " + strconv.FormatFloat(ef.NetWeightMax, 'f', -1, 64)
 	},
-	"Crop": func(e entity_public.Entry, ef entity_public.EntryFilter) string {
-		return "c.id = " + string(ef.Crop)
+	"Crop": func(ef entity_public.EntryFilter) string {
+		return fmt.Sprintf("c.id = %v", ef.Crop)
 	},
 }
 
-func (em *entryModel) FilterEntries(filter entity_public.EntryFilter) ([]entity_public.SimplifiedEntry, error) {
-	//filters := filter.GetFilters(availableEntryFilters)
-	//rows, queryErr := em.conn.Query(context.Background(), `
-
-	//`)
+func (em *entryModel) FilterEntries(ef entity_public.EntryFilter) ([]entity_public.SimplifiedEntry, error) {
+	filters := ef.GetFilters(availableEntryFilters)
 
 	stmt := `SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate
 			FROM entry e
@@ -179,8 +165,13 @@ func (em *entryModel) FilterEntries(filter entity_public.EntryFilter) ([]entity_
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
 			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
-			WHERE ie.entry_id IS NULL
-			ORDER BY c.startdate DESC
-		`
+			WHERE ie.entry_id IS NULL`
+
+	for _, filter := range filters {
+		stmt += "\nAND " + filter(ef)
+	}
+
+	fmt.Printf("\n%v\n", stmt)
+
 	return []entity_public.SimplifiedEntry{}, nil
 }

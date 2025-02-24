@@ -116,7 +116,7 @@ func FilterEntries(c *gin.Context) {
 		return
 	}
 
-	//rawEntries, err := entry_model.FilterEntries(entryFilter)
+	entry_service.FilterEntries(entryFilter)
 
 	//if err != nil {
 	//	c.HTML(http.StatusBadRequest, "toast", err.Error())
