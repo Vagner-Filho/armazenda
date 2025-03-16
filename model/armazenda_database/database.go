@@ -42,9 +42,10 @@ func initProduct(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init product table", `
 	CREATE TABLE IF NOT EXISTS product (
     		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    		name VARCHAR(255) NOT NULL
+    		name VARCHAR(255) UNIQUE NOT NULL
 	);
 	`)
+	handleStmtExec(c, stmt, err, "create product")
 
 	if err == nil {
 		var products uint8
@@ -56,7 +57,6 @@ func initProduct(c *pgx.Conn) {
 			}
 		}
 	}
-	handleStmtExec(c, stmt, err, "create product")
 }
 
 func initField(c *pgx.Conn) {
@@ -136,7 +136,6 @@ func initDeparture(c *pgx.Conn) {
 		vehicle VARCHAR(255),
 		crop SMALLINT NOT NULL,
 		weight DOUBLE PRECISION NOT NULL,
-		FOREIGN KEY (product) REFERENCES product(id),
 		FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
 		FOREIGN KEY (crop) REFERENCES crop(id)
 	);
