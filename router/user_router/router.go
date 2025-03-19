@@ -1,26 +1,33 @@
 package user_router
 
 import (
+	entity_public "armazenda/entity/public"
 	"armazenda/service/user_service"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 func UserRoutes(router *gin.Engine) {
-	userService := &user_service.UserService{}
+	router.POST("/login", func(c *gin.Context) {
+		var signInUser entity_public.SignInUser
+		err := c.Bind(&signInUser)
+		if err != nil {
+			c.String(http.StatusBadRequest, "", err.Error())
+			return
+		}
 
-	router.POST("/validate", func(c *gin.Context) {
-		username := c.PostForm("username")
-		password := c.PostForm("password")
+		token, toast := user_service.Login(signInUser.Email, signInUser.Passwd)
 
-		isValid := userService.ValidateCredentials(username, password)
+		if toast != nil {
+			c.Header("HX-Trigger", string(toast.ToJson()))
+		}
 
-		if isValid {
+		if len(token) > 0 {
+			fmt.Printf("\n%v\n", token)
 			c.Header("HX-Redirect", "/romaneio")
 			c.Status(http.StatusOK)
-		} else {
-			c.HTML(http.StatusOK, "error-message.html", gin.H{})
 		}
 	})
 }

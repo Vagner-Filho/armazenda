@@ -5,7 +5,7 @@ import "time"
 type Crop struct {
 	Id        uint8
 	Name      string
-	StartDate time.Time
 	Product   uint8
+	StartDate time.Time
 	Selected  bool `db:"-"`
 }

@@ -8,6 +8,7 @@ import (
 	"armazenda/model/entry_model"
 	"armazenda/model/field_model"
 	"armazenda/model/product_model"
+	"armazenda/model/user_model"
 	"armazenda/model/vehicle_model"
 	"armazenda/router/buyer_router"
 	"armazenda/router/crop_router"
@@ -49,6 +50,7 @@ func main() {
 	defer conn.Close(context.Background())
 
 	armazenda_database.InitDb(conn)
+	user_model.InitUserModel(conn)
 	crop_model.InitCropModel(conn)
 	field_model.InitFieldModel(conn)
 	vehicle_model.InitVehicleModel(conn)

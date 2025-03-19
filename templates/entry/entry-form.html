@@ -26,7 +26,7 @@
                     Análise
                 </legend>
                 <div class="flex flex-col-reverse">
-                    <input type="text" name="humidity" id="humidity" class="peer" value="{{ .Entry.Humidity }}" required>
+                    <input type="number" min="0" name="humidity" id="humidity" class="peer" value="{{ .Entry.Humidity }}" required>
                     <label for="humidity" class="label-peer">
                         Umidade
                     </label>

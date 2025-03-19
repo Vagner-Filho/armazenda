@@ -340,6 +340,19 @@ func initAddBuyerCompany(c *pgx.Conn) {
 	}
 }
 
+func initUser(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init user stmt", `
+		CREATE TABLE IF NOT EXISTS app_user (
+			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			email TEXT UNIQUE NOT NULL,
+			name TEXT NOT NULL,
+			passwd TEXT NOT NULL,
+			inscricao_estadual TEXT NOT NULL
+		);
+	`)
+	handleStmtExec(c, stmt, err, "init user table")
+}
+
 func InitDb(c *pgx.Conn) {
 	initProduct(c)
 	initCrop(c)
@@ -360,6 +373,7 @@ func InitDb(c *pgx.Conn) {
 	initAddDepartureProcedure(c)
 	initAddBuyerPerson(c)
 	initAddBuyerCompany(c)
+	initUser(c)
 }
 
 var dbc *pgx.Conn
