@@ -13,7 +13,7 @@ type FieldForm struct {
 	Id   uint32 `form:"id"`
 }
 
-func GetFieldForm(c *gin.Context) {
+func getFieldForm(c *gin.Context) {
 	fields := []entity_public.Field{}
 	var regexPattern string = "^(?!"
 	for i, field := range fields {
@@ -26,7 +26,7 @@ func GetFieldForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "field-form", nil)
 }
 
-func AddField(c *gin.Context) {
+func addField(c *gin.Context) {
 	var newField FieldForm
 	err := c.Bind(&newField)
 	if err != nil {
@@ -60,6 +60,6 @@ func AddField(c *gin.Context) {
 }
 
 func UseFieldRoutes(router *gin.Engine) {
-	router.POST("/field", AddField)
-	router.GET("/entry/field/form", GetFieldForm)
+	router.POST("/field", addField)
+	router.GET("/entry/field/form", getFieldForm)
 }

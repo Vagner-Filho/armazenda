@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AddBuyerCompany(c *gin.Context) {
+func addBuyerCompany(c *gin.Context) {
 	var newCompany entity_public.BuyerCompany
 	err := c.Bind(&newCompany)
 	if err != nil {
@@ -23,7 +23,7 @@ func AddBuyerCompany(c *gin.Context) {
 	c.HTML(http.StatusCreated, "buyer-option", buyer)
 }
 
-func AddBuyerPerson(c *gin.Context) {
+func addBuyerPerson(c *gin.Context) {
 	var newPersonal entity_public.BuyerPerson
 	err := c.Bind(&newPersonal)
 	if err != nil {
@@ -38,12 +38,12 @@ func AddBuyerPerson(c *gin.Context) {
 	c.HTML(http.StatusOK, "buyer-option", buyer)
 }
 
-func GetBuyerForm(c *gin.Context) {
+func getBuyerForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "buyer-form", gin.H{})
 }
 
 func UseBuyerRoutes(router *gin.Engine) {
-	router.GET("/buyer/form", GetBuyerForm)
-	router.POST("/buyer/personal", AddBuyerPerson)
-	router.POST("/buyer/company", AddBuyerCompany)
+	router.GET("/buyer/form", getBuyerForm)
+	router.POST("/buyer/personal", addBuyerPerson)
+	router.POST("/buyer/company", addBuyerCompany)
 }

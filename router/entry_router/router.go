@@ -15,15 +15,15 @@ type FieldForm struct {
 	Id   uint32 `form:"id"`
 }
 
-func GetRomaneioPage(c *gin.Context) {
+func getRomaneioPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "romaneio.html", entry_view.GetEntryContent())
 }
 
-func GetEntryContent(c *gin.Context) {
+func getEntryContent(c *gin.Context) {
 	c.HTML(http.StatusOK, "entry-content", entry_view.GetEntryContent())
 }
 
-func GetEntryForm(c *gin.Context) {
+func getEntryForm(c *gin.Context) {
 	id := c.Param("id")
 	converted, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
@@ -45,7 +45,7 @@ func GetEntryForm(c *gin.Context) {
 	)
 }
 
-func AddEntry(c *gin.Context) {
+func addEntry(c *gin.Context) {
 	var newEntry entity_public.Entry
 	err := c.Bind(&newEntry)
 	if err != nil {
@@ -67,7 +67,7 @@ func AddEntry(c *gin.Context) {
 	c.HTML(http.StatusCreated, "entry-list-item", entry)
 }
 
-func DeleteEntry(c *gin.Context) {
+func deleteEntry(c *gin.Context) {
 	id := c.Param("id")
 	converted, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
@@ -79,7 +79,7 @@ func DeleteEntry(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func PutEntry(c *gin.Context) {
+func putEntry(c *gin.Context) {
 	//id := c.Param("id")
 	//converted, parseErr := strconv.ParseUint(id, 10, 32)
 	//if parseErr != nil {
@@ -108,7 +108,7 @@ func PutEntry(c *gin.Context) {
 	c.HTML(http.StatusOK, "entry-list-item", updatedEntry)
 }
 
-func FilterEntries(c *gin.Context) {
+func filterEntries(c *gin.Context) {
 	var entryFilter entity_public.EntryFilter
 	err := c.Bind(&entryFilter)
 	if err != nil {
@@ -129,12 +129,12 @@ func FilterEntries(c *gin.Context) {
 	c.HTML(http.StatusOK, "entry-table", entries)
 }
 
-func GetEntryFiltersForm(c *gin.Context) {
+func getEntryFiltersForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "entry-filter-form", entry_view.GetFiltersForm())
 	return
 }
 
-func GetEmptyEntryForm(c *gin.Context) {
+func getEmptyEntryForm(c *gin.Context) {
 	formMembers, toasts := entry_view.GetEntryForm()
 
 	for _, t := range toasts {
@@ -146,13 +146,13 @@ func GetEmptyEntryForm(c *gin.Context) {
 }
 
 func UseEntryRoutes(router *gin.Engine) {
-	router.GET("/romaneio", GetRomaneioPage)
-	router.GET("/entry/list", GetEntryContent)
-	router.GET("/entry/filters", GetEntryFiltersForm)
-	router.GET("/entry/form", GetEmptyEntryForm)
-	router.GET("/entry/form/:id", GetEntryForm)
-	router.POST("/entry", AddEntry)
-	router.PUT("/entry/:id", PutEntry)
-	router.DELETE("/entry/:id", DeleteEntry)
-	router.POST("/entry/filter", FilterEntries)
+	router.GET("/romaneio", getRomaneioPage)
+	router.GET("/entry/list", getEntryContent)
+	router.GET("/entry/filters", getEntryFiltersForm)
+	router.GET("/entry/form", getEmptyEntryForm)
+	router.GET("/entry/form/:id", getEntryForm)
+	router.POST("/entry", addEntry)
+	router.PUT("/entry/:id", putEntry)
+	router.DELETE("/entry/:id", deleteEntry)
+	router.POST("/entry/filter", filterEntries)
 }

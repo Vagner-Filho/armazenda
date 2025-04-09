@@ -16,7 +16,7 @@ type CropForm struct {
 	StartDate string `form:"startDate"`
 }
 
-func GetCropForm(c *gin.Context) {
+func getCropForm(c *gin.Context) {
 	cropForm, toast := crop_view.GetCropForm()
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
@@ -24,7 +24,7 @@ func GetCropForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "crop-form", cropForm)
 }
 
-func AddCrop(c *gin.Context) {
+func addCrop(c *gin.Context) {
 	var newCrop CropForm
 	err := c.Bind(&newCrop)
 	if err != nil {
@@ -64,6 +64,6 @@ func AddCrop(c *gin.Context) {
 }
 
 func UseCropRoutes(router *gin.Engine) {
-	router.GET("/crop/form", GetCropForm)
-	router.POST("/crop", AddCrop)
+	router.GET("/crop/form", getCropForm)
+	router.POST("/crop", addCrop)
 }

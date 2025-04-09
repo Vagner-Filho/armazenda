@@ -14,13 +14,13 @@ type VehicleForm struct {
 	Plate string `form:"plate" binding:"required"`
 }
 
-func GetVehiclesForm(c *gin.Context) {
+func getVehiclesForm(c *gin.Context) {
 	//vehicles, _ := vehicle_service.GetVehicles()
 	//c.HTML(http.StatusOK, "vehicle-form", vehicles)
 	c.HTML(http.StatusOK, "vehicle-form", nil)
 }
 
-func AddVehicle(c *gin.Context) {
+func addVehicle(c *gin.Context) {
 	var newVehicle VehicleForm
 	err := c.Bind(&newVehicle)
 	if err != nil {
@@ -47,6 +47,6 @@ func AddVehicle(c *gin.Context) {
 }
 
 func UseVehicleRouter(router *gin.Engine) {
-	router.GET("/vehicle/form", GetVehiclesForm)
-	router.POST("/vehicle", AddVehicle)
+	router.GET("/vehicle/form", getVehiclesForm)
+	router.POST("/vehicle", addVehicle)
 }

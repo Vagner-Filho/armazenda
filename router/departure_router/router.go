@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GetDepartureContent(c *gin.Context) {
+func getDepartureContent(c *gin.Context) {
 	content, toasts := departure_view.GetDepartureContent()
 	for _, toast := range toasts {
 		if toast != nil {
@@ -26,7 +26,7 @@ func GetDepartureContent(c *gin.Context) {
 	c.HTML(http.StatusOK, "departure-content", content)
 }
 
-func GetDepartureForm(c *gin.Context) {
+func getDepartureForm(c *gin.Context) {
 	form, toasts := departure_view.GetNewDepartureForm()
 
 	for _, toast := range toasts {
@@ -38,7 +38,7 @@ func GetDepartureForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "departure-form", form)
 }
 
-func GetFilledDepartureForm(c *gin.Context) {
+func getFilledDepartureForm(c *gin.Context) {
 	id := c.Param("id")
 	converted, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
@@ -56,7 +56,7 @@ func GetFilledDepartureForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "departure-form", form)
 }
 
-func AddDeparture(c *gin.Context) {
+func addDeparture(c *gin.Context) {
 	var df entity_public.Departure
 	err := c.Bind(&df)
 	if err != nil {
@@ -74,7 +74,7 @@ func AddDeparture(c *gin.Context) {
 	c.HTML(http.StatusOK, "departure-list-item", departure)
 }
 
-func PutDeparture(c *gin.Context) {
+func putDeparture(c *gin.Context) {
 	id := c.Param("id")
 	converted, parseErr := strconv.ParseUint(id, 10, 32)
 	if parseErr != nil {
@@ -99,7 +99,7 @@ func PutDeparture(c *gin.Context) {
 	c.HTML(http.StatusOK, "departure-list-item", updatedDeparture)
 }
 
-func DeleteDeparture(c *gin.Context) {
+func deleteDeparture(c *gin.Context) {
 	id := c.Param("id")
 	converted, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
@@ -112,7 +112,7 @@ func DeleteDeparture(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-func FilterDepartures(c *gin.Context) {
+func filterDepartures(c *gin.Context) {
 	var departureFilter entity_public.DepartureFilter
 	err := c.Bind(&departureFilter)
 	if err != nil {
@@ -139,11 +139,11 @@ func FilterDepartures(c *gin.Context) {
 }
 
 func UseDepartureRoutes(router *gin.Engine) {
-	router.POST("/departure/filter", FilterDepartures)
-	router.GET("/departure/list", GetDepartureContent)
-	router.GET("/departure/form", GetDepartureForm)
-	router.GET("/departure/form/:id", GetFilledDepartureForm)
-	router.POST("/departure", AddDeparture)
-	router.PUT("/departure/:id", PutDeparture)
-	router.DELETE("/departure/:id", DeleteDeparture)
+	router.POST("/departure/filter", filterDepartures)
+	router.GET("/departure/list", getDepartureContent)
+	router.GET("/departure/form", getDepartureForm)
+	router.GET("/departure/form/:id", getFilledDepartureForm)
+	router.POST("/departure", addDeparture)
+	router.PUT("/departure/:id", putDeparture)
+	router.DELETE("/departure/:id", deleteDeparture)
 }
