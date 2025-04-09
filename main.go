@@ -17,12 +17,14 @@ import (
 	"armazenda/router/field_router"
 	"armazenda/router/user_router"
 	"armazenda/router/vehicle_router"
+	"armazenda/service/user_service"
 	"context"
 	"embed"
 	"fmt"
 	"html/template"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,6 +35,29 @@ var templatesFS embed.FS
 //go:embed assets
 var assetsFS embed.FS
 
+func authenticate(c *gin.Context) {
+	path := c.FullPath()
+	if path == "/" || path == "/user" || path == "/login" || strings.Contains(path, "/public") || path == "/user/form" {
+		c.Next()
+		return
+	}
+
+	sessionCookie, cookieErr := c.Request.Cookie("session_id")
+	if cookieErr != nil {
+		fmt.Print("\ncookieErr\n")
+		//c.AbortWithStatus(http.StatusTemporaryRedirect)
+		c.HTML(http.StatusUnauthorized, "401", gin.H{})
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	fmt.Print("\n should not print \n")
+	verifyErr := user_service.VerifyToken(sessionCookie.Value)
+	if verifyErr != nil {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	c.Next()
+}
 func main() {
 
 	conn, connErr := armazenda_database.GetDbConnection()
@@ -61,50 +86,24 @@ func main() {
 
 	router := gin.Default()
 
+	router.Use(authenticate)
+
 	html := template.Must(template.ParseFS(templatesFS, "templates/*.html", "templates/**/*.html"))
 	router.SetHTMLTemplate(html)
 
 	router.StaticFS("/public", http.FS(assetsFS))
+
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "login.html", gin.H{})
 	})
 
 	user_router.UserRoutes(router)
-
-	router.GET("/user/form", user_router.GetUserForm)
-
-	router.GET("/romaneio", entry_router.GetRomaneioPage)
-
-	router.GET("/entry/list", entry_router.GetEntryContent)
-
-	router.GET("/entry/filters", entry_router.GetEntryFiltersForm)
-
-	router.GET("/entry/form", entry_router.GetEmptyEntryForm)
-
-	router.GET("/crop/form", crop_router.GetCropForm)
-	router.POST("/crop", crop_router.AddCrop)
-
-	router.GET("/entry/form/:id", entry_router.GetEntryForm)
-	router.POST("/entry", entry_router.AddEntry)
-	router.PUT("/entry/:id", entry_router.PutEntry)
-	router.DELETE("/entry/:id", entry_router.DeleteEntry)
-	router.POST("/entry/filter", entry_router.FilterEntries)
-	router.POST("/field", field_router.AddField)
-	router.GET("/entry/field/form", field_router.GetFieldForm)
-
-	router.POST("/departure/filter", departure_router.FilterDepartures)
-	router.GET("/departure/list", departure_router.GetDepartureContent)
-	router.GET("/departure/form", departure_router.GetDepartureForm)
-	router.GET("/buyer/form", buyer_router.GetBuyerForm)
-	router.GET("/departure/form/:id", departure_router.GetFilledDepartureForm)
-	router.POST("/departure", departure_router.AddDeparture)
-	router.POST("/buyer/personal", buyer_router.AddBuyerPerson)
-	router.POST("/buyer/company", buyer_router.AddBuyerCompany)
-	router.PUT("/departure/:id", departure_router.PutDeparture)
-	router.DELETE("/departure/:id", departure_router.DeleteDeparture)
-
-	router.GET("/vehicle/form", vehicle_router.GetVehiclesForm)
-	router.POST("/vehicle", vehicle_router.AddVehicle)
+	entry_router.UseEntryRoutes(router)
+	departure_router.UseDepartureRoutes(router)
+	crop_router.UseCropRoutes(router)
+	field_router.UseFieldRoutes(router)
+	vehicle_router.UseVehicleRouter(router)
+	buyer_router.UseBuyerRoutes(router)
 
 	port := os.Getenv("PORT")
 	if port == "" {

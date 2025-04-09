@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -39,64 +39,59 @@ func GetDepartureModel() *departureModel {
 	return departureModelImpl
 }
 
-var availableDepartureFilters = map[string]func(e entity_public.Departure, ef entity_public.DepartureFilter) bool{
-	"DepartureDateMin": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
-		departureMin, departureFilterDateError := time.Parse(utils.TimeLayout, df.DepartureDateMin)
-		if departureFilterDateError != nil {
-			return false
-		}
-		return departureMin.Before(d.DepartureDate)
+var availableDepartureFilters = map[string]func(df entity_public.DepartureFilter) string{
+	"DepartureDateMin": func(df entity_public.DepartureFilter) string {
+		return fmt.Sprintf("d.departureDate >= '%v'", df.DepartureDateMin.Format(utils.DBTimeWithoutTimeZone))
 	},
-	"DepartureDateMax": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
-		departureMax, departureFilterDateError := time.Parse(utils.TimeLayout, df.DepartureDateMax)
-		if departureFilterDateError != nil {
-			return false
-		}
-		return departureMax.After(d.DepartureDate)
+	"DepartureDateMax": func(df entity_public.DepartureFilter) string {
+		return fmt.Sprintf("d.departureDate <= '%v'", df.DepartureDateMax.Format(utils.DBTimeWithoutTimeZone))
 	},
-	"VehiclePlate": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
-		return d.VehiclePlate == df.VehiclePlate
+	"VehiclePlate": func(df entity_public.DepartureFilter) string {
+		return fmt.Sprintf("d.vehicle = '%s'", df.VehiclePlate)
 	},
-	"Product": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
-		return false
-		//return d.Product == df.Product
+	"Product": func(df entity_public.DepartureFilter) string {
+		return "p.id = " + strconv.FormatInt(int64(df.Product), 10)
 	},
-	"WeightMin": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
-		return d.Weight >= df.WeightMin
+	"WeightMin": func(df entity_public.DepartureFilter) string {
+		return "d.weight >= " + strconv.FormatFloat(df.WeightMin, 'f', -1, 64)
 	},
-	"WeightMax": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
-		return d.Weight <= df.WeightMax
+	"WeightMax": func(df entity_public.DepartureFilter) string {
+		return "d.weight <= " + strconv.FormatFloat(df.WeightMax, 'f', -1, 64)
 	},
-	"Buyer": func(d entity_public.Departure, df entity_public.DepartureFilter) bool {
-		return d.Buyer == df.Buyer
+	"Buyer": func(df entity_public.DepartureFilter) string {
+		return "d.Buyer = " + df.Buyer
 	},
 }
 
-func FilterDepartures(filter entity_public.DepartureFilter) ([]entity_public.Departure, error) {
-	var filteredDepartures []entity_public.Departure
+func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter) ([]entity_public.DisplayDeparture, error) {
+	filters := df.GetFilters(availableDepartureFilters)
 
-	filters := filter.GetFilters(availableDepartureFilters)
+	stmt := `SELECT d.id, p.name, d.vehicle, d.weight, d.departureDate
+			FROM departure d
+			JOIN crop c ON d.crop = c.id
+			JOIN product p ON c.product = p.id
+			LEFT OUTER JOIN inactive_departure id ON id.departure_id = d.id
+			WHERE id.departure_id IS NULL`
 
-	departures := []entity_public.Departure{}
-	for _, departure := range departures {
-		include := true
-		for f := range filters {
-			fff := filters[f]
-
-			if fff == nil {
-				continue
-			}
-
-			include = fff(departure, filter)
-			if !include {
-				break
-			}
-		}
-		if include {
-			filteredDepartures = append(filteredDepartures, departure)
-		}
+	for _, filter := range filters {
+		stmt += "\nAND " + filter(df)
 	}
-	return filteredDepartures, nil
+
+	rows, queryErr := dm.conn.Query(context.Background(), stmt)
+	if queryErr != nil {
+		fmt.Print(stmt)
+		fmt.Print(queryErr.Error())
+	}
+
+	departures, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.DisplayDeparture])
+	if collectErr != nil {
+		fmt.Print(stmt)
+		fmt.Print(collectErr.Error())
+	}
+
+	fmt.Printf("\n%v\n", stmt)
+
+	return departures, nil
 }
 
 func (dm *departureModel) GetDepartures() ([]entity_public.Departure, error) {

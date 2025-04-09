@@ -45,3 +45,8 @@ func AddVehicle(c *gin.Context) {
 	c.Header("HX-Trigger", string(t.ToJson()))
 	c.HTML(http.StatusCreated, "vehicle-option", vehicle)
 }
+
+func UseVehicleRouter(router *gin.Engine) {
+	router.GET("/vehicle/form", GetVehiclesForm)
+	router.POST("/vehicle", AddVehicle)
+}

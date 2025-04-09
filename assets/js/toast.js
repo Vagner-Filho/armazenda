@@ -43,7 +43,8 @@ class ToastManager {
 		const container = document.createElement('div')
 		container.classList.add(...["max-w-xs", "bg-white", "border", "border-gray-200", "rounded-xl", "shadow-lg", "fixed"])
 
-		container.setAttribute("style", "top: 8px; right: 8px;")
+		container.setAttribute("popover", "manual")
+		container.setAttribute("style", "inset: unset; top: 8px; right: 8px;")
 		container.setAttribute("role", "alert")
 		container.setAttribute("tabindex", "-1")
 		container.setAttribute("aria-live", "assertive")
@@ -51,7 +52,7 @@ class ToastManager {
 		container.setAttribute("aria-labelledby", "armazenda-toast")
 
 		const toastBody = document.createElement('div')
-		toastBody.classList.add(...["flex", "p-4"])
+		toastBody.classList.add(...["flex", "items-center", "p-4"])
 
 		const iconContainer = document.createElement('div')
 		iconContainer.classList.add('shrink-0')
@@ -65,7 +66,7 @@ class ToastManager {
 		messageContainer.classList.add('ms-3')
 
 		const messageParagraph = document.createElement('p')
-		messageParagraph.classList.add(...["text-lg", "text-gray-700"])
+		messageParagraph.classList.add(...["text-sm", "text-gray-700"])
 		messageParagraph.setAttribute('id', 'armazenda-toast')
 		messageParagraph.textContent = message
 
@@ -83,16 +84,19 @@ class ToastManager {
 		}
 		if (this.toastQueue.length > 0) {
 			for (let i = 0; i < this.toastQueue.length; i++) {
-				this.toastQueue[i].style.top = `${64 * (this.toastQueue.length - i)}px`
+				const topPos = (64 * (this.toastQueue.length - i)) + 8
+				this.toastQueue[i].style.top = `${topPos}px`
 			}
 		}
 		this.toastQueue.push(toast)
 
 		document.body.append(toast)
+		toast.togglePopover()
 
 		const t = setTimeout(() => {
 			const toRemove = this.toastQueue.shift()
 			if (toRemove) {
+				toast.togglePopover()
 				document.body.removeChild(toRemove)
 			}
 			clearTimeout(t)

@@ -43,19 +43,43 @@ func VerifyToken(tokenString string) error {
 	return nil
 }
 
-func Login(email string, psswd string) (string, *entity_public.Toast) {
+type credentials struct {
+	Token    string
+	Username string
+}
+
+func Login(email string, passwd string) (credentials, *entity_public.Toast) {
 	um := user_model.GetUserModel()
-	user, err := um.AuthUser(email, psswd)
+	user, err := um.AuthUser(email, passwd)
 
 	if err != nil || user == nil {
 		toast := entity_public.GetWarningToast("Credenciais inválidas", "")
-		return "", &toast
+		return credentials{}, &toast
 	}
 
 	token, tokenErr := createToken(user.Name, user.Email)
 	if tokenErr != nil {
 		toast := entity_public.GetErrorToast("Desculpe, houve um erro interno :(", "")
-		return "", &toast
+		return credentials{}, &toast
 	}
-	return token, nil
+	return credentials{Token: token, Username: user.Name}, nil
+}
+
+func Create(newUser entity_public.NewUser) entity_public.Toast {
+	if newUser.Passwd == newUser.PasswdConfirm {
+		um := user_model.GetUserModel()
+		created, err := um.CreateUser(newUser)
+
+		if created == true {
+			toast := entity_public.GetSuccessToast("Usuário criado", "")
+			return toast
+		}
+
+		if err != nil {
+			toast := entity_public.GetErrorToast(err.Error(), "")
+			return toast
+		}
+	}
+	toast := entity_public.GetWarningToast("Confirmação de senha incorreta", "")
+	return toast
 }

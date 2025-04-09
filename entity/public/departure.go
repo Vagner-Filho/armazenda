@@ -23,23 +23,23 @@ type DisplayDeparture struct {
 }
 
 type DepartureFilter struct {
-	DepartureDateMin string  `form:"departureDateMin"`
-	DepartureDateMax string  `form:"departureDateMax"`
-	Product          uint8   `form:"product"`
-	VehiclePlate     string  `form:"vehiclePlate"`
-	WeightMin        float64 `form:"weightMin"`
-	WeightMax        float64 `form:"weightMax"`
-	Buyer            string  `form:"buyer"`
+	DepartureDateMin time.Time `form:"departureDateMin" time_format:"2006-01-02T15:04"`
+	DepartureDateMax time.Time `form:"departureDateMax" time_format:"2006-01-02T15:04"`
+	Product          uint8     `form:"product"`
+	VehiclePlate     string    `form:"vehiclePlate"`
+	WeightMin        float64   `form:"weightMin"`
+	WeightMax        float64   `form:"weightMax"`
+	Buyer            string    `form:"buyer"`
 }
 
-type filterDepartureCollection map[string]func(d Departure, df DepartureFilter) bool
+type departureFilterCollection map[string]func(df DepartureFilter) string
 
-func (df DepartureFilter) GetFilters(availableFilters filterDepartureCollection) filterDepartureCollection {
-	userFilters := make(filterDepartureCollection)
+func (df DepartureFilter) GetFilters(availableFilters departureFilterCollection) departureFilterCollection {
+	userFilters := make(departureFilterCollection)
 
 	values := reflect.ValueOf(df)
 
-	for i := 0; i < values.NumField(); i++ {
+	for i := range values.NumField() {
 		field := values.Type().Field(i)
 		fieldName := field.Name
 		fieldValue := values.Field(i)

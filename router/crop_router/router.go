@@ -62,3 +62,8 @@ func AddCrop(c *gin.Context) {
 	c.Header("HX-Trigger", string(t.ToJson()))
 	c.HTML(http.StatusCreated, "crop-option", addedCrop)
 }
+
+func UseCropRoutes(router *gin.Engine) {
+	router.GET("/crop/form", GetCropForm)
+	router.POST("/crop", AddCrop)
+}

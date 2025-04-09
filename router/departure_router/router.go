@@ -19,6 +19,10 @@ func GetDepartureContent(c *gin.Context) {
 			c.Header("HX-Trigger", string(toast.ToJson()))
 		}
 	}
+	if len(content.Departures) == 0 {
+		c.HTML(http.StatusOK, "no-departure", gin.H{})
+		return
+	}
 	c.HTML(http.StatusOK, "departure-content", content)
 }
 
@@ -116,17 +120,30 @@ func FilterDepartures(c *gin.Context) {
 		return
 	}
 
-	rawDepartures, err := departure_model.FilterDepartures(departureFilter)
+	dModel := departure_model.GetDepartureModel()
+
+	departures, err := dModel.FilterDepartures(departureFilter)
 
 	if err != nil {
-		c.HTML(http.StatusBadRequest, "toast", err.Error())
+		toast := entity_public.GetWarningToast("Falha ao filtrar saídas", "")
+		c.Header("HX-Trigger", string(toast.ToJson()))
 		return
 	}
 
-	if len(rawDepartures) == 0 {
+	if len(departures) == 0 {
 		c.HTML(http.StatusOK, "no-departure-found-for-filter", gin.H{})
 		return
 	}
 
-	c.HTML(http.StatusOK, "departure-table", rawDepartures)
+	c.HTML(http.StatusOK, "departure-table", departures)
+}
+
+func UseDepartureRoutes(router *gin.Engine) {
+	router.POST("/departure/filter", FilterDepartures)
+	router.GET("/departure/list", GetDepartureContent)
+	router.GET("/departure/form", GetDepartureForm)
+	router.GET("/departure/form/:id", GetFilledDepartureForm)
+	router.POST("/departure", AddDeparture)
+	router.PUT("/departure/:id", PutDeparture)
+	router.DELETE("/departure/:id", DeleteDeparture)
 }

@@ -62,8 +62,14 @@ func DeleteEntry(id uint32) *entity_public.Toast {
 	return &toast
 }
 
-func FilterEntries(ef entity_public.EntryFilter) {
+func FilterEntries(ef entity_public.EntryFilter) ([]entity_public.SimplifiedEntry, *entity_public.Toast) {
 	eModel := entry_model.GetEntryModel()
+	entries, err := eModel.FilterEntries(ef)
 
-	eModel.FilterEntries(ef)
+	if err != nil {
+		toast := entity_public.GetWarningToast("Falha ao filtrar entradas", "")
+		return entries, &toast
+	}
+
+	return entries, nil
 }

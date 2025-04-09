@@ -41,3 +41,9 @@ func AddBuyerPerson(c *gin.Context) {
 func GetBuyerForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "buyer-form", gin.H{})
 }
+
+func UseBuyerRoutes(router *gin.Engine) {
+	router.GET("/buyer/form", GetBuyerForm)
+	router.POST("/buyer/personal", AddBuyerPerson)
+	router.POST("/buyer/company", AddBuyerCompany)
+}

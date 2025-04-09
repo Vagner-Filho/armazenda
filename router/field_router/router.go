@@ -58,3 +58,8 @@ func AddField(c *gin.Context) {
 	c.Header("HX-Trigger", string(t.ToJson()))
 	c.HTML(http.StatusCreated, "field-option", addedField)
 }
+
+func UseFieldRoutes(router *gin.Engine) {
+	router.POST("/field", AddField)
+	router.GET("/entry/field/form", GetFieldForm)
+}

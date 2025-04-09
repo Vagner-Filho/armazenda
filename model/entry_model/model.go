@@ -3,6 +3,7 @@ package entry_model
 import (
 	"armazenda/entity/public"
 	model_error "armazenda/model/error"
+	"armazenda/utils"
 	"context"
 	"errors"
 	"fmt"
@@ -131,10 +132,10 @@ func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.Entry, *mo
 
 var availableEntryFilters = map[string]func(ef entity_public.EntryFilter) string{
 	"ArrivalDateMin": func(ef entity_public.EntryFilter) string {
-		return fmt.Sprintf("e.arrivalDate >= %v", ef.ArrivalDateMin)
+		return fmt.Sprintf("e.arrivalDate >= '%v'", ef.ArrivalDateMin.Format(utils.DBTimeWithoutTimeZone))
 	},
 	"ArrivalDateMax": func(ef entity_public.EntryFilter) string {
-		return fmt.Sprintf("e.arrivalDate <= %v", ef.ArrivalDateMax)
+		return fmt.Sprintf("e.arrivalDate <= '%v'", ef.ArrivalDateMax.Format(utils.DBTimeWithoutTimeZone))
 	},
 	"Vehicle": func(ef entity_public.EntryFilter) string {
 		return fmt.Sprintf("e.vehicle = '%s'", ef.Vehicle)
@@ -171,7 +172,19 @@ func (em *entryModel) FilterEntries(ef entity_public.EntryFilter) ([]entity_publ
 		stmt += "\nAND " + filter(ef)
 	}
 
-	fmt.Printf("\n%v\n", stmt)
+	rows, queryErr := em.conn.Query(context.Background(), stmt)
+	if queryErr != nil {
+		fmt.Print(stmt)
+		fmt.Print(queryErr.Error())
+	}
 
-	return []entity_public.SimplifiedEntry{}, nil
+	entries, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.SimplifiedEntry])
+	if collectErr != nil {
+		fmt.Print(stmt)
+		fmt.Print(collectErr.Error())
+	}
+
+	fmt.Printf("\n%v\n", entries)
+
+	return entries, nil
 }

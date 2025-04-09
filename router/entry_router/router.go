@@ -116,19 +116,17 @@ func FilterEntries(c *gin.Context) {
 		return
 	}
 
-	entry_service.FilterEntries(entryFilter)
+	entries, toast := entry_service.FilterEntries(entryFilter)
+	if toast != nil {
+		c.Header("HX-Trigger", string(toast.ToJson()))
+	}
 
-	//if err != nil {
-	//	c.HTML(http.StatusBadRequest, "toast", err.Error())
-	//	return
-	//}
+	if len(entries) == 0 {
+		c.HTML(http.StatusOK, "no-entry-found-for-filter", gin.H{})
+		return
+	}
 
-	//if len(rawEntries) == 0 {
-	//	c.HTML(http.StatusOK, "no-entry-found-for-filter", gin.H{})
-	//	return
-	//}
-
-	c.HTML(http.StatusOK, "entry-table", gin.H{})
+	c.HTML(http.StatusOK, "entry-table", entries)
 }
 
 func GetEntryFiltersForm(c *gin.Context) {
@@ -145,4 +143,16 @@ func GetEmptyEntryForm(c *gin.Context) {
 		}
 	}
 	c.HTML(http.StatusOK, "entry-form", formMembers)
+}
+
+func UseEntryRoutes(router *gin.Engine) {
+	router.GET("/romaneio", GetRomaneioPage)
+	router.GET("/entry/list", GetEntryContent)
+	router.GET("/entry/filters", GetEntryFiltersForm)
+	router.GET("/entry/form", GetEmptyEntryForm)
+	router.GET("/entry/form/:id", GetEntryForm)
+	router.POST("/entry", AddEntry)
+	router.PUT("/entry/:id", PutEntry)
+	router.DELETE("/entry/:id", DeleteEntry)
+	router.POST("/entry/filter", FilterEntries)
 }
