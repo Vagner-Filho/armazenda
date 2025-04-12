@@ -340,6 +340,40 @@ func initAddBuyerCompany(c *pgx.Conn) {
 	}
 }
 
+func initAddEntry(c *pgx.Conn) {
+	_, err := c.Exec(context.Background(), `
+		CREATE OR REPLACE FUNCTION add_get_entry(
+			in field SMALLINT,
+			IN crop SMALLINT,
+			in grossWeight DOUBLE PRECISION,
+			in tare DOUBLE PRECISION,
+		 	in humidity DOUBLE PRECISION,
+	
+			OUT entryId INTEGER,
+			OUT productName VARCHAR(255),
+			OUT fieldName VARCHAR(255),
+
+			INOUT vehicle VARCHAR(255),
+			inout netWeight DOUBLE PRECISION,
+			inout arrivalDate TIMESTAMP WITHOUT TIME ZONE
+		)
+		LANGUAGE plpgsql AS $$
+		DECLARE entry_id INTEGER;
+		BEGIN
+			INSERT INTO entry (field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate) VALUES (field, crop, vehicle, grossWeight, tare, netWeight, humidity, arrivalDate) RETURNING id INTO entry_id;
+
+			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = crop INTO productName;
+			select f.name from field f where f.id = field into fieldName;
+			entryId := entry_id;
+		END;
+		$$;
+	`)
+
+	if err != nil {
+		fmt.Printf("\n error at function add_get_buyer_company:\n%v", err.Error())
+	}
+}
+
 func initUser(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init user stmt", `
 		CREATE TABLE IF NOT EXISTS app_user (
@@ -370,6 +404,7 @@ func InitDb(c *pgx.Conn) {
 	initLogTable(c)
 	initInactiveDeparture(c)
 	initInactiveEntry(c)
+	initAddEntry(c)
 	initAddDepartureProcedure(c)
 	initAddBuyerPerson(c)
 	initAddBuyerCompany(c)

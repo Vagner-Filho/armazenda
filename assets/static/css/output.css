@@ -281,9 +281,6 @@
   .left-\[160px\] {
     left: 160px;
   }
-  .z-8 {
-    z-index: 8;
-  }
   .container {
     width: 100%;
     @media (width >= 40rem) {

@@ -64,22 +64,29 @@ func (em *entryModel) GetAllEntriesSimplified() ([]entity_public.SimplifiedEntry
 	return entries, nil
 }
 
-func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.Entry, *model_error.ModelError) {
+func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.SimplifiedEntry, *model_error.ModelError) {
 	row, queryErr := em.conn.Query(context.Background(), `
-		INSERT INTO entry (field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate)
-		VALUES (@field, @crop, @vehicle, @grossweight, @tare, @netweight, @humidity, @arrivalDate)
-		RETURNING id, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate
-		`, pgx.NamedArgs{"field": ge.Field, "crop": ge.Crop, "vehicle": ge.Vehicle, "grossweight": ge.GrossWeight, "tare": ge.Tare, "netweight": ge.NetWeight, "humidity": ge.Humidity, "arrivalDate": ge.ArrivalDate})
+		SELECT * FROM add_get_entry(@field, @crop, @grossWeight, @tare, @humidity, @vehicle, @netWeight, @arrivalDate)
+		`, pgx.NamedArgs{
+		"field":       ge.Field,
+		"crop":        ge.Crop,
+		"vehicle":     ge.Vehicle,
+		"grossWeight": ge.GrossWeight,
+		"tare":        ge.Tare,
+		"netWeight":   ge.NetWeight,
+		"humidity":    ge.Humidity,
+		"arrivalDate": ge.ArrivalDate,
+	})
 
 	if queryErr != nil {
 		model_error.Logger(em.conn, queryErr.Error())
-		return entity_public.Entry{}, &model_error.ModelError{Message: queryErr.Error()}
+		return entity_public.SimplifiedEntry{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
-	entry, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.Entry])
+	entry, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.SimplifiedEntry])
 	if collectErr != nil {
 		model_error.Logger(em.conn, collectErr.Error())
-		return entity_public.Entry{}, &model_error.ModelError{Message: collectErr.Error()}
+		return entity_public.SimplifiedEntry{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
 	return entry, nil
 }

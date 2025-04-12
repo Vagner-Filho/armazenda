@@ -5,7 +5,7 @@ import (
 	"armazenda/model/entry_model"
 )
 
-func AddEntry(ge entity_public.Entry) (entity_public.Entry, entity_public.Toast) {
+func AddEntry(ge entity_public.Entry) (entity_public.SimplifiedEntry, entity_public.Toast) {
 	eModel := entry_model.GetEntryModel()
 
 	if ge.NetWeight == 0 {
@@ -15,9 +15,9 @@ func AddEntry(ge entity_public.Entry) (entity_public.Entry, entity_public.Toast)
 	newEntry, addErr := eModel.AddEntry(ge)
 	if addErr != nil {
 		if addErr.IsServerErr == true {
-			return entity_public.Entry{}, entity_public.GetErrorToast("Houve um erro interno ao adicionar a entrada", "")
+			return entity_public.SimplifiedEntry{}, entity_public.GetErrorToast("Houve um erro interno ao adicionar a entrada", "")
 		}
-		return entity_public.Entry{}, entity_public.GetWarningToast(addErr.Message, "")
+		return entity_public.SimplifiedEntry{}, entity_public.GetWarningToast(addErr.Message, "")
 	}
 	return newEntry, entity_public.GetSuccessToast("Entrada adicionada", "")
 }
