@@ -19,10 +19,6 @@ func getDepartureContent(c *gin.Context) {
 			c.Header("HX-Trigger", string(toast.ToJson()))
 		}
 	}
-	if len(content.Departures) == 0 {
-		c.HTML(http.StatusOK, "no-departure", gin.H{})
-		return
-	}
 	c.HTML(http.StatusOK, "departure-content", content)
 }
 
@@ -71,7 +67,7 @@ func addDeparture(c *gin.Context) {
 		c.Header("HX-Trigger", json)
 	}
 
-	c.HTML(http.StatusOK, "departure-list-item", departure)
+	c.HTML(http.StatusCreated, "departure-list-item", departure)
 }
 
 func putDeparture(c *gin.Context) {
@@ -109,7 +105,7 @@ func deleteDeparture(c *gin.Context) {
 
 	toast := departure_service.DeleteDeparture(uint32(converted))
 	c.Header("HX-Trigger", string(toast.ToJson()))
-	c.Status(http.StatusNoContent)
+	c.Status(http.StatusOK)
 }
 
 func filterDepartures(c *gin.Context) {

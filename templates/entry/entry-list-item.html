@@ -1,7 +1,5 @@
 {{ block "entry-list-item" . }}
-<tr class="text-center whitespace-nowrap text-sm sm:text-base" id="entry-{{ .Id }}"
-            hx-on::after-swap="alert('from tr')"
->
+<tr class="text-center whitespace-nowrap text-sm sm:text-base" id="entry-{{ .Id }}">
     <td>
         {{ .Id }}
     </td>

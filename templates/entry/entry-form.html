@@ -8,7 +8,6 @@
         <form class="flex flex-col gap-4" {{ if .Entry.Id }} hx-put="/entry/{{ .Entry.Id }}"
             hx-target="#entry-{{ .Entry.Id }}" hx-swap="outerHTML" {{ else }} hx-post="/entry"
             hx-target="#entries-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#btns-container"
-            hx-on::after-swap="alert('from form')"
         >
             <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
                 <legend class="text-lg uppercase rounded-t-lg bg-white px-2 font-light">
@@ -34,19 +33,19 @@
                 </legend>
                 {{ template "vehicle-selector" .Vehicles }}
                 <div class="flex flex-col-reverse">
-                    <input type="number" name="grossWeight" id="grossWeight" class="peer" value="{{ .Entry.GrossWeight }}" required>
+                    <input type="number" name="grossWeight" id="grossWeight" class="peer" {{ if ne .Entry.GrossWeight 0.0 }} value="{{ .Entry.GrossWeight }}" {{ end }} required>
                     <label for="grossWeight" class="label-peer">
                         Peso Bruto
                     </label>
                 </div>
                 <div class="flex flex-col-reverse">
-                    <input type="number" name="tare" id="tare" class="peer" value="{{ .Entry.Tare }}" required>
+                    <input type="number" name="tare" id="tare" class="peer" {{ if ne .Entry.Tare 0.0 }} value="{{ .Entry.Tare }}" {{ end }} required>
                     <label for="tare" class="label-peer">
                         Tara
                     </label>
                 </div>
                 <div class="flex flex-col-reverse">
-                    <input type="number" name="netWeight" id="netWeight" class="peer cursor-not-allowed" value="{{ .Entry.NetWeight }}" disabled>
+                    <input type="number" name="netWeight" id="netWeight" class="peer cursor-not-allowed" {{ if ne .Entry.NetWeight 0.0 }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0" required>
                     <label for="netWeight" class="label-peer">
                         Peso Líquido (preenchimento automático)
                     </label>

@@ -44,13 +44,12 @@ func authenticate(c *gin.Context) {
 
 	sessionCookie, cookieErr := c.Request.Cookie("session_id")
 	if cookieErr != nil {
-		fmt.Print("\ncookieErr\n")
 		//c.AbortWithStatus(http.StatusTemporaryRedirect)
 		c.HTML(http.StatusUnauthorized, "401", gin.H{})
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	fmt.Print("\n should not print \n")
+
 	verifyErr := user_service.VerifyToken(sessionCookie.Value)
 	if verifyErr != nil {
 		c.Status(http.StatusUnauthorized)

@@ -44,6 +44,7 @@ type departureFilter struct {
 type departureContent struct {
 	Departures []entity_public.DisplayDeparture
 	Filters    departureFilter
+	NoContent  bool
 }
 
 func GetDepartureContent() (departureContent, []*entity_public.Toast) {
@@ -57,5 +58,6 @@ func GetDepartureContent() (departureContent, []*entity_public.Toast) {
 			Buyers:   buyers,
 			Vehicles: vehicles,
 		},
+		NoContent: len(departures) == 0,
 	}, []*entity_public.Toast{dtoast, vtoast, btoast}
 }

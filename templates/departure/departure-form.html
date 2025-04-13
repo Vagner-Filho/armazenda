@@ -15,7 +15,7 @@
                 {{ template "crop-selector" .Crops }}
                 {{ template "buyer-selector" .Buyers }}
                 <div class="flex flex-col-reverse">
-                    <input type="number" name="weight" id="weight" class="peer" value="{{ .Departure.Weight }}" required>
+                    <input type="number" name="weight" id="weight" class="peer" {{ if ne .Departure.Weight 0.0 }} value="{{ .Departure.Weight }}" {{ end }} required>
                     <label for="weight" class="label-peer">
                         Peso
                     </label>

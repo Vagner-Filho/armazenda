@@ -1,4 +1,5 @@
 {{ block "departure-content" . }}
+    <div class="{{ if .NoContent }} hidden {{ end }}" id="departure-content">
         {{ template "departure-filters" .Filters }}
         <div class="w-full flex items-center justify-end py-1">
             <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/departure/form" hx-target="body" hx-swap="beforeend">
@@ -9,4 +10,8 @@
         <main id="list" class="overflow-x-auto">
             {{ template "departure-table" .Departures }}
         </main>
+    </div>
+    {{ if .NoContent }}
+        {{ template "no-departure" }}
+    {{ end }}
 {{ end }}
