@@ -44,16 +44,19 @@ func (cm *cropModel) AddCrop(c entity_public.Crop) (entity_public.Crop, *model_e
 	var name string
 	var startDateAsTime time.Time
 	var product uint8
+	var farm uint32
 	scanErr := cm.conn.QueryRow(context.Background(), `
-		INSERT INTO crop (name, startDate, product)
-		VALUES (@name, @startDate, @product) RETURNING id, name, startDate, product
-		`, pgx.NamedArgs{"name": c.Name, "startDate": c.StartDate, "product": c.Product}).Scan(&id, &name, &startDateAsTime, &product)
+		INSERT INTO crop (name, startDate, product, farm)
+		VALUES (@name, @startDate, @product, @farm) RETURNING id, name, startDate, product, farm
+		`, pgx.NamedArgs{"name": c.Name, "startDate": c.StartDate, "product": c.Product, "farm": c.Farm}).Scan(&id, &name, &startDateAsTime, &product, &farm)
 
 	if scanErr != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(scanErr, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			return entity_public.Crop{}, &model_error.ModelError{Message: "Já existe uma safra com este nome"}
 		}
+
+		model_error.Logger(cm.conn, scanErr.Error())
 		return entity_public.Crop{}, &model_error.ModelError{Message: "Falhamos ao adicionar a safra", IsServerErr: true}
 	}
 
@@ -62,11 +65,12 @@ func (cm *cropModel) AddCrop(c entity_public.Crop) (entity_public.Crop, *model_e
 		Name:      name,
 		StartDate: startDateAsTime,
 		Product:   product,
+		Farm:      farm,
 	}, nil
 }
 
-func (cm *cropModel) GetCrops() ([]entity_public.Crop, error) {
-	rows, queryErr := cm.conn.Query(context.Background(), "SELECT * FROM crop")
+func (cm *cropModel) GetCropsByFarm(farm uint32) ([]entity_public.Crop, error) {
+	rows, queryErr := cm.conn.Query(context.Background(), "SELECT * FROM crop c WHERE c.farm = @userFarm", pgx.NamedArgs{"userFarm": farm})
 	if queryErr != nil {
 		return []entity_public.Crop{}, queryErr
 	}

@@ -4,4 +4,5 @@ type Vehicle struct {
 	Plate    string
 	Name     string
 	Selected bool `db:"-"`
+	Farm     uint32
 }

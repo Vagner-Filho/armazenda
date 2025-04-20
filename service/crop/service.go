@@ -5,9 +5,9 @@ import (
 	"armazenda/model/crop_model"
 )
 
-func GetCrops() ([]entity_public.Crop, *entity_public.Toast) {
+func GetCropsByFarm(farm uint32) ([]entity_public.Crop, *entity_public.Toast) {
 	cModel, _ := crop_model.GetCropModel()
-	crops, err := cModel.GetCrops()
+	crops, err := cModel.GetCropsByFarm(farm)
 
 	if err != nil {
 		toast := entity_public.GetWarningToast(err.Error(), "")

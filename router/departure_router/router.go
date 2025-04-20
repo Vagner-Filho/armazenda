@@ -4,6 +4,7 @@ import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/departure_model"
 	"armazenda/service/departure_service"
+	"armazenda/utils"
 	"armazenda/view/departure"
 	"fmt"
 	"net/http"
@@ -23,7 +24,8 @@ func getDepartureContent(c *gin.Context) {
 }
 
 func getDepartureForm(c *gin.Context) {
-	form, toasts := departure_view.GetNewDepartureForm()
+	farm := utils.GetFarmFromToken(c)
+	form, toasts := departure_view.GetNewDepartureForm(farm)
 
 	for _, toast := range toasts {
 		if toast != nil {
@@ -41,7 +43,8 @@ func getFilledDepartureForm(c *gin.Context) {
 		c.String(http.StatusBadRequest, "", err.Error())
 	}
 
-	form, toasts := departure_view.GetExistingDepartureForm(uint32(converted))
+	farm := utils.GetFarmFromToken(c)
+	form, toasts := departure_view.GetExistingDepartureForm(uint32(converted), farm)
 
 	for _, t := range toasts {
 		if t != nil {

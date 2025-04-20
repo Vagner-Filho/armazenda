@@ -72,7 +72,9 @@ func (um *userModel) CreateUser(user entity_public.NewUser) (bool, error) {
 		return false, encErr
 	}
 
-	_, err := um.conn.Exec(context.Background(), `INSERT INTO app_user (email, name, passwd, inscricao_estadual) VALUES (@email, @name, @passwd, @inscricao_estadual)`, pgx.NamedArgs{"email": user.Email, "name": user.Name, "passwd": string(enc), "inscricao_estadual": user.InscricaoEstadual})
+	//_, err := um.conn.Exec(context.Background(), `INSERT INTO app_user (email, name, passwd, inscricao_estadual) VALUES (@email, @name, @passwd, @inscricao_estadual)`, pgx.NamedArgs{"email": user.Email, "name": user.Name, "passwd": string(enc), "inscricao_estadual": user.InscricaoEstadual})
+
+	_, err := um.conn.Exec(context.Background(), `SELECT add_app_user(@email, @name, @passwd, @inscricao_estadual)`, pgx.NamedArgs{"email": user.Email, "name": user.Name, "passwd": string(enc), "inscricao_estadual": user.InscricaoEstadual})
 
 	if err != nil {
 		return false, err

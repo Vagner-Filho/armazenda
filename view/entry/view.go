@@ -2,15 +2,12 @@ package entry_view
 
 import (
 	entity_public "armazenda/entity/public"
-	"armazenda/model/crop_model"
 	"armazenda/model/entry_model"
-	"armazenda/model/field_model"
 	crop_service "armazenda/service/crop"
 	"armazenda/service/entry_service"
 	field_service "armazenda/service/field"
 	product_service "armazenda/service/product"
 	"armazenda/service/vehicle_service"
-	"fmt"
 )
 
 type entryFilters struct {
@@ -34,22 +31,10 @@ func GetAllEntrySimplified() []entity_public.SimplifiedEntry {
 	return entries
 }
 
-func GetFiltersForm() entryFilters {
-	cropModel, _ := crop_model.GetCropModel()
-	crops, cropsErr := cropModel.GetCrops()
-
-	fieldModel, _ := field_model.GetFieldModel()
-	fields, fieldsErr := fieldModel.GetFields()
-
+func GetFiltersForm(farm uint32) entryFilters {
+	crops, _ := crop_service.GetCropsByFarm(farm)
+	fields, _ := field_service.GetFields()
 	vehicles, _ := vehicle_service.GetVehicles()
-
-	if cropsErr != nil {
-		fmt.Printf("cropsErr: %v\n", cropsErr.Error())
-	}
-
-	if fieldsErr != nil {
-		fmt.Printf("fieldsErr: %v\n", fieldsErr.Error())
-	}
 
 	return entryFilters{
 		Vehicles: vehicles,
@@ -58,12 +43,12 @@ func GetFiltersForm() entryFilters {
 	}
 }
 
-func GetEntryContent() entryContent {
+func GetEntryContent(farm uint32) entryContent {
 	entries := GetAllEntrySimplified()
 	return entryContent{
 		Entries:   entries,
 		NoContent: len(entries) == 0,
-		Filters:   GetFiltersForm(),
+		Filters:   GetFiltersForm(farm),
 	}
 }
 
@@ -75,9 +60,9 @@ type EntryForm struct {
 	Entry    entity_public.Entry
 }
 
-func GetEntryForm() (EntryForm, []*entity_public.Toast) {
+func GetEntryForm(farm uint32) (EntryForm, []*entity_public.Toast) {
 	vehicles, vToast := vehicle_service.GetVehicles()
-	crops, cToast := crop_service.GetCrops()
+	crops, cToast := crop_service.GetCropsByFarm(farm)
 	fields, fToast := field_service.GetFields()
 	products, pToast := product_service.GetProducts()
 
@@ -89,8 +74,8 @@ func GetEntryForm() (EntryForm, []*entity_public.Toast) {
 	}, []*entity_public.Toast{vToast, cToast, fToast, pToast}
 }
 
-func GetExistingEntryForm(entryId uint32) (EntryForm, []*entity_public.Toast) {
-	formFields, toasts := GetEntryForm()
+func GetExistingEntryForm(entryId uint32, farm uint32) (EntryForm, []*entity_public.Toast) {
+	formFields, toasts := GetEntryForm(farm)
 	entry, toast := entry_service.GetEntry(entryId)
 
 	if toast != nil {

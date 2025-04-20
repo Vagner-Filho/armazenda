@@ -6,6 +6,7 @@ type User struct {
 	Name              string `form:"name" binding:"required"`
 	Passwd            string `form:"passwd" binding:"required"`
 	InscricaoEstadual string `form:"inscricaoEstadual" binding:"required"`
+	Farm              uint32 `form:"farm" binding:"gte=0"`
 }
 
 type NewUser struct {

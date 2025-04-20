@@ -8,4 +8,5 @@ type Crop struct {
 	Product   uint8
 	StartDate time.Time
 	Selected  bool `db:"-"`
+	Farm      uint32
 }

@@ -63,7 +63,9 @@ func initField(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init field table", `
 	CREATE TABLE IF NOT EXISTS field (
     		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-		name VARCHAR(255) NOT NULL
+		name VARCHAR(255) NOT NULL,
+		farm INTEGER NOT NULL,
+		FOREIGN KEY (farm) REFERENCES farm(id)
 	);
 	`)
 
@@ -77,7 +79,9 @@ func initCrop(c *pgx.Conn) {
 		name VARCHAR(255) UNIQUE NOT NULL,
 		product SMALLINT NOT NULL,
 		startDate DATE NOT NULL,
-		FOREIGN KEY (product) REFERENCES product(id)
+		farm INTEGER NOT NULL,
+		FOREIGN KEY (product) REFERENCES product(id),
+		FOREIGN KEY (farm) REFERENCES farm(id)
 	);
 	`)
 
@@ -88,7 +92,9 @@ func initVehicle(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init vehicle table", `
 	CREATE TABLE IF NOT EXISTS vehicle (
 		plate VARCHAR(255) PRIMARY KEY,
-		name VARCHAR(255)
+		name VARCHAR(255),
+		farm INTEGER NOT NULL,
+		FOREIGN KEY (farm) REFERENCES farm(id)
 	);
 	`)
 
@@ -107,9 +113,11 @@ func initEntry(c *pgx.Conn) {
 		netWeight DOUBLE PRECISION NOT NULL,
 		humidity DOUBLE PRECISION,
 		arrivalDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+		farm INTEGER NOT NULL,
 		FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
 		FOREIGN KEY (field) REFERENCES field(id),
-		FOREIGN KEY (crop) REFERENCES crop(id)
+		FOREIGN KEY (crop) REFERENCES crop(id),
+		FOREIGN KEY (farm) REFERENCES farm(id)
 	);
 	`)
 
@@ -136,8 +144,10 @@ func initDeparture(c *pgx.Conn) {
 		vehicle VARCHAR(255),
 		crop SMALLINT NOT NULL,
 		weight DOUBLE PRECISION NOT NULL,
+		farm INTEGER NOT NULL,
 		FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
-		FOREIGN KEY (crop) REFERENCES crop(id)
+		FOREIGN KEY (crop) REFERENCES crop(id),
+		FOREIGN KEY (farm) REFERENCES farm(id)
 	);
 	`)
 
@@ -160,7 +170,9 @@ func initBuyer(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init buyer table", `
 	CREATE TABLE IF NOT EXISTS buyer (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-		ie VARCHAR(255) UNIQUE
+		ie VARCHAR(255) UNIQUE,
+		farm INTEGER NOT NULL,
+		FOREIGN KEY (farm) REFERENCES farm(id)
 	);
 	`)
 
@@ -381,13 +393,58 @@ func initUser(c *pgx.Conn) {
 			email TEXT UNIQUE NOT NULL,
 			name TEXT NOT NULL,
 			passwd TEXT NOT NULL,
-			inscricao_estadual TEXT NOT NULL
+			inscricao_estadual TEXT NOT NULL,
+			farm INTEGER NOT NULL,
+			FOREIGN KEY (farm) REFERENCES farm(id)
 		);
 	`)
 	handleStmtExec(c, stmt, err, "init user table")
 }
 
+// inserts to farm if there is no other farm with the same inscricao estadual
+func initAddUserAndFarm(c *pgx.Conn) {
+	_, err := c.Exec(context.Background(), `
+		CREATE OR REPLACE FUNCTION add_app_user(
+			IN email TEXT,
+			IN name TEXT,
+			IN passwd TEXT,
+			IN ie TEXT
+		)
+		RETURNS VOID
+		LANGUAGE plpgsql AS $$
+		DECLARE farm_exists BOOLEAN; farm_id INTEGER;
+		BEGIN
+			SELECT EXISTS (SELECT 1 FROM farm WHERE inscricao_estadual = ie) INTO farm_exists;
+		
+			if not farm_exists then
+				INSERT INTO farm (inscricao_estadual) VALUES (ie) RETURNING id INTO farm_id;
+				INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm) VALUES (email, name, passwd, ie, farm_id);
+			else
+				SELECT id FROM farm WHERE inscricao_estadual = ie INTO farm_id;
+				INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm) VALUES (email, name, passwd, ie, farm_id);
+			end if;
+		END;
+		$$;
+	`)
+
+	if err != nil {
+		fmt.Printf("\n error at function add_app_user:\n%v", err.Error())
+	}
+}
+
+func initFarm(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init farm stmt", `
+		CREATE TABLE IF NOT EXISTS farm (
+			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			inscricao_estadual TEXT UNIQUE NOT NULL
+		);
+	`)
+	handleStmtExec(c, stmt, err, "init farm table")
+}
+
 func InitDb(c *pgx.Conn) {
+	initFarm(c)
+	initUser(c)
 	initProduct(c)
 	initCrop(c)
 	initVehicle(c)
@@ -408,7 +465,7 @@ func InitDb(c *pgx.Conn) {
 	initAddDepartureProcedure(c)
 	initAddBuyerPerson(c)
 	initAddBuyerCompany(c)
-	initUser(c)
+	initAddUserAndFarm(c)
 }
 
 var dbc *pgx.Conn

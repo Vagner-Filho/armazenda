@@ -41,14 +41,16 @@ func GetVehicleModel() (*vehicleModel, error) {
 func (vm *vehicleModel) AddVehicle(v entity_public.Vehicle) (entity_public.Vehicle, *model_error.ModelError) {
 	var plate string
 	var name string
+	var farm uint32
 
-	scanErr := vm.conn.QueryRow(context.Background(), "INSERT INTO vehicle (plate, name) VALUES (@plate, @name) RETURNING plate, name", pgx.NamedArgs{"plate": v.Plate, "name": v.Name}).Scan(&plate, &name)
+	scanErr := vm.conn.QueryRow(context.Background(), "INSERT INTO vehicle (plate, name, farm) VALUES (@plate, @name, @farm) RETURNING plate, name", pgx.NamedArgs{"plate": v.Plate, "name": v.Name, "farm": v.Farm}).Scan(&plate, &name, &farm)
 
 	if scanErr != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(scanErr, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			return entity_public.Vehicle{}, &model_error.ModelError{Message: "Já existe um veículo com esta placa"}
 		}
+		model_error.Logger(vm.conn, scanErr.Error())
 		return entity_public.Vehicle{}, &model_error.ModelError{Message: "Falhamos ao adicionar o veículo", IsServerErr: true}
 	}
 

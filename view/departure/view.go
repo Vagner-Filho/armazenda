@@ -15,9 +15,9 @@ type DepartureForm struct {
 	Crops     []entity_public.Crop
 }
 
-func GetNewDepartureForm() (DepartureForm, []*entity_public.Toast) {
+func GetNewDepartureForm(farm uint32) (DepartureForm, []*entity_public.Toast) {
 	vehicles, vtoast := vehicle_service.GetVehicles()
-	crops, ctoast := crop_service.GetCrops()
+	crops, ctoast := crop_service.GetCropsByFarm(farm)
 	buyers, btoast := buyer_service.GetBuyers()
 
 	return DepartureForm{
@@ -28,8 +28,8 @@ func GetNewDepartureForm() (DepartureForm, []*entity_public.Toast) {
 	}, []*entity_public.Toast{vtoast, ctoast, btoast}
 }
 
-func GetExistingDepartureForm(departureId uint32) (DepartureForm, []*entity_public.Toast) {
-	form, toasts := GetNewDepartureForm()
+func GetExistingDepartureForm(departureId uint32, farm uint32) (DepartureForm, []*entity_public.Toast) {
+	form, toasts := GetNewDepartureForm(farm)
 	departure, toast := departure_service.GetDeparture(departureId)
 
 	form.Departure = departure

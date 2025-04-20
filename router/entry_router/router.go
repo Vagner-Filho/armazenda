@@ -3,6 +3,7 @@ package entry_router
 import (
 	entity_public "armazenda/entity/public"
 	"armazenda/service/entry_service"
+	"armazenda/utils"
 	entry_view "armazenda/view/entry"
 	"fmt"
 	"net/http"
@@ -17,11 +18,13 @@ type FieldForm struct {
 }
 
 func getRomaneioPage(c *gin.Context) {
-	c.HTML(http.StatusOK, "romaneio.html", entry_view.GetEntryContent())
+	farm := utils.GetFarmFromToken(c)
+	c.HTML(http.StatusOK, "romaneio.html", entry_view.GetEntryContent(farm))
 }
 
 func getEntryContent(c *gin.Context) {
-	c.HTML(http.StatusOK, "entry-content", entry_view.GetEntryContent())
+	farm := utils.GetFarmFromToken(c)
+	c.HTML(http.StatusOK, "entry-content", entry_view.GetEntryContent(farm))
 }
 
 func getEntryForm(c *gin.Context) {
@@ -31,7 +34,8 @@ func getEntryForm(c *gin.Context) {
 		c.String(http.StatusBadRequest, "", err.Error())
 	}
 
-	entryForm, toasts := entry_view.GetExistingEntryForm(uint32(converted))
+	farm := utils.GetFarmFromToken(c)
+	entryForm, toasts := entry_view.GetExistingEntryForm(uint32(converted), farm)
 
 	for _, t := range toasts {
 		if t != nil {
@@ -133,12 +137,14 @@ func filterEntries(c *gin.Context) {
 }
 
 func getEntryFiltersForm(c *gin.Context) {
-	c.HTML(http.StatusOK, "entry-filter-form", entry_view.GetFiltersForm())
+	farm := utils.GetFarmFromToken(c)
+	c.HTML(http.StatusOK, "entry-filter-form", entry_view.GetFiltersForm(farm))
 	return
 }
 
 func getEmptyEntryForm(c *gin.Context) {
-	formMembers, toasts := entry_view.GetEntryForm()
+	farm := utils.GetFarmFromToken(c)
+	formMembers, toasts := entry_view.GetEntryForm(farm)
 
 	for _, t := range toasts {
 		if t != nil {

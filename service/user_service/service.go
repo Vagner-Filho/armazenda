@@ -11,12 +11,22 @@ import (
 
 var secretKey = []byte("secret-key")
 
-func createToken(username string, email string) (string, error) {
+type ArmazendaUserClaims struct {
+	Username string
+	Email    string
+	Farm     uint32
+	jwt.RegisteredClaims
+}
+
+func createToken(username string, email string, farm uint32) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
-		jwt.MapClaims{
-			"username": username,
-			"email":    email,
-			"exp":      time.Now().Add(time.Hour * 20).Unix(),
+		ArmazendaUserClaims{
+			Username: username,
+			Email:    email,
+			Farm:     farm,
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 20)),
+			},
 		})
 
 	tokenString, err := token.SignedString(secretKey)
@@ -28,7 +38,7 @@ func createToken(username string, email string) (string, error) {
 }
 
 func VerifyToken(tokenString string) error {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &ArmazendaUserClaims{}, func(token *jwt.Token) (any, error) {
 		return secretKey, nil
 	})
 
@@ -57,7 +67,7 @@ func Login(email string, passwd string) (credentials, *entity_public.Toast) {
 		return credentials{}, &toast
 	}
 
-	token, tokenErr := createToken(user.Name, user.Email)
+	token, tokenErr := createToken(user.Name, user.Email, user.Farm)
 	if tokenErr != nil {
 		toast := entity_public.GetErrorToast("Desculpe, houve um erro interno :(", "")
 		return credentials{}, &toast
