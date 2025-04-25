@@ -60,8 +60,8 @@ func (vm *vehicleModel) AddVehicle(v entity_public.Vehicle) (entity_public.Vehic
 	}, nil
 }
 
-func (vm *vehicleModel) GetVehicles() ([]entity_public.Vehicle, error) {
-	rows, queryErr := vm.conn.Query(context.Background(), "SELECT * FROM vehicle")
+func (vm *vehicleModel) GetVehiclesByFarm(farm uint32) ([]entity_public.Vehicle, error) {
+	rows, queryErr := vm.conn.Query(context.Background(), "SELECT * FROM vehicle v WHERE v.farm = @userFarm", pgx.NamedArgs{"userFarm": farm})
 	if queryErr != nil {
 		return []entity_public.Vehicle{}, queryErr
 	}

@@ -3,7 +3,7 @@ package crop_router
 import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/crop_model"
-	"armazenda/utils"
+	"armazenda/service/user_service"
 	crop_view "armazenda/view/crop"
 	"net/http"
 	"time"
@@ -39,7 +39,8 @@ func addCrop(c *gin.Context) {
 		return
 	}
 
-	farm := utils.GetFarmFromToken(c)
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
 	cropModel, _ := crop_model.GetCropModel()
 	addedCrop, addErr := cropModel.AddCrop(entity_public.Crop{
 		Name:      newCrop.Name,

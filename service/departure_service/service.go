@@ -20,10 +20,10 @@ func GetDeparture(manifest uint32) (entity_public.Departure, *entity_public.Toas
 	return departure, nil
 }
 
-func GetDisplayDepartures() ([]entity_public.DisplayDeparture, *entity_public.Toast) {
+func GetDisplayDepartures(farm uint32) ([]entity_public.DisplayDeparture, *entity_public.Toast) {
 	dModel := departure_model.GetDepartureModel()
 
-	departure, err := dModel.GetDisplayDepartures()
+	departure, err := dModel.GetDisplayDepartures(farm)
 	if err != nil {
 		if err.IsServerErr == true {
 			toast := entity_public.GetErrorToast("Houve um erro interno ao buscar a saída", "")

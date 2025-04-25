@@ -58,8 +58,8 @@ func (fm *fieldModel) AddField(f entity_public.Field) (entity_public.Field, *mod
 	}, nil
 }
 
-func (fm *fieldModel) GetFields() ([]entity_public.Field, error) {
-	rows, queryErr := fm.conn.Query(context.Background(), "SELECT * FROM field")
+func (fm *fieldModel) GetFieldsByFarm(farm uint32) ([]entity_public.Field, error) {
+	rows, queryErr := fm.conn.Query(context.Background(), "SELECT * FROM field f WHERE f.farm = @userFarm", pgx.NamedArgs{"userFarm": farm})
 	if queryErr != nil {
 		return []entity_public.Field{}, queryErr
 	}

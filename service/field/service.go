@@ -5,9 +5,9 @@ import (
 	"armazenda/model/field_model"
 )
 
-func GetFields() ([]entity_public.Field, *entity_public.Toast) {
+func GetFieldsByFarm(farm uint32) ([]entity_public.Field, *entity_public.Toast) {
 	fModel, _ := field_model.GetFieldModel()
-	fields, err := fModel.GetFields()
+	fields, err := fModel.GetFieldsByFarm(farm)
 
 	if err != nil {
 		toast := entity_public.GetWarningToast(err.Error(), "")

@@ -5,10 +5,10 @@ import (
 	"armazenda/model/buyer_model"
 )
 
-func GetBuyers() ([]entity_public.BuyerDisplay, *entity_public.Toast) {
+func GetBuyersByFarm(farm uint32) ([]entity_public.BuyerDisplay, *entity_public.Toast) {
 	bmodel := buyer_model.GetBuyerModel()
 
-	buyers, err := bmodel.GetBuyers()
+	buyers, err := bmodel.GetBuyersByFarm(farm)
 	if err != nil {
 		if err.IsServerErr == true {
 			toast := entity_public.GetErrorToast("Erro ao buscar compradores", "")

@@ -4,12 +4,31 @@ import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/user_model"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var secretKey = []byte("secret-key")
+func getSecret() []byte {
+	var tokenSecret = os.Getenv("TOKEN_SCRT")
+	if len(tokenSecret) == 0 {
+		fmt.Printf("\nno token secret has been provided\n")
+		os.Exit(1)
+	}
+	return []byte(tokenSecret)
+}
+
+var secretKey = getSecret()
+
+func GetFarmFromToken(sessionId string) uint32 {
+	token, _ := jwt.ParseWithClaims(sessionId, &ArmazendaUserClaims{}, func(token *jwt.Token) (any, error) {
+		return secretKey, nil
+	})
+
+	claims := token.Claims.(*ArmazendaUserClaims)
+	return claims.Farm
+}
 
 type ArmazendaUserClaims struct {
 	Username string

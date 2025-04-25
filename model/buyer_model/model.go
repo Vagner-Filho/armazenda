@@ -72,14 +72,16 @@ func (bm *buyerModel) AddBuyerPerson(bp entity_public.BuyerPerson) (entity_publi
 	return buyer, nil
 }
 
-func (bm *buyerModel) GetBuyers() ([]entity_public.BuyerDisplay, *model_error.ModelError) {
+func (bm *buyerModel) GetBuyersByFarm(farm uint32) ([]entity_public.BuyerDisplay, *model_error.ModelError) {
 	rows, queryErr := bm.conn.Query(context.Background(), `
 		SELECT b.id, bc.companyname AS name FROM buyer b
 		JOIN buyercompany bc ON b.id = bc.buyerid
 		UNION
 		SELECT b.id, bp.name FROM buyer b
-		JOIN buyerperson bp ON b.id = bp.buyerid;
-	`)
+		JOIN buyerperson bp ON b.id = bp.buyerid
+		WHERE b.farm = @userFarm
+	`, pgx.NamedArgs{"userFarm": farm})
+
 	if queryErr != nil {
 		model_error.Logger(bm.conn, queryErr.Error())
 		return []entity_public.BuyerDisplay{}, &model_error.ModelError{Message: queryErr.Error()}

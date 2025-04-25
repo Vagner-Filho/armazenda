@@ -94,32 +94,15 @@ func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter) ([]
 	return departures, nil
 }
 
-func (dm *departureModel) GetDepartures() ([]entity_public.Departure, error) {
-	rows, queryErr := dm.conn.Query(context.Background(), `
-		SELECT d.id, p.name, d.vehicle, d.weight, d.departureDate
-		FROM departure d
-		JOIN product p ON d.crop = p.id
-	`)
-	if queryErr != nil {
-		return []entity_public.Departure{}, queryErr
-	}
-
-	departures, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.Departure])
-	if collectErr != nil {
-		return []entity_public.Departure{}, collectErr
-	}
-
-	return departures, nil
-}
-
-func (dm *departureModel) GetDisplayDepartures() ([]entity_public.DisplayDeparture, *model_error.ModelError) {
+func (dm *departureModel) GetDisplayDepartures(farm uint32) ([]entity_public.DisplayDeparture, *model_error.ModelError) {
 	rows, queryErr := dm.conn.Query(context.Background(), `
 		SELECT d.id, p.name, d.vehicle, d.weight, d.departureDate
 		FROM departure d
 		JOIN crop c ON d.crop = c.id
 		JOIN product p ON c.product = p.id
 		WHERE d.id NOT IN (SELECT departure_id FROM inactive_departure)
-	`)
+		AND d.farm = @userFarm
+	`, pgx.NamedArgs{"userFarm": farm})
 
 	if queryErr != nil {
 		return []entity_public.DisplayDeparture{}, &model_error.ModelError{Message: queryErr.Error()}

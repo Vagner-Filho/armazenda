@@ -39,7 +39,7 @@ func GetEntryModel() *entryModel {
 	return entryModelImpl
 }
 
-func (em *entryModel) GetAllEntriesSimplified() ([]entity_public.SimplifiedEntry, *model_error.ModelError) {
+func (em *entryModel) GetDisplayEntriesByFarm(farm uint32) ([]entity_public.SimplifiedEntry, *model_error.ModelError) {
 	rows, queryErr := em.conn.Query(context.Background(), `
 		SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate
 			FROM entry e
@@ -47,9 +47,10 @@ func (em *entryModel) GetAllEntriesSimplified() ([]entity_public.SimplifiedEntry
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
 			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
-			WHERE ie.entry_id IS NULL
+			WHERE ie.entry_id IS NULL AND e.farm = @userFarm
 			ORDER BY c.startdate DESC
-		`)
+	`, pgx.NamedArgs{"userFarm": farm})
+
 	if queryErr != nil {
 		fmt.Printf("\n queryErr: %v\n", queryErr.Error())
 		return []entity_public.SimplifiedEntry{}, &model_error.ModelError{Message: queryErr.Error()}

@@ -472,10 +472,17 @@ var dbc *pgx.Conn
 
 func GetDbConnection() (*pgx.Conn, error) {
 	if dbc == nil {
-		dbc, err := pgx.Connect(context.Background(), "postgres://postgres:armazendapsswd@localhost:5432/postgres")
+		dbHost := os.Getenv("DB_HOST")
+		dbUser := os.Getenv("DB_USER")
+		dbPass := os.Getenv("DB_PASS")
+		dbName := os.Getenv("DB_NAME")
+		dbPort := os.Getenv("DB_PORT")
+		//dbc, err := pgx.Connect(context.Background(), "postgres://armazenda_user:y34xEy2HR09pibXFA6ngrku7@localhost:5432/armazenda_db")
+		dbc, err := pgx.Connect(context.Background(), "postgres://"+dbUser+":"+dbPass+"@"+dbHost+":"+dbPort+"/"+dbName)
 
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+			fmt.Printf("host | user | psswd | name | port\n%v | %v | %v | %v | %v\n", dbHost, dbUser, dbPass, dbName, dbPort)
 			os.Exit(1)
 
 			return nil, errors.New("Falha em conectar ao banco")

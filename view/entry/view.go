@@ -22,9 +22,9 @@ type entryContent struct {
 	NoContent bool
 }
 
-func GetAllEntrySimplified() []entity_public.SimplifiedEntry {
+func GetAllEntrySimplified(farm uint32) []entity_public.SimplifiedEntry {
 	eModel := entry_model.GetEntryModel()
-	entries, getDataErr := eModel.GetAllEntriesSimplified()
+	entries, getDataErr := eModel.GetDisplayEntriesByFarm(farm)
 	if getDataErr != nil {
 		return []entity_public.SimplifiedEntry{}
 	}
@@ -33,8 +33,8 @@ func GetAllEntrySimplified() []entity_public.SimplifiedEntry {
 
 func GetFiltersForm(farm uint32) entryFilters {
 	crops, _ := crop_service.GetCropsByFarm(farm)
-	fields, _ := field_service.GetFields()
-	vehicles, _ := vehicle_service.GetVehicles()
+	fields, _ := field_service.GetFieldsByFarm(farm)
+	vehicles, _ := vehicle_service.GetVehiclesByFarm(farm)
 
 	return entryFilters{
 		Vehicles: vehicles,
@@ -44,7 +44,7 @@ func GetFiltersForm(farm uint32) entryFilters {
 }
 
 func GetEntryContent(farm uint32) entryContent {
-	entries := GetAllEntrySimplified()
+	entries := GetAllEntrySimplified(farm)
 	return entryContent{
 		Entries:   entries,
 		NoContent: len(entries) == 0,
@@ -61,9 +61,9 @@ type EntryForm struct {
 }
 
 func GetEntryForm(farm uint32) (EntryForm, []*entity_public.Toast) {
-	vehicles, vToast := vehicle_service.GetVehicles()
+	vehicles, vToast := vehicle_service.GetVehiclesByFarm(farm)
 	crops, cToast := crop_service.GetCropsByFarm(farm)
-	fields, fToast := field_service.GetFields()
+	fields, fToast := field_service.GetFieldsByFarm(farm)
 	products, pToast := product_service.GetProducts()
 
 	return EntryForm{

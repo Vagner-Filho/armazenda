@@ -4,7 +4,7 @@ import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/departure_model"
 	"armazenda/service/departure_service"
-	"armazenda/utils"
+	"armazenda/service/user_service"
 	"armazenda/view/departure"
 	"fmt"
 	"net/http"
@@ -14,7 +14,9 @@ import (
 )
 
 func getDepartureContent(c *gin.Context) {
-	content, toasts := departure_view.GetDepartureContent()
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	content, toasts := departure_view.GetDepartureContent(farm)
 	for _, toast := range toasts {
 		if toast != nil {
 			c.Header("HX-Trigger", string(toast.ToJson()))
@@ -24,7 +26,8 @@ func getDepartureContent(c *gin.Context) {
 }
 
 func getDepartureForm(c *gin.Context) {
-	farm := utils.GetFarmFromToken(c)
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
 	form, toasts := departure_view.GetNewDepartureForm(farm)
 
 	for _, toast := range toasts {
@@ -43,7 +46,8 @@ func getFilledDepartureForm(c *gin.Context) {
 		c.String(http.StatusBadRequest, "", err.Error())
 	}
 
-	farm := utils.GetFarmFromToken(c)
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
 	form, toasts := departure_view.GetExistingDepartureForm(uint32(converted), farm)
 
 	for _, t := range toasts {
