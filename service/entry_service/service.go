@@ -43,11 +43,11 @@ func PutEntry(ge entity_public.Entry) (entity_public.Entry, entity_public.Toast)
 	entry, putErr := eModel.PutEntry(ge)
 	if putErr != nil {
 		if putErr.IsServerErr == true {
-			return entity_public.Entry{}, entity_public.GetErrorToast("Houve um erro interno ao adicionar a entrada", "")
+			return entity_public.Entry{}, entity_public.GetErrorToast("Houve um erro interno ao editar a entrada", "")
 		}
 		return entity_public.Entry{}, entity_public.GetWarningToast(putErr.Message, "")
 	}
-	return entry, entity_public.GetSuccessToast("Entrada adicionada", "")
+	return entry, entity_public.GetSuccessToast("Entrada editada", "")
 }
 
 func DeleteEntry(id uint32) *entity_public.Toast {

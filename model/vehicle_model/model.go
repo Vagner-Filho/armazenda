@@ -43,7 +43,7 @@ func (vm *vehicleModel) AddVehicle(v entity_public.Vehicle) (entity_public.Vehic
 	var name string
 	var farm uint32
 
-	scanErr := vm.conn.QueryRow(context.Background(), "INSERT INTO vehicle (plate, name, farm) VALUES (@plate, @name, @farm) RETURNING plate, name", pgx.NamedArgs{"plate": v.Plate, "name": v.Name, "farm": v.Farm}).Scan(&plate, &name, &farm)
+	scanErr := vm.conn.QueryRow(context.Background(), "INSERT INTO vehicle (plate, name, farm) VALUES (@plate, @name, @farm) RETURNING plate, name, farm", pgx.NamedArgs{"plate": v.Plate, "name": v.Name, "farm": v.Farm}).Scan(&plate, &name, &farm)
 
 	if scanErr != nil {
 		var pgErr *pgconn.PgError
@@ -57,6 +57,7 @@ func (vm *vehicleModel) AddVehicle(v entity_public.Vehicle) (entity_public.Vehic
 	return entity_public.Vehicle{
 		Plate: plate,
 		Name:  name,
+		Farm:  farm,
 	}, nil
 }
 

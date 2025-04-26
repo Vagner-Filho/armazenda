@@ -41,7 +41,7 @@ func GetEntryModel() *entryModel {
 
 func (em *entryModel) GetDisplayEntriesByFarm(farm uint32) ([]entity_public.SimplifiedEntry, *model_error.ModelError) {
 	rows, queryErr := em.conn.Query(context.Background(), `
-		SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate
+		SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate, e.farm
 			FROM entry e
 			JOIN field f ON e.field = f.id
 			JOIN crop c ON e.crop = c.id
@@ -67,7 +67,7 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32) ([]entity_public.Simp
 
 func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.SimplifiedEntry, *model_error.ModelError) {
 	row, queryErr := em.conn.Query(context.Background(), `
-		SELECT * FROM add_get_entry(@field, @crop, @grossWeight, @tare, @humidity, @vehicle, @netWeight, @arrivalDate)
+		SELECT * FROM add_get_entry(@field, @crop, @grossWeight, @tare, @humidity, @vehicle, @netWeight, @arrivalDate, @farm)
 		`, pgx.NamedArgs{
 		"field":       ge.Field,
 		"crop":        ge.Crop,
@@ -77,6 +77,7 @@ func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.Simplified
 		"netWeight":   ge.NetWeight,
 		"humidity":    ge.Humidity,
 		"arrivalDate": ge.ArrivalDate,
+		"farm":        ge.Farm,
 	})
 
 	if queryErr != nil {
@@ -112,17 +113,16 @@ func (em *entryModel) GetEntry(id uint32) (entity_public.Entry, *model_error.Mod
 	if collectErr != nil {
 		return entity_public.Entry{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
-	fmt.Printf("\n%+v\n", entry)
 	return entry, nil
 }
 
 func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.Entry, *model_error.ModelError) {
 	row, queryErr := em.conn.Query(context.Background(), `
 		UPDATE entry SET
-			(field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate)
-		VALUES (@field, @crop, @vehicle, @grossweight, @tare, @netweight, @humidity, @arrivalDate)
+			(field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate) =
+			(@field, @crop, @vehicle, @grossweight, @tare, @netweight, @humidity, @arrivalDate)
 		WHERE id = @id
-		RETURNING id, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate
+		RETURNING id, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate, farm
 		`, pgx.NamedArgs{"id": ge.Id, "field": ge.Field, "crop": ge.Crop, "vehicle": ge.Vehicle, "grossweight": ge.GrossWeight, "tare": ge.Tare, "netweight": ge.NetWeight, "humidity": ge.Humidity, "arrivalDate": ge.ArrivalDate})
 
 	if queryErr != nil {

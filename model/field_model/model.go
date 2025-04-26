@@ -41,20 +41,23 @@ func GetFieldModel() (*fieldModel, error) {
 func (fm *fieldModel) AddField(f entity_public.Field) (entity_public.Field, *model_error.ModelError) {
 	var id uint16
 	var name string
+	var farm uint32
 
-	scanErr := fm.conn.QueryRow(context.Background(), "INSERT INTO field (name) VALUES (@name) RETURNING id, name", pgx.NamedArgs{"name": f.Name}).Scan(&id, &name)
+	scanErr := fm.conn.QueryRow(context.Background(), "INSERT INTO field (name, farm) VALUES (@name, @farm) RETURNING id, name", pgx.NamedArgs{"name": f.Name, "farm": f.Farm}).Scan(&id, &name)
 
 	if scanErr != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(scanErr, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			return entity_public.Field{}, &model_error.ModelError{Message: "Já existe um talhão com este nome"}
 		}
+		model_error.Logger(fm.conn, scanErr.Error())
 		return entity_public.Field{}, &model_error.ModelError{Message: "Falhamos ao adicionar o talhão", IsServerErr: true}
 	}
 
 	return entity_public.Field{
 		Id:   id,
 		Name: name,
+		Farm: farm,
 	}, nil
 }
 

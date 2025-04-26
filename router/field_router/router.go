@@ -3,6 +3,7 @@ package field_router
 import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/field_model"
+	"armazenda/service/user_service"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -34,17 +35,18 @@ func addField(c *gin.Context) {
 		return
 	}
 
+	ssi, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(ssi)
 	fieldModel, _ := field_model.GetFieldModel()
 	addedField, addErr := fieldModel.AddField(entity_public.Field{
 		Name: newField.Name,
+		Farm: farm,
 	})
 
 	if addErr != nil {
 		if addErr.IsServerErr == true {
-			c.HTML(http.StatusInternalServerError, "toast", gin.H{
-				"Message": addErr.Error(),
-				"IsError": true,
-			})
+			t := entity_public.GetErrorToast(addErr.Error(), "")
+			c.Header("HX-Trigger", string(t.ToJson()))
 			return
 		}
 

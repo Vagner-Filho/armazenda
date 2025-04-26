@@ -3,7 +3,11 @@
     <div class="p-4 relative">
         {{ template "close-dialog-btn" "dialog#addEntryDialog" }}
         <h1 class="text-center font-medium text-xl">
-            Nova Entrada
+            {{ if .Entry.Id }}
+                Editando Entrada
+            {{ else }}
+                Nova Entrada
+            {{ end }}
         </h1>
         <form class="flex flex-col gap-4" {{ if .Entry.Id }} hx-put="/entry/{{ .Entry.Id }}"
             hx-target="#entry-{{ .Entry.Id }}" hx-swap="outerHTML" {{ else }} hx-post="/entry"

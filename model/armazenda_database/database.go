@@ -366,16 +366,17 @@ func initAddEntry(c *pgx.Conn) {
 			OUT fieldName VARCHAR(255),
 
 			INOUT vehicle VARCHAR(255),
-			inout netWeight DOUBLE PRECISION,
-			inout arrivalDate TIMESTAMP WITHOUT TIME ZONE
+			INOUT netWeight DOUBLE PRECISION,
+			INOUT arrivalDate TIMESTAMP WITHOUT TIME ZONE,
+			INOUT farm INTEGER
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE entry_id INTEGER;
 		BEGIN
-			INSERT INTO entry (field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate) VALUES (field, crop, vehicle, grossWeight, tare, netWeight, humidity, arrivalDate) RETURNING id INTO entry_id;
+			INSERT INTO entry (field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate, farm) VALUES (field, crop, vehicle, grossWeight, tare, netWeight, humidity, arrivalDate, farm) RETURNING id INTO entry_id;
 
 			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = crop INTO productName;
-			select f.name from field f where f.id = field into fieldName;
+			SELECT f.name FROM field f WHERE f.id = field INTO fieldName;
 			entryId := entry_id;
 		END;
 		$$;

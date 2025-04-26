@@ -12,6 +12,7 @@ type SimplifiedEntry struct {
 	Vehicle     string
 	NetWeight   float64
 	ArrivalDate time.Time
+	Farm        uint32
 }
 
 type Entry struct {
@@ -24,6 +25,7 @@ type Entry struct {
 	NetWeight   float64   `form:"netWeight" binding:"gte=0"`
 	Humidity    string    `form:"humidity" binding:"required"`
 	ArrivalDate time.Time `form:"arrivalDate" binding:"required" time_format:"2006-01-02T15:04"`
+	Farm        uint32    `form:"farm" binding:"gte=0"`
 }
 
 type EntryFilter struct {

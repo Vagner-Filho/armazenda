@@ -2,8 +2,8 @@ package vehicle_router
 
 import (
 	entity_public "armazenda/entity/public"
+	"armazenda/service/user_service"
 	"armazenda/service/vehicle_service"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -28,13 +28,15 @@ func addVehicle(c *gin.Context) {
 		return
 	}
 
+	ssi, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(ssi)
 	vehicle, addErr := vehicle_service.AddVehicle(entity_public.Vehicle{
 		Name:  newVehicle.Name,
 		Plate: newVehicle.Plate,
+		Farm:  farm,
 	})
 
 	if addErr != nil {
-		fmt.Printf("%v", addErr)
 		t := entity_public.GetWarningToast(addErr.Error(), "")
 		c.Header("HX-Trigger", string(t.ToJson()))
 		c.Status(http.StatusBadRequest)

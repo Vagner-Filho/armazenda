@@ -5,7 +5,6 @@ import (
 	"armazenda/service/entry_service"
 	"armazenda/service/user_service"
 	entry_view "armazenda/view/entry"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -58,11 +57,13 @@ func addEntry(c *gin.Context) {
 	err := c.Bind(&newEntry)
 	if err != nil {
 		toast := entity_public.GetWarningToast(err.Error(), "")
-		fmt.Print(string(toast.ToJson()))
 		c.Header("HX-Trigger", string(toast.ToJson()))
 		return
 	}
 
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	newEntry.Farm = farm
 	entry, toast := entry_service.AddEntry(newEntry)
 	c.Header("HX-Trigger", string(toast.ToJson()))
 
@@ -90,12 +91,12 @@ func deleteEntry(c *gin.Context) {
 }
 
 func putEntry(c *gin.Context) {
-	//id := c.Param("id")
-	//converted, parseErr := strconv.ParseUint(id, 10, 32)
-	//if parseErr != nil {
-	//	c.String(http.StatusBadRequest, "", parseErr.Error())
-	//	return
-	//}
+	id := c.Param("id")
+	converted, parseErr := strconv.ParseUint(id, 10, 32)
+	if parseErr != nil {
+		c.String(http.StatusBadRequest, "", parseErr.Error())
+		return
+	}
 
 	var entry entity_public.Entry
 	err := c.Bind(&entry)
@@ -104,6 +105,7 @@ func putEntry(c *gin.Context) {
 		return
 	}
 
+	entry.Id = uint32(converted)
 	var updatedEntry, toast = entry_service.PutEntry(entry)
 	c.Header("HX-Trigger", string(toast.ToJson()))
 
