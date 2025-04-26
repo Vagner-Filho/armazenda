@@ -5,13 +5,13 @@ import (
 	"time"
 )
 
-type SimplifiedEntry struct {
+type DisplayEntry struct {
 	Id          uint32
 	Product     string
 	Field       string
 	Vehicle     string
 	NetWeight   float64
-	ArrivalDate time.Time
+	ArrivalDate time.Time `time_format:"2006-01-02T15:04"`
 	Farm        uint32
 }
 

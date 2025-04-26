@@ -39,7 +39,7 @@ func GetEntryModel() *entryModel {
 	return entryModelImpl
 }
 
-func (em *entryModel) GetDisplayEntriesByFarm(farm uint32) ([]entity_public.SimplifiedEntry, *model_error.ModelError) {
+func (em *entryModel) GetDisplayEntriesByFarm(farm uint32) ([]entity_public.DisplayEntry, *model_error.ModelError) {
 	rows, queryErr := em.conn.Query(context.Background(), `
 		SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate, e.farm
 			FROM entry e
@@ -53,19 +53,19 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32) ([]entity_public.Simp
 
 	if queryErr != nil {
 		fmt.Printf("\n queryErr: %v\n", queryErr.Error())
-		return []entity_public.SimplifiedEntry{}, &model_error.ModelError{Message: queryErr.Error()}
+		return []entity_public.DisplayEntry{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
-	entries, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.SimplifiedEntry])
+	entries, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.DisplayEntry])
 	if collectErr != nil {
 		fmt.Printf("\n collectErr: %v\n", collectErr.Error())
-		return []entity_public.SimplifiedEntry{}, &model_error.ModelError{Message: collectErr.Error()}
+		return []entity_public.DisplayEntry{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
 
 	return entries, nil
 }
 
-func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.SimplifiedEntry, *model_error.ModelError) {
+func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
 	row, queryErr := em.conn.Query(context.Background(), `
 		SELECT * FROM add_get_entry(@field, @crop, @grossWeight, @tare, @humidity, @vehicle, @netWeight, @arrivalDate, @farm)
 		`, pgx.NamedArgs{
@@ -82,13 +82,13 @@ func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.Simplified
 
 	if queryErr != nil {
 		model_error.Logger(em.conn, queryErr.Error())
-		return entity_public.SimplifiedEntry{}, &model_error.ModelError{Message: queryErr.Error()}
+		return entity_public.DisplayEntry{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
-	entry, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.SimplifiedEntry])
+	entry, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.DisplayEntry])
 	if collectErr != nil {
 		model_error.Logger(em.conn, collectErr.Error())
-		return entity_public.SimplifiedEntry{}, &model_error.ModelError{Message: collectErr.Error()}
+		return entity_public.DisplayEntry{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
 	return entry, nil
 }
@@ -116,24 +116,31 @@ func (em *entryModel) GetEntry(id uint32) (entity_public.Entry, *model_error.Mod
 	return entry, nil
 }
 
-func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.Entry, *model_error.ModelError) {
-	row, queryErr := em.conn.Query(context.Background(), `
-		UPDATE entry SET
-			(field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate) =
-			(@field, @crop, @vehicle, @grossweight, @tare, @netweight, @humidity, @arrivalDate)
-		WHERE id = @id
-		RETURNING id, field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate, farm
-		`, pgx.NamedArgs{"id": ge.Id, "field": ge.Field, "crop": ge.Crop, "vehicle": ge.Vehicle, "grossweight": ge.GrossWeight, "tare": ge.Tare, "netweight": ge.NetWeight, "humidity": ge.Humidity, "arrivalDate": ge.ArrivalDate})
+func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
+	row, queryErr := em.conn.Query(
+		context.Background(),
+		`SELECT * FROM update_get_display_entry(@field, @crop, @grossWeight, @tare, @humidity, @id, @vehicle, @netWeight, @arrivalDate)`,
+		pgx.NamedArgs{
+			"id":          ge.Id,
+			"field":       ge.Field,
+			"crop":        ge.Crop,
+			"vehicle":     ge.Vehicle,
+			"grossWeight": ge.GrossWeight,
+			"tare":        ge.Tare,
+			"netWeight":   ge.NetWeight,
+			"humidity":    ge.Humidity,
+			"arrivalDate": ge.ArrivalDate,
+		})
 
 	if queryErr != nil {
 		model_error.Logger(em.conn, queryErr.Error())
-		return entity_public.Entry{}, &model_error.ModelError{Message: queryErr.Error()}
+		return entity_public.DisplayEntry{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
-	entry, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.Entry])
+	entry, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.DisplayEntry])
 	if collectErr != nil {
 		model_error.Logger(em.conn, collectErr.Error())
-		return entity_public.Entry{}, &model_error.ModelError{Message: collectErr.Error()}
+		return entity_public.DisplayEntry{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
 	return entry, nil
 }
@@ -165,7 +172,7 @@ var availableEntryFilters = map[string]func(ef entity_public.EntryFilter) string
 	},
 }
 
-func (em *entryModel) FilterEntries(ef entity_public.EntryFilter) ([]entity_public.SimplifiedEntry, error) {
+func (em *entryModel) FilterEntries(ef entity_public.EntryFilter) ([]entity_public.DisplayEntry, error) {
 	filters := ef.GetFilters(availableEntryFilters)
 
 	stmt := `SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate
@@ -186,7 +193,7 @@ func (em *entryModel) FilterEntries(ef entity_public.EntryFilter) ([]entity_publ
 		fmt.Print(queryErr.Error())
 	}
 
-	entries, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.SimplifiedEntry])
+	entries, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.DisplayEntry])
 	if collectErr != nil {
 		fmt.Print(stmt)
 		fmt.Print(collectErr.Error())

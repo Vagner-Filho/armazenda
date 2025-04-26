@@ -17,16 +17,16 @@ type entryFilters struct {
 }
 
 type entryContent struct {
-	Entries   []entity_public.SimplifiedEntry
+	Entries   []entity_public.DisplayEntry
 	Filters   entryFilters
 	NoContent bool
 }
 
-func GetAllEntrySimplified(farm uint32) []entity_public.SimplifiedEntry {
+func GetAllEntryDisplay(farm uint32) []entity_public.DisplayEntry {
 	eModel := entry_model.GetEntryModel()
 	entries, getDataErr := eModel.GetDisplayEntriesByFarm(farm)
 	if getDataErr != nil {
-		return []entity_public.SimplifiedEntry{}
+		return []entity_public.DisplayEntry{}
 	}
 	return entries
 }
@@ -44,7 +44,7 @@ func GetFiltersForm(farm uint32) entryFilters {
 }
 
 func GetEntryContent(farm uint32) entryContent {
-	entries := GetAllEntrySimplified(farm)
+	entries := GetAllEntryDisplay(farm)
 	return entryContent{
 		Entries:   entries,
 		NoContent: len(entries) == 0,

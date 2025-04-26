@@ -387,6 +387,46 @@ func initAddEntry(c *pgx.Conn) {
 	}
 }
 
+func initUpdateEntry(c *pgx.Conn) {
+	_, err := c.Exec(context.Background(), `
+		CREATE OR REPLACE FUNCTION update_get_display_entry(
+			in e_field SMALLINT,
+			IN e_crop SMALLINT,
+			in e_grossWeight DOUBLE PRECISION,
+			in e_tare DOUBLE PRECISION,
+		 	in e_humidity DOUBLE PRECISION,
+
+			INOUT e_id INTEGER,
+			OUT productName VARCHAR(255),
+			OUT fieldName VARCHAR(255),
+			INOUT e_vehicle VARCHAR(255),
+			INOUT e_netWeight DOUBLE PRECISION,
+			INOUT e_arrivalDate TIMESTAMP WITHOUT TIME ZONE,
+			OUT e_farm INTEGER
+		)
+		LANGUAGE plpgsql AS $$
+		BEGIN
+			UPDATE entry e SET
+				field = e_field,
+				crop = e_crop,
+				vehicle = e_vehicle,
+				grossweight = e_grossWeight,
+				tare = e_tare,
+				netweight = e_netWeight,
+				humidity = e_humidity,
+				arrivalDate = e_arrivalDate
+			WHERE e.id = e_id RETURNING e.farm INTO e_farm;
+
+			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = e_crop INTO productName;
+			SELECT f.name FROM field f WHERE f.id = e_field INTO fieldName;
+		END;
+		$$;
+	`)
+
+	if err != nil {
+		fmt.Printf("\n error at function update_get_display_entry:\n%v", err.Error())
+	}
+}
 func initUser(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init user stmt", `
 		CREATE TABLE IF NOT EXISTS app_user (
@@ -463,6 +503,7 @@ func InitDb(c *pgx.Conn) {
 	initInactiveDeparture(c)
 	initInactiveEntry(c)
 	initAddEntry(c)
+	initUpdateEntry(c)
 	initAddDepartureProcedure(c)
 	initAddBuyerPerson(c)
 	initAddBuyerCompany(c)
