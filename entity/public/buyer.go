@@ -7,6 +7,7 @@ type BuyerCompany struct {
 	Cnpj              string  `form:"cnpj" binding:"required"`
 	Address           Address `form:"address" binding:"required"`
 	InscricaoEstadual string  `form:"inscricaoEstadual" binding:"required"`
+	Buyer             Buyer
 }
 
 type BuyerPerson struct {
@@ -15,11 +16,13 @@ type BuyerPerson struct {
 	Cpf               string  `form:"cpf" binding:"required"`
 	Address           Address `form:"address" binding:"required"`
 	InscricaoEstadual string  `form:"inscricaoEstadual" binding:"required"`
+	Buyer             Buyer
 }
 
 type Buyer struct {
-	Ie string
-	Id string
+	Ie   string
+	Id   uint32
+	Farm uint32 `form:"farm" binding:"gte=0"`
 }
 
 type BuyerDisplay struct {

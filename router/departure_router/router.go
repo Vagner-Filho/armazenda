@@ -67,6 +67,10 @@ func addDeparture(c *gin.Context) {
 		return
 	}
 
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	df.Farm = farm
+
 	departure, toast := departure_service.AddDeparture(df)
 	if toast != nil {
 		json := string(toast.ToJson())

@@ -284,12 +284,13 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 			OUT productName VARCHAR(255),
 			INOUT vehicle VARCHAR(255),
 			INOUT weight FLOAT,
-			INOUT departureDate TIMESTAMP WITHOUT TIME ZONE
+			INOUT departureDate TIMESTAMP WITHOUT TIME ZONE,
+			IN farm INTEGER
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE departure_id INTEGER;
 		BEGIN
-			INSERT INTO departure (departureDate, vehicle, crop, weight) VALUES (departureDate, vehicle, crop, weight) RETURNING id INTO departure_id;
+			INSERT INTO departure (departureDate, vehicle, crop, weight, farm) VALUES (departureDate, vehicle, crop, weight, farm) RETURNING id INTO departure_id;
 			INSERT INTO departurebuyer (departureId, buyerId) VALUES (departure_id, buyerId);
 
 			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = crop INTO productName;
@@ -333,13 +334,14 @@ func initAddBuyerCompany(c *pgx.Conn) {
 			IN ie VARCHAR(255),
 			IN cnpj VARCHAR(255),
 			IN fantasyName VARCHAR(255),
+			IN farm INTEGER,
 			OUT buyerId INTEGER,
 			INOUT companyName VARCHAR(255)
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE buyer_id INTEGER;
 		BEGIN
-			INSERT INTO buyer (ie) VALUES (ie) RETURNING id INTO buyer_id;
+			INSERT INTO buyer (ie, farm) VALUES (ie, farm) RETURNING id INTO buyer_id;
 			INSERT INTO buyercompany (cnpj, companyname, fantasyname, buyerid) VALUES (cnpj, companyName, fantasyName, buyer_id);
 			
 			buyerId := buyer_id;

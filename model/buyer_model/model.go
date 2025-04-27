@@ -37,9 +37,17 @@ func GetBuyerModel() *buyerModel {
 }
 
 func (bm *buyerModel) AddBuyerCompany(bc entity_public.BuyerCompany) (entity_public.BuyerDisplay, *model_error.ModelError) {
-	row, queryErr := bm.conn.Query(context.Background(), `
-			SELECT * FROM add_get_buyer_company(@ie, @cnpj, @fantasyName, @companyName)
-		`, pgx.NamedArgs{"ie": bc.InscricaoEstadual, "cnpj": bc.Cnpj, "fantasyName": bc.FantasyName, "companyName": bc.CompanyName})
+	row, queryErr := bm.conn.Query(
+		context.Background(),
+		`SELECT * FROM add_get_buyer_company(@ie, @cnpj, @fantasyName, @farm, @companyName)`,
+		pgx.NamedArgs{
+			"ie":          bc.InscricaoEstadual,
+			"cnpj":        bc.Cnpj,
+			"fantasyName": bc.FantasyName,
+			"farm":        bc.Buyer.Farm,
+			"companyName": bc.CompanyName,
+		})
+
 	if queryErr != nil {
 		model_error.Logger(bm.conn, queryErr.Error())
 		return entity_public.BuyerDisplay{}, &model_error.ModelError{Message: queryErr.Error()}

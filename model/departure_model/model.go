@@ -136,13 +136,14 @@ func (dm *departureModel) GetDeparture(id uint32) (entity_public.Departure, *mod
 
 func (dm *departureModel) AddDeparture(d entity_public.Departure) (entity_public.DisplayDeparture, *model_error.ModelError) {
 	row, queryErr := dm.conn.Query(context.Background(), `
-		SELECT * FROM add_get_departure(@crop, @buyer, @vehicle, @weight, @departureDate)
+		SELECT * FROM add_get_departure(@crop, @buyer, @vehicle, @weight, @departureDate, @farm)
 		`, pgx.NamedArgs{
 		"crop":          d.Crop,
 		"buyer":         d.Buyer,
 		"vehicle":       d.VehiclePlate,
 		"weight":        d.Weight,
 		"departureDate": d.DepartureDate,
+		"farm":          d.Farm,
 	})
 	if queryErr != nil {
 		fmt.Printf("\nadd departure query err:\n%v", queryErr.Error())

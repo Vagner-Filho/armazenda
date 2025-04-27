@@ -3,20 +3,24 @@ package buyer_router
 import (
 	entity_public "armazenda/entity/public"
 	buyer_service "armazenda/service/buyer"
+	"armazenda/service/user_service"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 func addBuyerCompany(c *gin.Context) {
-	var newCompany entity_public.BuyerCompany
-	err := c.Bind(&newCompany)
+	var newBuyerCompany entity_public.BuyerCompany
+	err := c.Bind(&newBuyerCompany)
 	if err != nil {
 		c.String(http.StatusBadRequest, "", err.Error())
 		return
 	}
 
-	buyer, toast := buyer_service.AddBuyerCompany(newCompany)
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	newBuyerCompany.Buyer.Farm = farm
+	buyer, toast := buyer_service.AddBuyerCompany(newBuyerCompany)
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}

@@ -11,7 +11,8 @@ type Departure struct {
 	VehiclePlate  string    `form:"vehiclePlate" binding:"required"`
 	Crop          uint8     `form:"crop" binding:"required"`
 	Weight        float64   `form:"weight" binding:"required"`
-	Buyer         string    `form:"buyer" binding:"required"`
+	Buyer         uint32    `form:"buyer" binding:"required"`
+	Farm          uint32    `form:"farm" binding:"gte=0"`
 }
 
 type DisplayDeparture struct {
