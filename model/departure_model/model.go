@@ -146,11 +146,13 @@ func (dm *departureModel) AddDeparture(d entity_public.Departure) (entity_public
 		"farm":          d.Farm,
 	})
 	if queryErr != nil {
+		model_error.Logger(dm.conn, queryErr.Error())
 		fmt.Printf("\nadd departure query err:\n%v", queryErr.Error())
 	}
 
 	departure, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.DisplayDeparture])
 	if collectErr != nil {
+		model_error.Logger(dm.conn, collectErr.Error())
 		fmt.Printf("\nadd departure collect err:\n%v", collectErr.Error())
 	}
 
