@@ -438,6 +438,7 @@ func initUser(c *pgx.Conn) {
 			passwd TEXT NOT NULL,
 			inscricao_estadual TEXT NOT NULL,
 			farm INTEGER NOT NULL,
+			cpf VARCHAR(11) UNIQUE NOT NULL,
 			FOREIGN KEY (farm) REFERENCES farm(id)
 		);
 	`)
@@ -451,7 +452,8 @@ func initAddUserAndFarm(c *pgx.Conn) {
 			IN email TEXT,
 			IN name TEXT,
 			IN passwd TEXT,
-			IN ie TEXT
+			IN ie TEXT,
+			IN cpf VARCHAR(11)
 		)
 		RETURNS VOID
 		LANGUAGE plpgsql AS $$
@@ -461,10 +463,10 @@ func initAddUserAndFarm(c *pgx.Conn) {
 		
 			if not farm_exists then
 				INSERT INTO farm (inscricao_estadual) VALUES (ie) RETURNING id INTO farm_id;
-				INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm) VALUES (email, name, passwd, ie, farm_id);
+				INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm, cpf) VALUES (email, name, passwd, ie, farm_id, cpf);
 			else
 				SELECT id FROM farm WHERE inscricao_estadual = ie INTO farm_id;
-				INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm) VALUES (email, name, passwd, ie, farm_id);
+				INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm, cpf) VALUES (email, name, passwd, ie, farm_id, cpf);
 			end if;
 		END;
 		$$;

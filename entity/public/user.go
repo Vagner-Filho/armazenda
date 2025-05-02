@@ -7,6 +7,7 @@ type User struct {
 	Passwd            string `form:"passwd" binding:"required"`
 	InscricaoEstadual string `form:"inscricaoEstadual" binding:"required"`
 	Farm              uint32 `form:"farm" binding:"gte=0"`
+	Cpf               string `form:"cpf" binding:"len=11"`
 }
 
 type NewUser struct {
