@@ -65,6 +65,7 @@ func initField(c *pgx.Conn) {
     		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		name VARCHAR(255) NOT NULL,
 		farm INTEGER NOT NULL,
+		hectares NUMERIC(10, 4) NOT NULL,
 		FOREIGN KEY (farm) REFERENCES farm(id)
 	);
 	`)
@@ -108,10 +109,12 @@ func initEntry(c *pgx.Conn) {
 		field SMALLINT NOT NULL,
 		crop SMALLINT NOT NULL,
 		vehicle VARCHAR(255) NOT NULL,
-		grossWeight DOUBLE PRECISION,
-		tare DOUBLE PRECISION,
-		netWeight DOUBLE PRECISION NOT NULL,
+		grossWeight NUMERIC(10, 3) NOT NULL,
+		tare NUMERIC(10, 3) NOT NULL,
+		netWeight NUMERIC(10, 3) NOT NULL,
 		humidity DOUBLE PRECISION,
+		damage DOUBLE PRECISION,
+		impurity DOUBLE PRECISION,
 		arrivalDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 		farm INTEGER NOT NULL,
 		FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
@@ -143,7 +146,9 @@ func initDeparture(c *pgx.Conn) {
 		departureDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 		vehicle VARCHAR(255),
 		crop SMALLINT NOT NULL,
-		weight DOUBLE PRECISION NOT NULL,
+		grossWeight NUMERIC(10, 3) NOT NULL,
+		tare NUMERIC(10, 3) NOT NULL,
+		netWeight NUMERIC(10, 3) NOT NULL,
 		farm INTEGER NOT NULL,
 		FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
 		FOREIGN KEY (crop) REFERENCES crop(id),
@@ -283,14 +288,16 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 			OUT departureId INTEGER,
 			OUT productName VARCHAR(255),
 			INOUT vehicle VARCHAR(255),
-			INOUT weight FLOAT,
 			INOUT departureDate TIMESTAMP WITHOUT TIME ZONE,
-			IN farm INTEGER
+			IN farm INTEGER,
+			IN grossWeight NUMERIC,
+			IN tare NUMERIC,
+			INOUT netWeight NUMERIC
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE departure_id INTEGER;
 		BEGIN
-			INSERT INTO departure (departureDate, vehicle, crop, weight, farm) VALUES (departureDate, vehicle, crop, weight, farm) RETURNING id INTO departure_id;
+			INSERT INTO departure (departureDate, vehicle, crop, farm, tare, grossWeight, netWeight) VALUES (departureDate, vehicle, crop, farm, tare, grossWeight, netWeight) RETURNING id INTO departure_id;
 			INSERT INTO departurebuyer (departureId, buyerId) VALUES (departure_id, buyerId);
 
 			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = crop INTO productName;
@@ -370,12 +377,14 @@ func initAddEntry(c *pgx.Conn) {
 			INOUT vehicle VARCHAR(255),
 			INOUT netWeight DOUBLE PRECISION,
 			INOUT arrivalDate TIMESTAMP WITHOUT TIME ZONE,
-			INOUT farm INTEGER
+			INOUT farm INTEGER,
+			IN damage DOUBLE PRECISION,
+			IN impurity DOUBLE PRECISION
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE entry_id INTEGER;
 		BEGIN
-			INSERT INTO entry (field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate, farm) VALUES (field, crop, vehicle, grossWeight, tare, netWeight, humidity, arrivalDate, farm) RETURNING id INTO entry_id;
+			INSERT INTO entry (field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate, farm, damage, impurity) VALUES (field, crop, vehicle, grossWeight, tare, netWeight, humidity, arrivalDate, farm, damage, impurity) RETURNING id INTO entry_id;
 
 			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = crop INTO productName;
 			SELECT f.name FROM field f WHERE f.id = field INTO fieldName;

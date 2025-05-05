@@ -2,16 +2,18 @@ package field_router
 
 import (
 	entity_public "armazenda/entity/public"
-	"armazenda/model/field_model"
+	field_service "armazenda/service/field"
 	"armazenda/service/user_service"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 )
 
 type FieldForm struct {
-	Name string `form:"name" binding:"required"`
-	Id   uint32 `form:"id"`
+	Name     string          `form:"name" binding:"required"`
+	Id       uint32          `form:"id"`
+	Hectares decimal.Decimal `form:"hectares" binding:"required"`
 }
 
 func getFieldForm(c *gin.Context) {
@@ -37,21 +39,14 @@ func addField(c *gin.Context) {
 
 	ssi, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(ssi)
-	fieldModel, _ := field_model.GetFieldModel()
-	addedField, addErr := fieldModel.AddField(entity_public.Field{
-		Name: newField.Name,
-		Farm: farm,
+	addedField, toast := field_service.AddField(entity_public.Field{
+		Name:     newField.Name,
+		Farm:     farm,
+		Hectares: newField.Hectares,
 	})
 
-	if addErr != nil {
-		if addErr.IsServerErr == true {
-			t := entity_public.GetErrorToast(addErr.Error(), "")
-			c.Header("HX-Trigger", string(t.ToJson()))
-			return
-		}
-
-		t := entity_public.GetWarningToast(addErr.Error(), "")
-		c.Header("HX-Trigger", string(t.ToJson()))
+	if toast != nil {
+		c.Header("HX-Trigger", string(toast.ToJson()))
 		c.Status(http.StatusBadRequest)
 		return
 	}

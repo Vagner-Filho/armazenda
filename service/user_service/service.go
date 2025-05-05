@@ -77,9 +77,9 @@ type credentials struct {
 	Username string
 }
 
-func Login(email string, passwd string) (credentials, *entity_public.Toast) {
+func Login(cpf string, passwd string) (credentials, *entity_public.Toast) {
 	um := user_model.GetUserModel()
-	user, err := um.AuthUser(email, passwd)
+	user, err := um.AuthUser(cpf, passwd)
 
 	if err != nil || user == nil {
 		toast := entity_public.GetWarningToast("Credenciais inválidas", "")

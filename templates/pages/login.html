@@ -1,42 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
-
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="/public/assets/static/css/output.css" rel="stylesheet">
-        <title>Login - Armazenda</title>
-        <script src="https://unpkg.com/htmx.org@2.0.0" crossorigin="anonymous"></script>
-        <script type="module" src="/public/assets/js/toast.js"></script>
-    </head>
-
-    <body class="bg-gray-200 h-screen flex justify-center items-center">
-        <main class="bg-white p-8 pb-4 w-96 rounded shadow-lg">
-            <h2 class="text-2xl font-bold mb-2 text-center text-green-500">Login</h2>
-            <form hx-post="/login" hx-target="#error-indicator-space">
-                <div class="mb-4 flex flex-col-reverse">
-                    <input type="email" id="email" name="email" required aria-placeholder="email" placeholder="meuemail@email.com"
-                        class="w-full px-2 peer">
-                    <label for="email" class="px-2 label-peer">E-mail</label>
-                </div>
-                <div class="mb-4 flex flex-col-reverse">
-                    <input type="password" id="password" name="passwd" required aria-placeholder="senha" placeholder="*********"
-                        class="w-full px-2 peer">
-                    <label for="password" class="px-2 label-peer">Senha</label>
-                </div>
-                <button type="submit" class="w-full add-btn">Entrar</button>
-            </form>
-                <p class="text-sm text-center text-gray-500 pt-4">
-                    Novo por aqui?
-                    <button type="button" class="hover:text-green-600 focus:text-green-600 transition-all duration-300 ease-in-out hover:font-bold focus:font-bold" hx-trigger="click" hx-get="/user/form" hx-target="body" hx-swap="beforeend">Crie uma conta!</button>
-                </p>
-            <div id="error-indicator-space" class="flex justify-center">
-                <!-- Message error login -->
-            </div>
-        </main>
-    </body>
-    <script>
-        document.querySelectorAll('input').forEach(input => {
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/public/assets/static/css/output.css" rel="stylesheet">
+    <title>Login - Armazenda</title>
+    <script src="https://unpkg.com/htmx.org@2.0.0" crossorigin="anonymous"></script>
+    <script type="module" src="/public/assets/js/toast.js"></script>
+  </head>
+  <body class="bg-gray-200 h-screen flex justify-center items-center">
+    <main class="bg-white p-8 pb-4 w-96 rounded shadow-lg">
+      <h2 class="text-2xl font-bold mb-2 text-center text-green-500">Login</h2>
+      <form hx-post="/login" hx-target="#error-indicator-space">
+        {{ template "cpf-field" }}
+        <div class="mb-4 flex flex-col-reverse">
+          <input type="password" id="password" name="passwd" required aria-placeholder="senha" placeholder="*********" class="w-full px-2 peer">
+          <label for="password" class="px-2 label-peer">Senha</label>
+        </div>
+        <button type="submit" class="w-full add-btn">Entrar</button>
+      </form>
+      <p class="text-sm text-center text-gray-500 pt-4">
+        Novo por aqui?
+        <button type="button" class="hover:text-green-600 focus:text-green-600 transition-all duration-300 ease-in-out hover:font-bold focus:font-bold" hx-trigger="click" hx-get="/user/form" hx-target="body" hx-swap="beforeend">Crie uma conta!</button>
+      </p>
+      <div id="error-indicator-space" class="flex justify-center">
+        <!-- Message error login -->
+      </div>
+    </main>
+  </body>
+  <script>
+    document.querySelectorAll('input').forEach(input => {
             input.addEventListener('focus', function() {
                 const errorMsg = document.getElementById('error-msg');
                 if (errorMsg) {
@@ -44,5 +37,5 @@
                 }
             });
         });
-    </script>
+  </script>
 </html>

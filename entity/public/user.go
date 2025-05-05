@@ -16,6 +16,6 @@ type NewUser struct {
 }
 
 type SignInUser struct {
-	Email  string `form:"email" binding:"required"`
+	Cpf    string `form:"cpf" binding:"len=11"`
 	Passwd string `form:"passwd" binding:"required"`
 }

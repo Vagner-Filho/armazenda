@@ -67,7 +67,7 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32) ([]entity_public.Disp
 
 func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
 	row, queryErr := em.conn.Query(context.Background(), `
-		SELECT * FROM add_get_entry(@field, @crop, @grossWeight, @tare, @humidity, @vehicle, @netWeight, @arrivalDate, @farm)
+		SELECT * FROM add_get_entry(@field, @crop, @grossWeight, @tare, @humidity, @vehicle, @netWeight, @arrivalDate, @farm, @damage, @impurity)
 		`, pgx.NamedArgs{
 		"field":       ge.Field,
 		"crop":        ge.Crop,
@@ -78,6 +78,8 @@ func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.DisplayEnt
 		"humidity":    ge.Humidity,
 		"arrivalDate": ge.ArrivalDate,
 		"farm":        ge.Farm,
+		"damage":      ge.Damage,
+		"impurity":    ge.Impurity,
 	})
 
 	if queryErr != nil {

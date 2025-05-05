@@ -38,14 +38,14 @@ func GetUserModel() *userModel {
 	return userModelImpl
 }
 
-func (um *userModel) AuthUser(email string, passwd string) (*entity_public.User, *model_error.ModelError) {
+func (um *userModel) AuthUser(cpf string, passwd string) (*entity_public.User, *model_error.ModelError) {
 	rows, queryErr := um.conn.Query(context.Background(),
-		`SELECT * FROM app_user WHERE email = @email`,
-		pgx.NamedArgs{"email": email})
+		`SELECT * FROM app_user WHERE cpf = @cpf`,
+		pgx.NamedArgs{"cpf": cpf})
 
 	if queryErr != nil {
 		model_error.Logger(um.conn, queryErr.Error())
-		return nil, &model_error.ModelError{Message: "Email ou senha inválidos"}
+		return nil, &model_error.ModelError{Message: "Cpf ou senha inválidos"}
 	}
 
 	user, collectErr := pgx.CollectExactlyOneRow(rows, pgx.RowToStructByPos[entity_public.User])
@@ -53,13 +53,13 @@ func (um *userModel) AuthUser(email string, passwd string) (*entity_public.User,
 	if collectErr != nil {
 		model_error.Logger(um.conn, collectErr.Error())
 		if errors.Is(pgx.ErrNoRows, collectErr) {
-			return nil, &model_error.ModelError{Message: "Email ou senha inválidos"}
+			return nil, &model_error.ModelError{Message: "Cpf ou senha inválidos"}
 		}
 	}
 
 	failed := bcrypt.CompareHashAndPassword([]byte(user.Passwd), []byte(passwd))
 	if failed != nil {
-		return nil, &model_error.ModelError{Message: "Email ou senha inválidos"}
+		return nil, &model_error.ModelError{Message: "Cpf ou senha inválidos"}
 	}
 
 	return &user, nil

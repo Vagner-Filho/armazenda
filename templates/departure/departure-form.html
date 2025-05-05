@@ -15,9 +15,21 @@
                 {{ template "crop-selector" .Crops }}
                 {{ template "buyer-selector" .Buyers }}
                 <div class="flex flex-col-reverse">
-                    <input type="number" name="weight" id="weight" class="peer" {{ if ne .Departure.Weight 0.0 }} value="{{ .Departure.Weight }}" {{ end }} required>
-                    <label for="weight" class="label-peer">
-                        Peso
+                    <input type="number" name="grossWeight" id="grossWeight" class="peer" {{ if ne .Departure.GrossWeight 0.0 }} value="{{ .Departure.GrossWeight }}" {{ end }} required>
+                    <label for="grossWeight" class="label-peer">
+                        Peso Bruto
+                    </label>
+                </div>
+                <div class="flex flex-col-reverse">
+                    <input type="number" name="tare" id="tare" class="peer" {{ if ne .Departure.Tare 0.0 }} value="{{ .Departure.Tare }}" {{ end }} required>
+                    <label for="tare" class="label-peer">
+                        Tara
+                    </label>
+                </div>
+                <div class="flex flex-col-reverse">
+                    <input type="number" name="netWeight" id="netWeight" class="peer cursor-not-allowed" {{ if ne .Departure.NetWeight 0.0 }} value="{{ .Departure.NetWeight }}" {{ end }} readonly min="0" required>
+                    <label for="netWeight" class="label-peer">
+                        Peso Líquido (preenchimento automático)
                     </label>
                 </div>
             </fieldset>
@@ -62,6 +74,26 @@
 
             dialogEl.addEventListener('close', closeDepartureForm)
             window.closeDepartureForm = closeDepartureForm
+
+            const grossWeightInput = dialogEl.querySelector('input#grossWeight')
+            const tareInput = dialogEl.querySelector('input#tare')
+
+            let grossWeightValue = Number(grossWeightInput ? grossWeightInput.value : 0)
+            let tareValue = Number(tareInput ? tareInput.value : 0)
+
+            const netWeightInput = dialogEl.querySelector('input#netWeight')
+            if (netWeightInput) {
+                grossWeightInput.addEventListener('input', (e) => {
+                    grossWeightValue = Number(e.target.value) ?? 0
+
+                    netWeightInput.value = grossWeightValue - tareValue
+                })
+                tareInput.addEventListener('input', (e) => {
+                    tareValue = Number(e.target.value) ?? 0
+
+                    netWeightInput.value = grossWeightValue - tareValue
+                })
+            }
         }
     </script>
     <style>

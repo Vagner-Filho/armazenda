@@ -23,7 +23,9 @@ type Entry struct {
 	GrossWeight float64   `form:"grossWeight" binding:"required"`
 	Tare        float64   `form:"tare" binding:"required"`
 	NetWeight   float64   `form:"netWeight" binding:"gte=0"`
-	Humidity    string    `form:"humidity" binding:"required"`
+	Humidity    float32   `form:"humidity" binding:"required"`
+	Damage      float32   `form:"damage" binding:"required"`
+	Impurity    float32   `form:"impurity" binding:"required"`
 	ArrivalDate time.Time `form:"arrivalDate" binding:"required" time_format:"2006-01-02T15:04"`
 	Farm        uint32    `form:"farm" binding:"gte=0"`
 }

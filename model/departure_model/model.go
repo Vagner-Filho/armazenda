@@ -53,10 +53,10 @@ var availableDepartureFilters = map[string]func(df entity_public.DepartureFilter
 		return "p.id = " + strconv.FormatInt(int64(df.Product), 10)
 	},
 	"WeightMin": func(df entity_public.DepartureFilter) string {
-		return "d.weight >= " + strconv.FormatFloat(df.WeightMin, 'f', -1, 64)
+		return "d.netWeight >= " + strconv.FormatFloat(df.NetWeightMin, 'f', -1, 64)
 	},
 	"WeightMax": func(df entity_public.DepartureFilter) string {
-		return "d.weight <= " + strconv.FormatFloat(df.WeightMax, 'f', -1, 64)
+		return "d.netWeight <= " + strconv.FormatFloat(df.NetWeightMax, 'f', -1, 64)
 	},
 	"Buyer": func(df entity_public.DepartureFilter) string {
 		return "d.Buyer = " + df.Buyer
@@ -96,7 +96,7 @@ func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter) ([]
 
 func (dm *departureModel) GetDisplayDepartures(farm uint32) ([]entity_public.DisplayDeparture, *model_error.ModelError) {
 	rows, queryErr := dm.conn.Query(context.Background(), `
-		SELECT d.id, p.name, d.vehicle, d.weight, d.departureDate
+		SELECT d.id, p.name, d.vehicle, d.netWeight, d.departureDate
 		FROM departure d
 		JOIN crop c ON d.crop = c.id
 		JOIN product p ON c.product = p.id
@@ -130,20 +130,21 @@ func (dm *departureModel) GetDeparture(id uint32) (entity_public.Departure, *mod
 	if collectErr != nil {
 		return entity_public.Departure{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
-
 	return departure, nil
 }
 
 func (dm *departureModel) AddDeparture(d entity_public.Departure) (entity_public.DisplayDeparture, *model_error.ModelError) {
 	row, queryErr := dm.conn.Query(context.Background(), `
-		SELECT * FROM add_get_departure(@crop, @buyer, @vehicle, @weight, @departureDate, @farm)
+		SELECT * FROM add_get_departure(@crop, @buyer, @vehicle, @departureDate, @farm, @tare, @grossWeight, @netWeight)
 		`, pgx.NamedArgs{
 		"crop":          d.Crop,
 		"buyer":         d.Buyer,
 		"vehicle":       d.VehiclePlate,
-		"weight":        d.Weight,
 		"departureDate": d.DepartureDate,
 		"farm":          d.Farm,
+		"tare":          d.Tare,
+		"grossWeight":   d.GrossWeight,
+		"netWeight":     d.NetWeight,
 	})
 	if queryErr != nil {
 		model_error.Logger(dm.conn, queryErr.Error())

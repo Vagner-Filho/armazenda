@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/shopspring/decimal"
 )
 
 type fieldModel struct {
@@ -31,19 +32,20 @@ func InitFieldModel(conn *pgx.Conn) (*fieldModel, error) {
 	return fieldModelImpl, nil
 }
 
-func GetFieldModel() (*fieldModel, error) {
+func GetFieldModel() *fieldModel {
 	if fieldModelImpl == nil {
-		return nil, errors.New("field model hasnt been initialized")
+		panic("field model hasnt been initialized")
 	}
-	return fieldModelImpl, nil
+	return fieldModelImpl
 }
 
 func (fm *fieldModel) AddField(f entity_public.Field) (entity_public.Field, *model_error.ModelError) {
 	var id uint16
 	var name string
 	var farm uint32
+	var ha decimal.Decimal
 
-	scanErr := fm.conn.QueryRow(context.Background(), "INSERT INTO field (name, farm) VALUES (@name, @farm) RETURNING id, name", pgx.NamedArgs{"name": f.Name, "farm": f.Farm}).Scan(&id, &name)
+	scanErr := fm.conn.QueryRow(context.Background(), "INSERT INTO field (name, farm, hectares) VALUES (@name, @farm, @hectares) RETURNING id, name", pgx.NamedArgs{"name": f.Name, "farm": f.Farm, "hectares": f.Hectares}).Scan(&id, &name)
 
 	if scanErr != nil {
 		var pgErr *pgconn.PgError
@@ -55,9 +57,10 @@ func (fm *fieldModel) AddField(f entity_public.Field) (entity_public.Field, *mod
 	}
 
 	return entity_public.Field{
-		Id:   id,
-		Name: name,
-		Farm: farm,
+		Id:       id,
+		Name:     name,
+		Farm:     farm,
+		Hectares: ha,
 	}, nil
 }
 

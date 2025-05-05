@@ -17,7 +17,7 @@ func UserRoutes(router *gin.Engine) {
 			return
 		}
 
-		credentials, toast := user_service.Login(signInUser.Email, signInUser.Passwd)
+		credentials, toast := user_service.Login(signInUser.Cpf, signInUser.Passwd)
 
 		if toast != nil {
 			c.Header("HX-Trigger", string(toast.ToJson()))
