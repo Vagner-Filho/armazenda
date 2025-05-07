@@ -127,6 +127,21 @@ func initEntry(c *pgx.Conn) {
 	handleStmtExec(c, stmt, err, "create entry")
 }
 
+func initEntryAnalysis(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init entry_analysis table", `
+	CREATE TABLE IF NOT EXISTS entry_analysis (
+		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+		humidity NUMERIC(6, 3),
+		damage NUMERIC(6, 3),
+		impurity NUMERIC(6, 3),
+		entryId INTEGER UNIQUE NOT NULL,
+		FOREIGN KEY (entryId) REFERENCES entry(id)
+	);
+	`)
+
+	handleStmtExec(c, stmt, err, "create entry_analysis")
+}
+
 func initInactiveEntry(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init inactive_entry table", `
 	CREATE TABLE IF NOT EXISTS inactive_entry (
@@ -504,6 +519,7 @@ func InitDb(c *pgx.Conn) {
 	initVehicle(c)
 	initField(c)
 	initEntry(c)
+	initEntryAnalysis(c)
 	initDeparture(c)
 	initBuyer(c)
 	initDepartureBuyer(c)

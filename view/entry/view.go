@@ -57,7 +57,7 @@ type EntryForm struct {
 	Crops    []entity_public.Crop
 	Fields   []entity_public.Field
 	Products []entity_public.Product
-	Entry    entity_public.Entry
+	Entry    entity_public.EntryDTO
 }
 
 func GetEntryForm(farm uint32) (EntryForm, []*entity_public.Toast) {
@@ -82,6 +82,6 @@ func GetExistingEntryForm(entryId uint32, farm uint32) (EntryForm, []*entity_pub
 		toasts = append(toasts, toast)
 	}
 
-	formFields.Entry = entry
+	formFields.Entry = entry.ToDTO()
 	return formFields, toasts
 }

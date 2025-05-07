@@ -1,42 +1,41 @@
 {{ block "departure-list-item" . }}
 <tr class="text-center whitespace-nowrap text-sm sm:text-base" id="departure-{{ .Id }}">
-    <td>
-        {{ .Id }}
-    </td>
-    <td>
-        {{ .Product }}
-    </td>
-    <td>
-        {{ .VehiclePlate }}
-    </td>
-    <td>
-        {{ .Weight }}
-    </td>
-    <td id="departureDate">
-        {{ .DepartureDate }}
-    </td>
-    <td>
-        <div class="flex items-center justify-center gap-2 text-green-500">
-            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-            <button type="button" hx-get="/departure/form/{{ .Id }}" hx-target="body" hx-swap="beforeend">
-                <iconify-icon icon="la:pen"></iconify-icon>
-            </button>
-            <button type="button" hx-trigger="confirmed" hx-delete="/departure/{{ .Id }}"
-                hx-target="#departure-{{ .Id }}" hx-swap="delete" onClick="Swal.fire({title: 'Excluir', text: 'Deseja excluir o romaneio de saída {{ .Id }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
+  <td>
+    {{ .Id }}
+  </td>
+  <td>
+    {{ .Product }}
+  </td>
+  <td>
+    {{ .VehiclePlate }}
+  </td>
+  <td>
+    {{ .NetWeight }}
+  </td>
+  <td id="departureDate">
+    {{ .DepartureDate }}
+  </td>
+  <td>
+    <div class="flex items-center justify-center gap-2 text-green-500">
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+      <button type="button" hx-get="/departure/form/{{ .Id }}" hx-target="body" hx-swap="beforeend">
+        <iconify-icon icon="la:pen"></iconify-icon>
+      </button>
+      <button type="button" hx-trigger="confirmed" hx-delete="/departure/{{ .Id }}" hx-target="#departure-{{ .Id }}" hx-swap="delete" onClick="Swal.fire({title: 'Excluir', text: 'Deseja excluir o romaneio de saída {{ .Id }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
                     if (result.isConfirmed) {
                         htmx.trigger(this, 'confirmed');  
                     } 
                 })">
-                <iconify-icon icon="la:trash-alt-solid"></iconify-icon>
-            </button>
-        </div>
-    </td>
-    <script type="module">
-        import { formatDateToDisplay } from "/public/assets/js/date.js"
+        <iconify-icon icon="la:trash-alt-solid"></iconify-icon>
+      </button>
+    </div>
+  </td>
+  <script type="module">
+    import { formatDateToDisplay } from "/public/assets/js/date.js"
         const itemRow = document.querySelector("tr#departure-{{ .Id }}")
         if (itemRow) {
             itemRow.querySelector("td#departureDate").textContent = formatDateToDisplay({{ .DepartureDate }})
         }
-    </script>
+  </script>
 </tr>
 {{ end }}

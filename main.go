@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	"github.com/shopspring/decimal"
 )
@@ -86,30 +87,14 @@ func main() {
 	product_model.InitProductModel(conn)
 	buyer_model.InitBuyerModel(conn)
 
-	var validate *validator.Validate
-	validate = validator.New()
-	validate.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
-		fmt.Println("validate decimal")
-		if valuer, ok := field.Interface().(decimal.Decimal); ok {
-			return valuer.String()
-		}
-		return nil
-	}, decimal.Decimal{})
-	validate.RegisterValidation("dgt", func(fl validator.FieldLevel) bool {
-		data, ok := fl.Field().Interface().(string)
-		if !ok {
-			return false
-		}
-		value, err := decimal.NewFromString(data)
-		if err != nil {
-			return false
-		}
-		baseValue, err := decimal.NewFromString(fl.Param())
-		if err != nil {
-			return false
-		}
-		return value.GreaterThan(baseValue)
-	})
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
+			if valuer, ok := field.Interface().(decimal.Decimal); ok {
+				return valuer.String()
+			}
+			return nil
+		}, decimal.Decimal{})
+	}
 
 	router := gin.Default()
 

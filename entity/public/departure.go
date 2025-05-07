@@ -3,57 +3,60 @@ package entity_public
 import (
 	"reflect"
 	"time"
-
-	"github.com/shopspring/decimal"
 )
 
 type Departure struct {
-	Id            uint32          `form:"id"`
-	DepartureDate time.Time       `form:"departureDate" binding:"required" time_format:"2006-01-02T15:04"`
-	VehiclePlate  string          `form:"vehiclePlate" binding:"required"`
-	Crop          uint8           `form:"crop" binding:"required"`
-	GrossWeight   decimal.Decimal `form:"grossWeight" binding:"required"`
-	Tare          decimal.Decimal `form:"tare" binding:"required"`
-	NetWeight     decimal.Decimal `form:"netWeight" binding:"gte=0"`
-	Buyer         uint32          `form:"buyer" binding:"required"`
-	Farm          uint32          `form:"farm" binding:"gte=0"`
+	Id            uint32    `form:"id"`
+	DepartureDate time.Time `form:"departureDate" binding:"required" time_format:"2006-01-02T15:04"`
+	VehiclePlate  string    `form:"vehiclePlate" binding:"required"`
+	Crop          uint8     `form:"crop" binding:"required"`
+	CargoWeight
+	Buyer uint32 `form:"buyer" binding:"required"`
+	Farm  uint32 `form:"farm" binding:"gte=0"`
 }
 
-func (d Departure) ToFormDeparture() FormDeparture {
-	gw, _ := d.GrossWeight.Float64()
-	tare, _ := d.Tare.Float64()
-	nw, _ := d.NetWeight.Float64()
-	return FormDeparture{
-		Id:            d.Id,
-		DepartureDate: d.DepartureDate,
-		VehiclePlate:  d.VehiclePlate,
-		Crop:          d.Crop,
-		GrossWeight:   gw,
-		Tare:          tare,
-		NetWeight:     nw,
-		Buyer:         d.Buyer,
-		Farm:          d.Farm,
+func (d Departure) ToDTO() DepartureDTO {
+	cargo := d.CargoWeight.ToDTO()
+	return DepartureDTO{
+		Id:             d.Id,
+		DepartureDate:  d.DepartureDate,
+		VehiclePlate:   d.VehiclePlate,
+		Crop:           d.Crop,
+		CargoWeightDTO: cargo,
+		Buyer:          d.Buyer,
+		Farm:           d.Farm,
 	}
 }
 
-type FormDeparture struct {
+type DepartureDTO struct {
 	Id            uint32
 	DepartureDate time.Time
 	VehiclePlate  string
 	Crop          uint8
-	GrossWeight   float64
-	Tare          float64
-	NetWeight     float64
-	Buyer         uint32
-	Farm          uint32
+	CargoWeightDTO
+	Buyer uint32
+	Farm  uint32
+}
+
+func (dto DepartureDTO) ToEntity() Departure {
+	cargo := dto.CargoWeightDTO.ToEntity()
+	return Departure{
+		Id:            dto.Id,
+		DepartureDate: dto.DepartureDate,
+		VehiclePlate:  dto.VehiclePlate,
+		Crop:          dto.Crop,
+		CargoWeight:   cargo,
+		Buyer:         dto.Buyer,
+		Farm:          dto.Farm,
+	}
 }
 
 type DisplayDeparture struct {
 	Id            uint32
 	Product       string
 	VehiclePlate  string
-	NetWeight     float64
 	DepartureDate time.Time
+	NetWeight     float64
 }
 
 type DepartureFilter struct {

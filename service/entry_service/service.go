@@ -8,8 +8,8 @@ import (
 func AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public.Toast) {
 	eModel := entry_model.GetEntryModel()
 
-	if ge.NetWeight == 0 {
-		ge.NetWeight = ge.GrossWeight - ge.Tare
+	if ge.NetWeight.IsZero() == true {
+		ge.NetWeight = ge.CargoWeight.GrossWeight.Sub(ge.Tare)
 	}
 
 	newEntry, addErr := eModel.AddEntry(ge)
