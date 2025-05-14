@@ -106,7 +106,7 @@ func (em *entryModel) DeleteEntry(id uint32) error {
 }
 
 func (em *entryModel) GetEntry(id uint32) (entity_public.Entry, *model_error.ModelError) {
-	rows, queryErr := em.conn.Query(context.Background(), "SELECT * FROM entry WHERE id = @id", pgx.NamedArgs{"id": id})
+	rows, queryErr := em.conn.Query(context.Background(), "SELECT e.id, e.field, e.crop, e.vehicle, e.grossweight, e.tare, e.netweight, ea.humidity, ea.damage, ea.impurity, e.arrivaldate, e.farm FROM entry e LEFT JOIN entry_analysis ea ON ea.entryid = e.id WHERE e.id = @id", pgx.NamedArgs{"id": id})
 	if queryErr != nil {
 		return entity_public.Entry{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
@@ -121,7 +121,7 @@ func (em *entryModel) GetEntry(id uint32) (entity_public.Entry, *model_error.Mod
 func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
 	row, queryErr := em.conn.Query(
 		context.Background(),
-		`SELECT * FROM update_get_display_entry(@field, @crop, @grossWeight, @tare, @humidity, @id, @vehicle, @netWeight, @arrivalDate)`,
+		`SELECT * FROM update_get_display_entry(@field, @crop, @grossWeight, @tare, @humidity, @id, @vehicle, @netWeight, @arrivalDate, @damage, @impurity)`,
 		pgx.NamedArgs{
 			"id":          ge.Id,
 			"field":       ge.Field,
@@ -132,6 +132,8 @@ func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.DisplayEnt
 			"netWeight":   ge.NetWeight,
 			"humidity":    ge.Humidity,
 			"arrivalDate": ge.ArrivalDate,
+			"damage":      ge.Damage,
+			"impurity":    ge.Impurity,
 		})
 
 	if queryErr != nil {

@@ -112,9 +112,6 @@ func initEntry(c *pgx.Conn) {
 		grossWeight NUMERIC(10, 3) NOT NULL,
 		tare NUMERIC(10, 3) NOT NULL,
 		netWeight NUMERIC(10, 3) NOT NULL,
-		humidity DOUBLE PRECISION,
-		damage DOUBLE PRECISION,
-		impurity DOUBLE PRECISION,
 		arrivalDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 		farm INTEGER NOT NULL,
 		FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
@@ -379,27 +376,31 @@ func initAddBuyerCompany(c *pgx.Conn) {
 func initAddEntry(c *pgx.Conn) {
 	_, err := c.Exec(context.Background(), `
 		CREATE OR REPLACE FUNCTION add_get_entry(
-			in field SMALLINT,
+			IN field SMALLINT,
 			IN crop SMALLINT,
-			in grossWeight DOUBLE PRECISION,
-			in tare DOUBLE PRECISION,
-		 	in humidity DOUBLE PRECISION,
+			IN grossWeight NUMERIC(10, 3),
+			IN tare NUMERIC(10, 3),
+		 	IN humidity NUMERIC(6, 3),
 	
 			OUT entryId INTEGER,
 			OUT productName VARCHAR(255),
 			OUT fieldName VARCHAR(255),
 
 			INOUT vehicle VARCHAR(255),
-			INOUT netWeight DOUBLE PRECISION,
+			INOUT netWeight NUMERIC(10, 3),
 			INOUT arrivalDate TIMESTAMP WITHOUT TIME ZONE,
 			INOUT farm INTEGER,
-			IN damage DOUBLE PRECISION,
-			IN impurity DOUBLE PRECISION
+			IN damage NUMERIC(6, 3),
+			IN impurity NUMERIC(6, 3)
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE entry_id INTEGER;
 		BEGIN
-			INSERT INTO entry (field, crop, vehicle, grossweight, tare, netweight, humidity, arrivalDate, farm, damage, impurity) VALUES (field, crop, vehicle, grossWeight, tare, netWeight, humidity, arrivalDate, farm, damage, impurity) RETURNING id INTO entry_id;
+			INSERT INTO entry (field, crop, vehicle, grossweight, tare, netweight, arrivalDate, farm) VALUES (field, crop, vehicle, grossWeight, tare, netWeight, arrivalDate, farm) RETURNING id INTO entry_id;
+
+			IF humidity IS NOT NULL OR damage IS NOT NULL OR impurity IS NOT NULL THEN
+				INSERT INTO entry_analysis (humidity, damage, impurity, entryid) VALUES (humidity, damage, impurity, entry_id);
+			END IF;
 
 			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = crop INTO productName;
 			SELECT f.name FROM field f WHERE f.id = field INTO fieldName;
@@ -409,7 +410,7 @@ func initAddEntry(c *pgx.Conn) {
 	`)
 
 	if err != nil {
-		fmt.Printf("\n error at function add_get_buyer_company:\n%v", err.Error())
+		fmt.Printf("\n error at function add_get_entry:\n%v", err.Error())
 	}
 }
 
@@ -420,7 +421,7 @@ func initUpdateEntry(c *pgx.Conn) {
 			IN e_crop SMALLINT,
 			in e_grossWeight DOUBLE PRECISION,
 			in e_tare DOUBLE PRECISION,
-		 	in e_humidity DOUBLE PRECISION,
+		 	in e_humidity NUMERIC(6, 3),
 
 			INOUT e_id INTEGER,
 			OUT productName VARCHAR(255),
@@ -428,9 +429,12 @@ func initUpdateEntry(c *pgx.Conn) {
 			INOUT e_vehicle VARCHAR(255),
 			INOUT e_netWeight DOUBLE PRECISION,
 			INOUT e_arrivalDate TIMESTAMP WITHOUT TIME ZONE,
-			OUT e_farm INTEGER
+			OUT e_farm INTEGER,
+			IN e_damage NUMERIC(6, 3),
+			IN e_impurity NUMERIC(6, 3)
 		)
 		LANGUAGE plpgsql AS $$
+		DECLARE analysis_exists BOOLEAN;
 		BEGIN
 			UPDATE entry e SET
 				field = e_field,
@@ -439,9 +443,20 @@ func initUpdateEntry(c *pgx.Conn) {
 				grossweight = e_grossWeight,
 				tare = e_tare,
 				netweight = e_netWeight,
-				humidity = e_humidity,
 				arrivalDate = e_arrivalDate
 			WHERE e.id = e_id RETURNING e.farm INTO e_farm;
+
+			SELECT EXISTS (SELECT 1 FROM entry_analysis ea WHERE ea.entryid = e_id) INTO analysis_exists;
+			
+			IF analysis_exists THEN
+				UPDATE entry_analysis ea SET
+					humidity = e_humidity,
+					damage = e_damage,
+					impurity = e_impurity
+				WHERE ea.entryid = e_id;
+			ELSIF e_humidity IS NOT NULL OR e_damage IS NOT NULL OR e_impurity IS NOT NULL THEN
+				INSERT INTO entry_analysis (humidity, damage, impurity, entryid) VALUES (e_humidity, e_damage, e_impurity, e_id);
+			END IF;
 
 			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = e_crop INTO productName;
 			SELECT f.name FROM field f WHERE f.id = e_field INTO fieldName;
@@ -485,13 +500,13 @@ func initAddUserAndFarm(c *pgx.Conn) {
 		BEGIN
 			SELECT EXISTS (SELECT 1 FROM farm WHERE inscricao_estadual = ie) INTO farm_exists;
 		
-			if not farm_exists then
+			IF NOT farm_exists THEN
 				INSERT INTO farm (inscricao_estadual) VALUES (ie) RETURNING id INTO farm_id;
 				INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm, cpf) VALUES (email, name, passwd, ie, farm_id, cpf);
-			else
+			ELSE
 				SELECT id FROM farm WHERE inscricao_estadual = ie INTO farm_id;
 				INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm, cpf) VALUES (email, name, passwd, ie, farm_id, cpf);
-			end if;
+			END IF;
 		END;
 		$$;
 	`)

@@ -38,7 +38,6 @@ func getEntryForm(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
 	entryForm, toasts := entry_view.GetExistingEntryForm(uint32(converted), farm)
-
 	for _, t := range toasts {
 		if t != nil {
 			c.Header("HX-Trigger", string(t.ToJson()))

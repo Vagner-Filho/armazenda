@@ -1,8 +1,7 @@
 package entity_public
 
 type Vehicle struct {
-	Plate    string
-	Name     string
-	Selected bool `db:"-"`
-	Farm     uint32
+	Plate string
+	Name  string
+	Farm  uint32
 }
