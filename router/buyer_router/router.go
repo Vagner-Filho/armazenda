@@ -35,6 +35,9 @@ func addBuyerPerson(c *gin.Context) {
 		return
 	}
 
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	newPersonal.Buyer.Farm = farm
 	buyer, toast := buyer_service.AddBuyerPerson(newPersonal)
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))

@@ -5,10 +5,10 @@ import (
 	"armazenda/model/departure_model"
 )
 
-func GetDeparture(manifest uint32) (entity_public.Departure, *entity_public.Toast) {
+func GetDeparture(id uint32) (entity_public.Departure, *entity_public.Toast) {
 	dModel := departure_model.GetDepartureModel()
 
-	departure, err := dModel.GetDeparture(manifest)
+	departure, err := dModel.GetDeparture(id)
 	if err != nil {
 		if err.IsServerErr == true {
 			toast := entity_public.GetErrorToast("Houve um erro interno ao buscar a saída", "")

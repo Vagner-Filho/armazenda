@@ -53,11 +53,14 @@ func GetEntryContent(farm uint32) entryContent {
 }
 
 type EntryForm struct {
-	Vehicles []entity_public.Vehicle
-	Crops    []entity_public.Crop
-	Fields   []entity_public.Field
-	Products []entity_public.Product
-	Entry    entity_public.EntryDTO
+	Vehicles        []entity_public.Vehicle
+	SelectedVehicle string
+	Crops           []entity_public.Crop
+	SelectedCrop    uint8
+	Fields          []entity_public.Field
+	SelectedField   uint16
+	Products        []entity_public.Product
+	Entry           entity_public.EntryDTO
 }
 
 func GetEntryForm(farm uint32) (EntryForm, []*entity_public.Toast) {
@@ -77,6 +80,9 @@ func GetEntryForm(farm uint32) (EntryForm, []*entity_public.Toast) {
 func GetExistingEntryForm(entryId uint32, farm uint32) (EntryForm, []*entity_public.Toast) {
 	formFields, toasts := GetEntryForm(farm)
 	entry, toast := entry_service.GetEntry(entryId)
+	formFields.SelectedCrop = entry.Crop
+	formFields.SelectedVehicle = entry.Vehicle
+	formFields.SelectedField = entry.Field
 
 	if toast != nil {
 		toasts = append(toasts, toast)

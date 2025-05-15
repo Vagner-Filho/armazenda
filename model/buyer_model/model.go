@@ -64,8 +64,8 @@ func (bm *buyerModel) AddBuyerCompany(bc entity_public.BuyerCompany) (entity_pub
 
 func (bm *buyerModel) AddBuyerPerson(bp entity_public.BuyerPerson) (entity_public.BuyerDisplay, *model_error.ModelError) {
 	row, queryErr := bm.conn.Query(context.Background(), `
-			SELECT * FROM add_get_buyer_person(@ie, @cpf, @name)
-		`, pgx.NamedArgs{"ie": bp.InscricaoEstadual, "cpf": bp.Cpf, "name": bp.Name})
+			SELECT * FROM add_get_buyer_person(@ie, @cpf, @name, @farm)
+		`, pgx.NamedArgs{"ie": bp.InscricaoEstadual, "cpf": bp.Cpf, "name": bp.Name, "farm": bp.Buyer.Farm})
 	if queryErr != nil {
 		model_error.Logger(bm.conn, queryErr.Error())
 		return entity_public.BuyerDisplay{}, &model_error.ModelError{Message: queryErr.Error()}

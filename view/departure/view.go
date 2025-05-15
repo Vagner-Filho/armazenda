@@ -9,10 +9,13 @@ import (
 )
 
 type DepartureForm struct {
-	Vehicles  []entity_public.Vehicle
-	Buyers    []entity_public.BuyerDisplay
-	Departure entity_public.DepartureDTO
-	Crops     []entity_public.Crop
+	Vehicles        []entity_public.Vehicle
+	Buyers          []entity_public.BuyerDisplay
+	Departure       entity_public.DepartureDTO
+	Crops           []entity_public.Crop
+	SelectedCrop    uint8
+	SelectedVehicle string
+	SelectedBuyer   uint8
 }
 
 func GetNewDepartureForm(farm uint32) (DepartureForm, []*entity_public.Toast) {
@@ -33,6 +36,10 @@ func GetExistingDepartureForm(departureId uint32, farm uint32) (DepartureForm, [
 	departure, toast := departure_service.GetDeparture(departureId)
 
 	form.Departure = departure.ToDTO()
+	form.SelectedCrop = departure.Crop
+	form.SelectedVehicle = departure.VehiclePlate
+	form.SelectedBuyer = uint8(departure.Buyer)
+
 	toasts = append(toasts, toast)
 	return form, toasts
 }

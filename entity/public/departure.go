@@ -11,8 +11,8 @@ type Departure struct {
 	VehiclePlate  string    `form:"vehiclePlate" binding:"required"`
 	Crop          uint8     `form:"crop" binding:"required"`
 	CargoWeight
-	Buyer uint32 `form:"buyer" binding:"required"`
 	Farm  uint32 `form:"farm" binding:"gte=0"`
+	Buyer uint32 `form:"buyer" binding:"required"`
 }
 
 func (d Departure) ToDTO() DepartureDTO {

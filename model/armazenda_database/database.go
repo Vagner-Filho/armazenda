@@ -329,12 +329,13 @@ func initAddBuyerPerson(c *pgx.Conn) {
 			IN ie VARCHAR(255),
 			IN cpf VARCHAR(255),
 			OUT buyerId INTEGER,
-			INOUT name VARCHAR(255)
+			INOUT name VARCHAR(255),
+			IN farm INTEGER
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE buyer_id INTEGER;
 		BEGIN
-			INSERT INTO buyer (ie) VALUES (ie) RETURNING id INTO buyer_id;
+			INSERT INTO buyer (ie, farm) VALUES (ie, farm) RETURNING id INTO buyer_id;
 			INSERT INTO buyerperson (name, cpf, buyerid) VALUES (name, cpf, buyer_id);
 			
 			buyerId := buyer_id;

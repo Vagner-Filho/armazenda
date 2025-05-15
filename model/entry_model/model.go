@@ -179,7 +179,7 @@ var availableEntryFilters = map[string]func(ef entity_public.EntryFilter) string
 func (em *entryModel) FilterEntries(ef entity_public.EntryFilter) ([]entity_public.DisplayEntry, error) {
 	filters := ef.GetFilters(availableEntryFilters)
 
-	stmt := `SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate
+	stmt := `SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate, e.farm
 			FROM entry e
 			JOIN field f ON e.field = f.id
 			JOIN crop c ON e.crop = c.id
@@ -193,17 +193,15 @@ func (em *entryModel) FilterEntries(ef entity_public.EntryFilter) ([]entity_publ
 
 	rows, queryErr := em.conn.Query(context.Background(), stmt)
 	if queryErr != nil {
-		fmt.Print(stmt)
-		fmt.Print(queryErr.Error())
+		model_error.Logger(em.conn, queryErr.Error())
+		return []entity_public.DisplayEntry{}, queryErr
 	}
 
 	entries, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.DisplayEntry])
 	if collectErr != nil {
-		fmt.Print(stmt)
-		fmt.Print(collectErr.Error())
+		model_error.Logger(em.conn, collectErr.Error())
+		return []entity_public.DisplayEntry{}, collectErr
 	}
-
-	fmt.Printf("\n%v\n", entries)
 
 	return entries, nil
 }

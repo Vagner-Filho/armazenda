@@ -66,7 +66,7 @@ var availableDepartureFilters = map[string]func(df entity_public.DepartureFilter
 func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter) ([]entity_public.DisplayDeparture, error) {
 	filters := df.GetFilters(availableDepartureFilters)
 
-	stmt := `SELECT d.id, p.name, d.vehicle, d.weight, d.departureDate
+	stmt := `SELECT d.id, p.name, d.vehicle, d.departureDate, d.netWeight 
 			FROM departure d
 			JOIN crop c ON d.crop = c.id
 			JOIN product p ON c.product = p.id
@@ -79,17 +79,15 @@ func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter) ([]
 
 	rows, queryErr := dm.conn.Query(context.Background(), stmt)
 	if queryErr != nil {
-		fmt.Print(stmt)
-		fmt.Print(queryErr.Error())
+		model_error.Logger(dm.conn, queryErr.Error())
+		return []entity_public.DisplayDeparture{}, queryErr
 	}
 
 	departures, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.DisplayDeparture])
 	if collectErr != nil {
-		fmt.Print(stmt)
-		fmt.Print(collectErr.Error())
+		model_error.Logger(dm.conn, collectErr.Error())
+		return []entity_public.DisplayDeparture{}, collectErr
 	}
-
-	fmt.Printf("\n%v\n", stmt)
 
 	return departures, nil
 }
