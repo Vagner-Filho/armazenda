@@ -114,6 +114,13 @@ class ToastManager {
 
 const tm = new ToastManager()
 document.body.addEventListener("toast", (evt) => {
-	const toast = tm.makeToast(decodeURIComponent(escape(evt.detail.Message)), evt.detail.Hint, evt.detail.Type)
-	tm.showToast(toast)
+	try {
+		const toast = tm.makeToast(decodeURIComponent(escape(evt.detail.Message)), evt.detail.Hint, evt.detail.Type)
+		tm.showToast(toast)
+	} catch (e) {
+		if (e instanceof URIError) {
+			const toast = tm.makeToast(evt.detail.Message, evt.detail.Hint, evt.detail.Type)
+			tm.showToast(toast)
+		}
+	}
 })

@@ -1,46 +1,54 @@
 {{ block "entry-list-item" . }}
 <tr class="text-center whitespace-nowrap text-sm sm:text-base" id="entry-{{ .Id }}">
-    <td>
-        {{ .Id }}
-    </td>
-    <td>
-        {{ .Product }}
-    </td>
-    <td>
-        {{ .Field }}
-    </td>
-    <td>
-        {{ .Vehicle }}
-    </td>
-    <td>
-        {{ .NetWeight }}
-    </td>
-    <td id="arrivalDate">
-        {{ .ArrivalDate }}
-    </td>
-    <td>
-        <div class="flex items-center justify-center gap-2 text-green-500">
-            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-            <button type="button" hx-get="/entry/form/{{ .Id }}" hx-target="body" hx-swap="beforeend">
-                <iconify-icon icon="la:pen"></iconify-icon>
-            </button>
-            <button type="button" hx-trigger="confirmed" hx-delete="/entry/{{ .Id }}" hx-target="#entry-{{ .Id }}"
-                hx-swap="delete" onClick="Swal.fire({title: 'Excluir', text:'Deseja excluir o romaneio de entrada {{ .Id }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
+  <td>
+    {{ .Id }}
+  </td>
+  <td>
+    {{ .Product }}
+  </td>
+  <td>
+    {{ .Field }}
+  </td>
+  <td>
+    {{ .Vehicle }}
+  </td>
+  <td>
+    {{ .NetWeight }}
+  </td>
+  <td id="arrivalDate">
+    {{ .ArrivalDate }}
+  </td>
+  <td>
+    <div class="flex items-center justify-center gap-2 text-green-500">
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+      <button type="button" id="{{ .Id }}" onclick="getEntryPdf(this)">
+        pdf
+      </button>
+      <button type="button" hx-get="/entry/form/{{ .Id }}" hx-target="body" hx-swap="beforeend">
+        <iconify-icon icon="la:pen"></iconify-icon>
+      </button>
+      <button
+        type="button"
+        hx-trigger="confirmed"
+        hx-delete="/entry/{{ .Id }}"
+        hx-target="#entry-{{ .Id }}"
+        hx-swap="delete"
+        onClick="Swal.fire({title: 'Excluir', text:'Deseja excluir o romaneio de entrada {{ .Id }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
                     if (result.isConfirmed) {
-                        htmx.trigger(this, 'confirmed');  
-                    } 
+                        htmx.trigger(this, 'confirmed');
+                    }
                 })"
-            >
-                <iconify-icon icon="la:trash-alt-solid"></iconify-icon>
-            </button>
-        </div>
-    </td>
-    <script type="module">
-        import { formatDateToDisplay } from "/public/assets/js/date.js"
+      >
+        <iconify-icon icon="la:trash-alt-solid"></iconify-icon>
+      </button>
+    </div>
+  </td>
+  <script type="module">
+    import { formatDateToDisplay } from "/public/assets/js/date.js"
         const itemRow = document.querySelector("tr#entry-{{ .Id }}")
         if (itemRow) {
             itemRow.querySelector("td#arrivalDate").textContent = formatDateToDisplay({{ .ArrivalDate }})
         }
-    </script>
+  </script>
 </tr>
 {{ end }}

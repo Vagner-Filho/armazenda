@@ -160,6 +160,27 @@ func getEmptyEntryForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "entry-form", formMembers)
 }
 
+func getEntryPdf(c *gin.Context) {
+	idPathParam := c.Param("id")
+	id, err := strconv.ParseUint(idPathParam, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+	}
+
+	entryPdf, t := entry_service.GetEntryPdf(uint32(id))
+	if err != nil {
+		c.Header("HX-Trigger", string(t.ToJson()))
+		return
+	}
+	if entryPdf == nil {
+		notFoundToast := entity_public.GetInfoToast("Entrada não encontrada", "")
+		c.Header("HX-Trigger", string(notFoundToast.ToJson()))
+		c.Status(http.StatusNoContent)
+		return
+	}
+	c.HTML(200, "entry-pdf", entryPdf)
+}
+
 func UseEntryRoutes(router *gin.Engine) {
 	router.GET("/romaneio", getRomaneioPage)
 	router.GET("/entry/list", getEntryContent)
@@ -170,4 +191,5 @@ func UseEntryRoutes(router *gin.Engine) {
 	router.PUT("/entry/:id", putEntry)
 	router.DELETE("/entry/:id", deleteEntry)
 	router.POST("/entry/filter", filterEntries)
+	router.GET("/entry/pdf/:id", getEntryPdf)
 }

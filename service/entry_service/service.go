@@ -22,19 +22,34 @@ func AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public
 	return newEntry, entity_public.GetSuccessToast("Entrada adicionada", "")
 }
 
-func GetEntry(id uint32) (entity_public.Entry, *entity_public.Toast) {
+func GetEntry(id uint32) (*entity_public.Entry, *entity_public.Toast) {
 	eModel := entry_model.GetEntryModel()
 
 	entry, err := eModel.GetEntry(id)
 	if err != nil {
 		if err.IsServerErr == true {
 			toast := entity_public.GetErrorToast("Houve um erro interno ao buscar a entrada :(", "")
-			return entity_public.Entry{}, &toast
+			return nil, &toast
 		}
 		toast := entity_public.GetWarningToast(err.Message, "")
-		return entity_public.Entry{}, &toast
+		return nil, &toast
 	}
-	return entry, nil
+	return &entry, nil
+}
+
+func GetEntryPdf(id uint32) (*entity_public.EntryPdf, *entity_public.Toast) {
+	eModel := entry_model.GetEntryModel()
+
+	entry, err := eModel.GetEntryPdf(id)
+	if err != nil {
+		if err.IsServerErr == true {
+			toast := entity_public.GetErrorToast("Houve um erro interno ao buscar a entrada :(", "")
+			return nil, &toast
+		}
+		toast := entity_public.GetWarningToast(err.Message, "")
+		return nil, &toast
+	}
+	return &entry, nil
 }
 
 func PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public.Toast) {

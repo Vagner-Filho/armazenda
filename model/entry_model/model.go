@@ -118,6 +118,31 @@ func (em *entryModel) GetEntry(id uint32) (entity_public.Entry, *model_error.Mod
 	return entry, nil
 }
 
+func (em *entryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_error.ModelError) {
+	rows, queryErr := em.conn.Query(
+		context.Background(),
+		`SELECT e.id, c.name AS safra, e.vehicle, e.grossweight, e.tare, e.netweight, ea.humidity, ea.damage, ea.impurity, e.arrivaldate, fa.inscricao_estadual, p.name AS produto
+		FROM entry e
+		LEFT JOIN entry_analysis ea ON ea.entryid = e.id
+		JOIN field f ON f.id = e.field
+		JOIN crop c ON c.id = e.crop
+		JOIN product p ON p.id = c.product
+		JOIN farm fa ON fa.id = e.farm
+	 	WHERE e.id = @id`,
+		pgx.NamedArgs{"id": id},
+	)
+
+	if queryErr != nil {
+		return entity_public.EntryPdf{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	entry, collectErr := pgx.CollectExactlyOneRow(rows, pgx.RowToStructByPos[entity_public.EntryPdf])
+	if collectErr != nil {
+		return entity_public.EntryPdf{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+	return entry, nil
+}
+
 func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
 	row, queryErr := em.conn.Query(
 		context.Background(),

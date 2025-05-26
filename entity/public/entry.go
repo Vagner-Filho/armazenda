@@ -115,3 +115,16 @@ func (ef EntryFilter) GetFilters(availableFilters filterCollection) filterCollec
 	}
 	return userFilters
 }
+
+type EntryPdf struct {
+	Id           uint32
+	Safra        string
+	VehiclePlate string
+	CargoWeight
+	Humidity          *float32
+	Damage            *float32
+	Impurity          *float32
+	ArrivalDate       time.Time `time_format:"2006-01-02T15:04"`
+	InscricaoEstadual string
+	Produto           string
+}

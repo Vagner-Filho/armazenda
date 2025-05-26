@@ -1,0 +1,124 @@
+{{ block "entry-pdf" . }}
+<div class="flex flex-col">
+  <div class="text-xl font-bold text-center" style="margin-bottom: 12px;">
+    Romaneio de Entrada
+  </div>
+  <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+    <div class="flex flex-col" style="width: 50%;">
+      <div class="font-light" style="color: #7a7b87">
+        Número do romaneio
+      </div>
+      <div class="">
+        {{ .Id }}
+      </div>
+    </div>
+    <div class="flex flex-col" style="width: 50%;">
+      <div class="font-light" style="color: #7a7b87">
+        Data de emissão
+      </div>
+      <div class="">
+        {{ .ArrivalDate }}
+      </div>
+    </div>
+  </div>
+  <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+    <div class="flex flex-col" style="width: 50%;">
+      <div class="font-light" style="color: #7a7b87">
+        Inscrição Estadual
+      </div>
+      <div class="">
+        {{ .InscricaoEstadual }}
+      </div>
+    </div>
+    <div class="flex flex-col" style="width: 50%;">
+      <div class="font-light" style="color: #7a7b87">
+        Safra
+      </div>
+      <div class="">
+        {{ .Safra }}
+      </div>
+    </div>
+  </div>
+  <div style="text-align: left; font-size: 0.85rem; width: 100%; padding-top: 10px; font-weight: bold;">
+    VEÍCULO
+  </div>
+  <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+    <div class="flex flex-col" style="width: 50%;">
+      <div class="font-light" style="color: #7a7b87">
+        Placa
+      </div>
+      <div class="">
+        {{ .VehiclePlate }}
+      </div>
+    </div>
+  </div>
+  <div style="text-align: left; font-size: 0.85rem; width: 100%; padding-top: 10px; font-weight: bold;">
+    CARGA
+  </div>
+  <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+    <div class="flex flex-col" style="width: 50%;">
+      <div class="font-light" style="color: #7a7b87">
+        Peso Bruto
+      </div>
+      <div class="">
+        {{ .GrossWeight }}
+      </div>
+    </div>
+    <div class="flex flex-col" style="width: 50%;">
+      <div class="font-light" style="color: #7a7b87">
+        Tara
+      </div>
+      <div class="">
+        {{ .Tare }}
+      </div>
+    </div>
+  </div>
+  <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+    <div class="flex flex-col" style="width: 50%;">
+      <div class="font-light" style="color: #7a7b87">
+        Produto
+      </div>
+      <div class="">
+        {{ .Produto }}
+      </div>
+    </div>
+    <div class="flex flex-col" style="width: 50%;">
+      <div class="font-light" style="color: #7a7b87">
+        Peso Líquido
+      </div>
+      <div class="">
+        {{ .NetWeight }}
+      </div>
+    </div>
+  </div>
+  <div style="text-align: left; font-size: 0.85rem; width: 100%; padding-top: 10px; font-weight: bold;">
+    QUALIDADE
+  </div>
+  <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+    <div class="flex flex-col" style="width: 33%;">
+      <div class="font-light" style="color: #7a7b87">
+        Umidade
+      </div>
+      <div class="">
+        {{ .Humidity }}%
+      </div>
+    </div>
+    <div class="flex flex-col" style="width: 33%;">
+      <div class="font-light" style="color: #7a7b87">
+        Avariado
+      </div>
+      <div class="">
+        {{ .Damage }}%
+      </div>
+    </div>
+    <div class="flex flex-col" style="width: 33%;">
+      <div class="font-light" style="color: #7a7b87">
+        Impureza
+      </div>
+      <div class="">
+        {{ .Impurity }}%
+      </div>
+    </div>
+  </div>
+</div>
+{{ end }}
