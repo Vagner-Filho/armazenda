@@ -87,3 +87,14 @@ func (df DepartureFilter) GetFilters(availableFilters departureFilterCollection)
 	}
 	return userFilters
 }
+
+type DeparturePdf struct {
+	Id           uint32
+	Safra        string
+	VehiclePlate string
+	CargoWeight
+	DepartureDate     time.Time `time_format:"2006-01-02T15:04"`
+	InscricaoEstadual string
+	Produto           string
+	BuyerName         string
+}

@@ -1,10 +1,10 @@
 /**
- * fetches an entry and generates a pdf with the received entry html.
+ * fetches a departure and generates a pdf with the received html departure.
  * if the session cookie is not valid, redirects user to loign
- * @param {HTMLElement} element - The element that contains the entry id as its id
+ * @param {HTMLElement} element - The element that contains the departure id as its id
  */
-function getEntryPdf(element) {
-	fetch(`entry/pdf/${element.id}`)
+function getDeparturePdf(element) {
+	fetch(`departure/pdf/${element.id}`)
 		.then((res) => {
 			if (res.status == 401) {
 				const ev = new CustomEvent("toast", { bubbles: true, detail: { Message: "Sua sessão expirou. Você será redirecionado ao login", Hint: "", Type: 1 } })
@@ -17,7 +17,7 @@ function getEntryPdf(element) {
 					.then((htmlText) => {
 						const pdfOptions = {
 							margin: 4,
-							filename: `romaneio_entrada_${element.id}`,
+							filename: `romaneio_saida_${element.id}`,
 						}
 						window.html2pdf()
 							.set(pdfOptions)
@@ -28,4 +28,4 @@ function getEntryPdf(element) {
 		})
 }
 
-window.getEntryPdf = getEntryPdf;
+window.getDeparturePdf = getDeparturePdf;

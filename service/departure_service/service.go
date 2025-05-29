@@ -66,3 +66,18 @@ func DeleteDeparture(id uint32) *entity_public.Toast {
 	toast := entity_public.GetSuccessToast("Saída deletada", "")
 	return &toast
 }
+
+func GetDeparturePdf(id uint32) (*entity_public.DeparturePdf, *entity_public.Toast) {
+	eModel := departure_model.GetDepartureModel()
+
+	departure, err := eModel.GetDeparturePdf(id)
+	if err != nil {
+		if err.IsServerErr == true {
+			toast := entity_public.GetErrorToast("Houve um erro interno ao buscar a entrada :(", "")
+			return nil, &toast
+		}
+		toast := entity_public.GetWarningToast(err.Message, "")
+		return nil, &toast
+	}
+	return &departure, nil
+}

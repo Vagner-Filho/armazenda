@@ -174,3 +174,28 @@ func (dm *departureModel) DeleteDeparture(id uint32) *model_error.ModelError {
 
 	return nil
 }
+
+func (dm *departureModel) GetDeparturePdf(id uint32) (entity_public.DeparturePdf, *model_error.ModelError) {
+	rows, queryErr := dm.conn.Query(
+		context.Background(),
+		`SELECT d.id, c.name AS safra, d.vehicle, d.grossweight, d.tare, d.netweight, d.departuredate, fa.inscricao_estadual, p.name AS produto, b.name
+		FROM departure d
+		JOIN crop c ON c.id = d.crop
+		JOIN product p ON p.id = c.product
+		JOIN farm fa ON fa.id = d.farm
+		JOIN departurebuyer db ON db.departureid = d.id
+		JOIN (SELECT bc.buyerid, coalesce(bc.fantasyname, bc.companyname) AS name FROM buyercompany bc UNION SELECT bp.buyerid, bp.name FROM buyerperson bp) b ON b.buyerid = db.buyerid
+	 	WHERE d.id = @id;`,
+		pgx.NamedArgs{"id": id},
+	)
+
+	if queryErr != nil {
+		return entity_public.DeparturePdf{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	departure, collectErr := pgx.CollectExactlyOneRow(rows, pgx.RowToStructByPos[entity_public.DeparturePdf])
+	if collectErr != nil {
+		return entity_public.DeparturePdf{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+	return departure, nil
+}

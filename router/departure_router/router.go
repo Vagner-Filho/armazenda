@@ -144,6 +144,28 @@ func filterDepartures(c *gin.Context) {
 	c.HTML(http.StatusOK, "departure-table", departures)
 }
 
+func getDeparturePdf(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+
+	departurePdf, t := departure_service.GetDeparturePdf(uint32(id))
+	if err != nil {
+		c.Header("HX-Trigger", string(t.ToJson()))
+		return
+	}
+	if departurePdf == nil {
+		notFoundToast := entity_public.GetInfoToast("Romaneio de saída não encontrado", "")
+		c.Header("HX-Trigger", string(notFoundToast.ToJson()))
+		c.Status(http.StatusNoContent)
+		return
+	}
+	c.HTML(200, "departure-pdf", departurePdf)
+}
+
 func UseDepartureRoutes(router *gin.Engine) {
 	router.POST("/departure/filter", filterDepartures)
 	router.GET("/departure/list", getDepartureContent)
@@ -152,4 +174,5 @@ func UseDepartureRoutes(router *gin.Engine) {
 	router.POST("/departure", addDeparture)
 	router.PUT("/departure/:id", putDeparture)
 	router.DELETE("/departure/:id", deleteDeparture)
+	router.GET("/departure/pdf/:id", getDeparturePdf)
 }
