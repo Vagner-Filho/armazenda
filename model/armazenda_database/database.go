@@ -102,6 +102,28 @@ func initVehicle(c *pgx.Conn) {
 	handleStmtExec(c, stmt, err, "create vehicle")
 }
 
+func initPreEntry(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init entry draft table", `
+		CREATE TABLE IF NOT EXISTS entry_draft (
+			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			field SMALLINT,
+			crop SMALLINT,
+			vehicle VARCHAR(255),
+			grossWeight NUMERIC(10, 3),
+			tare NUMERIC(10, 3),
+			netWeight NUMERIC(10, 3),
+			arrivalDate TIMESTAMP WITHOUT TIME ZONE,
+			farm INTEGER NOT NULL,
+			startedAt TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+			FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
+			FOREIGN KEY (field) REFERENCES field(id),
+			FOREIGN KEY (crop) REFERENCES crop(id),
+			FOREIGN KEY (farm) REFERENCES farm(id)
+		)
+	`)
+	handleStmtExec(c, stmt, err, "create entry_draft")
+}
+
 func initEntry(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init entry table", `
 	CREATE TABLE IF NOT EXISTS entry (
@@ -114,6 +136,7 @@ func initEntry(c *pgx.Conn) {
 		netWeight NUMERIC(10, 3) NOT NULL,
 		arrivalDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 		farm INTEGER NOT NULL,
+		finishedAt TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 		FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
 		FOREIGN KEY (field) REFERENCES field(id),
 		FOREIGN KEY (crop) REFERENCES crop(id),
@@ -535,6 +558,7 @@ func InitDb(c *pgx.Conn) {
 	initVehicle(c)
 	initField(c)
 	initEntry(c)
+	initPreEntry(c)
 	initEntryAnalysis(c)
 	initDeparture(c)
 	initBuyer(c)

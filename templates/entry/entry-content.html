@@ -1,19 +1,25 @@
 {{ block "entry-content" . }}
-    <div class="{{ if .NoContent }} hidden {{ end }}" id="entry-content">
-        <div>
-            {{ template "entry-filters" .Filters }}
-        </div>
-        <div class="w-full flex items-center justify-end py-1">
-            <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/entry/form" hx-target="body" hx-swap="beforeend">
-                <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
-                Nova Entrada
-            </button>
-        </div>
-        <main id="list" class="overflow-x-auto">
-            {{ template "entry-table" .Entries }}
-        </main>
+<div class="{{ if .NoContent }} hidden {{ end }}" id="entry-content">
+    <div>
+        {{ template "entry-filters" .Filters }}
     </div>
-    {{ if .NoContent }}
-        {{ template "no-entry" }}
-    {{ end }}
+    <div class="w-full flex items-center justify-end py-1">
+        <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/entry/draft/form"
+            hx-target="body" hx-swap="beforeend">
+            <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
+            Novo Rascunho
+        </button>
+        <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/entry/form" hx-target="body"
+            hx-swap="beforeend">
+            <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
+            Nova Entrada
+        </button>
+    </div>
+    <main id="list" class="overflow-x-auto">
+        {{ template "entry-table" .Entries }}
+    </main>
+</div>
+{{ if .NoContent }}
+{{ template "no-entry" }}
+{{ end }}
 {{ end }}
