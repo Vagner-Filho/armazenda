@@ -128,3 +128,13 @@ type EntryPdf struct {
 	InscricaoEstadual string
 	Produto           string
 }
+
+type EntryDraft struct {
+	Id      uint32 `form:"id"`
+	Field   uint16 `form:"field" binding:"required"`
+	Crop    uint8  `form:"crop" binding:"required"`
+	Vehicle string `form:"vehiclePlate"`
+	CargoWeight
+	ArrivalDate time.Time `form:"arrivalDate" binding:"required" time_format:"2006-01-02T15:04"`
+	Farm        uint32    `form:"farm" binding:"gte=0"`
+}

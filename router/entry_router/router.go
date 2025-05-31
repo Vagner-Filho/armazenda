@@ -51,8 +51,8 @@ func getEntryForm(c *gin.Context) {
 	)
 }
 
-func addDraftEntry(c *gin.Context) {
-	var newEntry entity_public.Entry
+func addEntryDraft(c *gin.Context) {
+	var newEntry entity_public.EntryDraft
 	err := c.Bind(&newEntry)
 	if err != nil {
 		toast := entity_public.GetWarningToast(err.Error(), "")
@@ -67,10 +67,12 @@ func addDraftEntry(c *gin.Context) {
 	c.Header("HX-Trigger", string(toast.ToJson()))
 
 	if toast.Type == entity_public.WarningToast {
+		c.Header("HX-Trigger", string(toast.ToJson()))
 		c.Status(http.StatusBadRequest)
 		return
 	}
 	if toast.Type == entity_public.ErrorToast {
+		c.Header("HX-Trigger", string(toast.ToJson()))
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -207,6 +209,14 @@ func getEntryPdf(c *gin.Context) {
 	c.HTML(200, "entry-pdf", entryPdf)
 }
 
+func getEntryDraftForm(c *gin.Context) {
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	formMembers, _ := entry_view.GetEntryForm(farm)
+
+	c.HTML(http.StatusOK, "entry-draft-form", formMembers)
+}
+
 func UseEntryRoutes(router *gin.Engine) {
 	router.GET("/romaneio", getRomaneioPage)
 	router.GET("/entry/list", getEntryContent)
@@ -215,7 +225,7 @@ func UseEntryRoutes(router *gin.Engine) {
 	router.GET("/entry/draft/form", getEntryDraftForm)
 	router.GET("/entry/form/:id", getEntryForm)
 	router.POST("/entry", addEntry)
-	router.POST("/entry/draft", addDraftEntry)
+	router.POST("/entry/draft", addEntryDraft)
 	router.PUT("/entry/:id", putEntry)
 	router.DELETE("/entry/:id", deleteEntry)
 	router.POST("/entry/filter", filterEntries)

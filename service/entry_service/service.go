@@ -5,7 +5,7 @@ import (
 	"armazenda/model/entry_model"
 )
 
-func AddEntryDraft(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public.Toast) {
+func AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntry, entity_public.Toast) {
 	eModel := entry_model.GetEntryModel()
 
 	if ge.NetWeight.IsZero() == true {

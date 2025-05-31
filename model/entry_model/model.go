@@ -65,7 +65,7 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32) ([]entity_public.Disp
 	return entries, nil
 }
 
-func (em *entryModel) AddEntryDraft(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
+func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntry, *model_error.ModelError) {
 	row, queryErr := em.conn.Query(context.Background(), `
 		INSERT INTO entry_draft (field, crop, vehicle, grossweight, tare, netweight, arrivaldate, farm)
 		VALUES (@field, @crop, @vehicle, @grossWeight, @tare, @netWeight, @arrivalDate, @farm)
