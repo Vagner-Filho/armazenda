@@ -15,14 +15,18 @@ function getEntryPdf(element) {
 			} else {
 				res.text()
 					.then((htmlText) => {
-						const pdfOptions = {
-							margin: 4,
-							filename: `romaneio_entrada_${element.id}`,
+						const parser = new DOMParser();
+						const html = parser.parseFromString(htmlText, "text/html")
+						document.body.append(html.body.firstElementChild)
+						function removePdf() {
+							const pdf = document.querySelector(`#entry-pdf`)
+							if (pdf) {
+								pdf.remove()
+							}
 						}
-						window.html2pdf()
-							.set(pdfOptions)
-							.from(htmlText)
-							.save()
+						window.addEventListener('afterprint', removePdf)
+						window.print()
+						window.removeEventListener('afterprint', removePdf)
 					})
 			}
 		})

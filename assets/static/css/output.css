@@ -1168,6 +1168,11 @@
       line-height: var(--tw-leading, var(--text-xl--line-height));
     }
   }
+  .print\:flex {
+    @media print {
+      display: flex;
+    }
+  }
 }
 @layer base {
   label {
