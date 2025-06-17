@@ -51,8 +51,16 @@ func AddDeparture(bd entity_public.Departure) (entity_public.DisplayDeparture, *
 	return departure, &toast
 }
 
-func PutDeparture(d entity_public.Departure) (entity_public.Departure, bool) {
-	return departure_model.PutDeparture(d)
+func PutDeparture(d entity_public.Departure) (entity_public.DisplayDeparture, entity_public.Toast) {
+	dModel := departure_model.GetDepartureModel()
+	departure, error := dModel.PutDeparture(d)
+	if error != nil {
+		if error.IsServerErr == true {
+			return entity_public.DisplayDeparture{}, entity_public.GetErrorToast("Houve um erro interno ao editar a saída", "")
+		}
+		return entity_public.DisplayDeparture{}, entity_public.GetWarningToast(error.Message, "")
+	}
+	return departure, entity_public.GetSuccessToast("Saída editada", "")
 }
 
 func DeleteDeparture(id uint32) *entity_public.Toast {

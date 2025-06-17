@@ -97,10 +97,8 @@ func putDeparture(c *gin.Context) {
 
 	df.Id = uint32(converted)
 
-	updatedDeparture, notFound := departure_service.PutDeparture(df)
-	if notFound {
-		// handle not found
-	}
+	updatedDeparture, toast := departure_service.PutDeparture(df)
+	c.Header("HX-Trigger", string(toast.ToJson()))
 
 	c.HTML(http.StatusOK, "departure-list-item", updatedDeparture)
 }

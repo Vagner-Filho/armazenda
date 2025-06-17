@@ -550,6 +550,38 @@ func initFarm(c *pgx.Conn) {
 	handleStmtExec(c, stmt, err, "init farm table")
 }
 
+func initUpdateDepartureProc(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init update departure stmt", `
+		CREATE OR REPLACE FUNCTION update_get_departure(
+			IN crop SMALLINT,
+			IN buyerId INTEGER,
+			INOUT departureId INTEGER,
+			OUT productName VARCHAR(255),
+			INOUT vehicle VARCHAR(255),
+			INOUT departureDate TIMESTAMP WITHOUT TIME ZONE,
+			OUT farm INTEGER,
+			IN grossWeight NUMERIC,
+			IN tare NUMERIC,
+			INOUT netWeight NUMERIC
+		)
+		LANGUAGE plpgsql AS $$
+		BEGIN
+			UPDATE departure d SET
+				departureDate = departureDate,
+				vehicle = vehicle,
+				crop = crop,
+				grossweight = grossWeight,
+				tare = tare,
+				netweight = netWeight
+			WHERE d.id = departureId;
+
+			SELECT * FROM departure WHERE id = departureId;
+		END;
+		$$;
+	`)
+	handleStmtExec(c, stmt, err, "init update departure proc")
+}
+
 func InitDb(c *pgx.Conn) {
 	initFarm(c)
 	initUser(c)
@@ -577,6 +609,7 @@ func InitDb(c *pgx.Conn) {
 	initAddBuyerPerson(c)
 	initAddBuyerCompany(c)
 	initAddUserAndFarm(c)
+	initUpdateDepartureProc(c)
 }
 
 var dbc *pgx.Conn

@@ -15,14 +15,18 @@ function getDeparturePdf(element) {
 			} else {
 				res.text()
 					.then((htmlText) => {
-						const pdfOptions = {
-							margin: 4,
-							filename: `romaneio_saida_${element.id}`,
+						const parser = new DOMParser();
+						const html = parser.parseFromString(htmlText, "text/html")
+						document.body.append(html.body.firstElementChild)
+						function removePdf() {
+							const pdf = document.querySelector(`#departure-pdf`)
+							if (pdf) {
+								pdf.remove()
+							}
 						}
-						window.html2pdf()
-							.set(pdfOptions)
-							.from(htmlText)
-							.save()
+						window.addEventListener('afterprint', removePdf)
+						window.print()
+						window.removeEventListener('afterprint', removePdf)
 					})
 			}
 		})

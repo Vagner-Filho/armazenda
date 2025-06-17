@@ -158,8 +158,31 @@ func (dm *departureModel) AddDeparture(d entity_public.Departure) (entity_public
 	return departure, nil
 }
 
-func PutDeparture(d entity_public.Departure) (entity_public.Departure, bool) {
-	return d, false
+func (dm *departureModel) PutDeparture(d entity_public.Departure) (entity_public.DisplayDeparture, *model_error.ModelError) {
+	row, queryErr := dm.conn.Query(
+		context.Background(),
+		`SELECT * FROM update_get_departure(@crop, @buyerId, @departureId, @vehicle, @departureDate, @grossWeight, @tare, @netWeight)`,
+		pgx.NamedArgs{
+			"departureId":   d.Id,
+			"crop":          d.Crop,
+			"vehicle":       d.VehiclePlate,
+			"grossWeight":   d.GrossWeight,
+			"tare":          d.Tare,
+			"netWeight":     d.NetWeight,
+			"buyerId":       d.Buyer,
+			"departureDate": d.DepartureDate,
+		})
+	if queryErr != nil {
+		model_error.Logger(dm.conn, queryErr.Error())
+		return entity_public.DisplayDeparture{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	departure, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.DisplayDeparture])
+	if collectErr != nil {
+		model_error.Logger(dm.conn, collectErr.Error())
+		return entity_public.DisplayDeparture{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+	return departure, nil
 }
 
 func (dm *departureModel) DeleteDeparture(id uint32) *model_error.ModelError {

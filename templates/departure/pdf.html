@@ -1,5 +1,5 @@
 {{ block "departure-pdf" . }}
-<div class="flex flex-col">
+<div class="hidden flex-col print:flex" id="departure-pdf">
     <div class="text-xl font-bold text-center" style="margin-bottom: 12px;">
         Romaneio de Saída
     </div>
@@ -123,5 +123,14 @@
       </div>
     </div>
     </div>-->
+    <style>
+        @media print {
+
+            body section,
+            body nav {
+                display: none;
+            }
+        }
+    </style>
 </div>
 {{ end }}
