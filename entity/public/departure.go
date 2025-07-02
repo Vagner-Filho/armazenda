@@ -57,6 +57,7 @@ type DisplayDeparture struct {
 	VehiclePlate  string
 	DepartureDate time.Time
 	NetWeight     float64
+	Farm          uint32
 }
 
 type DepartureFilter struct {

@@ -1,39 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/public/assets/static/css/output.css" rel="stylesheet">
-    <title>Romaneio</title>
-    <script src="https://unpkg.com/htmx.org@2.0.0" integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
-    <script type="module" src="/public/assets/js/toast.js"></script>
-    <script type="module" src="/public/assets/js/getEntryPdf.js"></script>
-    <script type="module" src="/public/assets/js/getDeparturePdf.js"></script>
-  </head>
-  <body>
-    {{ template "navbar" }}
-    <section class="mt-20 px-2 max-w-screen-xl mx-auto">
-      <header>
-        <h1 class="text-center text-xl font-semibold">
-          CONTROLE DE ROMANEIO
-        </h1>
-      </header>
-      <div class="flex items-center justify-center w-full py-2">
-        <button type="button" id="show-entry-manifest" class="h-8 px-2 text-base rounded-md rounded-r-none ring-1 ring-green-400 text-white bg-green-400 transition-colors duration-300" hx-trigger="click" hx-get="/entry/list" hx-target="#content-container" onclick="handleShowDeparture('button#show-entry-manifest', 'button#show-departure-manifest')">
-          Entrada
-        </button>
-        <div class="h-8 w-[2px] bg-green-400">
-        </div>
-        <button type="button" id="show-departure-manifest" class="h-8 px-2 text-base rounded-md rounded-l-none ring-1 ring-green-400 text-green-400 transition-colors duration-300" hx-trigger="click" hx-get="/departure/list" hx-target="#content-container" onclick="handleShowDeparture('button#show-departure-manifest', 'button#show-entry-manifest')">
-          Saída
-        </button>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="/public/assets/static/css/output.css" rel="stylesheet">
+  <title>Romaneio</title>
+  <script src="https://unpkg.com/htmx.org@2.0.0"
+    integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
+  <script type="module" src="/public/assets/js/toast.js"></script>
+  <script type="module" src="/public/assets/js/getEntryPdf.js"></script>
+  <script type="module" src="/public/assets/js/getDeparturePdf.js"></script>
+</head>
+
+<body class="bg-sky-50">
+  {{ template "navbar" }}
+  <section class="mt-20 px-2 max-w-screen-xl mx-auto">
+    <header>
+      <h1 class="text-center text-xl font-semibold">
+        CONTROLE DE ROMANEIO
+      </h1>
+    </header>
+    <div class="flex items-center justify-center w-full py-2">
+      <button type="button" id="show-entry-manifest"
+        class="h-8 px-2 text-base rounded-md rounded-r-none ring-1 ring-green-400 text-white bg-green-400 transition-colors duration-300"
+        hx-trigger="click" hx-get="/entry/list" hx-target="#content-container"
+        onclick="handleShowDeparture('button#show-entry-manifest', 'button#show-departure-manifest')">
+        Entrada
+      </button>
+      <div class="h-8 w-[2px] bg-green-400">
       </div>
-      <div id="content-container">
-        {{ template "entry-content" . }}
-      </div>
-    </section>
-  </body>
+      <button type="button" id="show-departure-manifest"
+        class="h-8 px-2 text-base rounded-md rounded-l-none ring-1 ring-green-400 text-green-400 transition-colors duration-300"
+        hx-trigger="click" hx-get="/departure/list" hx-target="#content-container"
+        onclick="handleShowDeparture('button#show-departure-manifest', 'button#show-entry-manifest')">
+        Saída
+      </button>
+    </div>
+    <div id="content-container">
+      {{ template "entry-content" . }}
+    </div>
+  </section>
+</body>
+
 </html>
 <script type="module">
   function handleShowDeparture(selectorAdd, selectorRemove) {

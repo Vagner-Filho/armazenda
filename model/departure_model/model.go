@@ -94,7 +94,7 @@ func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter) ([]
 
 func (dm *departureModel) GetDisplayDepartures(farm uint32) ([]entity_public.DisplayDeparture, *model_error.ModelError) {
 	rows, queryErr := dm.conn.Query(context.Background(), `
-		SELECT d.id, p.name, d.vehicle, d.departureDate, d.netWeight
+		SELECT d.id, p.name, d.vehicle, d.departureDate, d.netWeight, d.farm
 		FROM departure d
 		JOIN crop c ON d.crop = c.id
 		JOIN product p ON c.product = p.id

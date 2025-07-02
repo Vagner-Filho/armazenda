@@ -17,25 +17,35 @@
   </td>
   <td>
     <div class="flex items-center justify-center gap-2 text-green-500">
-      <button type="button" id="{{ .Id }}" onclick="getDeparturePdf(this)">
+      <button type="button" id="{{ .Id }}" onclick="getDeparturePdf(this)" title="PDF de Saída">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
           <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1">
-            <path stroke-width="1.5" d="M7.792 21.25h8.416a3.5 3.5 0 0 0 3.5-3.5v-5.53a3.5 3.5 0 0 0-1.024-2.475l-5.969-5.97A3.5 3.5 0 0 0 10.24 2.75H7.792a3.5 3.5 0 0 0-3.5 3.5v11.5a3.5 3.5 0 0 0 3.5 3.5"/>
-            <path stroke-width="1.5" d="M11.688 3.11v5.66a2 2 0 0 0 2 2h5.662"/>
-            <path d="M7.25 16.5v-1m0 0v-2h1a1 1 0 0 1 1 1v0a1 1 0 0 1-1 1zm4 1v-3h.5a1.5 1.5 0 0 1 0 3zm4 0v-1.25m1.5-1.75h-1.5v1.75m0 0h1.5"/>
+            <path stroke-width="1.5"
+              d="M7.792 21.25h8.416a3.5 3.5 0 0 0 3.5-3.5v-5.53a3.5 3.5 0 0 0-1.024-2.475l-5.969-5.97A3.5 3.5 0 0 0 10.24 2.75H7.792a3.5 3.5 0 0 0-3.5 3.5v11.5a3.5 3.5 0 0 0 3.5 3.5" />
+            <path stroke-width="1.5" d="M11.688 3.11v5.66a2 2 0 0 0 2 2h5.662" />
+            <path
+              d="M7.25 16.5v-1m0 0v-2h1a1 1 0 0 1 1 1v0a1 1 0 0 1-1 1zm4 1v-3h.5a1.5 1.5 0 0 1 0 3zm4 0v-1.25m1.5-1.75h-1.5v1.75m0 0h1.5" />
           </g>
         </svg>
       </button>
       <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-      <button type="button" hx-get="/departure/form/{{ .Id }}" hx-target="body" hx-swap="beforeend">
-        <iconify-icon icon="la:pen"></iconify-icon>
+      <button type="button" hx-get="/departure/form/{{ .Id }}" hx-target="body" hx-swap="beforeend"
+        title="Editar Saída">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32">
+          <path fill="currentColor"
+            d="M23.906 3.969A4.1 4.1 0 0 0 21 5.188L5.187 21l-.062.313l-1.094 5.5l-.312 1.468l1.469-.312l5.5-1.094l.312-.063L26.813 11a4.075 4.075 0 0 0 0-5.813a4.1 4.1 0 0 0-2.907-1.218m0 1.906c.504 0 1.012.23 1.5.719c.973.972.973 2.027 0 3l-.718.687l-2.97-2.969l.688-.718c.489-.489.996-.719 1.5-.719m-3.593 2.844l2.968 2.969L11.188 23.78a6.8 6.8 0 0 0-2.97-2.968zM6.938 22.438a4.73 4.73 0 0 1 2.625 2.625l-3.282.656z" />
+        </svg>
       </button>
-      <button type="button" hx-trigger="confirmed" hx-delete="/departure/{{ .Id }}" hx-target="#departure-{{ .Id }}" hx-swap="delete" onClick="Swal.fire({title: 'Excluir', text: 'Deseja excluir o romaneio de saída {{ .Id }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
+      <button type="button" hx-trigger="confirmed" hx-delete="/departure/{{ .Id }}" hx-target="#departure-{{ .Id }}"
+        title="Excluir Saída" hx-swap="delete" onClick="Swal.fire({title: 'Excluir', text: 'Deseja excluir o romaneio de saída {{ .Id }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
                     if (result.isConfirmed) {
                         htmx.trigger(this, 'confirmed');  
                     } 
                 })">
-        <iconify-icon icon="la:trash-alt-solid"></iconify-icon>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32">
+          <path fill="currentColor"
+            d="M15 4c-.523 0-1.059.184-1.438.563C13.184 4.94 13 5.476 13 6v1H7v2h1v16c0 1.645 1.355 3 3 3h12c1.645 0 3-1.355 3-3V9h1V7h-6V6c0-.523-.184-1.059-.563-1.438C20.06 4.184 19.523 4 19 4zm0 2h4v1h-4zm-5 3h14v16c0 .555-.445 1-1 1H11c-.555 0-1-.445-1-1zm2 3v11h2V12zm4 0v11h2V12zm4 0v11h2V12z" />
+        </svg>
       </button>
     </div>
   </td>

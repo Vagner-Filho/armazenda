@@ -77,6 +77,7 @@ func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.
 		"tare":        ge.Tare,
 		"netWeight":   ge.NetWeight,
 		"arrivalDate": ge.ArrivalDate,
+		"farm":        ge.Farm,
 	})
 
 	if queryErr != nil {

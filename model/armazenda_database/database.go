@@ -553,29 +553,29 @@ func initFarm(c *pgx.Conn) {
 func initUpdateDepartureProc(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init update departure stmt", `
 		CREATE OR REPLACE FUNCTION update_get_departure(
-			IN crop SMALLINT,
-			IN buyerId INTEGER,
+			IN d_crop SMALLINT,
+			IN d_buyerId INTEGER,
 			INOUT departureId INTEGER,
 			OUT productName VARCHAR(255),
-			INOUT vehicle VARCHAR(255),
-			INOUT departureDate TIMESTAMP WITHOUT TIME ZONE,
-			OUT farm INTEGER,
-			IN grossWeight NUMERIC,
-			IN tare NUMERIC,
-			INOUT netWeight NUMERIC
+			INOUT d_vehicle VARCHAR(255),
+			INOUT departure_Date TIMESTAMP WITHOUT TIME ZONE,
+			IN d_grossWeight NUMERIC,
+			IN d_tare NUMERIC,
+			INOUT d_netWeight NUMERIC,
+			OUT farm INTEGER
 		)
 		LANGUAGE plpgsql AS $$
 		BEGIN
 			UPDATE departure d SET
-				departureDate = departureDate,
-				vehicle = vehicle,
-				crop = crop,
-				grossweight = grossWeight,
-				tare = tare,
-				netweight = netWeight
+				departureDate = departure_Date,
+				vehicle = d_vehicle,
+				crop = d_crop,
+				grossweight = d_grossWeight,
+				tare = d_tare,
+				netweight = d_netWeight
 			WHERE d.id = departureId;
 
-			SELECT * FROM departure WHERE id = departureId;
+			SELECT p.name, d.farm INTO productName, farm FROM departure d JOIN crop c ON d.crop = c.id JOIN product p ON c.product = p.id WHERE d.id = departureId;
 		END;
 		$$;
 	`)
