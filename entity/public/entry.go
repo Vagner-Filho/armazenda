@@ -3,6 +3,8 @@ package entity_public
 import (
 	"reflect"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type DisplayEntry struct {
@@ -130,11 +132,18 @@ type EntryPdf struct {
 }
 
 type EntryDraft struct {
-	Id      uint32 `form:"id"`
-	Field   uint16 `form:"field" binding:"required"`
-	Crop    uint8  `form:"crop" binding:"required"`
-	Vehicle string `form:"vehiclePlate"`
-	CargoWeight
-	ArrivalDate time.Time `form:"arrivalDate" binding:"required" time_format:"2006-01-02T15:04"`
-	Farm        uint32    `form:"farm" binding:"gte=0"`
+	Id      uint32          `form:"id"`
+	Field   uint16          `form:"field" binding:"required"`
+	Crop    uint8           `form:"crop" binding:"required"`
+	Vehicle string          `form:"vehiclePlate"`
+	Tare    decimal.Decimal `form:"tare" binding:"gte=0"`
+	Farm    uint32          `form:"farm" binding:"gte=0"`
+}
+
+type DisplayEntryDraft struct {
+	Id      uint32          `form:"id"`
+	Field   string          `form:"field" binding:"required"`
+	Crop    string          `form:"crop" binding:"required"`
+	Vehicle string          `form:"vehiclePlate"`
+	Tare    decimal.Decimal `form:"tare" binding:"gte=0"`
 }

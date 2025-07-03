@@ -65,30 +65,26 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32) ([]entity_public.Disp
 	return entries, nil
 }
 
-func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntry, *model_error.ModelError) {
+func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft, *model_error.ModelError) {
 	row, queryErr := em.conn.Query(context.Background(), `
-		INSERT INTO entry_draft (field, crop, vehicle, grossweight, tare, netweight, arrivaldate, farm)
-		VALUES (@field, @crop, @vehicle, @grossWeight, @tare, @netWeight, @arrivalDate, @farm)
+		SELECT * FROM add_get_entry_draft(@vehicle, @tare, @farm, @field, @crop)
 		`, pgx.NamedArgs{
-		"field":       ge.Field,
-		"crop":        ge.Crop,
-		"vehicle":     ge.Vehicle,
-		"grossWeight": ge.GrossWeight,
-		"tare":        ge.Tare,
-		"netWeight":   ge.NetWeight,
-		"arrivalDate": ge.ArrivalDate,
-		"farm":        ge.Farm,
+		"field":   ge.Field,
+		"crop":    ge.Crop,
+		"vehicle": ge.Vehicle,
+		"tare":    ge.Tare,
+		"farm":    ge.Farm,
 	})
 
 	if queryErr != nil {
 		model_error.Logger(em.conn, queryErr.Error())
-		return entity_public.DisplayEntry{}, &model_error.ModelError{Message: queryErr.Error()}
+		return entity_public.DisplayEntryDraft{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
-	entry, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.DisplayEntry])
+	entry, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.DisplayEntryDraft])
 	if collectErr != nil {
 		model_error.Logger(em.conn, collectErr.Error())
-		return entity_public.DisplayEntry{}, &model_error.ModelError{Message: collectErr.Error()}
+		return entity_public.DisplayEntryDraft{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
 	return entry, nil
 }

@@ -5,21 +5,17 @@ import (
 	"armazenda/model/entry_model"
 )
 
-func AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntry, entity_public.Toast) {
+func AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft, entity_public.Toast) {
 	eModel := entry_model.GetEntryModel()
-
-	if ge.NetWeight.IsZero() == true {
-		ge.NetWeight = ge.CargoWeight.GrossWeight.Sub(ge.Tare)
-	}
 
 	newEntry, addErr := eModel.AddEntryDraft(ge)
 	if addErr != nil {
 		if addErr.IsServerErr == true {
-			return entity_public.DisplayEntry{}, entity_public.GetErrorToast("Houve um erro interno ao adicionar a entrada", "")
+			return entity_public.DisplayEntryDraft{}, entity_public.GetErrorToast("Houve um erro interno ao adicionar o rascunho", "")
 		}
-		return entity_public.DisplayEntry{}, entity_public.GetWarningToast(addErr.Message, "")
+		return entity_public.DisplayEntryDraft{}, entity_public.GetWarningToast(addErr.Message, "")
 	}
-	return newEntry, entity_public.GetSuccessToast("Entrada adicionada", "")
+	return newEntry, entity_public.GetSuccessToast("Rascunho adicionado", "")
 }
 
 func AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public.Toast) {
