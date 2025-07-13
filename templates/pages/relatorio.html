@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/public/assets/static/css/output.css" rel="stylesheet">
+    <title>Relatório</title>
+    <script src="https://unpkg.com/htmx.org@2.0.0" integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
+    <script type="module" src="/public/assets/js/toast.js"></script>
+    <script type="module" src="/public/assets/js/getEntryPdf.js"></script>
+    <script type="module" src="/public/assets/js/getDeparturePdf.js"></script>
+  </head>
+  <body class="bg-sky-50">
+    {{ template "navbar" }}
+    <div class="fixed top-0 left-0 h-dvh w-60 bg-green-400 flex flex-col" role="menu">
+      <a href="/pessoa">
+        Pessoa
+      </a>
+      <a href="/relatorio">
+        Relatório
+      </a>
+    </div>
+    <section class="mt-20 px-2 max-w-screen-xl mx-auto">
+      <div id="filters" class="">
+        <select name="person" id="person-selector" class="appearance-none px-2 peer">
+          <option value="1">
+            Pessoa X
+          </option>
+        </select>
+        {{ template "grain-selector" .Products }}
+      {{ template "vehicle-selector" .Vehicles }}
+      {{ template "field-selector" .Fields }}
+        <div class="flex flex-col-reverse">
+          <input type="datetime-local" name="initialDate" id="initial-date" class="peer" value="{{ .InitialDate }}" required>
+          <label for="initial-date" class="label-peer">
+            Data de Início
+          </label>
+        </div>
+        <div class="flex flex-col-reverse">
+          <input type="datetime-local" name="endDate" id="end-date" class="peer" value="{{ .EndDate }}" required>
+          <label for="end-date" class="label-peer">
+            Data Final
+          </label>
+        </div>
+      </div>
+      <div class="flex flex-col w-full" id="report-table">
+        <div class="w-full flex justify-between bg-slate-200 uppercase text-lg px-2">
+          <div>
+            Romaneio
+          </div>
+          <div>
+            Operação
+          </div>
+          <div>
+            Produto
+          </div>
+          <div>
+            Veículo
+          </div>
+          <div>
+            Peso Líquido
+          </div>
+          <div>
+            Data Operação
+          </div>
+        </div>
+        <div class="flex flex-col w-full">
+          {{ range .Operations }}
+          {{ template "report-list-item" . }}
+          {{ end }}
+        </div>
+      </div>
+      <p>Balanço</p>
+    </section>
+  </body>
+</html>
