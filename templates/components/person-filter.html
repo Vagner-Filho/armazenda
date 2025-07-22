@@ -1,18 +1,18 @@
-{{ block "buyer-filter" . }}
+{{ block "person-filter" . }}
 <div class="w-full sm:max-w-28 lg:max-w-36 flex flex-col-reverse">
-  <select name="buyer" id="buyer-filter" class="w-full text-sm peer">
+  <select name="person" id="person-filter" class="w-full text-sm peer">
     <option value="" selected>
       Nenhum
     </option>
     {{ range . }}
-        {{ template "simple-option" . }}
-        {{ else }}
+    {{ template "simple-option" . }}
+    {{ else }}
     <option value="-1">
       Nenhum comprador encontrado
     </option>
     {{ end }}
   </select>
-  <label for="buyer-filter" class="px-2 text-xs label-peer">
+  <label for="person-filter" class="px-2 text-xs label-peer">
     Comprador
   </label>
 </div>

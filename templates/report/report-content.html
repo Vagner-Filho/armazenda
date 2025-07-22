@@ -1,0 +1,24 @@
+{{ block "report-content" . }}
+<div class="flex flex-col w-full" id="report-content">
+  <div class="flex flex-col w-full">
+    {{ range .Operations }}
+    {{ template "report-list-item" . }}
+    {{ end }}
+  </div>
+  <div class="flex items-center justify-between mr-auto w-1/2">
+    Balanço:
+    <div class="flex items-center gap-2">
+      Entradas:
+      <strong>{{ .EntryTotal }}</strong>
+    </div>
+    <div class="flex items-center gap-2">
+      Saídas:
+      <strong>{{ .DepartureTotal }}</strong>
+    </div>
+    <div class="flex items-center gap-2">
+      Saldo:
+      <strong class="{{ if lt .Balance 0.0 }} text-red-400{{ else }}text-green-400{{ end }}">{{ .Balance }}</strong>
+    </div>
+  </div>
+</div>
+{{ end }}

@@ -1,0 +1,160 @@
+package person_model
+
+import (
+	entity_public "armazenda/entity/public"
+	model_error "armazenda/model/error"
+	"context"
+	"errors"
+	"fmt"
+	"strconv"
+
+	"github.com/jackc/pgx/v5"
+)
+
+type personModel struct {
+	conn *pgx.Conn
+}
+
+var personModelImpl *personModel
+
+func InitPersonModel(conn *pgx.Conn) (*personModel, error) {
+	if conn == nil {
+		return nil, errors.New("conn cant be null")
+	}
+
+	if personModelImpl == nil {
+		personModelImpl = &personModel{
+			conn: conn,
+		}
+	}
+
+	return personModelImpl, nil
+}
+
+func GetpersonModel() *personModel {
+	if personModelImpl == nil {
+		panic("\nperson model hasnt been initialized\n")
+	}
+	return personModelImpl
+}
+
+func (bm *personModel) AddLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
+	row, queryErr := bm.conn.Query(
+		context.Background(),
+		`SELECT * FROM add_get_legal_person(@ie, @cnpj, @fantasyName, @farm, @companyName)`,
+		pgx.NamedArgs{
+			"ie":          bc.InscricaoEstadual,
+			"cnpj":        bc.Cnpj,
+			"fantasyName": bc.FantasyName,
+			"farm":        bc.Person.Farm,
+			"companyName": bc.CompanyName,
+		})
+
+	if queryErr != nil {
+		model_error.Logger(bm.conn, queryErr.Error())
+		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	person, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.PersonDisplay])
+	if collectErr != nil {
+		model_error.Logger(bm.conn, collectErr.Error())
+		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
+	}
+
+	return person, nil
+}
+
+func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
+	row, queryErr := bm.conn.Query(context.Background(), `
+			SELECT * FROM add_get_person_person(@ie, @cpf, @name, @farm)
+		`, pgx.NamedArgs{"ie": bp.InscricaoEstadual, "cpf": bp.Cpf, "name": bp.Name, "farm": bp.Person.Farm})
+	if queryErr != nil {
+		model_error.Logger(bm.conn, queryErr.Error())
+		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	person, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.PersonDisplay])
+	if collectErr != nil {
+		model_error.Logger(bm.conn, collectErr.Error())
+		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
+	}
+
+	return person, nil
+}
+
+func (bm *personModel) GetPeopleByFarm(farm uint32) ([]entity_public.PersonOption, *model_error.ModelError) {
+	rows, queryErr := bm.conn.Query(context.Background(), `
+		SELECT p.id, lp.companyname AS name FROM person p
+		JOIN legal_person lp ON p.id = lp.personid
+		UNION
+		SELECT p.id, np.name FROM person p
+		JOIN natural_person np ON p.id = np.personid
+		WHERE p.farm = @userFarm
+	`, pgx.NamedArgs{"userFarm": farm})
+
+	if queryErr != nil {
+		model_error.Logger(bm.conn, queryErr.Error())
+		return []entity_public.PersonOption{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	people, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.PersonOption])
+	if collectErr != nil {
+		model_error.Logger(bm.conn, collectErr.Error())
+		return []entity_public.PersonOption{}, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
+	}
+
+	return people, nil
+}
+
+var availablePersonFilters = map[string]func(pf entity_public.PersonFilter) string{
+	"Vehicle": func(pf entity_public.PersonFilter) string {
+		return fmt.Sprintf("e.vehicle = '%s'", pf.Vehicle)
+	},
+	"Product": func(pf entity_public.PersonFilter) string {
+		return "p.id = " + strconv.FormatInt(int64(pf.Product), 10)
+	},
+	"Field": func(pf entity_public.PersonFilter) string {
+		return "e.field = " + strconv.FormatInt(int64(pf.Field), 10)
+	},
+	"NetWeightMin": func(pf entity_public.PersonFilter) string {
+		return "e.netweight >= " + strconv.FormatFloat(pf.NetWeightMin, 'f', -1, 64)
+	},
+	"NetWeightMax": func(pf entity_public.PersonFilter) string {
+		return "e.netweight <= " + strconv.FormatFloat(pf.NetWeightMax, 'f', -1, 64)
+	},
+	"Crop": func(pf entity_public.PersonFilter) string {
+		return fmt.Sprintf("c.id = %v", pf.Crop)
+	},
+}
+
+func (bm *personModel) FilterPerson(pf entity_public.PersonFilter, farm uint32) ([]entity_public.PersonDisplay, error) {
+	filters := pf.GetFilters(availablePersonFilters)
+
+	stmt := `WITH person_ids AS (SELECT b.id FROM person b WHERE b.farm = @userFarm)
+        SELECT * FROM (
+                SELECT 0 AS TYPE, np.name, np.cpf AS document, p.ie, np.id FROM natural_person np
+                JOIN person p ON p.id = np.personid
+                UNION ALL
+                SELECT 1 AS TYPE, lp.companyname AS name, lp.cnpj AS document, p.ie, lp.id FROM legal_person lp
+                JOIN person p ON p.id = lp.personid 
+        ) AS p WHERE p.id IN (SELECT * FROM person_ids)
+	`
+	for _, filter := range filters {
+		stmt += "\nAND " + filter(pf)
+	}
+
+	rows, queryErr := bm.conn.Query(context.Background(), stmt, pgx.NamedArgs{"userFarm": farm})
+	if queryErr != nil {
+		model_error.Logger(bm.conn, queryErr.Error())
+		return []entity_public.PersonDisplay{}, queryErr
+	}
+
+	entries, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.PersonDisplay])
+	if collectErr != nil {
+		model_error.Logger(bm.conn, collectErr.Error())
+		return []entity_public.PersonDisplay{}, collectErr
+	}
+
+	return entries, nil
+
+}

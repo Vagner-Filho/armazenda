@@ -13,21 +13,25 @@
                     Identificação
                 </legend>
                 {{ template "crop-selector" . }}
-                {{ template "buyer-selector" . }}
+                {{ template "person-selector" . }}
                 <div class="flex flex-col-reverse">
-                    <input type="number" name="grossWeight" id="grossWeight" class="peer" {{ if ne .Departure.GrossWeight 0.0 }} value="{{ .Departure.GrossWeight }}" {{ end }} required>
+                    <input type="number" name="grossWeight" id="grossWeight" class="peer" {{ if ne
+                        .Departure.GrossWeight 0.0 }} value="{{ .Departure.GrossWeight }}" {{ end }} required>
                     <label for="grossWeight" class="label-peer">
                         Peso Bruto
                     </label>
                 </div>
                 <div class="flex flex-col-reverse">
-                    <input type="number" name="tare" id="tare" class="peer" {{ if ne .Departure.Tare 0.0 }} value="{{ .Departure.Tare }}" {{ end }} required>
+                    <input type="number" name="tare" id="tare" class="peer" {{ if ne .Departure.Tare 0.0 }}
+                        value="{{ .Departure.Tare }}" {{ end }} required>
                     <label for="tare" class="label-peer">
                         Tara
                     </label>
                 </div>
                 <div class="flex flex-col-reverse">
-                    <input type="number" name="netWeight" id="netWeight" class="peer cursor-not-allowed" {{ if ne .Departure.NetWeight 0.0 }} value="{{ .Departure.NetWeight }}" {{ end }} readonly min="0" required>
+                    <input type="number" name="netWeight" id="netWeight" class="peer cursor-not-allowed" {{ if ne
+                        .Departure.NetWeight 0.0 }} value="{{ .Departure.NetWeight }}" {{ end }} readonly min="0"
+                        required>
                     <label for="netWeight" class="label-peer">
                         Peso Líquido (preenchimento automático)
                     </label>
@@ -39,7 +43,8 @@
                 </legend>
                 {{ template "vehicle-selector" . }}
                 <div class="flex flex-col-reverse">
-                    <input type="datetime-local" name="departureDate" id="departure-input" class="peer" value="{{ .Departure.DepartureDate }}" required>
+                    <input type="datetime-local" name="departureDate" id="departure-input" class="peer"
+                        value="{{ .Departure.DepartureDate }}" required>
                     <label for="departure-input" class="label-peer">
                         Data de Saída
                     </label>
@@ -56,8 +61,8 @@
     </div>
 
     <script type="module">
-        import { formatDateToInput } from "/public/assets/js/date.js"
-        const dateVal = formatDateToInput({{ .Departure.DepartureDate }})
+        import {formatDateToInput} from "/public/assets/js/date.js"
+        const dateVal = formatDateToInput({{ .Departure.DepartureDate}})
         const dialogEl = document.querySelector("#departure-form-dialog")
         if (dialogEl) {
             dialogEl.showModal()

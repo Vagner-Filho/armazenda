@@ -11,8 +11,8 @@ type Departure struct {
 	VehiclePlate  string    `form:"vehiclePlate" binding:"required"`
 	Crop          uint8     `form:"crop" binding:"required"`
 	CargoWeight
-	Farm  uint32 `form:"farm" binding:"gte=0"`
-	Buyer uint32 `form:"buyer" binding:"required"`
+	Farm   uint32 `form:"farm" binding:"gte=0"`
+	Person uint32 `form:"person" binding:"required"`
 }
 
 func (d Departure) ToDTO() DepartureDTO {
@@ -23,7 +23,7 @@ func (d Departure) ToDTO() DepartureDTO {
 		VehiclePlate:   d.VehiclePlate,
 		Crop:           d.Crop,
 		CargoWeightDTO: cargo,
-		Buyer:          d.Buyer,
+		Person:         d.Person,
 		Farm:           d.Farm,
 	}
 }
@@ -34,8 +34,8 @@ type DepartureDTO struct {
 	VehiclePlate  string
 	Crop          uint8
 	CargoWeightDTO
-	Buyer uint32
-	Farm  uint32
+	Person uint32
+	Farm   uint32
 }
 
 func (dto DepartureDTO) ToEntity() Departure {
@@ -46,7 +46,7 @@ func (dto DepartureDTO) ToEntity() Departure {
 		VehiclePlate:  dto.VehiclePlate,
 		Crop:          dto.Crop,
 		CargoWeight:   cargo,
-		Buyer:         dto.Buyer,
+		Person:        dto.Person,
 		Farm:          dto.Farm,
 	}
 }
@@ -67,7 +67,7 @@ type DepartureFilter struct {
 	VehiclePlate     string    `form:"vehiclePlate"`
 	NetWeightMin     float64   `form:"netWeightMin"`
 	NetWeightMax     float64   `form:"netWeightMax"`
-	Buyer            string    `form:"buyer"`
+	Person           string    `form:"person"`
 }
 
 type departureFilterCollection map[string]func(df DepartureFilter) string
@@ -97,5 +97,5 @@ type DeparturePdf struct {
 	DepartureDate     time.Time `time_format:"2006-01-02T15:04"`
 	InscricaoEstadual string
 	Produto           string
-	BuyerName         string
+	PersonName        string
 }

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/public/assets/static/css/output.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="/public/assets/favicon.ico">
+    <title>Pessoa - Armazenda</title>
+    <script src="https://unpkg.com/htmx.org@2.0.0" integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
+    <script type="module" src="/public/assets/js/toast.js"></script>
+    <script type="module" src="/public/assets/js/getEntryPdf.js"></script>
+    <script type="module" src="/public/assets/js/getDeparturePdf.js"></script>
+  </head>
+  <body class="bg-sky-50">
+    {{ template "navbar" }}
+    <div class="fixed top-0 left-0 h-dvh w-60 bg-green-400 flex flex-col" role="menu">
+      <a href="/pessoa">
+        Pessoa
+      </a>
+      <a href="/relatorio">
+        Relatório
+      </a>
+      <a href="/romaneio">
+        Romaneio
+      </a>
+    </div>
+    <section class="mt-20 px-2 max-w-screen-xl mx-auto">
+      <div class="w-full flex items-center justify-end py-1 gap-4">
+        <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/person/form" hx-target="body" hx-swap="beforeend">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m5 11h-4v4h-2v-4H7v-2h4V7h2v4h4z"/>
+          </svg>
+          Nova Pessoa
+        </button>
+      </div>
+      <div class="flex flex-col w-full" id="persons-header">
+        <div class="w-full flex justify-between bg-slate-200 uppercase text-lg px-2">
+          <div>
+            Tipo
+          </div>
+          <div>
+            Nome
+          </div>
+          <div>
+            Documento
+          </div>
+          <div>
+            Inscrição Estadual
+          </div>
+        </div>
+        {{ range .People }}
+        <div class="w-full flex justify-between px-2">
+          <div>{{ if eq .Type 0 }}Pessoa Física{{ else }}Pessoa Jurídica{{ end }}</div>
+          <div>{{ .Name }}</div>
+          <div>{{ .Document }}</div>
+          <div>{{ .IE }}</div>
+        </div>
+        {{ end }}
+      </div>
+    </section>
+  </body>
+</html>

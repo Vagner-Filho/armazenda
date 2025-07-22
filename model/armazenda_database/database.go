@@ -203,9 +203,9 @@ func initInactiveDeparture(c *pgx.Conn) {
 	handleStmtExec(c, stmt, err, "create inactive departure")
 }
 
-func initBuyer(c *pgx.Conn) {
-	stmt, err := c.Prepare(context.Background(), "init buyer table", `
-	CREATE TABLE IF NOT EXISTS buyer (
+func initPerson(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init person table", `
+	CREATE TABLE IF NOT EXISTS person (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		ie VARCHAR(255) UNIQUE,
 		farm INTEGER NOT NULL,
@@ -213,50 +213,50 @@ func initBuyer(c *pgx.Conn) {
 	);
 	`)
 
-	handleStmtExec(c, stmt, err, "create buyer")
+	handleStmtExec(c, stmt, err, "create person")
 }
 
-func initBuyerPerson(c *pgx.Conn) {
-	stmt, err := c.Prepare(context.Background(), "init buyerPerson table", `
-	CREATE TABLE IF NOT EXISTS buyerPerson (
+func initNaturalPerson(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init natural_person table", `
+	CREATE TABLE IF NOT EXISTS natural_person (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		name VARCHAR(255) NOT NULL,
 		cpf VARCHAR(255) UNIQUE NOT NULL,
-		buyerId INTEGER UNIQUE NOT NULL,
-		FOREIGN KEY (buyerId) REFERENCES buyer(id)
+		personId INTEGER UNIQUE NOT NULL,
+		FOREIGN KEY (personId) REFERENCES person(id)
 	);
 	`)
 
-	handleStmtExec(c, stmt, err, "create buyerPerson")
+	handleStmtExec(c, stmt, err, "create natural_person")
 }
 
-func initBuyerCompany(c *pgx.Conn) {
-	stmt, err := c.Prepare(context.Background(), "init buyerCompany table", `
-	CREATE TABLE IF NOT EXISTS buyerCompany (
+func initLegalPerson(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init legal_person table", `
+	CREATE TABLE IF NOT EXISTS legal_person (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		cnpj VARCHAR(255) UNIQUE NOT NULL,
-		buyerId INTEGER UNIQUE NOT NULL,
+		personId INTEGER UNIQUE NOT NULL,
 		companyName VARCHAR(255) NOT NULL,
 		fantasyName VARCHAR(255),
-		FOREIGN KEY (buyerId) REFERENCES buyer(id)
+		FOREIGN KEY (personId) REFERENCES person(id)
 	);
 	`)
 
-	handleStmtExec(c, stmt, err, "create buyerCompany")
+	handleStmtExec(c, stmt, err, "create legal_person")
 }
 
-func initDepartureBuyer(c *pgx.Conn) {
-	stmt, err := c.Prepare(context.Background(), "init departure_buyer table", `
-	CREATE TABLE IF NOT EXISTS departureBuyer (
+func initDepartureRecipient(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init departure_recipient table", `
+	CREATE TABLE IF NOT EXISTS departure_recipient (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		departureId INTEGER UNIQUE NOT NULL,
-		buyerId INTEGER NOT NULL,
-		FOREIGN KEY (buyerId) REFERENCES buyer(id),
+		personId INTEGER NOT NULL,
+		FOREIGN KEY (personId) REFERENCES person(id),
 		FOREIGN KEY (departureId) REFERENCES departure(id)
 	);
 	`)
 
-	handleStmtExec(c, stmt, err, "create departureBuyer")
+	handleStmtExec(c, stmt, err, "create departure_recipient")
 }
 
 func initAddrress(c *pgx.Conn) {
@@ -276,8 +276,8 @@ func initAddrress(c *pgx.Conn) {
 }
 
 func initAddrressComplement(c *pgx.Conn) {
-	stmt, err := c.Prepare(context.Background(), "init addressComplement table", `
-	CREATE TABLE IF NOT EXISTS addressComplement (
+	stmt, err := c.Prepare(context.Background(), "init address_complement table", `
+	CREATE TABLE IF NOT EXISTS address_complement (
 		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		complement TEXT NOT NULL,
 		addressId SMALLINT UNIQUE NOT NULL,
@@ -285,7 +285,7 @@ func initAddrressComplement(c *pgx.Conn) {
 	);
 	`)
 
-	handleStmtExec(c, stmt, err, "create addressComplement")
+	handleStmtExec(c, stmt, err, "create address_complement")
 }
 
 func initContact(c *pgx.Conn) {
@@ -316,7 +316,7 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 	_, err := c.Exec(context.Background(), `
 		CREATE OR REPLACE FUNCTION add_get_departure(
 			IN crop SMALLINT,
-			IN buyerId INTEGER,
+			IN personId INTEGER,
 			OUT departureId INTEGER,
 			OUT productName VARCHAR(255),
 			INOUT vehicle VARCHAR(255),
@@ -330,7 +330,7 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 		DECLARE departure_id INTEGER;
 		BEGIN
 			INSERT INTO departure (departureDate, vehicle, crop, farm, tare, grossWeight, netWeight) VALUES (departureDate, vehicle, crop, farm, tare, grossWeight, netWeight) RETURNING id INTO departure_id;
-			INSERT INTO departurebuyer (departureId, buyerId) VALUES (departure_id, buyerId);
+			INSERT INTO departure_recipient (departureId, personId) VALUES (departure_id, personId);
 
 			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = crop INTO productName;
 			departureId := departure_id;
@@ -343,54 +343,54 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 	}
 }
 
-func initAddBuyerPerson(c *pgx.Conn) {
+func initAddNaturalPerson(c *pgx.Conn) {
 	_, err := c.Exec(context.Background(), `
-		CREATE OR REPLACE FUNCTION add_get_buyer_person(
+		CREATE OR REPLACE FUNCTION add_get_natural_person(
 			IN ie VARCHAR(255),
 			IN cpf VARCHAR(255),
-			OUT buyerId INTEGER,
+			OUT personId INTEGER,
 			INOUT name VARCHAR(255),
 			IN farm INTEGER
 		)
 		LANGUAGE plpgsql AS $$
-		DECLARE buyer_id INTEGER;
+		DECLARE person_id INTEGER;
 		BEGIN
-			INSERT INTO buyer (ie, farm) VALUES (ie, farm) RETURNING id INTO buyer_id;
-			INSERT INTO buyerperson (name, cpf, buyerid) VALUES (name, cpf, buyer_id);
+			INSERT INTO person (ie, farm) VALUES (ie, farm) RETURNING id INTO person_id;
+			INSERT INTO natural_person (name, cpf, personId) VALUES (name, cpf, person_id);
 			
-			buyerId := buyer_id;
+			personId := person_id;
 		END;
 		$$;
 	`)
 
 	if err != nil {
-		fmt.Printf("\n error at function add_get_buyer_person:\n%v", err.Error())
+		fmt.Printf("\n error at function add_get_natural_person:\n%v", err.Error())
 	}
 }
 
-func initAddBuyerCompany(c *pgx.Conn) {
+func initAddLegalPerson(c *pgx.Conn) {
 	_, err := c.Exec(context.Background(), `
-		CREATE OR REPLACE FUNCTION add_get_buyer_company(
+		CREATE OR REPLACE FUNCTION add_get_legal_person(
 			IN ie VARCHAR(255),
 			IN cnpj VARCHAR(255),
 			IN fantasyName VARCHAR(255),
 			IN farm INTEGER,
-			OUT buyerId INTEGER,
+			OUT personId INTEGER,
 			INOUT companyName VARCHAR(255)
 		)
 		LANGUAGE plpgsql AS $$
-		DECLARE buyer_id INTEGER;
+		DECLARE person_id INTEGER;
 		BEGIN
-			INSERT INTO buyer (ie, farm) VALUES (ie, farm) RETURNING id INTO buyer_id;
-			INSERT INTO buyercompany (cnpj, companyname, fantasyname, buyerid) VALUES (cnpj, companyName, fantasyName, buyer_id);
+			INSERT INTO person (ie, farm) VALUES (ie, farm) RETURNING id INTO person_id;
+			INSERT INTO legal_person (cnpj, companyname, fantasyname, personid) VALUES (cnpj, companyName, fantasyName, person_id);
 			
-			buyerId := buyer_id;
+			personId := person_id;
 		END;
 		$$;
 	`)
 
 	if err != nil {
-		fmt.Printf("\n error at function add_get_buyer_company:\n%v", err.Error())
+		fmt.Printf("\n error at function add_get_legal_person:\n%v", err.Error())
 	}
 }
 
@@ -551,7 +551,7 @@ func initUpdateDepartureProc(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init update departure stmt", `
 		CREATE OR REPLACE FUNCTION update_get_departure(
 			IN d_crop SMALLINT,
-			IN d_buyerId INTEGER,
+			IN d_personId INTEGER,
 			INOUT departureId INTEGER,
 			OUT productName VARCHAR(255),
 			INOUT d_vehicle VARCHAR(255),
@@ -590,10 +590,10 @@ func InitDb(c *pgx.Conn) {
 	initPreEntry(c)
 	initEntryAnalysis(c)
 	initDeparture(c)
-	initBuyer(c)
-	initDepartureBuyer(c)
-	initBuyerPerson(c)
-	initBuyerCompany(c)
+	initPerson(c)
+	initDepartureRecipient(c)
+	initNaturalPerson(c)
+	initLegalPerson(c)
 	initContact(c)
 	initAddrress(c)
 	initAddrressComplement(c)
@@ -603,8 +603,8 @@ func InitDb(c *pgx.Conn) {
 	initAddEntry(c)
 	initUpdateEntry(c)
 	initAddDepartureProcedure(c)
-	initAddBuyerPerson(c)
-	initAddBuyerCompany(c)
+	initAddNaturalPerson(c)
+	initAddLegalPerson(c)
 	initAddUserAndFarm(c)
 	initUpdateDepartureProc(c)
 }

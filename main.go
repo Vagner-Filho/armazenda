@@ -2,20 +2,20 @@ package main
 
 import (
 	"armazenda/model/armazenda_database"
-	"armazenda/model/buyer_model"
 	"armazenda/model/crop_model"
 	"armazenda/model/departure_model"
 	"armazenda/model/entry_model"
 	"armazenda/model/field_model"
+	"armazenda/model/person_model"
 	"armazenda/model/product_model"
 	"armazenda/model/report_model"
 	"armazenda/model/user_model"
 	"armazenda/model/vehicle_model"
-	"armazenda/router/buyer_router"
 	"armazenda/router/crop_router"
 	"armazenda/router/departure_router"
 	"armazenda/router/entry_router"
 	"armazenda/router/field_router"
+	"armazenda/router/person_router"
 	"armazenda/router/report_router"
 	"armazenda/router/user_router"
 	"armazenda/router/vehicle_router"
@@ -88,7 +88,7 @@ func main() {
 	entry_model.InitEntryModel(conn)
 	departure_model.InitDepartureModel(conn)
 	product_model.InitProductModel(conn)
-	buyer_model.InitBuyerModel(conn)
+	person_model.InitPersonModel(conn)
 	report_model.InitReportModel(conn)
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
@@ -119,7 +119,7 @@ func main() {
 	crop_router.UseCropRoutes(router)
 	field_router.UseFieldRoutes(router)
 	vehicle_router.UseVehicleRouter(router)
-	buyer_router.UseBuyerRoutes(router)
+	person_router.UsePersonRoutes(router)
 	report_router.UseReportRoutes(router)
 
 	port := os.Getenv("PORT")

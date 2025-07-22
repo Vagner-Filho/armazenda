@@ -41,42 +41,51 @@ func GetReportModel() *reportModel {
 
 var availableReportFilters = map[string]func(ef entity_public.ReportFilter) string{
 	"StartDate": func(ef entity_public.ReportFilter) string {
-		return fmt.Sprintf("e.arrivalDate >= '%v'", ef.StartDate.Format(utils.DBTimeWithoutTimeZone))
+		return fmt.Sprintf("r.date >= '%v'", ef.StartDate.Format(utils.DBTimeWithoutTimeZone))
 	},
 	"EndDate": func(ef entity_public.ReportFilter) string {
-		return fmt.Sprintf("e.arrivalDate <= '%v'", ef.EndDate.Format(utils.DBTimeWithoutTimeZone))
+		return fmt.Sprintf("r.date <= '%v'", ef.EndDate.Format(utils.DBTimeWithoutTimeZone))
 	},
 	"Vehicle": func(ef entity_public.ReportFilter) string {
-		return fmt.Sprintf("e.vehicle = '%s'", ef.Vehicle)
+		return fmt.Sprintf("r.vehicle = '%s'", ef.Vehicle)
 	},
 	"Product": func(ef entity_public.ReportFilter) string {
-		return "p.id = " + strconv.FormatInt(int64(ef.Product), 10)
+		return "r.id = " + strconv.FormatInt(int64(ef.Product), 10)
 	},
 	"NetWeightMin": func(ef entity_public.ReportFilter) string {
-		return "e.netweight >= " + strconv.FormatFloat(ef.NetWeightMin, 'f', -1, 64)
+		return "r.netweight >= " + strconv.FormatFloat(ef.NetWeightMin, 'f', -1, 64)
 	},
 	"NetWeightMax": func(ef entity_public.ReportFilter) string {
-		return "e.netweight <= " + strconv.FormatFloat(ef.NetWeightMax, 'f', -1, 64)
+		return "r.netweight <= " + strconv.FormatFloat(ef.NetWeightMax, 'f', -1, 64)
 	},
 }
 
 func (rm *reportModel) FilterEntries(rf entity_public.ReportFilter, farm uint32) ([]entity_public.ReportDisplay, error) {
 	filters := rf.GetFilters(availableReportFilters)
 
-	stmt := `SELECT e.id, 0 AS operation_type, p.name, e.vehicle, e.netweight, e.arrivaldate
+	stmt := `SELECT * FROM (SELECT e.id, 0 AS operation_type, p.name, e.vehicle, e.netweight, e.arrivaldate AS date
 			FROM entry e
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
 			WHERE e.farm = @userFarm
 			UNION ALL
-		SELECT d.id, 1 AS operation_type, p.name, d.vehicle, d.netweight , d.departuredate
+		SELECT d.id, 1 AS operation_type, p.name, d.vehicle, d.netweight , d.departuredate AS date
 			FROM departure d
 			JOIN crop c ON d.crop = c.id
 			JOIN product p ON c.product = p.id
-			WHERE d.farm = @userFarm`
+			WHERE d.farm = @userFarm) AS r`
 
+	if len(filters) > 0 {
+		stmt += " WHERE "
+	}
+
+	var idx int = 0
 	for _, filter := range filters {
-		stmt += "\nAND " + filter(rf)
+		stmt += filter(rf)
+		if idx < len(filters)-1 {
+			stmt += " AND "
+		}
+		idx++
 	}
 
 	rows, queryErr := rm.conn.Query(context.Background(), stmt, pgx.NamedArgs{"userFarm": farm})

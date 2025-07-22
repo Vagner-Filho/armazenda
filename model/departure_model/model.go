@@ -58,8 +58,8 @@ var availableDepartureFilters = map[string]func(df entity_public.DepartureFilter
 	"WeightMax": func(df entity_public.DepartureFilter) string {
 		return "d.netWeight <= " + strconv.FormatFloat(df.NetWeightMax, 'f', -1, 64)
 	},
-	"Buyer": func(df entity_public.DepartureFilter) string {
-		return "d.Buyer = " + df.Buyer
+	"Person": func(df entity_public.DepartureFilter) string {
+		return "d.Person = " + df.Person
 	},
 }
 
@@ -116,8 +116,8 @@ func (dm *departureModel) GetDisplayDepartures(farm uint32) ([]entity_public.Dis
 
 func (dm *departureModel) GetDeparture(id uint32) (entity_public.Departure, *model_error.ModelError) {
 	row, queryErr := dm.conn.Query(context.Background(), `
-		SELECT d.*, db.buyerid FROM departure d
-		JOIN departurebuyer db ON db.departureid = d.id
+		SELECT d.*, db.personid FROM departure d
+		JOIN departure_recipient dr ON dr.departureid = d.id
 		WHERE d.id = @id
 	`, pgx.NamedArgs{"id": id})
 	if queryErr != nil {
@@ -133,10 +133,10 @@ func (dm *departureModel) GetDeparture(id uint32) (entity_public.Departure, *mod
 
 func (dm *departureModel) AddDeparture(d entity_public.Departure) (entity_public.DisplayDeparture, *model_error.ModelError) {
 	row, queryErr := dm.conn.Query(context.Background(), `
-		SELECT * FROM add_get_departure(@crop, @buyer, @vehicle, @departureDate, @farm, @tare, @grossWeight, @netWeight)
+		SELECT * FROM add_get_departure(@crop, @person, @vehicle, @departureDate, @farm, @tare, @grossWeight, @netWeight)
 		`, pgx.NamedArgs{
 		"crop":          d.Crop,
-		"buyer":         d.Buyer,
+		"person":        d.Person,
 		"vehicle":       d.VehiclePlate,
 		"departureDate": d.DepartureDate,
 		"farm":          d.Farm,
@@ -161,7 +161,7 @@ func (dm *departureModel) AddDeparture(d entity_public.Departure) (entity_public
 func (dm *departureModel) PutDeparture(d entity_public.Departure) (entity_public.DisplayDeparture, *model_error.ModelError) {
 	row, queryErr := dm.conn.Query(
 		context.Background(),
-		`SELECT * FROM update_get_departure(@crop, @buyerId, @departureId, @vehicle, @departureDate, @grossWeight, @tare, @netWeight)`,
+		`SELECT * FROM update_get_departure(@crop, @personId, @departureId, @vehicle, @departureDate, @grossWeight, @tare, @netWeight)`,
 		pgx.NamedArgs{
 			"departureId":   d.Id,
 			"crop":          d.Crop,
@@ -169,7 +169,7 @@ func (dm *departureModel) PutDeparture(d entity_public.Departure) (entity_public
 			"grossWeight":   d.GrossWeight,
 			"tare":          d.Tare,
 			"netWeight":     d.NetWeight,
-			"buyerId":       d.Buyer,
+			"personId":      d.Person,
 			"departureDate": d.DepartureDate,
 		})
 	if queryErr != nil {
@@ -206,8 +206,8 @@ func (dm *departureModel) GetDeparturePdf(id uint32) (entity_public.DeparturePdf
 		JOIN crop c ON c.id = d.crop
 		JOIN product p ON p.id = c.product
 		JOIN farm fa ON fa.id = d.farm
-		JOIN departurebuyer db ON db.departureid = d.id
-		JOIN (SELECT bc.buyerid, coalesce(bc.fantasyname, bc.companyname) AS name FROM buyercompany bc UNION SELECT bp.buyerid, bp.name FROM buyerperson bp) b ON b.buyerid = db.buyerid
+		JOIN departure_recipient dr ON dr.departureid = d.id
+		JOIN (SELECT bc.personid, coalesce(bc.fantasyname, bc.companyname) AS name FROM legal_person lp UNION SELECT lp.personid, np.name FROM natural_person np) p ON p.personid = dr.personid
 	 	WHERE d.id = @id;`,
 		pgx.NamedArgs{"id": id},
 	)
