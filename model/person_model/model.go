@@ -7,8 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type personModel struct {
@@ -41,7 +44,7 @@ func GetpersonModel() *personModel {
 func (bm *personModel) AddLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
 	row, queryErr := bm.conn.Query(
 		context.Background(),
-		`SELECT * FROM add_get_legal_person(@ie, @cnpj, @fantasyName, @farm, @companyName)`,
+		`SELECT * FROM add_get_legal_person(@companyName, @cnpj, @ie, @fantasyName, @farm)`,
 		pgx.NamedArgs{
 			"ie":          bc.InscricaoEstadual,
 			"cnpj":        bc.Cnpj,
@@ -66,7 +69,7 @@ func (bm *personModel) AddLegalPerson(bc entity_public.LegalPerson) (entity_publ
 
 func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
 	row, queryErr := bm.conn.Query(context.Background(), `
-			SELECT * FROM add_get_person_person(@ie, @cpf, @name, @farm)
+			SELECT * FROM add_get_natural_person(@name, @cpf, @ie, @farm)
 		`, pgx.NamedArgs{"ie": bp.InscricaoEstadual, "cpf": bp.Cpf, "name": bp.Name, "farm": bp.Person.Farm})
 	if queryErr != nil {
 		model_error.Logger(bm.conn, queryErr.Error())
@@ -76,6 +79,19 @@ func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_
 	person, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.PersonDisplay])
 	if collectErr != nil {
 		model_error.Logger(bm.conn, collectErr.Error())
+		var pgErr *pgconn.PgError
+		if errors.As(collectErr, &pgErr) {
+			if pgErr.Code == pgerrcode.UniqueViolation {
+				var message string = "Esta pessoa já existe"
+				if strings.Contains(collectErr.Error(), "person_ie") {
+					message = "Inscrição Estadual em uso"
+				}
+				if strings.Contains(collectErr.Error(), "natural_person_cpf") {
+					message = "CPF em uso"
+				}
+				return entity_public.PersonDisplay{}, &model_error.ModelError{Message: message}
+			}
+		}
 		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
 	}
 
@@ -132,10 +148,10 @@ func (bm *personModel) FilterPerson(pf entity_public.PersonFilter, farm uint32) 
 
 	stmt := `WITH person_ids AS (SELECT b.id FROM person b WHERE b.farm = @userFarm)
         SELECT * FROM (
-                SELECT 0 AS TYPE, np.name, np.cpf AS document, p.ie, np.id FROM natural_person np
+                SELECT 0 AS TYPE, np.name, np.cpf AS document, p.ie, np.personid AS id FROM natural_person np
                 JOIN person p ON p.id = np.personid
                 UNION ALL
-                SELECT 1 AS TYPE, lp.companyname AS name, lp.cnpj AS document, p.ie, lp.id FROM legal_person lp
+                SELECT 1 AS TYPE, lp.companyname AS name, lp.cnpj AS document, p.ie, lp.personid AS id FROM legal_person lp
                 JOIN person p ON p.id = lp.personid 
         ) AS p WHERE p.id IN (SELECT * FROM person_ids)
 	`
@@ -149,12 +165,13 @@ func (bm *personModel) FilterPerson(pf entity_public.PersonFilter, farm uint32) 
 		return []entity_public.PersonDisplay{}, queryErr
 	}
 
-	entries, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.PersonDisplay])
+	people, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.PersonDisplay])
+
 	if collectErr != nil {
 		model_error.Logger(bm.conn, collectErr.Error())
 		return []entity_public.PersonDisplay{}, collectErr
 	}
 
-	return entries, nil
+	return people, nil
 
 }

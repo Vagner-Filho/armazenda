@@ -24,7 +24,7 @@ func addLegalPerson(c *gin.Context) {
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}
-	c.HTML(http.StatusCreated, "person-option", person)
+	c.HTML(http.StatusCreated, "person-list-item", person)
 }
 
 func addNaturalPerson(c *gin.Context) {
@@ -40,9 +40,19 @@ func addNaturalPerson(c *gin.Context) {
 	newPersonal.Person.Farm = farm
 	person, toast := person_service.AddNaturalPerson(newPersonal)
 	if toast != nil {
+		if toast.Type == entity_public.ErrorToast {
+			c.Header("HX-Trigger", string(toast.ToJson()))
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		if toast.Type == entity_public.WarningToast {
+			c.Header("HX-Trigger", string(toast.ToJson()))
+			c.Status(http.StatusUnprocessableEntity)
+			return
+		}
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}
-	c.HTML(http.StatusOK, "person-option", person)
+	c.HTML(http.StatusOK, "person-list-item", person)
 }
 
 func getPersonForm(c *gin.Context) {

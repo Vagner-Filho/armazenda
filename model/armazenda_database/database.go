@@ -346,10 +346,11 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 func initAddNaturalPerson(c *pgx.Conn) {
 	_, err := c.Exec(context.Background(), `
 		CREATE OR REPLACE FUNCTION add_get_natural_person(
-			IN ie VARCHAR(255),
-			IN cpf VARCHAR(255),
-			OUT personId INTEGER,
+			OUT person_type INTEGER,
 			INOUT name VARCHAR(255),
+			INOUT cpf VARCHAR(255),
+			INOUT ie VARCHAR(255),
+			OUT personId INTEGER,
 			IN farm INTEGER
 		)
 		LANGUAGE plpgsql AS $$
@@ -359,6 +360,7 @@ func initAddNaturalPerson(c *pgx.Conn) {
 			INSERT INTO natural_person (name, cpf, personId) VALUES (name, cpf, person_id);
 			
 			personId := person_id;
+			person_type := 0;
 		END;
 		$$;
 	`)
@@ -371,12 +373,13 @@ func initAddNaturalPerson(c *pgx.Conn) {
 func initAddLegalPerson(c *pgx.Conn) {
 	_, err := c.Exec(context.Background(), `
 		CREATE OR REPLACE FUNCTION add_get_legal_person(
-			IN ie VARCHAR(255),
-			IN cnpj VARCHAR(255),
+			OUT person_type INTEGER,
+			INOUT companyName VARCHAR(255),
+			INOUT cnpj VARCHAR(255),
+			INOUT ie VARCHAR(255),
 			IN fantasyName VARCHAR(255),
 			IN farm INTEGER,
-			OUT personId INTEGER,
-			INOUT companyName VARCHAR(255)
+			OUT personId INTEGER
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE person_id INTEGER;
@@ -385,6 +388,7 @@ func initAddLegalPerson(c *pgx.Conn) {
 			INSERT INTO legal_person (cnpj, companyname, fantasyname, personid) VALUES (cnpj, companyName, fantasyName, person_id);
 			
 			personId := person_id;
+			person_type := 1;
 		END;
 		$$;
 	`)

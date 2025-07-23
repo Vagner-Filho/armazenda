@@ -6,16 +6,21 @@
       NOVO COMPRADOR
     </h3>
     <div class="flex items-center justify-center w-full py-2">
-      <button type="button" id="pessoa-juridica-btn" class="h-8 px-2 text-base rounded-md rounded-r-none ring-1 ring-green-400 text-white bg-green-400 transition-colors duration-300" onclick="toggleForm()">
+      <button type="button" id="pessoa-juridica-btn"
+        class="h-8 px-2 text-base rounded-md rounded-r-none ring-1 ring-green-400 text-white bg-green-400 transition-colors duration-300"
+        onclick="toggleForm()">
         Pessoa Jurídica
       </button>
       <div class="h-8 w-[2px] bg-green-400">
       </div>
-      <button type="button" id="pessoa-fisica-btn" class="h-8 px-2 text-base rounded-md rounded-l-none ring-1 ring-green-400 text-green-400 transition-colors duration-300" onclick="toggleForm()">
+      <button type="button" id="pessoa-fisica-btn"
+        class="h-8 px-2 text-base rounded-md rounded-l-none ring-1 ring-green-400 text-green-400 transition-colors duration-300"
+        onclick="toggleForm()">
         Pessoa Fisica
       </button>
     </div>
-    <form id="pessoa-juridica-form" hx-post="/person/company" hx-target="#person-selector" hx-swap="beforeend" class="flex flex-wrap">
+    <form id="pessoa-juridica-form" hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend"
+      class="flex flex-wrap">
       <fieldset class="flex flex-col">
         <legend>
           <h3 class="text-lg px-2">
@@ -53,7 +58,8 @@
         </button>
       </div>
     </form>
-    <form class="hidden flex flex-wrap" id="pessoa-fisica-form" hx-post="/person/personal" hx-target="#person-selector" hx-swap="beforeend">
+    <form class="hidden flex flex-wrap" id="pessoa-fisica-form" hx-post="/person/natural" hx-target="#people-rows"
+      hx-swap="beforeend">
       <fieldset class="flex flex-col">
         <legend>
           <h3 class="text-lg px-2">
@@ -90,54 +96,54 @@
   </div>
   <script type="module">
     const dialogEl = document.querySelector("dialog#personFormDialog")
-        if (dialogEl) {
-            dialogEl.showModal()
+    if (dialogEl) {
+      dialogEl.showModal()
 
-            function closePersonForm() {
-                dialogEl.close()
-                dialogEl.remove()
-                window.closePersonForm = undefined
-            }
-            dialogEl.addEventListener('close', closePersonForm)
-            window.closePersonForm = closePersonForm
-        }
+      function closePersonForm() {
+        dialogEl.close()
+        dialogEl.remove()
+        window.closePersonForm = undefined
+      }
+      dialogEl.addEventListener('close', closePersonForm)
+      window.closePersonForm = closePersonForm
+    }
 
-        let pessoaJuridicaForm = document.querySelector('form#pessoa-juridica-form')
-        let pessoaJuridicaBtn = document.querySelector('button#pessoa-juridica-btn')
-        let pessoaFisicaForm = document.querySelector('form#pessoa-fisica-form')
-        let pessoaFisicaBtn = document.querySelector('button#pessoa-fisica-btn')
+    let pessoaJuridicaForm = document.querySelector('form#pessoa-juridica-form')
+    let pessoaJuridicaBtn = document.querySelector('button#pessoa-juridica-btn')
+    let pessoaFisicaForm = document.querySelector('form#pessoa-fisica-form')
+    let pessoaFisicaBtn = document.querySelector('button#pessoa-fisica-btn')
 
-        function toggleForm() {
-            if (pessoaFisicaForm && pessoaFisicaForm.classList.contains('hidden')) {
-                pessoaJuridicaForm.classList.add('hidden')
-                pessoaFisicaForm.classList.remove('hidden')
+    function toggleForm() {
+      if (pessoaFisicaForm && pessoaFisicaForm.classList.contains('hidden')) {
+        pessoaJuridicaForm.classList.add('hidden')
+        pessoaFisicaForm.classList.remove('hidden')
 
-                pessoaJuridicaBtn.classList.remove('text-white')
-                pessoaJuridicaBtn.classList.remove('bg-green-400')
-                pessoaJuridicaBtn.classList.add('text-green-400')
-                pessoaFisicaBtn.classList.remove('text-green-400')
-                pessoaFisicaBtn.classList.add(...['text-white', 'bg-green-400'])
+        pessoaJuridicaBtn.classList.remove('text-white')
+        pessoaJuridicaBtn.classList.remove('bg-green-400')
+        pessoaJuridicaBtn.classList.add('text-green-400')
+        pessoaFisicaBtn.classList.remove('text-green-400')
+        pessoaFisicaBtn.classList.add(...['text-white', 'bg-green-400'])
 
-                return
-            }
-            pessoaFisicaForm.classList.add('hidden')
-            pessoaJuridicaForm.classList.remove('hidden')
+        return
+      }
+      pessoaFisicaForm.classList.add('hidden')
+      pessoaJuridicaForm.classList.remove('hidden')
 
-            pessoaFisicaBtn.classList.remove('text-white')
-            pessoaFisicaBtn.classList.remove('bg-green-400')
-            pessoaFisicaBtn.classList.add('text-green-400')
-            pessoaJuridicaBtn.classList.remove('text-green-400')
-            pessoaJuridicaBtn.classList.add(...['text-white', 'bg-green-400'])
-        }
+      pessoaFisicaBtn.classList.remove('text-white')
+      pessoaFisicaBtn.classList.remove('bg-green-400')
+      pessoaFisicaBtn.classList.add('text-green-400')
+      pessoaJuridicaBtn.classList.remove('text-green-400')
+      pessoaJuridicaBtn.classList.add(...['text-white', 'bg-green-400'])
+    }
 
-        window.toggleForm = toggleForm
+    window.toggleForm = toggleForm
   </script>
   <style>
     fieldset {
-            width: 50%;
-            padding-right: 4px;
-            padding-left: 4px;
-        }
+      width: 50%;
+      padding-right: 4px;
+      padding-left: 4px;
+    }
   </style>
 </dialog>
 {{ end }}

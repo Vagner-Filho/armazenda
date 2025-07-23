@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="/public/assets/static/css/output.css" rel="stylesheet">
-    <title>Romaneio</title>
+    <link rel="icon" type="image/x-icon" href="/public/assets/favicon.ico">
+    <title>Romaneio - Armazenda</title>
     <script src="https://unpkg.com/htmx.org@2.0.0" integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
     <script type="module" src="/public/assets/js/toast.js"></script>
@@ -13,17 +14,7 @@
   </head>
   <body class="bg-sky-50">
     {{ template "navbar" }}
-    <div class="fixed top-0 left-0 h-dvh w-60 bg-green-400 flex flex-col" role="menu">
-      <a href="/pessoa">
-        Pessoa
-      </a>
-      <a href="/relatorio">
-        Relatório
-      </a>
-      <a href="/romaneio">
-        Romaneio
-      </a>
-    </div>
+    {{ template "menu" "romaneio" }}
     <section class="mt-20 px-2 max-w-screen-xl mx-auto">
       <header>
         <h1 class="text-center text-xl font-semibold">
