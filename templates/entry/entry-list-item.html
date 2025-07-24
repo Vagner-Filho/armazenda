@@ -1,24 +1,24 @@
 {{ block "entry-list-item" . }}
 <tr class="text-center whitespace-nowrap text-sm sm:text-base" id="entry-{{ .Id }}">
-  <td>
+  <td data-label="Romaneio">
     {{ .Id }}
   </td>
-  <td>
+  <td data-label="Produto">
     {{ .Product }}
   </td>
-  <td>
+  <td data-label="Talhão">
     {{ .Field }}
   </td>
-  <td>
+  <td data-label="Placa">
     {{ .Vehicle }}
   </td>
-  <td>
+  <td data-label="Peso Líquido">
     {{ .NetWeight }}
   </td>
-  <td id="arrivalDate">
+  <td id="arrivalDate" data-label="Data de Recebimento">
     {{ .ArrivalDate }}
   </td>
-  <td>
+  <td data-label="Ações">
     <div class="flex items-center justify-center gap-2 text-green-500">
       <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
       <button type="button" id="{{ .Id }}" onclick="getEntryPdf(this)" title="PDF de Entrada">

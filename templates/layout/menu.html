@@ -1,19 +1,39 @@
 {{ block "menu" . }}
-<div class="fixed top-0 left-0 h-dvh w-60 bg-green-900 flex flex-col gap-2 px-4 py-2 text-lg text-slate-100" role="menu">
-    <h2 class="text-white font-bold inline-flex items-center text-xl">
+<div class="fixed top-0 left-0 h-dvh w-10 lg:w-60 bg-sky-50 flex flex-col gap-2 px-3 lg:px-4 py-2 text-lg text-green-700 shadow-lg"
+    role="menu">
+    <h2 class="text-green-900 font-bold inline-flex items-center gap-3 text-xl">
         <img loading="lazy" src="/public/assets/favicon.ico" width="48" height="48">
-        ARMAZENDA
+        <div class="hidden lg:block">
+            ARMAZENDA
+        </div>
     </h2>
-    <a href="/pessoa" class="inline-flex gap-3{{ if eq . "pessoa" }} text-white font-bold{{ end }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 19.5c0-1.657-2.239-3-5-3s-5 1.343-5 3m14-3c0-1.23-1.234-2.287-3-2.75M3 16.5c0-1.23 1.234-2.287 3-2.75m12-4.014a3 3 0 1 0-4-4.472M6 9.736a3 3 0 0 1 4-4.472m2 8.236a3 3 0 1 1 0-6a3 3 0 0 1 0 6"/></svg>Pessoa
+    <a href="/pessoa" class="inline-flex gap-3 mt-10{{ if eq . "pessoa" }} text-green-900 font-bold{{ end }}" title="Página de pessoa">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M17 19.5c0-1.657-2.239-3-5-3s-5 1.343-5 3m14-3c0-1.23-1.234-2.287-3-2.75M3 16.5c0-1.23 1.234-2.287 3-2.75m12-4.014a3 3 0 1 0-4-4.472M6 9.736a3 3 0 0 1 4-4.472m2 8.236a3 3 0 1 1 0-6a3 3 0 0 1 0 6" />
+        </svg>
+        <div class="hidden lg:block">
+            Pessoa
+        </div>
     </a>
-    <a href="/relatorio" class="inline-flex gap-3{{ if eq . "relatorio" }} text-white font-bold{{ end }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32"><path fill="currentColor" d="M15 20h2v4h-2zm5-2h2v6h-2zm-10-4h2v10h-2z"/><path fill="currentColor" d="M25 5h-3V4a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v1H7a2 2 0 0 0-2 2v21a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2M12 4h8v4h-8Zm13 24H7V7h3v3h12V7h3Z"/></svg>
-        Relatório
+    <a href="/relatorio" class="inline-flex gap-3{{ if eq . "relatorio" }} text-green-900 font-bold{{ end }}" title="Página de relatório">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32">
+            <path fill="currentColor" d="M15 20h2v4h-2zm5-2h2v6h-2zm-10-4h2v10h-2z" />
+            <path fill="currentColor"
+                d="M25 5h-3V4a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v1H7a2 2 0 0 0-2 2v21a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2M12 4h8v4h-8Zm13 24H7V7h3v3h12V7h3Z" />
+        </svg>
+        <div class="hidden lg:block">
+            Relatório
+        </div>
     </a>
-    <a href="/romaneio" class="inline-flex gap-3{{ if eq . "romaneio" }} text-white font-bold{{ end }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M8.5 2a6.5 6.5 0 0 1 6.46 5.78L22 12v2l-2-1.2V22h-2V11.6l-3-1.8V22h-2V9H4v13H2V8.5A6.5 6.5 0 0 1 8.5 2m0 2C6.54 4 4.87 5.25 4.26 7h8.48c-.61-1.75-2.28-3-4.24-3M6 11h5v2H6zm0 4h5v2H6zm0 4h5v2H6z"/></svg>
-        Romaneio
+    <a href="/romaneio" class="inline-flex gap-3{{ if eq . "romaneio" }} text-green-900 font-bold{{ end }}" title="Página de romaneio">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+            <path fill="currentColor"
+                d="M8.5 2a6.5 6.5 0 0 1 6.46 5.78L22 12v2l-2-1.2V22h-2V11.6l-3-1.8V22h-2V9H4v13H2V8.5A6.5 6.5 0 0 1 8.5 2m0 2C6.54 4 4.87 5.25 4.26 7h8.48c-.61-1.75-2.28-3-4.24-3M6 11h5v2H6zm0 4h5v2H6zm0 4h5v2H6z" />
+        </svg>
+        <div class="hidden lg:block">
+            Romaneio
+        </div>
     </a>
 </div>
 {{ end }}

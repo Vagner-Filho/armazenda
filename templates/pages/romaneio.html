@@ -3,6 +3,9 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <link href="/public/assets/static/css/output.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="/public/assets/favicon.ico">
     <title>Romaneio - Armazenda</title>
@@ -14,21 +17,21 @@
   </head>
   <body class="bg-sky-50">
     {{ template "navbar" }}
-    {{ template "menu" "romaneio" }}
-    <section class="mt-20 px-2 max-w-screen-xl mx-auto">
+  {{ template "menu" "romaneio" }}
+    <section class="mt-20 pl-12 sm:pl-2 px-2 max-w-screen-xl mx-auto">
       <header>
-        <h1 class="text-center text-xl font-semibold">
+        <h1 class="text-center text-xl">
           CONTROLE DE ROMANEIO
         </h1>
       </header>
-      <div class="flex items-center justify-center w-full py-2">
-        <button type="button" id="show-entry-manifest" class="h-8 px-2 text-base rounded-md rounded-r-none ring-1 ring-green-400 text-white bg-green-400 transition-colors duration-300" hx-trigger="click" hx-get="/entry/list" hx-target="#content-container" onclick="handleShowDeparture('button#show-entry-manifest', 'button#show-departure-manifest')">
-          Entrada
+      <div class="flex items-center justify-center w-full py-2 font-bold tracking-wide">
+        <button type="button" id="show-entry-manifest" class="h-8 px-2 text-xs md:text-base rounded-md rounded-r-none ring-1 ring-green-400 text-white bg-green-400 transition-colors duration-300" hx-trigger="click" hx-get="/entry/list" hx-target="#content-container" onclick="handleShowDeparture('button#show-entry-manifest', 'button#show-departure-manifest')">
+          ENTRADA
         </button>
         <div class="h-8 w-[2px] bg-green-400">
         </div>
-        <button type="button" id="show-departure-manifest" class="h-8 px-2 text-base rounded-md rounded-l-none ring-1 ring-green-400 text-green-400 transition-colors duration-300" hx-trigger="click" hx-get="/departure/list" hx-target="#content-container" onclick="handleShowDeparture('button#show-departure-manifest', 'button#show-entry-manifest')">
-          Saída
+        <button type="button" id="show-departure-manifest" class="h-8 px-2 text-xs md:text-base rounded-md rounded-l-none ring-1 ring-green-400 text-green-400 transition-colors duration-300" hx-trigger="click" hx-get="/departure/list" hx-target="#content-container" onclick="handleShowDeparture('button#show-departure-manifest', 'button#show-entry-manifest')">
+          SAÍDA
         </button>
       </div>
       <div id="content-container">
@@ -52,3 +55,53 @@
   }
   window.handleShowDeparture = handleShowDeparture
 </script>
+<style>
+@media screen and (max-width: 600px) {
+  table {
+    border: 0;
+  }
+
+  table caption {
+    font-size: 1.3em;
+  }
+
+  table thead {
+    border: none;
+    clip: rect(0 0 0 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+  }
+ 
+  table tr {
+    border-bottom: 3px solid #ddd;
+    display: block;
+    margin-bottom: .625em;
+  }
+ 
+  table td {
+    border-bottom: 1px solid #ddd;
+    display: block;
+    font-size: .8em;
+    text-align: right;
+  }
+ 
+  table td::before {
+    /*
+    * aria-label has no advantage, it won't be read inside a table
+    content: attr(aria-label);
+    */
+    content: attr(data-label);
+    float: left;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+ 
+  table td:last-child {
+    border-bottom: 0;
+  }
+}
+</style>

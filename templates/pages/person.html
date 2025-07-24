@@ -14,39 +14,37 @@
   </head>
   <body class="bg-sky-50">
     {{ template "navbar" }}
-    {{ template "menu" "pessoa" }}
+  {{ template "menu" "pessoa" }}
     <section class="mt-20 px-2 max-w-screen-xl mx-auto">
       <div class="w-full flex items-center justify-end py-1 gap-4">
-        <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/person/form" hx-target="body"
-          hx-swap="beforeend">
+        <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/person/form" hx-target="body" hx-swap="beforeend">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-            <path fill="currentColor"
-              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m5 11h-4v4h-2v-4H7v-2h4V7h2v4h4z" />
+            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m5 11h-4v4h-2v-4H7v-2h4V7h2v4h4z"/>
           </svg>
           Nova Pessoa
         </button>
       </div>
       <div class="flex flex-col w-full" id="persons-header">
-        <div class="w-full flex justify-between bg-slate-200 uppercase text-lg px-2">
-          <div>
+        <div class="w-full flex justify-between bg-slate-200 uppercase font-extrabold px-2 text-xs sm:text-base whitespace-nowrap bg-gray-300/50">
+          <div class="w-1/4 text-center">
             Tipo
           </div>
-          <div>
+          <div class="w-1/4 text-center">
             Nome
           </div>
-          <div>
+          <div class="w-1/4 text-center">
             Documento
           </div>
-          <div>
+          <div class="w-1/4 text-center">
             Inscrição Estadual
           </div>
         </div>
       </div>
       <div class="flex flex-col w-full" id="people-rows">
         {{ range .People }}
-        {{ template "person-list-item" . }}
-        {{ end }}
+      {{ template "person-list-item" . }}
+      {{ end }}
       </div>
-      </section>
+    </section>
   </body>
 </html>

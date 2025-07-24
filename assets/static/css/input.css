@@ -1,5 +1,28 @@
 @import "tailwindcss";
 
+.noto-serif-font {
+  font-family: "Noto Serif", serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+
+.noto-sans-font {
+  font-family: "Noto Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+
+@theme {
+    --font-noto-sans: "Noto Sans", sans-serif;
+    --font-noto-serif: "Noto Serif", serif;
+}
+
 @utility add-btn {
     @apply btn-shape text-green-500 hover:text-white hover:bg-green-500 focus:text-white focus:bg-green-500 ring ring-inset ring-green-500 transition-colors duration-300 ease-in-out
 }
@@ -32,6 +55,12 @@
 
     dialog {
         @apply backdrop:bg-black/50 m-auto
+    }
+    * {
+        font-family: "Noto Sans";
+    }
+    h1, h2 {
+        font-family: "Noto Serif";
     }
 }
 

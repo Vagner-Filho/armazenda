@@ -1,8 +1,8 @@
 {{ block "person-list-item" . }}
 <div class="w-full flex justify-between px-2">
-    <div>{{ if eq .Type 0 }}Pessoa Física{{ else }}Pessoa Jurídica{{ end }}</div>
-    <div>{{ .Name }}</div>
-    <div>{{ .Document }}</div>
-    <div>{{ .IE }}</div>
+  <div class="w-1/4 text-center">{{ if eq .Type 0 }}Pessoa Física{{ else }}Pessoa Jurídica{{ end }}</div>
+  <div class="w-1/4 text-center">{{ .Name }}</div>
+  <div class="w-1/4 text-center">{{ .Document }}</div>
+  <div class="w-1/4 text-center">{{ .IE }}</div>
 </div>
 {{ end }}

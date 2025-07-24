@@ -5,18 +5,18 @@
     </div>
     <div class="w-full flex items-center justify-end py-1 gap-4">
         <button id="form" type="button"
-            class="btn-shape text-slate-500 hover:text-white hover:bg-slate-500 focus:text-white focus:bg-slate-500 ring ring-inset ring-slate-500 transition-colors duration-300 ease-in-out flex items-center gap-1"
+            class="btn-shape text-xs md:text-base text-slate-500 hover:text-white hover:bg-slate-500 focus:text-white focus:bg-slate-500 ring ring-inset ring-slate-500 transition-colors duration-300 ease-in-out flex items-center gap-1"
             hx-get="/entry/draft/form" hx-target="body" hx-swap="beforeend">
             <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
             Novo Rascunho
         </button>
-        <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/entry/form" hx-target="body"
+        <button id="form" type="button" class="add-btn text-xs md:text-base flex items-center gap-1" hx-get="/entry/form" hx-target="body"
             hx-swap="beforeend">
             <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
             Nova Entrada
         </button>
     </div>
-    <main id="list" class="overflow-x-auto">
+    <main id="list">
         {{ template "entry-table" .Entries }}
     </main>
 </div>

@@ -1,6 +1,6 @@
 {{ block "entry-table" . }}
 <table class="w-full">
-    <thead class="text-xs sm:text-base whitespace-nowrap bg-gray-300/50">
+    <thead class="text-xs sm:text-base whitespace-nowrap bg-gray-300/50 hidden md:table-header-group">
         <tr>
             <th class="py-2">
                 ROMANEIO
@@ -25,7 +25,7 @@
             </th>
         </tr>
     </thead>
-    <tbody id="entries-table-body">
+    <tbody id="entries-table-body" class="overflow-x-auto">
         {{ range . }}
         {{ template "entry-list-item" . }}
         {{ end }}
