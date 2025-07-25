@@ -1,23 +1,20 @@
 {{ block "person-selector" $ }}
-<div class="flex flex-col-reverse w-full relative pr-[30px]">
-  <select name="person" id="person-selector" class="w-full peer">
-    {{ range $.People }}
-    {{ if eq .Id $.SelectedPerson }}
-    {{ template "selected-option" . }}
-    {{ else }}
-    {{ template "simple-option" . }}
-    {{ end }}
-    {{ else }}
-    <option value="-1">
-      Nenhum comprador encontrado
-    </option>
-    {{ end }}
-  </select>
-  <label for="person-selector" class="label-peer">
-    Destino
-  </label>
-  <button class="absolute right-0 bottom-[2px] stroke-green-500 rounded-full text-transparent text-[24px] h-6 leading-6 focus:text-green-500 focus:stroke-white hover:text-green-500 hover:stroke-white transition-colors duration-300 ease-linear !outline-0" type="button" hx-get="/person/form" hx-target="body" hx-swap="beforeend">
-    <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
-  </button>
-</div>
+<select name="origin" id="person-selector" class="w-full peer">
+  {{ if eq $.SelectedPerson 0 }}
+  <option value="">
+    Própria
+  </option>
+  {{ end }}
+  {{ range $.People }}
+  {{ if eq .Id $.SelectedPerson }}
+  {{ template "selected-option" . }}
+  {{ else }}
+  {{ template "simple-option" . }}
+  {{ end }}
+  {{ else }}
+  <option value="-1">
+    Nenhuma pessoa encontrada
+  </option>
+  {{ end }}
+</select>
 {{ end }}

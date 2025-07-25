@@ -46,7 +46,7 @@
 
     input,
     select {
-        @apply transition-all duration-300 ease-linear outline-0 rounded-md h-7 px-2 text-gray-700 focus:ring-green-600 focus:ring-2 focus:ring-inset bg-stone-100
+        @apply transition-all duration-300 ease-linear outline-0 rounded-md h-7 px-2 text-gray-700 focus:ring-green-600 focus:ring-2 focus:ring-inset bg-stone-100 focus-visible:outline-0 focus-visible:outline-none
     }
 
     button {

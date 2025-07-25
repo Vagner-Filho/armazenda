@@ -90,8 +90,9 @@ func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.
 }
 
 func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
+	fmt.Printf("\norigin: %v\n", ge.Origin)
 	row, queryErr := em.conn.Query(context.Background(), `
-		SELECT * FROM add_get_entry(@field, @crop, @grossWeight, @tare, @humidity, @vehicle, @netWeight, @arrivalDate, @farm, @damage, @impurity)
+		SELECT * FROM add_get_entry(@field, @crop, @grossWeight, @tare, @humidity, @vehicle, @netWeight, @arrivalDate, @farm, @damage, @impurity, @origin)
 		`, pgx.NamedArgs{
 		"field":       ge.Field,
 		"crop":        ge.Crop,
@@ -104,6 +105,7 @@ func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.DisplayEnt
 		"farm":        ge.Farm,
 		"damage":      ge.Damage,
 		"impurity":    ge.Impurity,
+		"origin":      ge.Origin,
 	})
 
 	if queryErr != nil {

@@ -6,6 +6,7 @@ import (
 	crop_service "armazenda/service/crop"
 	"armazenda/service/entry_service"
 	field_service "armazenda/service/field"
+	person_service "armazenda/service/person"
 	product_service "armazenda/service/product"
 	"armazenda/service/vehicle_service"
 )
@@ -61,6 +62,8 @@ type EntryForm struct {
 	SelectedField   uint16
 	Products        []entity_public.Product
 	Entry           entity_public.EntryDTO
+	People          []entity_public.PersonOption
+	SelectedPerson  uint32
 }
 
 func GetEntryForm(farm uint32) (EntryForm, []*entity_public.Toast) {
@@ -68,13 +71,15 @@ func GetEntryForm(farm uint32) (EntryForm, []*entity_public.Toast) {
 	crops, cToast := crop_service.GetCropsByFarm(farm)
 	fields, fToast := field_service.GetFieldsByFarm(farm)
 	products, pToast := product_service.GetProducts()
+	people, pepToast := person_service.GetPeopleByFarm(farm)
 
 	return EntryForm{
 		Vehicles: vehicles,
 		Crops:    crops,
 		Fields:   fields,
 		Products: products,
-	}, []*entity_public.Toast{vToast, cToast, fToast, pToast}
+		People:   people,
+	}, []*entity_public.Toast{vToast, cToast, fToast, pToast, pepToast}
 }
 
 func GetExistingEntryForm(entryId uint32, farm uint32) (EntryForm, []*entity_public.Toast) {

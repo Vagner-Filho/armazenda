@@ -5,9 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
+	zerologadapter "github.com/jackc/pgx-zerolog"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/tracelog"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func handleStmtExec(c *pgx.Conn, stmt *pgconn.StatementDescription, err error, operationName string) {
@@ -133,7 +138,6 @@ func initEntry(c *pgx.Conn) {
 		netWeight NUMERIC(10, 3) NOT NULL,
 		arrivalDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 		farm INTEGER NOT NULL,
-		finishedAt TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 		FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
 		FOREIGN KEY (field) REFERENCES field(id),
 		FOREIGN KEY (crop) REFERENCES crop(id),
@@ -142,6 +146,19 @@ func initEntry(c *pgx.Conn) {
 	`)
 
 	handleStmtExec(c, stmt, err, "create entry")
+}
+
+func initEntryOrigin(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init entry origin table", `
+	CREATE TABLE IF NOT EXISTS entry_origin (
+		entry_id INTEGER UNIQUE NOT NULL,
+		person_id INTEGER NOT NULL,
+		FOREIGN KEY (entry_id) REFERENCES entry(id),
+		FOREIGN KEY (person_id) REFERENCES person(id)
+	);
+	`)
+
+	handleStmtExec(c, stmt, err, "create entry origin")
 }
 
 func initEntryAnalysis(c *pgx.Conn) {
@@ -234,7 +251,7 @@ func initLegalPerson(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init legal_person table", `
 	CREATE TABLE IF NOT EXISTS legal_person (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-		cnpj VARCHAR(255) UNIQUE NOT NULL,
+		cnpj VARCHAR(14) UNIQUE NOT NULL,
 		personId INTEGER UNIQUE NOT NULL,
 		companyName VARCHAR(255) NOT NULL,
 		fantasyName VARCHAR(255),
@@ -248,11 +265,10 @@ func initLegalPerson(c *pgx.Conn) {
 func initDepartureRecipient(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init departure_recipient table", `
 	CREATE TABLE IF NOT EXISTS departure_recipient (
-		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-		departureId INTEGER UNIQUE NOT NULL,
-		personId INTEGER NOT NULL,
-		FOREIGN KEY (personId) REFERENCES person(id),
-		FOREIGN KEY (departureId) REFERENCES departure(id)
+		departure_id INTEGER UNIQUE NOT NULL,
+		person_id INTEGER NOT NULL,
+		FOREIGN KEY (person_id) REFERENCES person(id),
+		FOREIGN KEY (departure_id) REFERENCES departure(id)
 	);
 	`)
 
@@ -330,7 +346,7 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 		DECLARE departure_id INTEGER;
 		BEGIN
 			INSERT INTO departure (departureDate, vehicle, crop, farm, tare, grossWeight, netWeight) VALUES (departureDate, vehicle, crop, farm, tare, grossWeight, netWeight) RETURNING id INTO departure_id;
-			INSERT INTO departure_recipient (departureId, personId) VALUES (departure_id, personId);
+			INSERT INTO departure_recipient (departure_id, person_id) VALUES (departure_id, personId);
 
 			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = crop INTO productName;
 			departureId := departure_id;
@@ -375,7 +391,7 @@ func initAddLegalPerson(c *pgx.Conn) {
 		CREATE OR REPLACE FUNCTION add_get_legal_person(
 			OUT person_type INTEGER,
 			INOUT companyName VARCHAR(255),
-			INOUT cnpj VARCHAR(255),
+			INOUT cnpj VARCHAR(14),
 			INOUT ie VARCHAR(255),
 			IN fantasyName VARCHAR(255),
 			IN farm INTEGER,
@@ -416,7 +432,8 @@ func initAddEntry(c *pgx.Conn) {
 			INOUT arrivalDate TIMESTAMP WITHOUT TIME ZONE,
 			INOUT farm INTEGER,
 			IN damage NUMERIC(6, 3),
-			IN impurity NUMERIC(6, 3)
+			IN impurity NUMERIC(6, 3),
+			IN origin INTEGER
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE entry_id INTEGER;
@@ -425,6 +442,10 @@ func initAddEntry(c *pgx.Conn) {
 
 			IF humidity IS NOT NULL OR damage IS NOT NULL OR impurity IS NOT NULL THEN
 				INSERT INTO entry_analysis (humidity, damage, impurity, entryid) VALUES (humidity, damage, impurity, entry_id);
+			END IF;
+			
+			IF origin IS NOT NULL THEN
+				INSERT INTO entry_origin (entry_id, person_id) VALUES (entry_id, origin);
 			END IF;
 
 			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = crop INTO productName;
@@ -545,7 +566,9 @@ func initFarm(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init farm stmt", `
 		CREATE TABLE IF NOT EXISTS farm (
 			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-			inscricao_estadual TEXT UNIQUE NOT NULL
+			inscricao_estadual TEXT UNIQUE NOT NULL,
+			person_id INTEGER UNIQUE NOT NULL,
+			FOREIGN KEY (person_id) REFERENCES person(id)
 		);
 	`)
 	handleStmtExec(c, stmt, err, "init farm table")
@@ -591,6 +614,7 @@ func InitDb(c *pgx.Conn) {
 	initVehicle(c)
 	initField(c)
 	initEntry(c)
+	initEntryOrigin(c)
 	initPreEntry(c)
 	initEntryAnalysis(c)
 	initDeparture(c)
@@ -622,8 +646,26 @@ func GetDbConnection() (*pgx.Conn, error) {
 		dbPass := os.Getenv("DB_PASS")
 		dbName := os.Getenv("DB_NAME")
 		dbPort := os.Getenv("DB_PORT")
-		//dbc, err := pgx.Connect(context.Background(), "postgres://armazenda_user:y34xEy2HR09pibXFA6ngrku7@localhost:5432/armazenda_db")
-		dbc, err := pgx.Connect(context.Background(), "postgres://"+dbUser+":"+dbPass+"@"+dbHost+":"+dbPort+"/"+dbName)
+
+		output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+		zlogger := zerolog.New(output).Level(zerolog.DebugLevel).With().Timestamp().Logger()
+
+		connString := "postgres://" + dbUser + ":" + dbPass + "@" + dbHost + ":" + dbPort + "/" + dbName
+		config, err := pgx.ParseConfig(connString)
+		if err != nil {
+			// Handle error
+			log.Fatal().Err(err).Msg("Failed to parse connection string")
+			fmt.Printf("host | user | psswd | name | port\n%v | %v | %v | %v | %v\n", dbHost, dbUser, dbPass, dbName, dbPort)
+			os.Exit(1)
+
+			return nil, errors.New("Falha em conectar ao banco")
+		}
+		config.Tracer = &tracelog.TraceLog{
+			LogLevel: tracelog.LogLevelTrace,
+			Logger:   zerologadapter.NewLogger(zlogger),
+		}
+
+		dbc, err := pgx.ConnectConfig(context.Background(), config)
 
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
