@@ -233,6 +233,21 @@ func initPerson(c *pgx.Conn) {
 	handleStmtExec(c, stmt, err, "create person")
 }
 
+func initPersonConfig(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init person_config table", `
+	CREATE TABLE IF NOT EXISTS person_config (
+		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+		person_id INTEGER UNIQUE NOT NULL,
+		ie VARCHAR(255) NOT NULL,
+		farm INTEGER NOT NULL,
+		humidity_discount NUMERIC(6, 3) NOT NULL,
+		FOREIGN KEY (farm) REFERENCES farm(id)
+	);
+	`)
+
+	handleStmtExec(c, stmt, err, "create person config")
+}
+
 func initNaturalPerson(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init natural_person table", `
 	CREATE TABLE IF NOT EXISTS natural_person (
@@ -367,14 +382,19 @@ func initAddNaturalPerson(c *pgx.Conn) {
 			INOUT cpf VARCHAR(255),
 			INOUT ie VARCHAR(255),
 			OUT personId INTEGER,
-			IN farm INTEGER
+			IN farm INTEGER,
+			IN humidityDiscount NUMERIC(6, 3) DEFAULT NULL
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE person_id INTEGER;
 		BEGIN
 			INSERT INTO person (ie, farm) VALUES (ie, farm) RETURNING id INTO person_id;
 			INSERT INTO natural_person (name, cpf, personId) VALUES (name, cpf, person_id);
-			
+
+			IF humidityDiscount IS NOT NULL THEN
+				INSERT INTO person_config (person_id, ie, farm, humidity_discount) VALUES (person_id, ie, farm, humidityDiscount);
+			END IF;
+
 			personId := person_id;
 			person_type := 0;
 		END;
@@ -395,7 +415,8 @@ func initAddLegalPerson(c *pgx.Conn) {
 			INOUT ie VARCHAR(255),
 			IN fantasyName VARCHAR(255),
 			IN farm INTEGER,
-			OUT personId INTEGER
+			OUT personId INTEGER,
+			IN humidityDiscount NUMERIC(6, 3) DEFAULT NULL
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE person_id INTEGER;
@@ -403,6 +424,10 @@ func initAddLegalPerson(c *pgx.Conn) {
 			INSERT INTO person (ie, farm) VALUES (ie, farm) RETURNING id INTO person_id;
 			INSERT INTO legal_person (cnpj, companyname, fantasyname, personid) VALUES (cnpj, companyName, fantasyName, person_id);
 			
+			IF humidityDiscount IS NOT NULL THEN
+				INSERT INTO person_config (person_id, ie, farm, humidity_discount) VALUES (person_id, ie, farm, humidityDiscount);
+			END IF;
+
 			personId := person_id;
 			person_type := 1;
 		END;
@@ -619,6 +644,7 @@ func InitDb(c *pgx.Conn) {
 	initEntryAnalysis(c)
 	initDeparture(c)
 	initPerson(c)
+	initPersonConfig(c)
 	initDepartureRecipient(c)
 	initNaturalPerson(c)
 	initLegalPerson(c)
@@ -648,7 +674,7 @@ func GetDbConnection() (*pgx.Conn, error) {
 		dbPort := os.Getenv("DB_PORT")
 
 		output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
-		zlogger := zerolog.New(output).Level(zerolog.DebugLevel).With().Timestamp().Logger()
+		zlogger := zerolog.New(output).Level(zerolog.ErrorLevel).With().Timestamp().Logger()
 
 		connString := "postgres://" + dbUser + ":" + dbPass + "@" + dbHost + ":" + dbPort + "/" + dbName
 		config, err := pgx.ParseConfig(connString)
@@ -661,7 +687,7 @@ func GetDbConnection() (*pgx.Conn, error) {
 			return nil, errors.New("Falha em conectar ao banco")
 		}
 		config.Tracer = &tracelog.TraceLog{
-			LogLevel: tracelog.LogLevelTrace,
+			LogLevel: tracelog.LogLevelError,
 			Logger:   zerologadapter.NewLogger(zlogger),
 		}
 

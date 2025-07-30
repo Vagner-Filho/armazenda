@@ -7,7 +7,7 @@ import (
 
 func GetReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.ReportDisplay, *entity_public.Toast) {
 	rm := report_model.GetReportModel()
-	report, err := rm.FilterEntries(rf, farm)
+	report, err := rm.FilterReport(rf, farm)
 	if err != nil {
 		toast := entity_public.GetWarningToast(err.Error(), "")
 		return []entity_public.ReportDisplay{}, &toast
@@ -17,7 +17,7 @@ func GetReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.Repo
 
 func FilterReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.ReportDisplay, *entity_public.Toast) {
 	rModel := report_model.GetReportModel()
-	report, err := rModel.FilterEntries(rf, farm)
+	report, err := rModel.FilterReport(rf, farm)
 	if err != nil {
 		toast := entity_public.GetWarningToast("Falha ao filtrar relatório", "")
 		return report, &toast

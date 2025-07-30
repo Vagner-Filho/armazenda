@@ -60,20 +60,27 @@ var availableReportFilters = map[string]func(ef entity_public.ReportFilter) stri
 	},
 }
 
-func (rm *reportModel) FilterEntries(rf entity_public.ReportFilter, farm uint32) ([]entity_public.ReportDisplay, error) {
+func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.ReportDisplay, error) {
 	filters := rf.GetFilters(availableReportFilters)
 
-	stmt := `SELECT * FROM (SELECT e.id, 0 AS operation_type, p.name, e.vehicle, e.netweight, e.arrivaldate AS date
+	stmt := `WITH people AS (SELECT np.name, np.personid FROM natural_person np UNION ALL SELECT lp.companyname AS name, lp.personid FROM legal_person lp)
+		SELECT * FROM (SELECT e.id, 0 AS operation_type, p.name, e.vehicle, e.netweight, e.arrivaldate AS date, coalesce(prs.name, 'Pŕopria') AS pessoa
 			FROM entry e
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
+			LEFT JOIN entry_origin eo ON eo.entry_id = e.id
+			LEFT JOIN people
+			AS prs ON prs.personid = eo.person_id
 			WHERE e.farm = @userFarm
 			UNION ALL
-		SELECT d.id, 1 AS operation_type, p.name, d.vehicle, d.netweight , d.departuredate AS date
+		SELECT d.id, 1 AS operation_type, p.name, d.vehicle, d.netweight , d.departuredate AS date, coalesce(prs.name, 'Pŕopria') AS pessoa
 			FROM departure d
 			JOIN crop c ON d.crop = c.id
 			JOIN product p ON c.product = p.id
-			WHERE d.farm = @userFarm) AS r`
+			LEFT JOIN departure_recipient dr ON dr.departureid = d.id
+			LEFT JOIN people
+			AS prs ON prs.personid = dr.personid
+			WHERE d.farm = @userFarm) AS r;`
 
 	if len(filters) > 0 {
 		stmt += " WHERE "

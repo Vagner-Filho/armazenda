@@ -6,15 +6,31 @@
   </option>
   {{ end }}
   {{ range $.People }}
-  {{ if eq .Id $.SelectedPerson }}
-  {{ template "selected-option" . }}
-  {{ else }}
-  {{ template "simple-option" . }}
-  {{ end }}
+  <option value="{{ .Id }}" data-humidity="{{ .HumidityDiscount }}" {{ if eq .Id $.SelectedPerson }}selected{{ end }}>
+    {{ .Name }}
+  </option>
   {{ else }}
   <option value="-1">
     Nenhuma pessoa encontrada
   </option>
   {{ end }}
+  <script type="module">
+    function setPersonConfig(el) {
+      const selectedOption = el.options[el.selectedIndex];
+      const humidityDiscount = selectedOption.getAttribute('data-humidity');
+      const personId = selectedOption.value;
+      const personName = selectedOption.textContent.trim();
+
+      sessionStorage.setItem('personConfig', JSON.stringify({
+        humidityDiscount: humidityDiscount
+      }));
+    }
+    const selector = document.getElementById('person-selector');
+    if (selector) {
+      selector.addEventListener('change', function (evt) {
+        setPersonConfig(evt.target);
+      });
+    }
+  </script>
 </select>
 {{ end }}

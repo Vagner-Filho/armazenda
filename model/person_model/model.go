@@ -44,13 +44,14 @@ func GetpersonModel() *personModel {
 func (bm *personModel) AddLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
 	row, queryErr := bm.conn.Query(
 		context.Background(),
-		`SELECT * FROM add_get_legal_person(@companyName, @cnpj, @ie, @fantasyName, @farm)`,
+		`SELECT * FROM add_get_legal_person(@companyName, @cnpj, @ie, @fantasyName, @farm, @humidityDiscount)`,
 		pgx.NamedArgs{
-			"ie":          bc.InscricaoEstadual,
-			"cnpj":        bc.Cnpj,
-			"fantasyName": bc.FantasyName,
-			"farm":        bc.Person.Farm,
-			"companyName": bc.CompanyName,
+			"ie":               bc.InscricaoEstadual,
+			"cnpj":             bc.Cnpj,
+			"fantasyName":      bc.FantasyName,
+			"farm":             bc.Person.Farm,
+			"companyName":      bc.CompanyName,
+			"humidityDiscount": bc.Person.HumidityDiscount,
 		})
 
 	if queryErr != nil {
@@ -68,9 +69,17 @@ func (bm *personModel) AddLegalPerson(bc entity_public.LegalPerson) (entity_publ
 }
 
 func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
+	fmt.Printf("Adding natural person: %+v\n", bp)
 	row, queryErr := bm.conn.Query(context.Background(), `
-			SELECT * FROM add_get_natural_person(@name, @cpf, @ie, @farm)
-		`, pgx.NamedArgs{"ie": bp.InscricaoEstadual, "cpf": bp.Cpf, "name": bp.Name, "farm": bp.Person.Farm})
+			SELECT * FROM add_get_natural_person(@name, @cpf, @ie, @farm, @humidityDiscount)
+		`,
+		pgx.NamedArgs{
+			"ie":               bp.InscricaoEstadual,
+			"cpf":              bp.Cpf,
+			"name":             bp.Name,
+			"farm":             bp.Person.Farm,
+			"humidityDiscount": bp.Person.HumidityDiscount,
+		})
 	if queryErr != nil {
 		model_error.Logger(bm.conn, queryErr.Error())
 		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: queryErr.Error()}
@@ -100,11 +109,13 @@ func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_
 
 func (bm *personModel) GetPeopleByFarm(farm uint32) ([]entity_public.PersonOption, *model_error.ModelError) {
 	rows, queryErr := bm.conn.Query(context.Background(), `
-		SELECT p.id, lp.companyname AS name FROM person p
+		SELECT p.id, lp.companyname AS name, COALESCE(pc.humidity_discount, 1.7) FROM person p
 		JOIN legal_person lp ON p.id = lp.personid
+		LEFT JOIN person_config pc ON p.id = pc.person_id
 		UNION
-		SELECT p.id, np.name FROM person p
+		SELECT p.id, np.name, COALESCE(pc.humidity_discount, 1.7) FROM person p
 		JOIN natural_person np ON p.id = np.personid
+		LEFT JOIN person_config pc ON p.id = pc.person_id
 		WHERE p.farm = @userFarm
 	`, pgx.NamedArgs{"userFarm": farm})
 

@@ -24,27 +24,21 @@
           Nova Pessoa
         </button>
       </div>
-      <div class="flex flex-col w-full" id="persons-header">
-        <div class="w-full flex justify-between bg-slate-200 uppercase font-extrabold px-2 text-xs sm:text-base whitespace-nowrap bg-gray-300/50">
-          <div class="w-1/4 text-center">
-            Tipo
-          </div>
-          <div class="w-1/4 text-center">
-            Nome
-          </div>
-          <div class="w-1/4 text-center">
-            Documento
-          </div>
-          <div class="w-1/4 text-center">
-            Inscrição Estadual
-          </div>
-        </div>
-      </div>
-      <div class="flex flex-col w-full" id="people-rows">
+      <table class="w-full">
+        <thead class="text-xs sm:text-base whitespace-nowrap bg-gray-300/50 hidden md:table-header-group" id="people-header">
+          <tr>
+            <th class="py-2">TIPO</th>
+            <th class="py-2">NOME</th>
+            <th class="py-2">DOCUMENTO</th>
+            <th class="py-2">INSCRIÇÃO ESTADUAL</th>
+          </tr>
+        </thead>
+        <tbody class="overflow-x-auto" id="people-rows">
         {{ range .People }}
-      {{ template "person-list-item" . }}
-      {{ end }}
-      </div>
+        {{ template "person-list-item" . }}
+        {{ end }}
+        </tbody>
+      </table>
     </section>
   </body>
 </html>

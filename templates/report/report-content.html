@@ -1,24 +1,24 @@
 {{ block "report-content" . }}
-<div class="flex flex-col w-full" id="report-content">
-  <div class="flex flex-col w-full">
-    {{ range .Operations }}
-    {{ template "report-list-item" . }}
-    {{ end }}
-  </div>
-  <div class="flex items-center justify-between mr-auto w-1/2">
-    Balanço:
-    <div class="flex items-center gap-2">
+<tbody id="report-content" class="overflow-x-auto">
+  {{ range .Operations }}
+  {{ template "report-list-item" . }}
+  {{ end }}
+  <tr class="text-center whitespace-nowrap text-sm sm:text-base">
+    <td>
+      Balanço:
+    </td>
+    <td>
       Entradas:
       <strong>{{ .EntryTotal }}</strong>
-    </div>
-    <div class="flex items-center gap-2">
+    </td>
+    <td>
       Saídas:
       <strong>{{ .DepartureTotal }}</strong>
-    </div>
-    <div class="flex items-center gap-2">
+    </td>
+    <td>
       Saldo:
       <strong class="{{ if lt .Balance 0.0 }} text-red-400{{ else }}text-green-400{{ end }}">{{ .Balance }}</strong>
-    </div>
-  </div>
-</div>
+    </td>
+  </tr>
+</tbody>
 {{ end }}

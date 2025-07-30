@@ -46,7 +46,8 @@
                 </div>
                 <div class="flex flex-col-reverse">
                     <input type="number" name="netWeight" id="netWeight" class="peer cursor-not-allowed" {{ if ne
-                        .Entry.NetWeight 0.0 }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0" required>
+                        .Entry.NetWeight 0.0 }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0" data-raw="0"
+                        required>
                     <label for="netWeight" class="label-peer">
                         Peso Líquido (preenchimento automático)
                     </label>
@@ -97,6 +98,13 @@
 
     <script type="module">
         import {formatDateToInput} from "/public/assets/js/date.js"
+        import {applyHumidityDiscount} from "/public/assets/js/applyHumidityDiscount.js"
+
+        const humidityInput = document.querySelector('input#humidity')
+        if (humidityInput) {
+            humidityInput.addEventListener('input', applyHumidityDiscount)
+        }
+
         const dateVal = formatDateToInput({{ .Entry.ArrivalDate}})
 
         const dialogEl = document.querySelector("#addEntryDialog")
@@ -126,11 +134,13 @@
                     grossWeightValue = Number(e.target.value) ?? 0
 
                     netWeightInput.value = grossWeightValue - tareValue
+                    netWeightInput.dataset.raw = grossWeightValue - tareValue
                 })
                 tareInput.addEventListener('input', (e) => {
                     tareValue = Number(e.target.value) ?? 0
 
                     netWeightInput.value = grossWeightValue - tareValue
+                    netWeightInput.dataset.raw = grossWeightValue - tareValue
                 })
             }
             document.body.addEventListener('htmx:configRequest', function (evt) {

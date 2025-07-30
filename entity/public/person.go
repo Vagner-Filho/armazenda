@@ -3,6 +3,8 @@ package entity_public
 import (
 	"reflect"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type LegalPerson struct {
@@ -24,15 +26,20 @@ type NaturalPerson struct {
 	Person            Person
 }
 
+type PersonConfig struct {
+	HumidityDiscount decimal.Decimal `form:"humidityDiscount"`
+}
 type Person struct {
 	Ie   string
 	Id   uint32
 	Farm uint32 `form:"farm" binding:"gte=0"`
+	PersonConfig
 }
 
 type PersonOption struct {
 	Id   uint8
 	Name string
+	PersonConfig
 }
 
 type PersonDisplay struct {

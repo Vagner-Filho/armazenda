@@ -40,4 +40,5 @@ type ReportDisplay struct {
 	Vehicle       string
 	NetWeight     float64
 	OperationDate time.Time `time_format:"2006-01-02T15:04"`
+	Person        string
 }

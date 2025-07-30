@@ -1,8 +1,23 @@
 {{ block "person-list-item" . }}
-<div class="w-full flex justify-between px-2">
-  <div class="w-1/4 text-center">{{ if eq .Type 0 }}Pessoa Física{{ else }}Pessoa Jurídica{{ end }}</div>
-  <div class="w-1/4 text-center">{{ .Name }}</div>
-  <div class="w-1/4 text-center">{{ .Document }}</div>
-  <div class="w-1/4 text-center">{{ .IE }}</div>
-</div>
+<tr class="text-center whitespace-nowrap text-sm sm:text-base" id="person-{{ .Id }}">
+  <td data-label="Tipo">
+    {{ if eq .Type 0 }}Pessoa Física{{ else }}Pessoa Jurídica{{ end }}
+  </td>
+  <td data-label="Nome">
+    {{ .Name }}
+  </td>
+  <td data-label="Documentação">
+    {{ .Document }}
+  </td>
+  <td data-label="Inscrição Estadual">
+    {{ .IE }}
+  </td>
+  <script type="module">
+    import {formatDocument} from "/public/assets/js/document.js"
+    const itemRow = document.querySelector("#person-{{ .Id }}")
+    if (itemRow) {
+      itemRow.querySelector("[data-label='Documentação']").textContent = formatDocument({{ .Document}})
+    }
+  </script>
+</tr>
 {{ end }}
