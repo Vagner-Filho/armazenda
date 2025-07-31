@@ -98,11 +98,21 @@
 
     <script type="module">
         import {formatDateToInput} from "/public/assets/js/date.js"
-        import {applyHumidityDiscount} from "/public/assets/js/applyHumidityDiscount.js"
+        import {applyDiscounts} from "/public/assets/js/discount.js"
 
         const humidityInput = document.querySelector('input#humidity')
         if (humidityInput) {
-            humidityInput.addEventListener('input', applyHumidityDiscount)
+            humidityInput.addEventListener('input', applyDiscounts)
+        }
+
+        const damageInput = document.querySelector('input#damage')
+        if (damageInput) {
+            damageInput.addEventListener('input', applyDiscounts)
+        }
+
+        const impurityInput = document.querySelector('input#impurity')
+        if (impurityInput) {
+            impurityInput.addEventListener('input', applyDiscounts)
         }
 
         const dateVal = formatDateToInput({{ .Entry.ArrivalDate}})
