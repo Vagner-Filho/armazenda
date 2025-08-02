@@ -101,11 +101,11 @@ func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32) 
 		return []entity_public.ReportDisplay{}, queryErr
 	}
 
-	entries, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.ReportDisplay])
+	result, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.ReportDisplay])
 	if collectErr != nil {
 		model_error.Logger(rm.conn, collectErr.Error())
 		return []entity_public.ReportDisplay{}, collectErr
 	}
 
-	return entries, nil
+	return result, nil
 }

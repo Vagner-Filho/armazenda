@@ -8,21 +8,21 @@ import (
 )
 
 type LegalPerson struct {
-	Id                uint8   `form:"id"`
-	CompanyName       string  `form:"companyName" binding:"required"`
-	FantasyName       string  `form:"fantasyName"`
-	Cnpj              string  `form:"cnpj" binding:"required"`
-	Address           Address `form:"address" binding:"required"`
-	InscricaoEstadual string  `form:"inscricaoEstadual" binding:"required"`
+	Id          uint8  `form:"id"`
+	CompanyName string `form:"companyName" binding:"required"`
+	FantasyName string `form:"fantasyName"`
+	Cnpj        string `form:"cnpj" binding:"required"`
+	*Address
+	InscricaoEstadual string `form:"inscricaoEstadual" binding:"required"`
 	Person            Person
 }
 
 type NaturalPerson struct {
-	Id                uint8   `form:"id"`
-	Name              string  `form:"name" binding:"required"`
-	Cpf               string  `form:"cpf" binding:"required"`
-	Address           Address `form:"address" binding:"required"`
-	InscricaoEstadual string  `form:"inscricaoEstadual" binding:"required"`
+	Id   uint8  `form:"id"`
+	Name string `form:"name" binding:"required"`
+	Cpf  string `form:"cpf" binding:"required"`
+	*Address
+	InscricaoEstadual string `form:"inscricaoEstadual" binding:"required"`
 	Person            Person
 }
 

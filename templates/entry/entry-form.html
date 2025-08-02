@@ -99,6 +99,7 @@
     <script type="module">
         import {formatDateToInput} from "/public/assets/js/date.js"
         import {applyDiscounts} from "/public/assets/js/discount.js"
+        import {removeEmptyFields} from "/public/assets/js/form.js"
 
         const humidityInput = document.querySelector('input#humidity')
         if (humidityInput) {
@@ -154,26 +155,8 @@
                 })
             }
             document.body.addEventListener('htmx:configRequest', function (evt) {
-                const humidity = evt.detail.parameters['humidity'];
-                const damage = evt.detail.parameters['damage'];
-                const impurity = evt.detail.parameters['impurity'];
-                const origin = evt.detail.parameters['origin'];
-
-                if (humidity === "") {
-                    evt.detail.parameters.delete('humidity');
-                }
-
-                if (damage === "") {
-                    evt.detail.parameters.delete('damage');
-                }
-
-                if (impurity === "") {
-                    evt.detail.parameters.delete('impurity');
-                }
-
-                if (origin === "") {
-                    evt.detail.parameters.delete('origin');
-                }
+                console.log('roda sempre?');
+                removeEmptyFields(evt.detail.parameters);
             });
         }
     </script>

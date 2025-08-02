@@ -44,7 +44,7 @@ func GetpersonModel() *personModel {
 func (bm *personModel) AddLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
 	row, queryErr := bm.conn.Query(
 		context.Background(),
-		`SELECT * FROM add_get_legal_person(@companyName, @cnpj, @ie, @fantasyName, @farm, @humidityDiscount)`,
+		`SELECT * FROM add_get_legal_person(@companyName, @cnpj, @ie, @fantasyName, @farm, @humidityDiscount, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone)`,
 		pgx.NamedArgs{
 			"ie":               bc.InscricaoEstadual,
 			"cnpj":             bc.Cnpj,
@@ -52,6 +52,15 @@ func (bm *personModel) AddLegalPerson(bc entity_public.LegalPerson) (entity_publ
 			"farm":             bc.Person.Farm,
 			"companyName":      bc.CompanyName,
 			"humidityDiscount": bc.Person.HumidityDiscount,
+			"street":           bc.Street,
+			"cep":              bc.Cep,
+			"number":           bc.Number,
+			"neighborhood":     bc.Neighborhood,
+			"city":             bc.City,
+			"state":            bc.State,
+			"complement":       bc.Complement,
+			"email":            bc.Email,
+			"phone":            bc.PhoneNumber,
 		})
 
 	if queryErr != nil {
@@ -69,9 +78,8 @@ func (bm *personModel) AddLegalPerson(bc entity_public.LegalPerson) (entity_publ
 }
 
 func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
-	fmt.Printf("Adding natural person: %+v\n", bp)
 	row, queryErr := bm.conn.Query(context.Background(), `
-			SELECT * FROM add_get_natural_person(@name, @cpf, @ie, @farm, @humidityDiscount)
+			SELECT * FROM add_get_natural_person(@name, @cpf, @ie, @farm, @humidityDiscount, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone)
 		`,
 		pgx.NamedArgs{
 			"ie":               bp.InscricaoEstadual,
@@ -79,6 +87,15 @@ func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_
 			"name":             bp.Name,
 			"farm":             bp.Person.Farm,
 			"humidityDiscount": bp.Person.HumidityDiscount,
+			"street":           bp.Street,
+			"cep":              bp.Cep,
+			"number":           bp.Number,
+			"neighborhood":     bp.Neighborhood,
+			"city":             bp.City,
+			"state":            bp.State,
+			"complement":       bp.Complement,
+			"email":            bp.Email,
+			"phone":            bp.PhoneNumber,
 		})
 	if queryErr != nil {
 		model_error.Logger(bm.conn, queryErr.Error())

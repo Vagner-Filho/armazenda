@@ -293,13 +293,15 @@ func initDepartureRecipient(c *pgx.Conn) {
 func initAddrress(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init address table", `
 	CREATE TABLE IF NOT EXISTS address (
-		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-		street VARCHAR(255) NOT NULL,
-		cep VARCHAR(255) NOT NULL,
+		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+		street TEXT NOT NULL,
+		cep CHARACTER(8) NOT NULL,
 		number INTEGER,
-		neighborhood VARCHAR(255) NOT NULL,
-		city VARCHAR(255) NOT NULL,
-		state VARCHAR(255) NOT NULL
+		neighborhood TEXT NOT NULL,
+		city TEXT NOT NULL,
+		state CHARACTER(2) NOT NULL,
+		person_id INTEGER UNIQUE NOT NULL,
+		FOREIGN KEY (person_id) REFERENCES person(id)
 	);
 	`)
 
@@ -309,10 +311,10 @@ func initAddrress(c *pgx.Conn) {
 func initAddrressComplement(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init address_complement table", `
 	CREATE TABLE IF NOT EXISTS address_complement (
-		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		complement TEXT NOT NULL,
-		addressId SMALLINT UNIQUE NOT NULL,
-		FOREIGN KEY (addressId) REFERENCES address(id)
+		address_id INTEGER UNIQUE NOT NULL,
+		FOREIGN KEY (address_id) REFERENCES address(id)
 	);
 	`)
 
@@ -322,9 +324,11 @@ func initAddrressComplement(c *pgx.Conn) {
 func initContact(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init contact table", `
 	CREATE TABLE IF NOT EXISTS contact (
-		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-		email VARCHAR(255) NOT NULL,
-		phoneNumber VARCHAR(255) NOT NULL
+		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+		email TEXT,
+		phone_number TEXT,
+		person_id INTEGER UNIQUE NOT NULL,
+		FOREIGN KEY (person_id) REFERENCES person(id)
 	);
 	`)
 
@@ -376,6 +380,7 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 
 func initAddNaturalPerson(c *pgx.Conn) {
 	_, err := c.Exec(context.Background(), `
+		DROP FUNCTION IF EXISTS add_get_natural_person;
 		CREATE OR REPLACE FUNCTION add_get_natural_person(
 			OUT person_type INTEGER,
 			INOUT name VARCHAR(255),
@@ -383,20 +388,42 @@ func initAddNaturalPerson(c *pgx.Conn) {
 			INOUT ie VARCHAR(255),
 			OUT personId INTEGER,
 			IN farm INTEGER,
-			IN humidityDiscount NUMERIC(6, 3) DEFAULT NULL
+			IN humidityDiscount NUMERIC(6, 3) DEFAULT NULL,
+			IN street TEXT DEFAULT NULL,
+			IN cep CHARACTER(8) DEFAULT NULL,
+			IN number INTEGER DEFAULT NULL,
+			IN neighborhood TEXT DEFAULT NULL,
+			IN city TEXT DEFAULT NULL,
+			IN state CHARACTER(2) DEFAULT NULL,
+			IN complement TEXT DEFAULT NULL,
+			IN email TEXT DEFAULT NULL,
+			IN phoneNumber TEXT DEFAULT NULL
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE person_id INTEGER;
+		DECLARE addressId INTEGER;
 		BEGIN
 			INSERT INTO person (ie, farm) VALUES (ie, farm) RETURNING id INTO person_id;
 			INSERT INTO natural_person (name, cpf, personId) VALUES (name, cpf, person_id);
+
+			personId := person_id;
+			person_type := 0;
 
 			IF humidityDiscount IS NOT NULL THEN
 				INSERT INTO person_config (person_id, ie, farm, humidity_discount) VALUES (person_id, ie, farm, humidityDiscount);
 			END IF;
 
-			personId := person_id;
-			person_type := 0;
+			IF street IS NOT NULL AND cep IS NOT NULL AND neighborhood IS NOT NULL AND city IS NOT NULL AND state IS NOT NULL THEN
+				INSERT INTO address (street, cep, number, neighborhood, city, state, person_id) VALUES (street, cep, number, neighborhood, city, state, person_id) RETURNING id INTO addressId;
+
+				IF complement IS NOT NULL THEN
+					INSERT INTO address_complement (complement, address_id) VALUES (complement, addressId);
+				END IF;
+			END IF;
+
+			IF email IS NOT NULL OR phoneNumber IS NOT NULL THEN
+				INSERT INTO contact (email, phone_number, person_id) VALUES (email, phoneNumber, person_id);
+			END IF;
 		END;
 		$$;
 	`)
@@ -408,6 +435,7 @@ func initAddNaturalPerson(c *pgx.Conn) {
 
 func initAddLegalPerson(c *pgx.Conn) {
 	_, err := c.Exec(context.Background(), `
+		DROP FUNCTION IF EXISTS add_get_legal_person;
 		CREATE OR REPLACE FUNCTION add_get_legal_person(
 			OUT person_type INTEGER,
 			INOUT companyName VARCHAR(255),
@@ -416,20 +444,42 @@ func initAddLegalPerson(c *pgx.Conn) {
 			IN fantasyName VARCHAR(255),
 			IN farm INTEGER,
 			OUT personId INTEGER,
-			IN humidityDiscount NUMERIC(6, 3) DEFAULT NULL
+			IN humidityDiscount NUMERIC(6, 3) DEFAULT NULL,
+			IN street TEXT DEFAULT NULL,
+			IN cep CHARACTER(8) DEFAULT NULL,
+			IN number INTEGER DEFAULT NULL,
+			IN neighborhood TEXT DEFAULT NULL,
+			IN city TEXT DEFAULT NULL,
+			IN state CHARACTER(2) DEFAULT NULL,
+			IN complement TEXT DEFAULT NULL,
+			IN email TEXT DEFAULT NULL,
+			IN phoneNumber TEXT DEFAULT NULL
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE person_id INTEGER;
+		DECLARE addressId INTEGER;
 		BEGIN
 			INSERT INTO person (ie, farm) VALUES (ie, farm) RETURNING id INTO person_id;
 			INSERT INTO legal_person (cnpj, companyname, fantasyname, personid) VALUES (cnpj, companyName, fantasyName, person_id);
+
+			personId := person_id;
+			person_type := 1;
 			
 			IF humidityDiscount IS NOT NULL THEN
 				INSERT INTO person_config (person_id, ie, farm, humidity_discount) VALUES (person_id, ie, farm, humidityDiscount);
 			END IF;
 
-			personId := person_id;
-			person_type := 1;
+			IF street IS NOT NULL AND cep IS NOT NULL AND neighborhood IS NOT NULL AND city IS NOT NULL AND state IS NOT NULL THEN
+				INSERT INTO address (street, cep, number, neighborhood, city, state, person_id) VALUES (street, cep, number, neighborhood, city, state, person_id) RETURNING id INTO addressId;
+
+				IF complement IS NOT NULL THEN
+					INSERT INTO address_complement (complement, address_id) VALUES (complement, addressId);
+				END IF;
+			END IF;
+
+			IF email IS NOT NULL OR phoneNumber IS NOT NULL THEN
+				INSERT INTO contact (email, phone_number, person_id) VALUES (email, phoneNumber, person_id);
+			END IF;
 		END;
 		$$;
 	`)

@@ -95,6 +95,7 @@
     </form>
   </div>
   <script type="module">
+    import {removeEmptyFields} from "/public/assets/js/form.js"
     const dialogEl = document.querySelector("dialog#personFormDialog")
     if (dialogEl) {
       dialogEl.showModal()
@@ -106,6 +107,10 @@
       }
       dialogEl.addEventListener('close', closePersonForm)
       window.closePersonForm = closePersonForm
+
+      document.body.addEventListener('htmx:configRequest', function (evt) {
+        evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
+      });
     }
 
     let pessoaJuridicaForm = document.querySelector('form#pessoa-juridica-form')
