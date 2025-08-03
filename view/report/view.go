@@ -3,6 +3,7 @@ package report_view
 import (
 	entity_public "armazenda/entity/public"
 	field_service "armazenda/service/field"
+	person_service "armazenda/service/person"
 	product_service "armazenda/service/product"
 	"armazenda/service/report_service"
 	"armazenda/service/vehicle_service"
@@ -16,6 +17,7 @@ type reportView struct {
 	reportContent
 	StartDate time.Time `form:"initialDate" binding:"required" time_format:"2006-01-02T15:04"`
 	EndDate   time.Time `form:"endDate" binding:"required" time_format:"2006-01-02T15:04"`
+	People    []entity_public.PersonOption
 }
 
 type reportContent struct {
@@ -45,12 +47,14 @@ func GetReportPage(farm uint32) reportView {
 	fields, _ := field_service.GetFieldsByFarm(farm)
 	report, _ := report_service.GetReport(entity_public.ReportFilter{}, farm)
 	entryAmount, departureAmount, balance := GetReportBalance(report)
+	people, _ := person_service.GetPeopleByFarm(farm)
 	return reportView{
 		Products: products,
 		Vehicles: vehicles,
 		Fields: map[string][]entity_public.Field{
 			"Fields": fields,
 		},
+		People: people,
 		reportContent: reportContent{
 			Operations:     report,
 			EntryTotal:     entryAmount,

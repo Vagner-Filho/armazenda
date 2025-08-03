@@ -12,6 +12,7 @@ type ReportFilter struct {
 	NetWeightMax float64   `form:"netWeightMax"`
 	StartDate    time.Time `form:"startDate" time_format:"2006-01-02T15:04"`
 	EndDate      time.Time `form:"endDate" time_format:"2006-01-02T15:04"`
+	PersonId     uint32    `form:"person"`
 }
 
 type reportFilterCollection map[string]func(rf ReportFilter) string
@@ -21,7 +22,7 @@ func (rf ReportFilter) GetFilters(availableFilters reportFilterCollection) repor
 
 	values := reflect.ValueOf(rf)
 
-	for i := 0; i < values.NumField(); i++ {
+	for i := range values.NumField() {
 		field := values.Type().Field(i)
 		fieldName := field.Name
 		fieldValue := values.Field(i)
@@ -41,4 +42,16 @@ type ReportDisplay struct {
 	NetWeight     float64
 	OperationDate time.Time `time_format:"2006-01-02T15:04"`
 	Person        string
+	PersonId      uint32
+}
+
+type FullReport struct {
+	ReportDisplay
+	GrossWeight float64
+	Tare        float64
+	City        string
+	State       string
+	Humidity    float64
+	Damage      float64
+	Impurities  float64
 }

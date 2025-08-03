@@ -17,6 +17,7 @@
   {{ template "menu" "relatorio" }}
     <section class="mt-20 px-2 max-w-screen-xl mx-auto">
       {{ template "report-filters" . }}
+      <button type="button" hx-trigger="click" hx-post="">Gerar Relatório</button>
       <table class="w-full">
         <thead class="text-xs sm:text-base whitespace-nowrap bg-gray-300/50 hidden md:table-header-group uppercase" id="report-header">
           <tr>
