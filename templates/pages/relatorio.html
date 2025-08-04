@@ -1,37 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/public/assets/static/css/output.css" rel="stylesheet">
-    <link rel="icon" type="image/x-icon" href="/public/assets/favicon.ico">
-    <title>Relatório - Armazenda</title>
-    <script src="https://unpkg.com/htmx.org@2.0.0" integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
-    <script type="module" src="/public/assets/js/toast.js"></script>
-    <script type="module" src="/public/assets/js/getEntryPdf.js"></script>
-    <script type="module" src="/public/assets/js/getDeparturePdf.js"></script>
-  </head>
-  <body class="bg-sky-50">
-    {{ template "navbar" }}
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="/public/assets/static/css/output.css" rel="stylesheet">
+  <link rel="icon" type="image/x-icon" href="/public/assets/favicon.ico">
+  <title>Relatório - Armazenda</title>
+  <script src="https://unpkg.com/htmx.org@2.0.0"
+    integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
+  <script type="module" src="/public/assets/js/toast.js"></script>
+  <script type="module" src="/public/assets/js/getEntryPdf.js"></script>
+  <script type="module" src="/public/assets/js/getDeparturePdf.js"></script>
+</head>
+
+<body class="bg-sky-50">
+  {{ template "navbar" }}
   {{ template "menu" "relatorio" }}
-    <section class="mt-20 px-2 max-w-screen-xl mx-auto">
-      {{ template "report-filters" . }}
-      <button type="button" hx-trigger="click" hx-post="/report" hx-include="form#report-filters-form" hx-target="html" hx-swap="beforeend">Gerar Relatório</button>
-      <table class="w-full">
-        <thead class="text-xs sm:text-base whitespace-nowrap bg-gray-300/50 hidden md:table-header-group uppercase" id="report-header">
-          <tr>
-            <th class="py-2">Romaneio</th>
-            <th class="py-2">Operação</th>
-            <th class="py-2">Pessoa</th>
-            <th class="py-2">Produto</th>
-            <th class="py-2">Veículo</th>
-            <th class="py-2">Peso Líquido</th>
-            <th class="py-2">Data Operação</th>
-          </tr>
-        </thead>
-        {{ template "report-content" . }}
-      </table>
-    </section>
-  </body>
+  <section class="mt-20 px-2 max-w-screen-xl mx-auto">
+    {{ template "report-filters" . }}
+    <button class="add-btn text-xs md:text-base flex items-center gap-1" type="button" hx-trigger="click"
+      hx-post="/report" hx-include="form#report-filters-form" hx-target="html" hx-swap="beforeend">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32">
+        <path fill="currentColor" d="M15 20h2v4h-2zm5-2h2v6h-2zm-10-4h2v10h-2z"></path>
+        <path fill="currentColor"
+          d="M25 5h-3V4a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v1H7a2 2 0 0 0-2 2v21a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2M12 4h8v4h-8Zm13 24H7V7h3v3h12V7h3Z">
+        </path>
+      </svg>
+      Gerar Relatório
+    </button>
+    <table class="w-full">
+      <thead class="text-xs sm:text-base whitespace-nowrap bg-gray-300/50 hidden md:table-header-group uppercase"
+        id="report-header">
+        <tr>
+          <th class="py-2">Romaneio</th>
+          <th class="py-2">Operação</th>
+          <th class="py-2">Pessoa</th>
+          <th class="py-2">Produto</th>
+          <th class="py-2">Veículo</th>
+          <th class="py-2">Peso Líquido</th>
+          <th class="py-2">Data Operação</th>
+        </tr>
+      </thead>
+      {{ template "report-content" . }}
+    </table>
+  </section>
+</body>
+
 </html>

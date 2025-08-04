@@ -5,7 +5,6 @@ import (
 	model_error "armazenda/model/error"
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -49,7 +48,6 @@ func (um *userModel) AuthUser(cpf string, passwd string) (*entity_public.User, *
 	}
 
 	user, collectErr := pgx.CollectExactlyOneRow(rows, pgx.RowToStructByPos[entity_public.User])
-	fmt.Printf("\ncollectErr: %v", collectErr)
 	if collectErr != nil {
 		model_error.Logger(um.conn, collectErr.Error())
 		if errors.Is(pgx.ErrNoRows, collectErr) {
