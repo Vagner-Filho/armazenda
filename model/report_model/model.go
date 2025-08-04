@@ -4,10 +4,12 @@ import (
 	entity_public "armazenda/entity/public"
 	model_error "armazenda/model/error"
 	"armazenda/utils"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"strconv"
+	"text/template"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -50,7 +52,7 @@ var availableReportFilters = map[string]func(ef entity_public.ReportFilter) stri
 		return fmt.Sprintf("r.vehicle = '%s'", ef.Vehicle)
 	},
 	"Product": func(ef entity_public.ReportFilter) string {
-		return "r.id = " + strconv.FormatInt(int64(ef.Product), 10)
+		return "p.id = " + strconv.FormatInt(int64(ef.Product), 10)
 	},
 	"NetWeightMin": func(ef entity_public.ReportFilter) string {
 		return "r.netweight >= " + strconv.FormatFloat(ef.NetWeightMin, 'f', -1, 64)
@@ -66,7 +68,7 @@ var availableReportFilters = map[string]func(ef entity_public.ReportFilter) stri
 func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.ReportDisplay, error) {
 	filters := rf.GetFilters(availableReportFilters)
 
-	stmt := `WITH people AS (SELECT np.name, np.personid FROM natural_person np UNION ALL SELECT lp.companyname AS name, lp.personid FROM legal_person lp)
+	stmtTemplate := `WITH people AS (SELECT np.name, np.personid FROM natural_person np UNION ALL SELECT lp.companyname AS name, lp.personid FROM legal_person lp)
 		SELECT * FROM (SELECT e.id, 0 AS operation_type, p.name, e.vehicle, e.netweight, e.arrivaldate AS date, coalesce(prs.name, 'Pŕopria') AS pessoa, COALESCE(prs.personid, 0) AS personid
 			FROM entry e
 			JOIN crop c ON e.crop = c.id
@@ -74,7 +76,7 @@ func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32) 
 			LEFT JOIN entry_origin eo ON eo.entry_id = e.id
 			LEFT JOIN people
 			AS prs ON prs.personid = eo.person_id
-			WHERE e.farm = @userFarm
+			WHERE e.farm = @userFarm{{ range . }} AND {{ . }} {{ end }}
 			UNION ALL
 		SELECT d.id, 1 AS operation_type, p.name, d.vehicle, d.netweight , d.departuredate AS date, coalesce(prs.name, 'Pŕopria') AS pessoa, COALESCE(prs.personid, 0) AS personid
 			FROM departure d
@@ -83,22 +85,25 @@ func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32) 
 			LEFT JOIN departure_recipient dr ON dr.departureid = d.id
 			LEFT JOIN people
 			AS prs ON prs.personid = dr.personid
-			WHERE d.farm = @userFarm) AS r`
+			WHERE d.farm = @userFarm{{ range . }} AND {{ . }} {{ end }}) AS r`
 
-	if len(filters) > 0 {
-		stmt += " WHERE "
-	}
-
-	var idx int = 0
+	//if len(filters) > 0 {
+	conditions := make([]string, 0, len(filters))
 	for _, filter := range filters {
-		stmt += filter(rf)
-		if idx < len(filters)-1 {
-			stmt += " AND "
-		}
-		idx++
+		conditions = append(conditions, filter(rf))
 	}
 
-	rows, queryErr := rm.conn.Query(context.Background(), stmt, pgx.NamedArgs{"userFarm": farm})
+	t := template.Must(template.New("filters").Parse(stmtTemplate))
+	var buf bytes.Buffer
+	err := t.Execute(&buf, conditions)
+	if err != nil {
+
+	}
+	parsedStmt := buf.String()
+	//}
+	fmt.Printf("\nSQL Statement: %s\n", parsedStmt)
+
+	rows, queryErr := rm.conn.Query(context.Background(), parsedStmt, pgx.NamedArgs{"userFarm": farm})
 	if queryErr != nil {
 		model_error.Logger(rm.conn, queryErr.Error())
 		return []entity_public.ReportDisplay{}, queryErr
@@ -113,14 +118,14 @@ func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32) 
 	return result, nil
 }
 
-func (rm *reportModel) GetReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.FullReport, error) {
+func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.FullReport, error) {
 	filters := rf.GetFilters(availableReportFilters)
 
 	stmt := `
 		WITH people AS (SELECT np.name, np.personid FROM natural_person np UNION ALL SELECT lp.companyname AS name, lp.personid FROM legal_person lp)
 		SELECT * FROM (SELECT e.id, 0 AS operation_type,
 			p.name, e.vehicle, e.netweight, e.arrivaldate AS date,
-			COALESCE(prs.name, 'Pŕopria') AS pessoa, e.grossweight, e.tare, COALESCE(a.city, 'N/A') AS city,
+			COALESCE(prs.name, 'Pŕopria') AS pessoa, prs.personid, e.grossweight, e.tare, COALESCE(a.city, 'N/A') AS city,
 			COALESCE(a.state, 'N/A') AS state, COALESCE(ea.humidity, 0) AS humidity,
 			COALESCE(ea.damage, 0) AS damage, COALESCE(ea.impurity, 0) AS impurity
 			FROM entry e
@@ -135,7 +140,7 @@ func (rm *reportModel) GetReport(rf entity_public.ReportFilter, farm uint32) ([]
 			UNION ALL
 		SELECT d.id, 1 AS operation_type,
 			p.name, d.vehicle, d.netweight, d.departuredate AS date,
-			COALESCE(prs.name, 'Pŕopria') AS pessoa, d.grossweight, d.tare, COALESCE(a.city, 'N/A') AS city,
+			COALESCE(prs.name, 'Pŕopria') AS pessoa, prs.personid, d.grossweight, d.tare, COALESCE(a.city, 'N/A') AS city,
 			COALESCE(a.state, 'N/A') AS state, 0 AS humidity,
 			0 AS damage, 0 AS impurity
 			FROM departure d
@@ -147,7 +152,6 @@ func (rm *reportModel) GetReport(rf entity_public.ReportFilter, farm uint32) ([]
 			LEFT JOIN address a ON a.person_id = dr.personid
 			WHERE d.farm = @userFarm) AS r
 	`
-
 	if len(filters) > 0 {
 		stmt += " WHERE "
 	}

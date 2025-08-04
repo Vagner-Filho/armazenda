@@ -1,0 +1,118 @@
+<div id="full-report" class="p-4 hidden print:block">
+  <div class="mx-auto">
+    <h1 class="mb-4 text-2xl font-bold">Relatório Completo</h1>
+    <div class="flex items-center gap-2">
+      {{ range $key, $value := .AppliedFilters }}
+      <span class="px-2 py-1 bg-gray-200 rounded text-sm">
+        {{ $key }}: {{ $value }}
+      </span>
+      {{ end }}
+    </div>
+    <div>
+      Gerado em: {{ .RequestedAt.Format "02/01/2006 15:04" }}
+    </div>
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Romaneio
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Tipo de Operação
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Produto
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Veículo
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Data da Operação
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Pessoa
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Cidade
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Estado
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Peso Bruto
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Tara
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Umidade
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Avaria
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Impurezas
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Peso Líquido
+          </th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 bg-white">
+        {{range .FullOperations}}
+        <tr>
+          <td class="whitespace-nowrap px-6 py-4">{{.Romaneio}}</td>
+          <td class="whitespace-nowrap px-6 py-4">
+            {{if eq .OperationType 0}} Entrada {{else}} Saída {{end}}
+          </td>
+          <td class="whitespace-nowrap px-6 py-4">{{.Product}}</td>
+          <td class="whitespace-nowrap px-6 py-4">{{.Vehicle}}</td>
+          <td class="whitespace-nowrap px-6 py-4">
+            {{.OperationDate.Format "02/01/2006 15:04"}}
+          </td>
+          <td class="whitespace-nowrap px-6 py-4">{{.Person}}</td>
+          <td class="whitespace-nowrap px-6 py-4">{{.City}}</td>
+          <td class="whitespace-nowrap px-6 py-4">{{.State}}</td>
+          <td class="whitespace-nowrap px-6 py-4">{{.GrossWeight}}</td>
+          <td class="whitespace-nowrap px-6 py-4">{{.Tare}}</td>
+          <td class="whitespace-nowrap px-6 py-4">{{.Humidity}}%</td>
+          <td class="whitespace-nowrap px-6 py-4">{{.Damage}}%</td>
+          <td class="whitespace-nowrap px-6 py-4">{{.Impurity}}%</td>
+          <td class="whitespace-nowrap px-6 py-4 font-bold">{{if eq .OperationType 1}}-{{ end }}{{.NetWeight}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    <div class="mt-4">
+      <p><strong>Total de Entrada:</strong>
+        {{.EntryTotal}}</p>
+      <p><strong>Total de Saída:</strong>
+        {{.DepartureTotal}}</p>
+      <p><strong>Saldo:</strong>
+        {{.Balance}}</p>
+    </div>
+  </div>
+  <style>
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+
+      @page {
+        size: A4 landscape;
+        margin: 0;
+      }
+    }
+  </style>
+  <script>
+    function deleteReport() {
+      const reportDiv = document.getElementById('full-report');
+      if (reportDiv) {
+        reportDiv.remove();
+        window.removeEventListener("afterprint", deleteReport);
+      }
+    }
+    window.addEventListener("afterprint", deleteReport);
+    window.print();
+  </script>
+</div>

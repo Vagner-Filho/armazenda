@@ -32,7 +32,25 @@ func filterReport(c *gin.Context) {
 	c.HTML(http.StatusOK, "report-content", report)
 }
 
+func getFullReport(c *gin.Context) {
+	var reportFilter entity_public.ReportFilter
+	err := c.Bind(&reportFilter)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	report, toast := report_view.GetFullReport(reportFilter, farm)
+	if toast != nil {
+		c.Header("HX-Trigger", string(toast.ToJson()))
+		return
+	}
+	c.HTML(http.StatusOK, "full-report.html", report)
+}
+
 func UseReportRoutes(router *gin.Engine) {
 	router.GET("/relatorio", getRelatorioPage)
 	router.POST("/report/filter", filterReport)
+	router.POST("/report", getFullReport)
 }

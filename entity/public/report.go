@@ -42,7 +42,7 @@ type ReportDisplay struct {
 	NetWeight     float64
 	OperationDate time.Time `time_format:"2006-01-02T15:04"`
 	Person        string
-	PersonId      uint32
+	PersonId      *uint32
 }
 
 type FullReport struct {
@@ -53,5 +53,5 @@ type FullReport struct {
 	State       string
 	Humidity    float64
 	Damage      float64
-	Impurities  float64
+	Impurity    float64
 }

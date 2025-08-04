@@ -24,3 +24,13 @@ func FilterReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.R
 	}
 	return report, nil
 }
+
+func GetFullReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.FullReport, *entity_public.Toast) {
+	rModel := report_model.GetReportModel()
+	report, err := rModel.GetFullReport(rf, farm)
+	if err != nil {
+		toast := entity_public.GetWarningToast("Falha ao gerar relatório", "")
+		return report, &toast
+	}
+	return report, nil
+}

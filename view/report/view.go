@@ -7,6 +7,8 @@ import (
 	product_service "armazenda/service/product"
 	"armazenda/service/report_service"
 	"armazenda/service/vehicle_service"
+	"reflect"
+	"strconv"
 	"time"
 )
 
@@ -72,5 +74,63 @@ func FilterReport(rf entity_public.ReportFilter, farm uint32) (reportContent, *e
 		EntryTotal:     entryAmount,
 		DepartureTotal: departureAmount,
 		Balance:        balance,
+	}, toast
+}
+
+type FullReportView struct {
+	FullOperations []entity_public.FullReport
+	EntryTotal     float64
+	DepartureTotal float64
+	Balance        float64
+	RequestedAt    time.Time `time_format:"2006-01-02T15:04"`
+	AppliedFilters map[string]string
+}
+
+func GetFullReport(rf entity_public.ReportFilter, farm uint32) (FullReportView, *entity_public.Toast) {
+	report, toast := report_service.GetFullReport(rf, farm)
+
+	reportDisplay := make([]entity_public.ReportDisplay, 0, len(report))
+	for _, r := range report {
+		reportDisplay = append(reportDisplay, r.ReportDisplay)
+	}
+	entry, departure, balance := GetReportBalance(reportDisplay)
+
+	appliedFilters := make(map[string]string)
+	for i := range reflect.ValueOf(rf).NumField() {
+		field := reflect.ValueOf(rf).Type().Field(i)
+		fieldName := field.Name
+		fieldValue := reflect.ValueOf(rf).Field(i)
+
+		if !fieldValue.IsZero() {
+			switch fieldName {
+			case "StartDate":
+				appliedFilters["Data Inicial"] = fieldValue.Interface().(time.Time).Format("02/01/2006 15:04")
+			case "EndDate":
+				appliedFilters["Data Final"] = fieldValue.Interface().(time.Time).Format("02/01/2006 15:04")
+			case "Product":
+				if len(report) > 0 {
+					appliedFilters["Produto"] = report[0].Product
+				}
+			case "Vehicle":
+				appliedFilters["Veículo"] = fieldValue.String()
+			case "NetWeightMin":
+				appliedFilters["Peso Mínimo"] = strconv.FormatFloat(fieldValue.Float(), 'f', -1, 64)
+			case "NetWeightMax":
+				appliedFilters["Peso Máximo"] = strconv.FormatFloat(fieldValue.Float(), 'f', -1, 64)
+			case "PersonId":
+				if len(report) > 0 {
+					appliedFilters["Pessoa"] = report[0].Person
+				}
+			}
+		}
+	}
+
+	return FullReportView{
+		FullOperations: report,
+		EntryTotal:     entry,
+		DepartureTotal: departure,
+		Balance:        balance,
+		RequestedAt:    time.Now(),
+		AppliedFilters: appliedFilters,
 	}, toast
 }
