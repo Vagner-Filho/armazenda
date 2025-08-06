@@ -54,13 +54,24 @@ func (fcm *farmConfigModel) UpsertFarmConfig(config *entity_public.Farm) error {
 
 func (fcm *farmConfigModel) GetFarmConfig(farmID uint32) (*entity_public.Farm, error) {
 	query := `
-		SELECT fc.farm_id, fc.name, street, city, state, cep, humidity_discount
-		FROM farm_config
-		WHERE farm_id = $1;
+		SELECT f.id, f.inscricao_estadual, fc.name,
+		fc.humidity_discount, fa.street, fa.cep, fa.number, fac.complement, fa.neighborhood, fa.city, fa.state,
+		fco.email, fco.phone_number
+		FROM farm_config fc
+		JOIN farm f ON f.id = fc.farm_id
+		LEFT JOIN farm_address fa ON fa.farm_id = f.id
+		LEFT JOIN farm_address_complement fac ON fac.farm_address_id = fa.id
+		LEFT JOIN farm_contact fco ON fco.farm_id = f.id
+		WHERE f.id = $1;
 	`
 	rows, _ := fcm.conn.Query(context.Background(), query, farmID)
 	result, err := pgx.CollectOneRow(rows, pgx.RowToStructByPos[entity_public.Farm])
+	fmt.Printf("%+v\n", result)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		fmt.Printf("%+v\n", err.Error())
 		return nil, fmt.Errorf("failed to get farm config: %w", err)
 	}
 	result.Id = farmID

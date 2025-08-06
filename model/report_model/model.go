@@ -163,7 +163,6 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 		idx++
 	}
 
-	fmt.Printf("\nSQL Statement: %s\n", stmt)
 	rows, queryErr := rm.conn.Query(context.Background(), stmt, pgx.NamedArgs{"userFarm": farm})
 	if queryErr != nil {
 		model_error.Logger(rm.conn, queryErr.Error())

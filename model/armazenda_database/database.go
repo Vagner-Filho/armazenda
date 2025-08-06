@@ -655,7 +655,7 @@ func initFarmConfig(c *pgx.Conn) {
 			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 			farm_id INTEGER NOT NULL UNIQUE,
 			name TEXT NOT NULL,
-			humidity_discount NUMERIC(6, 3) DEFAULT 1.7,
+			humidity_discount NUMERIC(6, 3) DEFAULT 1.15,
 			FOREIGN KEY (farm_id) REFERENCES farm(id)
 		);
 	`)
