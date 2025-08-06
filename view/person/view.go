@@ -7,5 +7,5 @@ type personPage struct {
 }
 
 func GetPersonPage(farm uint32) personPage {
-
+	return personPage{}
 }

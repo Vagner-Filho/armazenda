@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ShowConfigPage(c *gin.Context, service *farm_config.FarmConfigService) {
+func ShowConfigPage(c *gin.Context, service *farm_config.Service) {
 	// For now, let's assume a fixed farm ID. This should be retrieved from the user's session in a real application.
 	farmID := uint32(1)
 	config, err := service.GetFarmConfig(farmID)

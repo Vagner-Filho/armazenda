@@ -649,6 +649,65 @@ func initFarm(c *pgx.Conn) {
 	handleStmtExec(c, stmt, err, "init farm table")
 }
 
+func initFarmConfig(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init farm_config table", `
+			CREATE TABLE IF NOT EXISTS farm_config (
+			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			farm_id INTEGER NOT NULL UNIQUE,
+			name TEXT NOT NULL,
+			humidity_discount NUMERIC(6, 3) DEFAULT 1.7,
+			FOREIGN KEY (farm_id) REFERENCES farm(id)
+		);
+	`)
+
+	handleStmtExec(c, stmt, err, "create person config")
+}
+
+func initFarmAddrress(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init farm_address table", `
+	CREATE TABLE IF NOT EXISTS farm_address (
+		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+		street TEXT NOT NULL,
+		cep CHARACTER(8) NOT NULL,
+		number INTEGER,
+		neighborhood TEXT NOT NULL,
+		city TEXT NOT NULL,
+		state CHARACTER(2) NOT NULL,
+		farm_id INTEGER UNIQUE NOT NULL,
+		FOREIGN KEY (farm_id) REFERENCES farm(id)
+	);
+	`)
+
+	handleStmtExec(c, stmt, err, "create farm_address")
+}
+
+func initFarmAddrressComplement(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init farm_address_complement table", `
+	CREATE TABLE IF NOT EXISTS farm_address_complement (
+		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+		complement TEXT NOT NULL,
+		farm_address_id INTEGER UNIQUE NOT NULL,
+		FOREIGN KEY (farm_address_id) REFERENCES farm_address(id)
+	);
+	`)
+
+	handleStmtExec(c, stmt, err, "create farm_address_complement")
+}
+
+func initFarmContact(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init farm_contact table", `
+	CREATE TABLE IF NOT EXISTS farm_contact (
+		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+		email TEXT,
+		phone_number TEXT,
+		farm_id INTEGER UNIQUE NOT NULL,
+		FOREIGN KEY (farm_id) REFERENCES farm(id)
+	);
+	`)
+
+	handleStmtExec(c, stmt, err, "create contact")
+}
+
 func initUpdateDepartureProc(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init update departure stmt", `
 		CREATE OR REPLACE FUNCTION update_get_departure(
@@ -683,6 +742,10 @@ func initUpdateDepartureProc(c *pgx.Conn) {
 
 func InitDb(c *pgx.Conn) {
 	initFarm(c)
+	initFarmConfig(c)
+	initFarmAddrress(c)
+	initFarmAddrressComplement(c)
+	initFarmContact(c)
 	initUser(c)
 	initProduct(c)
 	initCrop(c)

@@ -2,6 +2,7 @@ package report_view
 
 import (
 	entity_public "armazenda/entity/public"
+	"armazenda/model/farm_config_model"
 	field_service "armazenda/service/field"
 	person_service "armazenda/service/person"
 	product_service "armazenda/service/product"
@@ -84,6 +85,7 @@ type FullReportView struct {
 	Balance        float64
 	RequestedAt    time.Time `time_format:"2006-01-02T15:04"`
 	AppliedFilters map[string]string
+	FarmConfig     *entity_public.Farm
 }
 
 func GetFullReport(rf entity_public.ReportFilter, farm uint32) (FullReportView, *entity_public.Toast) {
@@ -125,6 +127,20 @@ func GetFullReport(rf entity_public.ReportFilter, farm uint32) (FullReportView, 
 		}
 	}
 
+	fcModel := farm_config_model.GetFarmConfigModel()
+	farmConfig, errConfig := fcModel.GetFarmConfig(farm)
+	if errConfig != nil {
+		toast := entity_public.GetInfoToast("Falha ao obter configuração da fazenda", "")
+		return FullReportView{
+			FullOperations: report,
+			EntryTotal:     entry,
+			DepartureTotal: departure,
+			Balance:        balance,
+			RequestedAt:    time.Now(),
+			AppliedFilters: appliedFilters,
+		}, &toast
+	}
+
 	return FullReportView{
 		FullOperations: report,
 		EntryTotal:     entry,
@@ -132,5 +148,6 @@ func GetFullReport(rf entity_public.ReportFilter, farm uint32) (FullReportView, 
 		Balance:        balance,
 		RequestedAt:    time.Now(),
 		AppliedFilters: appliedFilters,
+		FarmConfig:     farmConfig,
 	}, toast
 }

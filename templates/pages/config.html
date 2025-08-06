@@ -17,39 +17,40 @@
     {{ template "navbar" . }}
     {{ template "menu" "config" }}
     <section class="container mx-auto p-4">
-        <h1 class="text-2xl font-bold mb-4">Configurações da Fazenda</h1>
-        <form action="/config" method="post">
-            {{ with .Farm }}
-            <input type="hidden" name="id" value="{{ .Id }}">
-            <div class="mb-4">
-                <label for="name" class="block text-sm font-medium text-gray-700">Nome da Fazenda</label>
-                <input type="text" name="name" id="name" value="{{ .Name }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-            </div>
-            <div class="mb-4">
-                <label for="street" class="block text-sm font-medium text-gray-700">Rua</label>
-                <input type="text" name="street" id="street" value="{{ .Street }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-            </div>
-            <div class="mb-4">
-                <label for="city" class="block text-sm font-medium text-gray-700">Cidade</label>
-                <input type="text" name="city" id="city" value="{{ .City }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-            </div>
-            <div class="mb-4">
-                <label for="state" class="block text-sm font-medium text-gray-700">Estado</label>
-                <input type="text" name="state" id="state" value="{{ .State }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-            </div>
-            <div class="mb-4">
-                <label for="cep" class="block text-sm font-medium text-gray-700">CEP</label>
-                <input type="text" name="cep" id="cep" value="{{ .Cep }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-            </div>
-            <div class="mb-4">
-                <label for="humidityDiscount" class="block text-sm font-medium text-gray-700">Desconto de Umidade (%)</label>
-                <input type="number" step="0.01" name="humidityDiscount" id="humidityDiscount" value="{{ .HumidityDiscount }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-            </div>
-            {{ end }}
-            <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                Salvar
-            </button>
-        </form>
+      <h1 class="text-2xl font-bold mb-4">Configurações da Fazenda</h1>
+      <form action="/config" method="post">
+        {{ with .Farm }}
+        <input type="hidden" name="id" value="{{ .Id }}">
+        <div class="mb-4">
+          <label for="name" class="block text-sm font-medium text-gray-700">Nome da Fazenda</label>
+          <input type="text" name="name" id="name" value="{{ .Name }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+        </div>
+        <div class="mb-4">
+          <label for="street" class="block text-sm font-medium text-gray-700">Rua</label>
+          <input type="text" name="street" id="street" value="{{ if .Street }}{{ .Street }}{{ end }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+        </div>
+        <div class="mb-4">
+          <label for="city" class="block text-sm font-medium text-gray-700">Cidade</label>
+          <input type="text" name="city" id="city" value="{{ if .City }}{{ .City }}{{ end }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+        </div>
+        <div class="mb-4">
+          <label for="state" class="block text-sm font-medium text-gray-700">Estado</label>
+          <input type="text" name="state" id="state" value="{{ if .State }}{{ .State }}{{ end }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+        </div>
+        <div class="mb-4">
+          <label for="cep" class="block text-sm font-medium text-gray-700">CEP</label>
+          <input type="text" name="cep" id="cep" value="{{ if .Cep }}{{ .Cep }}{{ end }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+        </div>
+        <div class="mb-4">
+          <label for="humidityDiscount" class="block text-sm font-medium text-gray-700">Desconto de Umidade
+                    (%)</label>
+          <input type="number" step="0.01" name="humidityDiscount" id="humidityDiscount" value="{{ .HumidityDiscount }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+        </div>
+        {{ end }}
+        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          Salvar
+        </button>
+      </form>
     </section>
   </body>
 </html>
