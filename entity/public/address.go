@@ -1,7 +1,7 @@
 package entity_public
 
 type Address struct {
-	Id           uint16  `form:"id"`
+	Id           *uint16 `form:"id"`
 	Street       *string `form:"street" binding:"required"`
 	Cep          *string `form:"cep" binding:"required"`
 	Number       *uint32 `form:"number"`

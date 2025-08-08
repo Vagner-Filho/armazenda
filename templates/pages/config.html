@@ -18,13 +18,13 @@
     {{ template "menu" "config" }}
     <section class="container mx-auto p-4">
       <h1 class="text-2xl font-bold mb-4">Configurações da Fazenda</h1>
-            <form hx-post="/farm/config" hx-target="body" hx-swap="beforeend" class="flex flex-col gap-4">
+            <form hx-put="/farm/config" hx-target="body" hx-swap="beforeend" class="flex flex-col gap-4">
                 {{ with .Farm }}
                 <input type="hidden" name="id" value="{{ .Id }}">
                 <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
                     <legend class="text-lg uppercase rounded-t-lg bg-white px-2 font-light">Dados da Fazenda</legend>
                     <div class="flex flex-col-reverse">
-                        <input type="text" name="name" id="name" value="{{ .Name }}" class="peer" required>
+                        <input type="text" name="name" id="name" value="{{ if .Name }}{{ .Name }}{{ end }}" class="peer" required>
                         <label for="name" class="label-peer">Nome da Fazenda</label>
                     </div>
                     <div class="flex flex-col-reverse">
@@ -41,7 +41,7 @@
                     <legend class="text-lg uppercase rounded-t-lg bg-white px-2 font-light">Endereço</legend>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="street" id="street" value="{{ if .Street }}{{ .Street }}{{ end }}" class="peer" required>
+                            <input type="text" name="street" id="street" value="{{ if .Street }}{{ .Street }}{{ end }}" class="peer">
                             <label for="street" class="label-peer">Rua</label>
                         </div>
                         <div class="flex flex-col-reverse">
@@ -53,19 +53,19 @@
                             <label for="complement" class="label-peer">Complemento</label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="neighborhood" id="neighborhood" value="{{ if .Neighborhood }}{{ .Neighborhood }}{{ end }}" class="peer" required>
+                            <input type="text" name="neighborhood" id="neighborhood" value="{{ if .Neighborhood }}{{ .Neighborhood }}{{ end }}" class="peer">
                             <label for="neighborhood" class="label-peer">Bairro</label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="city" id="city" value="{{ if .City }}{{ .City }}{{ end }}" class="peer" required>
+                            <input type="text" name="city" id="city" value="{{ if .City }}{{ .City }}{{ end }}" class="peer">
                             <label for="city" class="label-peer">Cidade</label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="state" id="state" value="{{ if .State }}{{ .State }}{{ end }}" class="peer" required>
+                            <input type="text" name="state" id="state" value="{{ if .State }}{{ .State }}{{ end }}" class="peer">
                             <label for="state" class="label-peer">Estado</label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="cep" id="cep" value="{{ if .Cep }}{{ .Cep }}{{ end }}" class="peer" required>
+                            <input type="text" name="cep" id="cep" value="{{ if .Cep }}{{ .Cep }}{{ end }}" class="peer">
                             <label for="cep" class="label-peer">CEP</label>
                         </div>
                     </div>
@@ -92,8 +92,5 @@
                 </div>
             </form>
     </section>
-    {{ if .success }}
-    <div class="toast-success">{{ .success }}</div>
-    {{ end }}
   </body>
 </html>

@@ -707,7 +707,7 @@ func initFarmContact(c *pgx.Conn) {
 }
 
 func initFarmUpdateFunc(c *pgx.Conn) {
-	stmt, err := c.Prepare(context.Background(), "init farm update func", `
+	_, err := c.Exec(context.Background(), `
 		DROP FUNCTION IF EXISTS update_get_farm;
 		CREATE OR REPLACE FUNCTION update_get_farm(
 			INOUT f_id INTEGER,
@@ -725,7 +725,7 @@ func initFarmUpdateFunc(c *pgx.Conn) {
 			INOUT f_humidity_discount NUMERIC(6, 3) DEFAULT 1.15
 		)
 		LANGUAGE plpgsql AS $$
-		DECLARE farm_address_id INTEGER;
+		DECLARE var_farm_address_id INTEGER;
 		DECLARE config_exists BOOLEAN;
 		DECLARE address_exists BOOLEAN;
 		DECLARE address_complement_exists BOOLEAN;
@@ -747,17 +747,17 @@ func initFarmUpdateFunc(c *pgx.Conn) {
 				SELECT EXISTS (SELECT 1 FROM farm_address fa WHERE fa.farm_id = f_id) INTO address_exists;
 
 				IF address_exists THEN
-					UPDATE farm_address SET street = f_street, cep = f_cep, number = f_number, neighborhood = f_neighborhood, city = f_city, state = f_state WHERE farm_id = f_id RETURNING id INTO farm_address_id;
+					UPDATE farm_address SET street = f_street, cep = f_cep, number = f_number, neighborhood = f_neighborhood, city = f_city, state = f_state WHERE farm_id = f_id RETURNING id INTO var_farm_address_id;
 				ELSE
-					INSERT INTO farm_address (street, cep, number, neighborhood, city, state, farm_id) VALUES (f_street, f_cep, f_number, f_neighborhood, f_city, f_state, f_id) RETURNING id INTO farm_address_id;
+					INSERT INTO farm_address (street, cep, number, neighborhood, city, state, farm_id) VALUES (f_street, f_cep, f_number, f_neighborhood, f_city, f_state, f_id) RETURNING id INTO var_farm_address_id;
 				END IF;
 
-				IF f_complement IS NOT NULL AND farm_address_id IS NOT NULL THEN
-					SELECT EXISTS (SELECT 1 FROM farm_address_complement fac WHERE fac.farm_address_id = farm_address_id) INTO address_complement_exists;
+				IF f_complement IS NOT NULL AND var_farm_address_id IS NOT NULL THEN
+					SELECT EXISTS (SELECT 1 FROM farm_address_complement fac WHERE fac.farm_address_id = var_farm_address_id) INTO address_complement_exists;
 					IF address_complement_exists THEN
-						UPDATE farm_address_complement SET complement = f_complement, farm_address_id = farm_address_id WHERE farm_address_id = farm_address_id;
+						UPDATE farm_address_complement SET complement = f_complement, farm_address_id = var_farm_address_id WHERE farm_address_id = var_farm_address_id;
 					ELSE
-						INSERT INTO farm_address_complement (complement, farm_address_id) VALUES (f_complement, farm_address_id);
+						INSERT INTO farm_address_complement (complement, farm_address_id) VALUES (f_complement, var_farm_address_id);
 					END IF;
 				END IF;
 			END IF;
@@ -774,7 +774,9 @@ func initFarmUpdateFunc(c *pgx.Conn) {
 		$$;
 	`)
 
-	handleStmtExec(c, stmt, err, "create person config")
+	if err != nil {
+		fmt.Printf("\n error at function update_get_farm:\n%v", err.Error())
+	}
 }
 
 func initUpdateDepartureProc(c *pgx.Conn) {
@@ -815,6 +817,7 @@ func InitDb(c *pgx.Conn) {
 	initFarmAddrress(c)
 	initFarmAddrressComplement(c)
 	initFarmContact(c)
+	initFarmUpdateFunc(c)
 	initUser(c)
 	initProduct(c)
 	initCrop(c)

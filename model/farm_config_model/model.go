@@ -38,27 +38,31 @@ func GetFarmConfigModel() *farmConfigModel {
 
 func (fcm *farmConfigModel) UpsertFarmConfig(config *entity_public.Farm) error {
 	query := `
-		INSERT INTO farm_config (farm_id, name, street, city, state, cep, humidity_discount)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		ON CONFLICT (farm_id) DO UPDATE SET
-			name = EXCLUDED.name,
-			street = EXCLUDED.street,
-			city = EXCLUDED.city,
-			state = EXCLUDED.state,
-			cep = EXCLUDED.cep,
-			humidity_discount = EXCLUDED.humidity_discount;
+		SELECT * FROM update_get_farm(@id, @inscricao_estadual, @name, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone_number, @humidity_discount);
 	`
-	_, err := fcm.conn.Exec(context.Background(), query, config.Id, config.Name, config.Street, config.City, config.State, config.Cep, config.HumidityDiscount)
+	_, err := fcm.conn.Exec(context.Background(), query, pgx.NamedArgs{
+		"id":                 config.Id,
+		"inscricao_estadual": config.InscricaoEstadual,
+		"name":               config.Name,
+		"street":             config.Address.Street,
+		"cep":                config.Address.Cep,
+		"number":             config.Address.Number,
+		"neighborhood":       config.Address.Neighborhood,
+		"city":               config.Address.City,
+		"state":              config.Address.State,
+		"complement":         config.Address.Complement,
+		"email":              config.Address.Email,
+		"phone_number":       config.Address.PhoneNumber,
+		"humidity_discount":  config.HumidityDiscount,
+	})
 	return err
 }
 
 func (fcm *farmConfigModel) GetFarmConfig(farmID uint32) (*entity_public.Farm, error) {
 	query := `
-		SELECT f.id, f.inscricao_estadual, fc.name,
-		fc.humidity_discount, fa.street, fa.cep, fa.number, fac.complement, fa.neighborhood, fa.city, fa.state,
-		fco.email, fco.phone_number
-		FROM farm_config fc
-		JOIN farm f ON f.id = fc.farm_id
+		SELECT f.id, f.inscricao_estadual, fc.name, COALESCE(fc.humidity_discount, 1.15), fa.id, fa.street, fa.cep, fa.number, fac.complement, fa.neighborhood, fa.city, fa.state, fco.email, fco.phone_number
+		FROM farm f
+		LEFT JOIN farm_config fc ON f.id = fc.farm_id
 		LEFT JOIN farm_address fa ON fa.farm_id = f.id
 		LEFT JOIN farm_address_complement fac ON fac.farm_address_id = fa.id
 		LEFT JOIN farm_contact fco ON fco.farm_id = f.id
@@ -66,7 +70,6 @@ func (fcm *farmConfigModel) GetFarmConfig(farmID uint32) (*entity_public.Farm, e
 	`
 	rows, _ := fcm.conn.Query(context.Background(), query, farmID)
 	result, err := pgx.CollectOneRow(rows, pgx.RowToStructByPos[entity_public.Farm])
-	fmt.Printf("%+v\n", result)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil

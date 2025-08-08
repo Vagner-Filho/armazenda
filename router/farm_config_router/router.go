@@ -21,7 +21,7 @@ func UseFarmConfigRouter(router *gin.Engine) {
 				"Farm": &entity_public.Farm{
 					Id:               farm,
 					HumidityDiscount: 1.15,
-					Address:          &entity_public.Address{},
+					Address:          entity_public.Address{},
 				},
 			})
 			return
@@ -29,7 +29,7 @@ func UseFarmConfigRouter(router *gin.Engine) {
 		c.HTML(http.StatusOK, "config.html", gin.H{"Farm": config})
 	})
 
-	router.POST("/farm/config", func(c *gin.Context) {
+	router.PUT("/farm/config", func(c *gin.Context) {
 		var form entity_public.Farm
 		if err := c.ShouldBind(&form); err != nil {
 			c.HTML(http.StatusBadRequest, "config.html", gin.H{"error": err.Error(), "Farm": &form})
