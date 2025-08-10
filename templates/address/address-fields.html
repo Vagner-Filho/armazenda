@@ -32,4 +32,8 @@
     <label for="phoneNumber" class="px-2">Celular</label>
     <input type="number" name="phoneNumber" id="phoneNumber-input">
 </fieldset>
+<script type="module">
+    import { setupCepListener } from "/public/assets/js/address.js";
+    setupCepListener('cep-input', 'street-input', 'neighborhood-input', 'city-input', 'state-input');
+</script>
 {{ end }}
