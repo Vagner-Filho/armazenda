@@ -88,6 +88,9 @@ func GetExistingEntryForm(entryId uint32, farm uint32) (EntryForm, []*entity_pub
 	formFields.SelectedCrop = entry.Crop
 	formFields.SelectedVehicle = entry.Vehicle
 	formFields.SelectedField = entry.Field
+	if entry.Origin != nil {
+		formFields.SelectedPerson = *entry.Origin
+	}
 
 	if toast != nil {
 		toasts = append(toasts, toast)

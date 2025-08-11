@@ -5,20 +5,33 @@
         <img src="/public/assets/favicon.ico" alt="Armazenda Logo" class="h-10 w-10">
         <h1 class="text-2xl font-bold">ARMAZENDA</h1>
       </div>
-      {{ if ne .FarmConfig nil }}
+      {{ with .FarmConfig }}
       <div class="text-right">
-        <h2 class="text-xl font-semibold">{{ .FarmConfig.Name }}</h2>
-        <p class="text-sm">{{ .FarmConfig.Street }}, {{ .FarmConfig.Number }}</p>
-        <p class="text-sm">{{ .FarmConfig.City }} - {{ .FarmConfig.State }}</p>
-        <p class="text-sm">CEP: {{ .FarmConfig.Cep }}</p>
+        {{ with .Name }}<h2 class="text-2xl font-semibold">{{ . }}</h2>{{ end }}
+        <p class="text-sm">
+          {{- with .InscricaoEstadual -}}Inscrição Estadual: {{ . }}{{- end -}}
+        </p>
+        <p class="text-sm">
+          {{- with .Street -}}{{.}}{{- end -}}
+          {{- if and .Street .Number -}}, {{ end }}
+          {{- with .Number -}}{{.}}{{- end -}}
+        </p>
+        <p class="text-sm">
+          {{- with .City -}}{{.}}{{- end -}}
+          {{- if and .City .State }} - {{ end }}
+          {{- with .State -}}{{.}}{{- end -}}
+        </p>
+        {{ with .Cep }}<p class="text-sm">CEP: {{ . }}</p>{{ end }}
       </div>
       {{ end }}
     </div>
     <h1 class="mb-4 text-2xl font-bold">Relatório Completo</h1>
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2 flex-wrap mb-2 text-xl">
+      <div class="pr-2">Filtros:</div>
       {{ range $key, $value := .AppliedFilters }}
-      <span class="px-2 py-1 bg-gray-200 rounded text-sm">
-        {{ $key }}: {{ $value }}
+      <span class="bg-gray-300 rounded-lg">
+        <span>{{ $key }}: </span>
+        <span class="font-bold">{{ $value }}</span>
       </span>
       {{ end }}
     </div>
@@ -87,29 +100,38 @@
           <td class="whitespace-nowrap px-6 py-4">{{.Person}}</td>
           <td class="whitespace-nowrap px-6 py-4">{{.City}}</td>
           <td class="whitespace-nowrap px-6 py-4">{{.State}}</td>
-          <td class="whitespace-nowrap px-6 py-4">{{.GrossWeight}}</td>
-          <td class="whitespace-nowrap px-6 py-4">{{.Tare}}</td>
+          <td class="whitespace-nowrap px-6 py-4 format-weight">{{.GrossWeight}}</td>
+          <td class="whitespace-nowrap px-6 py-4 format-weight">{{.Tare}}</td>
           <td class="whitespace-nowrap px-6 py-4">{{.Humidity}}%</td>
           <td class="whitespace-nowrap px-6 py-4">{{.Damage}}%</td>
           <td class="whitespace-nowrap px-6 py-4">{{.Impurity}}%</td>
-          <td class="whitespace-nowrap px-6 py-4 font-bold">{{if eq .OperationType 1}}-{{ end }}{{.NetWeight}}</td>
+          <td class="whitespace-nowrap px-6 py-4 font-bold format-weight">{{if eq .OperationType 1}}-{{ end }}{{.NetWeight}}</td>
         </tr>
         {{end}}
       </tbody>
     </table>
     <div class="mt-4">
-      <p><strong>Total de Entrada:</strong>
-        {{.EntryTotal}}</p>
-      <p><strong>Total de Saída:</strong>
-        {{.DepartureTotal}}</p>
-      <p><strong>Saldo:</strong>
-        {{.Balance}}</p>
+      <p><strong>Total de Entrada:</strong> <span class="format-weight">{{.EntryTotal}}</span></p>
+      <p><strong>Total de Saída:</strong> <span class="format-weight">{{.DepartureTotal}}</span></p>
+      <p><strong>Saldo:</strong> <span class="format-weight">{{.Balance}}</span></p>
     </div>
   </div>
   <style>
     @media print {
       body * {
         visibility: hidden;
+      }
+
+      #full-report,
+      #full-report * {
+        visibility: visible;
+      }
+
+      #full-report {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
       }
 
       @page {
@@ -119,6 +141,19 @@
     }
   </style>
   <script>
+    const weightFormatter = new Intl.NumberFormat('pt-BR', {
+        style: 'decimal',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+
+    document.querySelectorAll('.format-weight').forEach(el => {
+        const value = parseFloat(el.textContent);
+        if (!isNaN(value)) {
+            el.textContent = weightFormatter.format(value) + ' kg';
+        }
+    });
+
     function deleteReport() {
       const reportDiv = document.getElementById('full-report');
       if (reportDiv) {
