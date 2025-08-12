@@ -5,19 +5,17 @@
   </td>
   <td data-label="Operação">
     {{ if eq .OperationType 0 }}
-        <div title="Entrada">
-            <svg class="text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                viewBox="0 0 16 16">
-                <path fill="currentColor" d="M6 8H1V6h5V4l3 3l-3 3zm10-8v13l-6 3v-3H4V9h1v3h5V3l4-2H5v4H4V0z" />
-            </svg>
-        </div>
+    <div title="Entrada">
+      <svg class="mx-auto text-blue-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m-7-7h14"/>
+      </svg>
+    </div>
     {{ else }}
-        <div title="Saída">
-            <svg class="text-amber-500 mx-auto" title="Saída" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                viewBox="0 0 16 16">
-                <path fill="currentColor" d="M12 10V8H7V6h5V4l3 3zm-1-1v4H6v3l-6-3V0h11v5h-1V1H2l4 2v9h4V9z" />
-            </svg>
-        </div>
+    <div title="Saída">
+      <svg class="mx-auto text-amber-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 12h14"/>
+      </svg>
+    </div>
     {{ end }}
   </td>
   <td data-label="Pessoa">
@@ -39,7 +37,7 @@
     import {formatDateToDisplay} from "/public/assets/js/date.js"
     const itemRow = document.querySelector("#operation-{{ .OperationType }}-{{ .Romaneio }}")
     if (itemRow) {
-      itemRow.querySelector("#operationDate").textContent = formatDateToDisplay({{ .OperationDate }})
+      itemRow.querySelector("#operationDate").textContent = formatDateToDisplay({{ .OperationDate}})
     }
   </script>
 </tr>
