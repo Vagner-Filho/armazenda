@@ -1,14 +1,18 @@
 {{ block "entry-filters" . }}
-<details id="entry-filters" class="group">
-    <summary class="outline-0 text-center marker:content-['+'] group-open:marker:content-['-'] marker:text-green-600 marker:font-semibold marker:text-xl cursor-pointer relative pb-2 sm:pb-0">
+<details id="entry-filters" class="group bg-stone-100 shadow-inner rounded-md w-full">
+    <summary class="outline-0 text-start marker:content-['+'] group-open:marker:content-['-'] marker:text-green-600 marker:font-semibold marker:text-xl cursor-pointer relative p-2">
         Filtros
-        <button type="submit" form="entry-filters-form" class="icon-btn w-6 h-6 absolute right-0 left-[100px] mx-auto bottom-0 top-0 my-auto hidden group-open:inline-block transition-opacity duration-300 opacity-0 group-open:opacity-100" title="Filtrar">
-            <iconify-icon icon="mingcute:filter-line" width="24" height="24"></iconify-icon>
-        </button>
-        <button type="button" hx-trigger="click" hx-get="/entry/filters" hx-target="form#entry-filters-form" hx-swap="outerHTML" class="icon-btn w-6 h-6 absolute right-0 left-[160px] mx-auto bottom-0 top-0 my-auto hidden group-open:inline-block transition-opacity duration-300 opacity-0 group-open:opacity-100" title="Limpar Filtro">
-            <iconify-icon icon="hugeicons:clean" width="24" height="24"></iconify-icon>
-        </button>
+        <div class="absolute right-2 top-0 bottom-0 my-auto h-fit w-fit flex gap-2">
+            <button type="submit" form="entry-filters-form" class="icon-btn w-6 h-6 hidden group-open:inline-block transition-opacity duration-300 opacity-0 group-open:opacity-100" title="Filtrar">
+                <iconify-icon icon="mingcute:filter-line" width="24" height="24"></iconify-icon>
+            </button>
+            <button type="button" hx-trigger="click" hx-get="/entry/filters" hx-target="form#entry-filters-form" hx-swap="outerHTML" class="icon-btn w-6 h-6 hidden group-open:inline-block transition-opacity duration-300 opacity-0 group-open:opacity-100" title="Limpar Filtro">
+                <iconify-icon icon="hugeicons:clean" width="24" height="24"></iconify-icon>
+            </button>
+        </div>
     </summary>
-    {{ template "entry-filter-form" . }}
+    <div class="p-2">
+        {{ template "entry-filter-form" . }}
+    </div>
 </details>
 {{ end }}

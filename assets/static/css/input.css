@@ -79,3 +79,7 @@
 @utility required-star {
     @apply after:content-['*'] after:ml-0.5 after:text-red-500
 }
+
+@utility filter-card {
+    @apply flex flex-col gap-1 p-2 rounded-md bg-stone-50 shadow-md
+}

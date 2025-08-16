@@ -19,20 +19,25 @@
     {{ template "navbar" }}
   {{ template "menu" "romaneio" }}
     <section class="mt-20 pl-12 sm:pl-2 px-2 max-w-screen-xl mx-auto">
-      <header>
-        <h1 class="text-center text-xl">
-          CONTROLE DE ROMANEIO
+      <header class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">
+          Controle de Romaneios
         </h1>
+        <p class="text-gray-600 mt-2">
+          Gerencie as entradas e saídas de cargas do seu armazém.
+        </p>
       </header>
-      <div class="flex items-center justify-center w-full py-2 font-bold tracking-wide">
-        <button type="button" id="show-entry-manifest" class="h-8 px-2 text-xs md:text-base rounded-md rounded-r-none ring-1 ring-green-400 text-white bg-green-400 transition-colors duration-300" hx-trigger="click" hx-get="/entry/list" hx-target="#content-container" onclick="handleShowDeparture('button#show-entry-manifest', 'button#show-departure-manifest')">
-          ENTRADA
-        </button>
-        <div class="h-8 w-[2px] bg-green-400">
+      <div class="max-w-md mx-auto mb-8">
+        <div class="bg-gray-200 rounded-lg p-1 flex" id="type-toggler">
+          <button type="button" id="show-entry-manifest" class="flex-1 py-2 px-4 rounded-lg flex items-center justify-center gap-2 bg-white text-gray-800 shadow transition-colors duration-300" hx-trigger="click" hx-get="/entry/list" hx-target="#content-container" onclick="handleToggle(this)">
+            <iconify-icon icon="mdi:arrow-bottom-left-thick" class="text-xl"></iconify-icon>
+            <span class="font-semibold">Entrada</span>
+          </button>
+          <button type="button" id="show-departure-manifest" class="flex-1 py-2 px-4 rounded-lg flex items-center justify-center gap-2 text-gray-500 transition-colors duration-300" hx-trigger="click" hx-get="/departure/list" hx-target="#content-container" onclick="handleToggle(this)">
+            <iconify-icon icon="mdi:arrow-top-right-thick" class="text-xl"></iconify-icon>
+            <span class="font-semibold">Saída</span>
+          </button>
         </div>
-        <button type="button" id="show-departure-manifest" class="h-8 px-2 text-xs md:text-base rounded-md rounded-l-none ring-1 ring-green-400 text-green-400 transition-colors duration-300" hx-trigger="click" hx-get="/departure/list" hx-target="#content-container" onclick="handleShowDeparture('button#show-departure-manifest', 'button#show-entry-manifest')">
-          SAÍDA
-        </button>
       </div>
       <div id="content-container">
         {{ template "entry-content" . }}
@@ -41,19 +46,16 @@
   </body>
 </html>
 <script type="module">
-  function handleShowDeparture(selectorAdd, selectorRemove) {
-    const elToAddClass = document.querySelector(selectorAdd);
-    if (elToAddClass) {
-      elToAddClass.classList.add('bg-green-400', 'text-white')
-      elToAddClass.classList.remove('text-green-400')
-    }
-    const elToRemoveClass = document.querySelector(selectorRemove);
-    if (elToRemoveClass) {
-      elToRemoveClass.classList.remove('bg-green-400', 'text-white')
-      elToRemoveClass.classList.add('text-green-400')
-    }
+  function handleToggle(clickedButton) {
+    const buttons = clickedButton.parentElement.querySelectorAll('button');
+    buttons.forEach(button => {
+      button.classList.remove('bg-white', 'text-gray-800', 'shadow');
+      button.classList.add('text-gray-500');
+    });
+    clickedButton.classList.add('bg-white', 'text-gray-800', 'shadow');
+    clickedButton.classList.remove('text-gray-500');
   }
-  window.handleShowDeparture = handleShowDeparture
+  window.handleToggle = handleToggle
 </script>
 <style>
 @media screen and (max-width: 600px) {

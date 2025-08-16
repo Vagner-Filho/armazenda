@@ -1,26 +1,28 @@
 {{ block "entry-content" . }}
-<div class="{{ if .NoContent }} hidden {{ end }}" id="entry-content">
-    <div>
-        {{ template "entry-filters" .Filters }}
-    </div>
-    <div class="w-full flex items-center justify-end py-1 gap-4">
-        <button id="form" type="button"
-            class="btn-shape text-xs md:text-base text-slate-500 hover:text-white hover:bg-slate-500 focus:text-white focus:bg-slate-500 ring ring-inset ring-slate-500 transition-colors duration-300 ease-in-out flex items-center gap-1"
-            hx-get="/entry/draft/form" hx-target="body" hx-swap="beforeend">
-            <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
-            Novo Rascunho
-        </button>
-        <button id="form" type="button" class="add-btn text-xs md:text-base flex items-center gap-1" hx-get="/entry/form" hx-target="body"
-            hx-swap="beforeend">
-            <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
-            Nova Entrada
-        </button>
+{{ template "entry-filters" .Filters }}
+<div class="{{ if .NoContent }} hidden {{ end }} bg-white shadow-md rounded-lg p-4" id="entry-content">
+    <div class="flex flex-wrap justify-between items-center mb-4">
+        <div class="flex items-center gap-4 w-full justify-end">
+            <button id="form" type="button"
+                class="btn-shape text-slate-500 hover:text-white hover:bg-slate-500 focus:text-white focus:bg-slate-500 ring ring-inset ring-slate-500 transition-colors duration-300 ease-in-out flex items-center gap-1"
+                hx-get="/entry/draft/form" hx-target="body" hx-swap="beforeend">
+                <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
+                Novo Rascunho
+            </button>
+            <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/entry/form" hx-target="body"
+                hx-swap="beforeend">
+                <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
+                Nova Entrada
+            </button>
+        </div>
     </div>
     <main id="list">
         {{ template "entry-table" .Entries }}
     </main>
 </div>
 {{ if .NoContent }}
-{{ template "no-entry" }}
+<div class="bg-white shadow-md rounded-lg p-4">
+    {{ template "no-entry" }}
+</div>
 {{ end }}
 {{ end }}
