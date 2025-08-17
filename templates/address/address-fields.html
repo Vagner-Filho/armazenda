@@ -1,36 +1,50 @@
 {{ block "address-fields" . }}
-<fieldset class="flex flex-col" name="address">
-    <legend>
-        <h3 class="text-lg px-2">
-            Endereço
-        </h3>
+<fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow" name="address">
+    <legend class="fieldset-legend">
+        Endereço e Contato
     </legend>
-    <label for="cep" class="px-2 required-star">CEP</label>
-    <input type="number" name="cep" id="cep-input" class="" required>
-
-    <label for="neighborhood" class="px-2 required-star">Bairro</label>
-    <input type="text" name="neighborhood" id="neighborhood-input" required>
-
-    <label for="street" class="px-2 required-star">Rua</label>
-    <input type="text" name="street" id="street-input" required>
-
-    <label for="number" class="px-2">Número</label>
-    <input type="number" name="number" id="number-input">
-
-    <label for="complement" class="px-2">Complemento</label>
-    <input type="text" name="complement" id="complement-input">
-
-    <label for="city" class="px-2 required-star">Cidade</label>
-    <input type="text" name="city" id="city-input" required>
-
-    <label for="state" class="px-2 required-star">Estado</label>
-    <input type="text" name="state" id="state-input" required>
-
-    <label for="email" class="px-2">E-mail</label>
-    <input type="text" name="email" id="email-input">
-
-    <label for="phoneNumber" class="px-2">Celular</label>
-    <input type="number" name="phoneNumber" id="phoneNumber-input">
+    <div class="flex flex-col-reverse">
+        <input type="number" name="cep" id="cep-input" class="peer" required>
+        <label for="cep-input" class="label-peer">CEP</label>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div class="flex flex-col-reverse">
+            <input type="text" name="state" id="state-input" class="peer" required>
+            <label for="state-input" class="label-peer">Estado</label>
+        </div>
+        <div class="flex flex-col-reverse">
+            <input type="text" name="city" id="city-input" class="peer" required>
+            <label for="city-input" class="label-peer">Cidade</label>
+        </div>
+    </div>
+    <div class="flex flex-col-reverse">
+        <input type="text" name="neighborhood" id="neighborhood-input" class="peer" required>
+        <label for="neighborhood-input" class="label-peer">Bairro</label>
+    </div>
+    <div class="flex flex-col-reverse">
+        <input type="text" name="street" id="street-input" class="peer" required>
+        <label for="street-input" class="label-peer">Rua</label>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div class="flex flex-col-reverse">
+            <input type="number" name="number" id="number-input" class="peer">
+            <label for="number-input" class="label-peer">Número (opcional)</label>
+        </div>
+        <div class="flex flex-col-reverse">
+            <input type="text" name="complement" id="complement-input" class="peer">
+            <label for="complement-input" class="label-peer">Complemento (opcional)</label>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div class="flex flex-col-reverse">
+            <input type="text" name="email" id="email-input" class="peer">
+            <label for="email-input" class="label-peer">E-mail (opcional)</label>
+        </div>
+        <div class="flex flex-col-reverse">
+            <input type="number" name="phoneNumber" id="phoneNumber-input" class="peer">
+            <label for="phoneNumber-input" class="label-peer">Celular (opcional)</label>
+        </div>
+    </div>
 </fieldset>
 <script type="module">
     import { setupCepListener } from "/public/assets/js/address.js";

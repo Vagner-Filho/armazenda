@@ -1,101 +1,127 @@
 {{ block "person-form" . }}
-<dialog id="personFormDialog" class="rounded-md w-72 sm:w-[700px]">
-  <div class="p-2 relative">
+<dialog id="personFormDialog" class="rounded-md w-full max-w-5xl bg-stone-100">
+  <div class="p-4 relative">
     {{ template "close-dialog-btn" "dialog#personFormDialog" }}
-    <h3 class="text-center px-2 font-semibold">
-      NOVO COMPRADOR
-    </h3>
-    <div class="flex items-center justify-center w-full py-2">
+    <header class="text-center">
+      <h1 class="text-2xl font-bold text-slate-700">
+        Novo Comprador
+      </h1>
+      <p class="text-gray-600 mt-2">
+        Selecione o tipo de pessoa e preencha os dados para cadastrar um novo comprador.
+      </p>
+    </header>
+
+    <div class="flex items-center justify-center w-full py-4">
       <button type="button" id="pessoa-juridica-btn"
-        class="h-8 px-2 text-base rounded-md rounded-r-none ring-1 ring-green-400 text-white bg-green-400 transition-colors duration-300"
+        class="h-10 px-4 font-semibold rounded-md rounded-r-none ring-2 ring-inset ring-sky-500 text-white bg-sky-500 transition-colors duration-300"
         onclick="toggleForm()">
         Pessoa Jurídica
       </button>
-      <div class="h-8 w-[2px] bg-green-400">
-      </div>
       <button type="button" id="pessoa-fisica-btn"
-        class="h-8 px-2 text-base rounded-md rounded-l-none ring-1 ring-green-400 text-green-400 transition-colors duration-300"
+        class="h-10 px-4 font-semibold rounded-md rounded-l-none ring-2 ring-inset ring-sky-500 text-sky-500 transition-colors duration-300"
         onclick="toggleForm()">
-        Pessoa Fisica
+        Pessoa Física
       </button>
     </div>
+
     <form id="pessoa-juridica-form" hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend"
-      class="flex flex-wrap">
-      <fieldset class="flex flex-col">
-        <legend>
-          <h3 class="text-lg px-2">
-            Geral Pessoa Jurídica
-          </h3>
-        </legend>
-        <label for="plate" class="px-2 required-star">
-          Razão Social
-        </label>
-        <input type="text" name="companyName" id="person-name" required>
-        <label for="name" class="px-2">
-          Nome Fantasia
-        </label>
-        <input type="text" name="fantasyName" id="fantasy-name">
-        <label for="document" class="px-2 required-star">
-          CNPJ
-        </label>
-        <input type="text" name="cnpj" id="document" required maxlength="14">
-        <label for="inscricaoEstadual" class="px-2 required-star">
-          Inscrição Estadual
-        </label>
-        <input type="text" name="inscricaoEstadual" id="address" required>
-        <label for="desconto-umidade" class="px-2 required-star">
-          Desconto Umidade
-        </label>
-        <input type="number" step="0.1" name="humidityDiscount" id="desconto-umidade" required value="1.7">
-      </fieldset>
-      {{ template "address-fields" .Address }}
-      <div class="flex items-center justify-center gap-2 mt-3 w-full">
-        <button type="button" class="cancel-btn w-1/3" onclick="closePersonForm()">
-          CANCELAR
+      class="flex flex-col gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
+          <legend class="fieldset-legend">
+            Identificação
+          </legend>
+          <div class="flex flex-col-reverse">
+            <input type="text" name="companyName" id="person-name-pj" class="peer" required>
+            <label for="person-name-pj" class="label-peer">
+              Razão Social
+            </label>
+          </div>
+          <div class="flex flex-col-reverse">
+            <input type="text" name="fantasyName" id="fantasy-name" class="peer">
+            <label for="fantasy-name" class="label-peer">
+              Nome Fantasia (opcional)
+            </label>
+          </div>
+          <div class="flex flex-col-reverse">
+            <input type="text" name="cnpj" id="document-pj" class="peer" required maxlength="14">
+            <label for="document-pj" class="label-peer">
+              CNPJ
+            </label>
+          </div>
+          <div class="flex flex-col-reverse">
+            <input type="text" name="inscricaoEstadual" id="ie-pj" class="peer" required>
+            <label for="ie-pj" class="label-peer">
+              Inscrição Estadual
+            </label>
+          </div>
+          <div class="flex flex-col-reverse">
+            <input type="number" step="0.1" name="humidityDiscount" id="desconto-umidade-pj" class="peer" required
+              value="1.7">
+            <label for="desconto-umidade-pj" class="label-peer">
+              Desconto Umidade
+            </label>
+          </div>
+        </fieldset>
+        {{ template "address-fields" .Address }}
+      </div>
+      <div class="flex items-center justify-around mt-2 w-52 mx-auto">
+        <button type="button" class="cancel-btn" onclick="closePersonForm()">
+          Cancelar
         </button>
-        <button class="add-btn w-1/3">
-          ADICIONAR
+        <button class="add-btn" type="submit">
+          Adicionar
         </button>
       </div>
     </form>
-    <form class="hidden flex flex-wrap" id="pessoa-fisica-form" hx-post="/person/natural" hx-target="#people-rows"
-      hx-swap="beforeend">
-      <fieldset class="flex flex-col">
-        <legend>
-          <h3 class="text-lg px-2">
-            Geral Pessoa Física
-          </h3>
-        </legend>
-        <label for="plate" class="px-2 required-star">
-          Nome
-        </label>
-        <input type="text" name="name" id="person-name" required>
-        <label for="cpf" class="px-2 required-star">
-          CPF
-        </label>
-        <input type="text" name="cpf" id="document" required maxlength="11">
-        <label for="inscricaoEstadual" class="px-2 required-star">
-          Inscrição Estadual
-        </label>
-        <input type="text" name="inscricaoEstadual" id="ie" required>
-        <label for="desconto-umidade" class="px-2 required-star">
-          Desconto Umidade
-        </label>
-        <input type="number" step="0.1" name="humidityDiscount" id="desconto-umidade" required value="1.7">
-      </fieldset>
-      {{ template "address-fields" .Address }}
-      <div class="flex items-center justify-center gap-2 mt-3 w-full">
-        <button type="button" class="cancel-btn w-1/3" onclick="closePersonForm()">
-          CANCELAR
+
+    <form id="pessoa-fisica-form" hx-post="/person/natural" hx-target="#people-rows" hx-swap="beforeend"
+      class="hidden flex-col gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
+          <legend class="fieldset-legend">
+            Identificação
+          </legend>
+          <div class="flex flex-col-reverse">
+            <input type="text" name="name" id="person-name-pf" class="peer" required>
+            <label for="person-name-pf" class="label-peer">
+              Nome
+            </label>
+          </div>
+          <div class="flex flex-col-reverse">
+            <input type="text" name="cpf" id="document-pf" class="peer" required maxlength="11">
+            <label for="document-pf" class="label-peer">
+              CPF
+            </label>
+          </div>
+          <div class="flex flex-col-reverse">
+            <input type="text" name="inscricaoEstadual" id="ie-pf" class="peer" required>
+            <label for="ie-pf" class="label-peer">
+              Inscrição Estadual
+            </label>
+          </div>
+          <div class="flex flex-col-reverse">
+            <input type="number" step="0.1" name="humidityDiscount" id="desconto-umidade-pf" class="peer" required
+              value="1.7">
+            <label for="desconto-umidade-pf" class="label-peer">
+              Desconto Umidade
+            </label>
+          </div>
+        </fieldset>
+        {{ template "address-fields" .Address }}
+      </div>
+      <div class="flex items-center justify-around mt-2 w-52 mx-auto">
+        <button type="button" class="cancel-btn" onclick="closePersonForm()">
+          Cancelar
         </button>
-        <button class="add-btn w-1/3">
-          ADICIONAR
+        <button class="add-btn" type="submit">
+          Adicionar
         </button>
       </div>
     </form>
   </div>
   <script type="module">
-    import {removeEmptyFields} from "/public/assets/js/form.js"
+    import { removeEmptyFields } from "/public/assets/js/form.js"
     const dialogEl = document.querySelector("dialog#personFormDialog")
     if (dialogEl) {
       dialogEl.showModal()
@@ -123,32 +149,23 @@
         pessoaJuridicaForm.classList.add('hidden')
         pessoaFisicaForm.classList.remove('hidden')
 
-        pessoaJuridicaBtn.classList.remove('text-white')
-        pessoaJuridicaBtn.classList.remove('bg-green-400')
-        pessoaJuridicaBtn.classList.add('text-green-400')
-        pessoaFisicaBtn.classList.remove('text-green-400')
-        pessoaFisicaBtn.classList.add(...['text-white', 'bg-green-400'])
+        pessoaJuridicaBtn.classList.remove('text-white', 'bg-sky-500')
+        pessoaJuridicaBtn.classList.add('text-sky-500')
+        pessoaFisicaBtn.classList.remove('text-sky-500')
+        pessoaFisicaBtn.classList.add('text-white', 'bg-sky-500')
 
         return
       }
       pessoaFisicaForm.classList.add('hidden')
       pessoaJuridicaForm.classList.remove('hidden')
 
-      pessoaFisicaBtn.classList.remove('text-white')
-      pessoaFisicaBtn.classList.remove('bg-green-400')
-      pessoaFisicaBtn.classList.add('text-green-400')
-      pessoaJuridicaBtn.classList.remove('text-green-400')
-      pessoaJuridicaBtn.classList.add(...['text-white', 'bg-green-400'])
+      pessoaFisicaBtn.classList.remove('text-white', 'bg-sky-500')
+      pessoaFisicaBtn.classList.add('text-sky-500')
+      pessoaJuridicaBtn.classList.remove('text-sky-500')
+      pessoaJuridicaBtn.classList.add('text-white', 'bg-sky-500')
     }
 
     window.toggleForm = toggleForm
   </script>
-  <style>
-    fieldset {
-      width: 50%;
-      padding-right: 4px;
-      padding-left: 4px;
-    }
-  </style>
 </dialog>
 {{ end }}

@@ -126,14 +126,22 @@ func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_
 
 func (bm *personModel) GetPeopleByFarm(farm uint32) ([]entity_public.PersonOption, *model_error.ModelError) {
 	rows, queryErr := bm.conn.Query(context.Background(), `
-		SELECT p.id, lp.companyname AS name, COALESCE(pc.humidity_discount, 1.7) FROM person p
-		JOIN legal_person lp ON p.id = lp.personid
-		LEFT JOIN person_config pc ON p.id = pc.person_id
-		UNION
-		SELECT p.id, np.name, COALESCE(pc.humidity_discount, 1.7) FROM person p
-		JOIN natural_person np ON p.id = np.personid
-		LEFT JOIN person_config pc ON p.id = pc.person_id
-		WHERE p.farm = @userFarm
+		SELECT id, name, humidity_discount FROM (
+			SELECT p.id, lp.companyname AS name, COALESCE(pc.humidity_discount, 1.7) as humidity_discount
+			FROM person p
+			JOIN legal_person lp ON p.id = lp.personid
+			LEFT JOIN person_config pc ON p.id = pc.person_id
+			WHERE p.farm = @userFarm
+			UNION
+			SELECT p.id, np.name, COALESCE(pc.humidity_discount, 1.7) as humidity_discount
+			FROM person p
+			JOIN natural_person np ON p.id = np.personid
+			LEFT JOIN person_config pc ON p.id = pc.person_id
+			WHERE p.farm = @userFarm
+			UNION
+			SELECT NULL, 'Própria', COALESCE((SELECT humidity_discount FROM farm_config WHERE farm_id = @userFarm), 1.15) as humidity_discount
+		) AS result
+		ORDER BY CASE WHEN id IS NULL THEN 0 ELSE 1 END, name
 	`, pgx.NamedArgs{"userFarm": farm})
 
 	if queryErr != nil {

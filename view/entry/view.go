@@ -63,7 +63,7 @@ type EntryForm struct {
 	Products        []entity_public.Product
 	Entry           entity_public.EntryDTO
 	People          []entity_public.PersonOption
-	SelectedPerson  uint32
+	SelectedPerson  *uint32
 }
 
 func GetEntryForm(farm uint32) (EntryForm, []*entity_public.Toast) {
@@ -89,7 +89,7 @@ func GetExistingEntryForm(entryId uint32, farm uint32) (EntryForm, []*entity_pub
 	formFields.SelectedVehicle = entry.Vehicle
 	formFields.SelectedField = entry.Field
 	if entry.Origin != nil {
-		formFields.SelectedPerson = *entry.Origin
+		formFields.SelectedPerson = entry.Origin
 	}
 
 	if toast != nil {

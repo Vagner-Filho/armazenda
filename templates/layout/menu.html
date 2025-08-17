@@ -7,7 +7,16 @@
             ARMAZENDA
         </div>
     </h2>
-    <a href="/pessoa" class="inline-flex gap-3 mt-10{{ if eq . "pessoa" }} text-green-900 font-bold{{ end }}" title="Página de pessoa">
+    <a href="/romaneio" class="inline-flex gap-3 mt-10{{ if eq . "romaneio" }} text-green-900 font-bold{{ end }}" title="Página de romaneio">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+            <path fill="currentColor"
+                d="M8.5 2a6.5 6.5 0 0 1 6.46 5.78L22 12v2l-2-1.2V22h-2V11.6l-3-1.8V22h-2V9H4v13H2V8.5A6.5 6.5 0 0 1 8.5 2m0 2C6.54 4 4.87 5.25 4.26 7h8.48c-.61-1.75-2.28-3-4.24-3M6 11h5v2H6zm0 4h5v2H6zm0 4h5v2H6z" />
+        </svg>
+        <div class="hidden lg:block">
+            Romaneio
+        </div>
+    </a>
+    <a href="/pessoa" class="inline-flex gap-3{{ if eq . "pessoa" }} text-green-900 font-bold{{ end }}" title="Página de pessoa">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
             <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                 d="M17 19.5c0-1.657-2.239-3-5-3s-5 1.343-5 3m14-3c0-1.23-1.234-2.287-3-2.75M3 16.5c0-1.23 1.234-2.287 3-2.75m12-4.014a3 3 0 1 0-4-4.472M6 9.736a3 3 0 0 1 4-4.472m2 8.236a3 3 0 1 1 0-6a3 3 0 0 1 0 6" />
@@ -24,15 +33,6 @@
         </svg>
         <div class="hidden lg:block">
             Relatório
-        </div>
-    </a>
-    <a href="/romaneio" class="inline-flex gap-3{{ if eq . "romaneio" }} text-green-900 font-bold{{ end }}" title="Página de romaneio">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-            <path fill="currentColor"
-                d="M8.5 2a6.5 6.5 0 0 1 6.46 5.78L22 12v2l-2-1.2V22h-2V11.6l-3-1.8V22h-2V9H4v13H2V8.5A6.5 6.5 0 0 1 8.5 2m0 2C6.54 4 4.87 5.25 4.26 7h8.48c-.61-1.75-2.28-3-4.24-3M6 11h5v2H6zm0 4h5v2H6zm0 4h5v2H6z" />
-        </svg>
-        <div class="hidden lg:block">
-            Romaneio
         </div>
     </a>
     <a href="/farm/config" class="inline-flex gap-3{{ if eq . "config" }} text-green-900 font-bold{{ end }}">

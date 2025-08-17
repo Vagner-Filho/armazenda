@@ -1,49 +1,66 @@
 {{ define "user-form" }}
-<dialog id="new-user-dialog">
-  <form hx-post="/user" class="p-6 sm:w-[500px] lg:w-[600px]">
+<dialog id="new-user-dialog" class="rounded-md w-full max-w-lg bg-stone-100">
+  <div class="p-4 relative">
     {{ template "close-dialog-btn" "dialog#new-user-dialog" }}
-    <fieldset>
-      <legend class="mx-auto">
-        <h1 class="sm:text-lg lg:text-xl">
-          Nova Conta
-        </h1>
-      </legend>
-      <div class="flex flex-col-reverse py-1">
-        <input type="text" id="name" required class="peer px-2" name="name" aria-placeholder="Nome">
-        <label for="name" class="label-peer">Nome</label>
+    <header class="text-center mb-4">
+      <h1 class="text-2xl font-bold text-slate-700">
+        Nova Conta
+      </h1>
+      <p class="text-gray-600 mt-2">
+        Crie uma nova conta de usuário para acessar o sistema.
+      </p>
+    </header>
+    <form hx-post="/user" class="flex flex-col gap-4 mt-4">
+      <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
+        <legend class="fieldset-legend">
+          Identificação
+        </legend>
+        <div class="flex flex-col-reverse">
+          <input type="text" id="name" required class="peer" name="name" aria-placeholder="Nome">
+          <label for="name" class="label-peer">Nome</label>
+        </div>
+        {{ template "cpf-field" }}
+        <div class="flex flex-col-reverse">
+          <input type="text" id="inscEstadual" required class="peer" name="inscricaoEstadual"
+            aria-placeholder="inscrição estadual">
+          <label for="inscEstadual" class="label-peer">Inscrição Estadual</label>
+        </div>
+      </fieldset>
+      <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
+        <legend class="fieldset-legend">
+          Credenciais
+        </legend>
+        <div class="flex flex-col-reverse">
+          <input type="email" id="email" required class="peer" name="email" aria-placeholder="email de cadastro">
+          <label for="email" class="label-peer">E-mail</label>
+        </div>
+        <div class="flex flex-col-reverse">
+          <input type="password" id="passwd" required class="peer" name="passwd" aria-placeholder="senha de acesso">
+          <label for="passwd" class="label-peer">Senha</label>
+        </div>
+        <div class="flex flex-col-reverse">
+          <input type="password" id="passwdConfim" required class="peer" name="passwdConfirm"
+            aria-placeholder="repita a senha de acesso">
+          <label for="passwdConfirm" class="label-peer">Confirme a senha</label>
+        </div>
+      </fieldset>
+      <div class="flex items-center justify-around mt-2 w-52 mx-auto">
+        <button type="button" class="cancel-btn" onclick="closeUserForm()">Cancelar</button>
+        <button type="submit" class="add-btn">Cadastrar</button>
       </div>
-      {{ template "cpf-field" }}
-      <div class="flex flex-col-reverse py-1">
-        <input type="email" id="email" required class="peer px-2" name="email" aria-placeholder="email de cadastro">
-        <label for="email" class="label-peer">E-mail</label>
-      </div>
-      <div class="flex flex-col-reverse py-1">
-        <input type="password" id="passwd" required class="peer px-2" name="passwd" aria-placeholder="senha de acesso">
-        <label for="passwd" class="label-peer">Senha</label>
-      </div>
-      <div class="flex flex-col-reverse py-1">
-        <input type="password" id="passwdConfim" required class="peer px-2" name="passwdConfirm" aria-placeholder="repita a senha de acesso">
-        <label for="passwdConfirm" class="label-peer">Confirme a senha</label>
-      </div>
-      <div class="flex flex-col-reverse py-1">
-        <input type="text" id="inscEstadual" required class="peer px-2" name="inscricaoEstadual" aria-placeholder="inscrição estadual">
-        <label for="inscEstadual" class="label-peer">Inscrição Estadual</label>
-      </div>
-    </fieldset>
-    <fieldset class="text-center w-full pt-2">
-      <button type="button" class="cancel-btn" onclick="closeUserForm()">Cancelar</button>
-      <button type="submit" class="add-btn">Cadastrar</button>
-    </fieldset>
-  </form>
+    </form>
+  </div>
   <script type="module">
     const dialog = document.querySelector("dialog#new-user-dialog");
-        if (dialog) {
-            dialog.showModal();
-            window.closeUserForm = function() {
-                dialog.close();
-                window.closeUserForm = undefined;
-            }
-        }
+    if (dialog) {
+      dialog.showModal();
+      window.closeUserForm = function () {
+        dialog.close();
+        dialog.remove();
+        window.closeUserForm = undefined;
+      }
+      dialog.addEventListener('close', closeUserForm)
+    }
   </script>
 </dialog>
 {{ end }}

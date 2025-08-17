@@ -2,18 +2,37 @@
 <dialog id="departure-form-dialog" class="rounded-md w-full max-w-3xl bg-stone-100">
     <div class="p-4 relative">
         {{ template "close-dialog-btn" "dialog#departure-form-dialog" }}
-        <h1 class="text-center font-medium text-xl">
-            Nova Saída
-        </h1>
+        <header class="text-center mb-4">
+            <h1 class="text-2xl font-bold text-slate-700">
+                {{ if .Departure.Id }}
+                Editando Saída
+                {{ else }}
+                Nova Saída
+                {{ end }}
+            </h1>
+            <p class="text-gray-600 mt-2">
+                {{ if .Departure.Id }}
+                Atualize os detalhes deste registro de saída.
+                {{ else }}
+                Preencha os campos abaixo para registrar uma nova saída.
+                {{ end }}
+            </p>
+        </header>
         <form class="flex flex-col gap-4" {{ if .Departure.Id }} hx-put="/departure/{{ .Departure.Id }}"
             hx-target="#departure-{{ .Departure.Id }}" hx-swap="outerHTML" {{ else }} hx-post="/departure"
             hx-target="#departure-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#btns-container">
             <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
-                <legend class="text-lg uppercase rounded-t-lg bg-white px-2 font-light">
+                <legend class="fieldset-legend">
                     Identificação
                 </legend>
                 {{ template "crop-selector" . }}
-                {{ template "person-selector" . }}
+
+                <div class="flex flex-col-reverse w-full relative pr-[30px]">
+                    {{ template "person-selector" . }}
+                    <label for="person-selector" class="label-peer">
+                        Destino
+                    </label>
+                </div>
                 <div class="flex flex-col-reverse">
                     <input type="number" name="grossWeight" id="grossWeight" class="peer" {{ if ne
                         .Departure.GrossWeight 0.0 }} value="{{ .Departure.GrossWeight }}" {{ end }} required>
@@ -38,7 +57,7 @@
                 </div>
             </fieldset>
             <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
-                <legend class="text-lg uppercase rounded-t-lg bg-white px-2 font-light">
+                <legend class="fieldset-legend">
                     Saída
                 </legend>
                 {{ template "vehicle-selector" . }}
