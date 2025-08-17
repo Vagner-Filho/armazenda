@@ -1,36 +1,35 @@
 {{ block "report-list-item" . }}
-<tr class="text-center whitespace-nowrap text-sm sm:text-base" id="operation-{{ .OperationType }}-{{ .Romaneio }}">
-  <td data-label="Romaneio">
+<tr class="text-sm sm:text-base border-b border-gray-200 hover:bg-gray-50"
+  id="operation-{{ .OperationType }}-{{ .Romaneio }}">
+  <td class="py-3 px-4 text-left">
     {{ .Romaneio }}
   </td>
-  <td data-label="Operação">
+  <td class="py-3 px-4 text-left">
     {{ if eq .OperationType 0 }}
-    <div title="Entrada">
-      <svg class="mx-auto text-blue-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m-7-7h14"/>
-      </svg>
+    <div title="Entrada" class="flex items-center gap-2">
+      <iconify-icon icon="mdi:arrow-bottom-left-thick" class="text-xl text-blue-500"></iconify-icon>
+      <span class="font-semibold text-blue-500">Entrada</span>
     </div>
     {{ else }}
-    <div title="Saída">
-      <svg class="mx-auto text-amber-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 12h14"/>
-      </svg>
+    <div title="Saída" class="flex items-center gap-2">
+      <iconify-icon icon="mdi:arrow-top-right-thick" class="text-xl text-amber-500"></iconify-icon>
+      <span class="font-semibold text-amber-500">Saída</span>
     </div>
     {{ end }}
   </td>
-  <td data-label="Pessoa">
+  <td class="py-3 px-4 text-left">
     {{ .Person }}
   </td>
-  <td data-label="Produto">
+  <td class="py-3 px-4 text-left">
     {{ .Product }}
   </td>
-  <td data-label="Veículo">
+  <td class="py-3 px-4 text-left">
     {{ .Vehicle }}
   </td>
-  <td data-label="Peso Líquido">
+  <td class="py-3 px-4 text-left">
     {{ .NetWeight }}
   </td>
-  <td id="operationDate" data-label="Data Operação">
+  <td id="operationDate" class="py-3 px-4 text-left">
     ...
   </td>
   <script type="module">

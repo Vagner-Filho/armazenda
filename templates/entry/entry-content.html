@@ -1,6 +1,6 @@
 {{ block "entry-content" . }}
 {{ template "entry-filters" .Filters }}
-<div class="{{ if .NoContent }} hidden {{ end }} bg-white shadow-md rounded-lg p-4" id="entry-content">
+<div class="{{ if .NoContent }} hidden {{ end }}" id="entry-content">
     <div class="flex flex-wrap justify-between items-center mb-4">
         <div class="flex items-center gap-4 w-full justify-end">
             <button id="form" type="button"
@@ -16,7 +16,7 @@
             </button>
         </div>
     </div>
-    <main id="list">
+    <main id="list" class="bg-white rounded-lg shadow overflow-hidden">
         {{ template "entry-table" .Entries }}
     </main>
 </div>

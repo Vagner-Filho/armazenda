@@ -1,29 +1,31 @@
 {{ block "person-list-item" . }}
-<tr class="text-center whitespace-nowrap text-sm sm:text-base" id="person-{{ .Id }}">
-  <td data-label="Tipo">
+<tr class="text-sm sm:text-base border-b border-gray-200 hover:bg-gray-50" id="person-{{ .Id }}">
+  <td class="py-3 px-4 text-left">
     {{ if eq .Type 0 }}Pessoa Física{{ else }}Pessoa Jurídica{{ end }}
   </td>
-  <td data-label="Nome">
+  <td class="py-3 px-4 text-left">
     {{ .Name }}
   </td>
-  <td data-label="Documentação">
+  <td class="py-3 px-4 text-left">
     {{ .Document }}
   </td>
-  <td data-label="Inscrição Estadual">
+  <td class="py-3 px-4 text-left">
     {{ .IE }}
   </td>
-  <td data-label="Ações">
-    <button type="button" class="text-green-500" hx-get="/person/form/{{ .Id }}" hx-target="body" hx-swap="beforeend" title="Editar Pessoa">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32">
-        <path fill="currentColor" d="M23.906 3.969A4.1 4.1 0 0 0 21 5.188L5.187 21l-.062.313l-1.094 5.5l-.312 1.468l1.469-.312l5.5-1.094l.312-.063L26.813 11a4.075 4.075 0 0 0 0-5.813a4.1 4.1 0 0 0-2.907-1.218m0 1.906c.504 0 1.012.23 1.5.719c.973.972.973 2.027 0 3l-.718.687l-2.97-2.969l.688-.718c.489-.489.996-.719 1.5-.719m-3.593 2.844l2.968 2.969L11.188 23.78a6.8 6.8 0 0 0-2.97-2.968zM6.938 22.438a4.73 4.73 0 0 1 2.625 2.625l-3.282.656z"/>
-      </svg>
+  <td class="py-3 px-4 text-left">
+    <button type="button" class="icon-btn" hx-get="/person/form/{{ .Id }}" hx-target="body"
+      hx-swap="beforeend" title="Editar Pessoa">
+      <iconify-icon icon="mdi:pencil" class="text-xl"></iconify-icon>
     </button>
   </td>
   <script type="module">
     import {formatDocument} from "/public/assets/js/document.js"
     const itemRow = document.querySelector("#person-{{ .Id }}")
     if (itemRow) {
-      itemRow.querySelector("[data-label='Documentação']").textContent = formatDocument({{ .Document}})
+      const docEl = itemRow.querySelector("td:nth-child(3)")
+      if (docEl) {
+        docEl.textContent = formatDocument({{ .Document}})
+      }
     }
   </script>
 </tr>

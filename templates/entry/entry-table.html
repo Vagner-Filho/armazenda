@@ -1,31 +1,32 @@
 {{ block "entry-table" . }}
 <table class="w-full">
-    <thead class="text-xs sm:text-base whitespace-nowrap bg-gray-300/50 hidden md:table-header-group">
+    <thead
+        class="text-xs sm:text-base whitespace-nowrap bg-gray-100 text-gray-600 uppercase hidden md:table-header-group">
         <tr>
-            <th class="py-2">
+            <th class="py-3 px-4 text-left">
                 ROMANEIO
             </th>
-            <th class="py-2">
+            <th class="py-3 px-4 text-left">
                 PRODUTO
             </th>
-            <th class="py-2">
+            <th class="py-3 px-4 text-left">
                 TALHÃO
             </th>
-            <th class="py-2">
+            <th class="py-3 px-4 text-left">
                 PLACA
             </th>
-            <th class="py-2">
+            <th class="py-3 px-4 text-left">
                 PESO LÍQUIDO
             </th>
-            <th class="py-2">
+            <th class="py-3 px-4 text-left">
                 DATA DE RECEBIMENTO
             </th>
-            <th class="py-2">
+            <th class="py-3 px-4 text-left">
                 AÇÕES
             </th>
         </tr>
     </thead>
-    <tbody id="entries-table-body" class="overflow-x-auto">
+    <tbody id="entries-table-body" class="text-gray-700">
         {{ range . }}
         {{ template "entry-list-item" . }}
         {{ end }}

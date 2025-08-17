@@ -1,28 +1,29 @@
 {{ block "departure-table" . }}
 <table class="w-full">
-    <thead class="text-xs sm:text-base whitespace-nowrap bg-gray-300/50">
+    <thead
+        class="text-xs sm:text-base whitespace-nowrap bg-gray-100 text-gray-600 uppercase hidden md:table-header-group">
         <tr>
-            <th class="py-2">
+            <th class="py-3 px-4 text-left">
                 ROMANEIO
             </th>
-            <th class="py-2">
+            <th class="py-3 px-4 text-left">
                 PRODUTO
             </th>
-            <th class="py-2">
+            <th class="py-3 px-4 text-left">
                 PLACA
             </th>
-            <th class="py-2">
+            <th class="py-3 px-4 text-left">
                 PESO
             </th>
-            <th class="py-2">
+            <th class="py-3 px-4 text-left">
                 DATA DE SAÍDA
             </th>
-            <th class="py-2">
+            <th class="py-3 px-4 text-left">
                 AÇÕES
             </th>
         </tr>
     </thead>
-    <tbody id="departure-table-body">
+    <tbody id="departure-table-body" class="text-gray-700">
         {{ range . }}
         {{ template "departure-list-item" . }}
         {{ end }}
