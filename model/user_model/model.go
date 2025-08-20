@@ -70,9 +70,31 @@ func (um *userModel) CreateUser(user entity_public.NewUser) (bool, error) {
 		return false, encErr
 	}
 
-	//_, err := um.conn.Exec(context.Background(), `INSERT INTO app_user (email, name, passwd, inscricao_estadual) VALUES (@email, @name, @passwd, @inscricao_estadual)`, pgx.NamedArgs{"email": user.Email, "name": user.Name, "passwd": string(enc), "inscricao_estadual": user.InscricaoEstadual})
+	var farmId uint32
 
-	_, err := um.conn.Exec(context.Background(), `SELECT add_app_user(@email, @name, @passwd, @inscricao_estadual, @cpf)`, pgx.NamedArgs{"email": user.Email, "name": user.Name, "passwd": string(enc), "inscricao_estadual": user.InscricaoEstadual, "cpf": user.Cpf})
+	createFarmErr := um.conn.QueryRow(context.Background(), `INSERT INTO farm (inscricao_estadual) VALUES (@inscricao_estadual) RETURNING id`, pgx.NamedArgs{"inscricao_estadual": user.InscricaoEstadual}).Scan(&farmId)
+
+	if createFarmErr != nil {
+		return false, createFarmErr
+	}
+
+	_, err := um.conn.Exec(context.Background(), `INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm, cpf) VALUES (@email, @name, @passwd, @inscricao_estadual, @farm, @cpf)`, pgx.NamedArgs{"email": user.Email, "name": user.Name, "passwd": string(enc), "inscricao_estadual": user.InscricaoEstadual, "farm": farmId, "cpf": user.Cpf})
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (um *userModel) CreateUserApproval(user entity_public.NewUser, farmId uint32) (bool, error) {
+	enc, encErr := bcrypt.GenerateFromPassword([]byte(user.Passwd), 10)
+
+	if encErr != nil {
+		return false, encErr
+	}
+
+	_, err := um.conn.Exec(context.Background(), `INSERT INTO user_approval (email, name, passwd, inscricao_estadual, farm_id, cpf) VALUES (@email, @name, @passwd, @inscricao_estadual, @farm_id, @cpf)`, pgx.NamedArgs{"email": user.Email, "name": user.Name, "passwd": string(enc), "inscricao_estadual": user.InscricaoEstadual, "farm_id": farmId, "cpf": user.Cpf})
 
 	if err != nil {
 		return false, err

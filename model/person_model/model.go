@@ -211,3 +211,41 @@ func (bm *personModel) FilterPerson(pf entity_public.PersonFilter, farm uint32) 
 	return people, nil
 
 }
+
+func (bm *personModel) CnpjExistsInFarm(cnpj string, farmId uint32) (bool, *model_error.ModelError) {
+	var exists bool
+	err := bm.conn.QueryRow(context.Background(), `
+		SELECT true FROM legal_person lp
+		JOIN person p ON lp.personId = p.id
+		WHERE lp.cnpj = $1 AND p.farm = $2
+	`, cnpj, farmId).Scan(&exists)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil
+		}
+		model_error.Logger(bm.conn, err.Error())
+		return false, &model_error.ModelError{Message: "Error checking for CNPJ", IsServerErr: true}
+	}
+
+	return exists, nil
+}
+
+func (bm *personModel) CpfExistsInFarm(cpf string, farmId uint32) (bool, *model_error.ModelError) {
+	var exists bool
+	err := bm.conn.QueryRow(context.Background(), `
+		SELECT true FROM natural_person np
+		JOIN person p ON np.personId = p.id
+		WHERE np.cpf = $1 AND p.farm = $2
+	`, cpf, farmId).Scan(&exists)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil
+		}
+		model_error.Logger(bm.conn, err.Error())
+		return false, &model_error.ModelError{Message: "Error checking for CPF", IsServerErr: true}
+	}
+
+	return exists, nil
+}

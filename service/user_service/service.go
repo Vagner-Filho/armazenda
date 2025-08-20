@@ -2,6 +2,7 @@ package user_service
 
 import (
 	entity_public "armazenda/entity/public"
+	"armazenda/model/farm_config_model"
 	"armazenda/model/user_model"
 	"fmt"
 	"os"
@@ -95,20 +96,30 @@ func Login(cpf string, passwd string) (credentials, *entity_public.Toast) {
 }
 
 func Create(newUser entity_public.NewUser) entity_public.Toast {
-	if newUser.Passwd == newUser.PasswdConfirm {
-		um := user_model.GetUserModel()
-		created, err := um.CreateUser(newUser)
-
-		if created == true {
-			toast := entity_public.GetSuccessToast("Usuário criado", "")
-			return toast
-		}
-
-		if err != nil {
-			toast := entity_public.GetErrorToast(err.Error(), "")
-			return toast
-		}
+	if newUser.Passwd != newUser.PasswdConfirm {
+		return entity_public.GetWarningToast("Confirmação de senha incorreta", "")
 	}
-	toast := entity_public.GetWarningToast("Confirmação de senha incorreta", "")
-	return toast
+
+	fcm := farm_config_model.GetFarmConfigModel()
+	farm, err := fcm.GetFarmByInscricaoEstadual(newUser.InscricaoEstadual)
+	if err != nil {
+		return entity_public.GetErrorToast(err.Error(), "")
+	}
+
+	um := user_model.GetUserModel()
+
+	if farm != nil {
+		created, err := um.CreateUserApproval(newUser, farm.Id)
+		if !created || err != nil {
+			return entity_public.GetErrorToast(err.Error(), "")
+		}
+		return entity_public.GetSuccessToast("Usuário enviado para aprovação", "")
+	}
+
+	created, err := um.CreateUser(newUser)
+	if !created || err != nil {
+		return entity_public.GetErrorToast(err.Error(), "")
+	}
+
+	return entity_public.GetSuccessToast("Usuário criado", "")
 }

@@ -80,3 +80,25 @@ func (fcm *farmConfigModel) GetFarmConfig(farmID uint32) (*entity_public.Farm, e
 	result.Id = farmID
 	return &result, nil
 }
+
+func (fcm *farmConfigModel) GetFarmByInscricaoEstadual(inscricaoEstadual string) (*entity_public.Farm, error) {
+	query := `
+		SELECT f.id, f.inscricao_estadual, fc.name, COALESCE(fc.humidity_discount, 1.15), fa.id, fa.street, fa.cep, fa.number, fac.complement, fa.neighborhood, fa.city, fa.state, fco.email, fco.phone_number
+		FROM farm f
+		LEFT JOIN farm_config fc ON f.id = fc.farm_id
+		LEFT JOIN farm_address fa ON fa.farm_id = f.id
+		LEFT JOIN farm_address_complement fac ON fac.farm_address_id = fa.id
+		LEFT JOIN farm_contact fco ON fco.farm_id = f.id
+		WHERE f.inscricao_estadual = $1;
+	`
+	rows, _ := fcm.conn.Query(context.Background(), query, inscricaoEstadual)
+	result, err := pgx.CollectOneRow(rows, pgx.RowToStructByPos[entity_public.Farm])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		fmt.Printf("%+v\n", err.Error())
+		return nil, fmt.Errorf("failed to get farm config: %w", err)
+	}
+	return &result, nil
+}

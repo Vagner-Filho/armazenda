@@ -224,9 +224,10 @@ func initPerson(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init person table", `
 	CREATE TABLE IF NOT EXISTS person (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-		ie VARCHAR(255) UNIQUE,
+		ie TEXT,
 		farm INTEGER NOT NULL,
-		FOREIGN KEY (farm) REFERENCES farm(id)
+		FOREIGN KEY (farm) REFERENCES farm(id),
+		CONSTRAINT unique_person_in_farm UNIQUE (farm, ie)
 	);
 	`)
 
@@ -238,7 +239,7 @@ func initPersonConfig(c *pgx.Conn) {
 	CREATE TABLE IF NOT EXISTS person_config (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		person_id INTEGER UNIQUE NOT NULL,
-		ie VARCHAR(255) NOT NULL,
+		ie TEXT NOT NULL,
 		farm INTEGER NOT NULL,
 		humidity_discount NUMERIC(6, 3) NOT NULL,
 		FOREIGN KEY (farm) REFERENCES farm(id)
@@ -253,7 +254,7 @@ func initNaturalPerson(c *pgx.Conn) {
 	CREATE TABLE IF NOT EXISTS natural_person (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		name VARCHAR(255) NOT NULL,
-		cpf VARCHAR(255) UNIQUE NOT NULL,
+		cpf VARCHAR(11) NOT NULL,
 		personId INTEGER UNIQUE NOT NULL,
 		FOREIGN KEY (personId) REFERENCES person(id)
 	);
@@ -266,7 +267,7 @@ func initLegalPerson(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init legal_person table", `
 	CREATE TABLE IF NOT EXISTS legal_person (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-		cnpj VARCHAR(14) UNIQUE NOT NULL,
+		cnpj VARCHAR(14) NOT NULL,
 		personId INTEGER UNIQUE NOT NULL,
 		companyName VARCHAR(255) NOT NULL,
 		fantasyName VARCHAR(255),
@@ -593,48 +594,17 @@ func initUser(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init user stmt", `
 		CREATE TABLE IF NOT EXISTS app_user (
 			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-			email TEXT UNIQUE NOT NULL,
+			email TEXT NOT NULL,
 			name TEXT NOT NULL,
 			passwd TEXT NOT NULL,
 			inscricao_estadual TEXT NOT NULL,
 			farm INTEGER NOT NULL,
-			cpf VARCHAR(11) UNIQUE NOT NULL,
-			FOREIGN KEY (farm) REFERENCES farm(id)
+			cpf VARCHAR(11) NOT NULL,
+			FOREIGN KEY (farm) REFERENCES farm(id),
+			CONSTRAINT unique_user_in_farm UNIQUE (farm, cpf, email)
 		);
 	`)
 	handleStmtExec(c, stmt, err, "init user table")
-}
-
-// inserts to farm if there is no other farm with the same inscricao estadual
-func initAddUserAndFarm(c *pgx.Conn) {
-	_, err := c.Exec(context.Background(), `
-		CREATE OR REPLACE FUNCTION add_app_user(
-			IN email TEXT,
-			IN name TEXT,
-			IN passwd TEXT,
-			IN ie TEXT,
-			IN cpf VARCHAR(11)
-		)
-		RETURNS VOID
-		LANGUAGE plpgsql AS $$
-		DECLARE farm_exists BOOLEAN; farm_id INTEGER;
-		BEGIN
-			SELECT EXISTS (SELECT 1 FROM farm WHERE inscricao_estadual = ie) INTO farm_exists;
-		
-			IF NOT farm_exists THEN
-				INSERT INTO farm (inscricao_estadual) VALUES (ie) RETURNING id INTO farm_id;
-				INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm, cpf) VALUES (email, name, passwd, ie, farm_id, cpf);
-			ELSE
-				SELECT id FROM farm WHERE inscricao_estadual = ie INTO farm_id;
-				INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm, cpf) VALUES (email, name, passwd, ie, farm_id, cpf);
-			END IF;
-		END;
-		$$;
-	`)
-
-	if err != nil {
-		fmt.Printf("\n error at function add_app_user:\n%v", err.Error())
-	}
 }
 
 func initFarm(c *pgx.Conn) {
@@ -658,7 +628,7 @@ func initFarmConfig(c *pgx.Conn) {
 		);
 	`)
 
-	handleStmtExec(c, stmt, err, "create person config")
+	handleStmtExec(c, stmt, err, "create farm_config")
 }
 
 func initFarmAddrress(c *pgx.Conn) {
@@ -819,6 +789,7 @@ func InitDb(c *pgx.Conn) {
 	initFarmContact(c)
 	initFarmUpdateFunc(c)
 	initUser(c)
+	initUserApproval(c)
 	initProduct(c)
 	initCrop(c)
 	initVehicle(c)
@@ -844,8 +815,24 @@ func InitDb(c *pgx.Conn) {
 	initAddDepartureProcedure(c)
 	initAddNaturalPerson(c)
 	initAddLegalPerson(c)
-	initAddUserAndFarm(c)
 	initUpdateDepartureProc(c)
+}
+
+func initUserApproval(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init user approval stmt", `
+		CREATE TABLE IF NOT EXISTS user_approval (
+			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			email TEXT UNIQUE NOT NULL,
+			name TEXT NOT NULL,
+			passwd TEXT NOT NULL,
+			inscricao_estadual TEXT NOT NULL,
+			farm_id INTEGER NOT NULL,
+			cpf VARCHAR(11) UNIQUE NOT NULL,
+			status TEXT NOT NULL DEFAULT 'pending',
+			FOREIGN KEY (farm_id) REFERENCES farm(id)
+		);
+	`)
+	handleStmtExec(c, stmt, err, "init user approval table")
 }
 
 var dbc *pgx.Conn

@@ -23,6 +23,16 @@ func GetPeopleByFarm(farm uint32) ([]entity_public.PersonOption, *entity_public.
 func AddLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, *entity_public.Toast) {
 	bmodel := person_model.GetpersonModel()
 
+	exists, err := bmodel.CnpjExistsInFarm(bc.Cnpj, bc.Person.Farm)
+	if err != nil {
+		toast := entity_public.GetErrorToast(err.Message, "")
+		return entity_public.PersonDisplay{}, &toast
+	}
+	if exists {
+		toast := entity_public.GetWarningToast("CNPJ já cadastrado para esta fazenda.", "")
+		return entity_public.PersonDisplay{}, &toast
+	}
+
 	person, err := bmodel.AddLegalPerson(bc)
 	if err != nil {
 		if err.IsServerErr == true {
@@ -39,6 +49,16 @@ func AddLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, 
 
 func AddNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *entity_public.Toast) {
 	bmodel := person_model.GetpersonModel()
+
+	exists, err := bmodel.CpfExistsInFarm(bp.Cpf, bp.Person.Farm)
+	if err != nil {
+		toast := entity_public.GetErrorToast(err.Message, "")
+		return entity_public.PersonDisplay{}, &toast
+	}
+	if exists {
+		toast := entity_public.GetWarningToast("CPF já cadastrado para esta fazenda.", "")
+		return entity_public.PersonDisplay{}, &toast
+	}
 
 	person, err := bmodel.AddNaturalPerson(bp)
 	if err != nil {

@@ -10,7 +10,9 @@ import (
 	"armazenda/model/person_model"
 	"armazenda/model/product_model"
 	"armazenda/model/report_model"
+	"armazenda/model/user_approval_model"
 	"armazenda/model/user_model"
+
 	"armazenda/model/vehicle_model"
 	"armazenda/router/crop_router"
 	"armazenda/router/departure_router"
@@ -19,6 +21,7 @@ import (
 	"armazenda/router/field_router"
 	"armazenda/router/person_router"
 	"armazenda/router/report_router"
+	"armazenda/router/user_approval_router"
 	"armazenda/router/user_router"
 	"armazenda/router/vehicle_router"
 	"armazenda/service/user_service"
@@ -93,6 +96,7 @@ func main() {
 	person_model.InitPersonModel(conn)
 	report_model.InitReportModel(conn)
 	farm_config_model.InitFarmConfigModel(conn)
+	user_approval_model.InitUserApprovalModel(conn)
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
@@ -125,6 +129,7 @@ func main() {
 	person_router.UsePersonRoutes(router)
 	report_router.UseReportRoutes(router)
 	farm_config_router.UseFarmConfigRouter(router)
+	user_approval_router.UserApprovalRoutes(router)
 
 	port := os.Getenv("PORT")
 	if port == "" {

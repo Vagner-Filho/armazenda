@@ -1,0 +1,30 @@
+{{ define "pending-users" }}
+<div class="bg-white rounded-lg shadow p-6 mt-8">
+    <h2 class="text-xl font-bold text-slate-700 mb-4">Usuários Pendentes</h2>
+    {{ if .users }}
+    <ul class="space-y-4">
+        {{ range .users }}
+        <li id="user-{{ .Id }}" class="flex items-center justify-between p-4 bg-gray-50 rounded-lg shadow">
+            <div>
+                <p class="font-semibold text-slate-800">{{ .Name }}</p>
+                <p class="text-sm text-gray-600">{{ .Email }}</p>
+                <p class="text-sm text-gray-600">CPF: {{ .Cpf }}</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button hx-post="/user/approve/{{ .Id }}" hx-target="#user-{{ .Id }}" hx-swap="outerHTML"
+                    class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    Aprovar
+                </button>
+                <button hx-post="/user/decline/{{ .Id }}" hx-target="#user-{{ .Id }}" hx-swap="outerHTML"
+                    class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                    Recusar
+                </button>
+            </div>
+        </li>
+        {{ end }}
+    </ul>
+    {{ else }}
+    <p class="text-center text-gray-500">Nenhum usuário pendente.</p>
+    {{ end }}
+</div>
+{{ end }}

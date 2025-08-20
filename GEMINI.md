@@ -1,7 +1,7 @@
 
 # Project Overview
 
-This project is a web application named "armazenda", written in Go. It appears to be a farm management system, with features related to crops, fields, vehicles, entries, departures, and reports. The application uses the Gin web framework for routing and handling HTTP requests. The frontend is built with HTML templates and styled with Tailwind CSS.
+This project is a web application named "armazenda", written in Go. It appears to be a farm management system, with features related to crops, fields, vehicles, entries, departures, and reports. The application uses the Gin web framework for routing and handling HTTP requests. The frontend is built with HTML templates and HTMX to handle requests a HTML fragment swapping and styled with Tailwind CSS.
 
 # Building and Running
 

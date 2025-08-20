@@ -114,6 +114,8 @@
                 </button>
             </div>
         </form>
+
+        <div hx-get="/user/pending" hx-trigger="load"></div>
     </main>
     <script type="module">
         import {removeEmptyFields} from "/public/assets/js/form.js";
