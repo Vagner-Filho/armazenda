@@ -120,9 +120,9 @@ func (ef EntryFilter) GetFilters(availableFilters filterCollection) filterCollec
 }
 
 type EntryPdf struct {
-	Id           uint32
-	Safra        string
-	VehiclePlate string
+	Id                uint32
+	Safra             string
+	VehiclePlate      string
 	CargoWeight
 	Humidity          *float32
 	Damage            *float32
@@ -130,6 +130,14 @@ type EntryPdf struct {
 	ArrivalDate       time.Time `time_format:"2006-01-02T15:04"`
 	InscricaoEstadual string
 	Produto           string
+	FarmName          string
+	FarmStreet        *string
+	FarmCep           *string
+	FarmNumber        *int
+	FarmNeighborhood  *string
+	FarmCity          *string
+	FarmState         *string
+	Origin            *string
 }
 
 type EntryDraft struct {

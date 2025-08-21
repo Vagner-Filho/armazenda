@@ -201,14 +201,37 @@ func (dm *departureModel) DeleteDeparture(id uint32) *model_error.ModelError {
 func (dm *departureModel) GetDeparturePdf(id uint32) (entity_public.DeparturePdf, *model_error.ModelError) {
 	rows, queryErr := dm.conn.Query(
 		context.Background(),
-		`SELECT d.id, c.name AS safra, d.vehicle, d.grossweight, d.tare, d.netweight, d.departuredate, fa.inscricao_estadual, p.name AS produto, b.name
+		`SELECT
+			d.id,
+			c.name AS safra,
+			d.vehicle,
+			d.grossweight,
+			d.tare,
+			d.netweight,
+			d.departuredate,
+			f.inscricao_estadual,
+			prod.name AS produto,
+			COALESCE(person_union.name, 'Próprio') as person_name,
+			fc.name as farm_name,
+			fa.street as farm_street,
+			fa.cep as farm_cep,
+			fa.number as farm_number,
+			fa.neighborhood as farm_neighborhood,
+			fa.city as farm_city,
+			fa.state as farm_state
 		FROM departure d
 		JOIN crop c ON c.id = d.crop
-		JOIN product p ON p.id = c.product
-		JOIN farm fa ON fa.id = d.farm
-		JOIN departure_recipient dr ON dr.departureid = d.id
-		JOIN (SELECT bc.personid, coalesce(bc.fantasyname, bc.companyname) AS name FROM legal_person lp UNION SELECT lp.personid, np.name FROM natural_person np) p ON p.personid = dr.personid
-	 	WHERE d.id = @id;`,
+		JOIN product prod ON prod.id = c.product
+		JOIN farm f ON f.id = d.farm
+		LEFT JOIN farm_config fc ON fc.farm_id = f.id
+		LEFT JOIN farm_address fa ON fa.farm_id = f.id
+		LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
+		LEFT JOIN (
+			SELECT lp.personid, COALESCE(lp.fantasyname, lp.companyname) AS name FROM legal_person lp
+			UNION ALL
+			SELECT np.personid, np.name FROM natural_person np
+		) person_union ON person_union.personid = dr.person_id
+		WHERE d.id = @id;`,
 		pgx.NamedArgs{"id": id},
 	)
 

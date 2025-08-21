@@ -151,7 +151,7 @@ func getDeparturePdf(c *gin.Context) {
 	}
 
 	departurePdf, t := departure_service.GetDeparturePdf(uint32(id))
-	if err != nil {
+	if t != nil {
 		c.Header("HX-Trigger", string(t.ToJson()))
 		return
 	}

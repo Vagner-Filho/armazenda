@@ -4,7 +4,7 @@
         Romaneio de Saída
     </div>
     <div>
-        Destino: {{ .BuyerName }}
+        Destino: {{ .PersonName }}
     </div>
     <div class="flex justify-between border-b my-1" style="border-color: #909699;">
         <div class="flex flex-col" style="width: 50%;">
@@ -24,7 +24,18 @@
             </div>
         </div>
     </div>
+    <div style="text-align: left; font-size: 0.85rem; width: 100%; padding-top: 10px; font-weight: bold;">
+        FAZENDA
+    </div>
     <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                Nome
+            </div>
+            <div class="">
+                {{ .FarmName }}
+            </div>
+        </div>
         <div class="flex flex-col" style="width: 50%;">
             <div class="font-light" style="color: #7a7b87">
                 Inscrição Estadual
@@ -33,6 +44,39 @@
                 {{ .InscricaoEstadual }}
             </div>
         </div>
+    </div>
+    {{if .FarmStreet}}
+    <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+        <div class="flex flex-col" style="width: 100%;">
+            <div class="font-light" style="color: #7a7b87">
+                Endereço
+            </div>
+            <div class="">
+                {{if .FarmStreet}}{{.FarmStreet}}{{end}}{{if .FarmNumber}}, {{.FarmNumber}}{{end}}{{if
+                .FarmNeighborhood}} - {{.FarmNeighborhood}}{{end}}
+            </div>
+        </div>
+    </div>
+    <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                Cidade
+            </div>
+            <div class="">
+                {{if .FarmCity}}{{.FarmCity}}{{end}}{{if .FarmState}}/{{.FarmState}}{{end}}
+            </div>
+        </div>
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                CEP
+            </div>
+            <div class="">
+                {{.FarmCep}}
+            </div>
+        </div>
+    </div>
+    {{end}}
+    <div class="flex justify-between border-b my-1" style="border-color: #909699;">
         <div class="flex flex-col" style="width: 50%;">
             <div class="font-light" style="color: #7a7b87">
                 Safra
@@ -93,50 +137,13 @@
                 {{ .NetWeight }}
             </div>
         </div>
-        <style>
-            @media print {
-
-                body section,
-                body nav {
-                    display: none;
-                }
-            }
-        </style>
     </div>
-    <!--<div style="text-align: left; font-size: 0.85rem; width: 100%; padding-top: 10px; font-weight: bold;">
-    QUALIDADE
-  </div>
-  <div class="flex justify-between border-b my-1" style="border-color: #909699;">
-    <div class="flex flex-col" style="width: 33%;">
-      <div class="font-light" style="color: #7a7b87">
-        Umidade
-      </div>
-      <div class="">
-        {{ .Humidity }}%
-      </div>
-    </div>
-    <div class="flex flex-col" style="width: 33%;">
-      <div class="font-light" style="color: #7a7b87">
-        Avariado
-      </div>
-      <div class="">
-        {{ .Damage }}%
-      </div>
-    </div>
-    <div class="flex flex-col" style="width: 33%;">
-      <div class="font-light" style="color: #7a7b87">
-        Impureza
-      </div>
-      <div class="">
-        {{ .Impurity }}%
-      </div>
-    </div>
-    </div>-->
     <style>
         @media print {
 
             body section,
-            body nav {
+            body nav,
+            body [role="menu"] {
                 display: none;
             }
         }

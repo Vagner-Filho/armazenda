@@ -147,13 +147,41 @@ func (em *entryModel) GetEntry(id uint32) (entity_public.Entry, *model_error.Mod
 func (em *entryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_error.ModelError) {
 	rows, queryErr := em.conn.Query(
 		context.Background(),
-		`SELECT e.id, c.name AS safra, e.vehicle, e.grossweight, e.tare, e.netweight, ea.humidity, ea.damage, ea.impurity, e.arrivaldate, fa.inscricao_estadual, p.name AS produto
+		`SELECT
+			e.id,
+			c.name AS safra,
+			e.vehicle,
+			e.grossweight,
+			e.tare,
+			e.netweight,
+			ea.humidity,
+			ea.damage,
+			ea.impurity,
+			e.arrivaldate,
+			f.inscricao_estadual,
+			p.name AS produto,
+			fc.name as farm_name,
+			fa.street as farm_street,
+			fa.cep as farm_cep,
+			fa.number as farm_number,
+			fa.neighborhood as farm_neighborhood,
+			fa.city as farm_city,
+			fa.state as farm_state,
+			person_union.name as origin
 		FROM entry e
 		LEFT JOIN entry_analysis ea ON ea.entryid = e.id
-		JOIN field f ON f.id = e.field
+		JOIN field fi ON fi.id = e.field
 		JOIN crop c ON c.id = e.crop
 		JOIN product p ON p.id = c.product
-		JOIN farm fa ON fa.id = e.farm
+		JOIN farm f ON f.id = e.farm
+		LEFT JOIN farm_config fc ON fc.farm_id = f.id
+		LEFT JOIN farm_address fa ON fa.farm_id = f.id
+		LEFT JOIN entry_origin eo ON eo.entry_id = e.id
+		LEFT JOIN (
+			SELECT lp.personid, COALESCE(lp.fantasyname, lp.companyname) AS name FROM legal_person lp
+			UNION ALL
+			SELECT np.personid, np.name FROM natural_person np
+		) person_union ON person_union.personid = eo.person_id
 	 	WHERE e.id = @id`,
 		pgx.NamedArgs{"id": id},
 	)
