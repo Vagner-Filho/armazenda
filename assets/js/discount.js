@@ -2,8 +2,8 @@ const HUMIDITY_THRESHOLD = 14;
 const DAMAGE_THRESHOLD = 8;
 const IMPURITY_THRESHOLD = 1;
 
-function getHumidityDiscount() {
-	const humidityInput = document.querySelector('input#humidity');
+function getHumidityDiscount(humidity, gross, tare, h_discount) {
+	const humidityInput = humidity ? { value: humidity } : document.querySelector('input#humidity');
 	const exceedingHumidity = parseFloat(humidityInput.value) - HUMIDITY_THRESHOLD;
 
 	if (!humidityInput || exceedingHumidity <= 0) {
@@ -11,22 +11,22 @@ function getHumidityDiscount() {
 	}
 
 	const personConfig = sessionStorage.getItem('personConfig');
-	if (!personConfig) {
+	if (!personConfig && !h_discount) {
 		return 0;
 	}
 
-	const person = JSON.parse(personConfig);
+	const person = h_discount ? { humidityDiscount: h_discount } : JSON.parse(personConfig);
 	const discount = exceedingHumidity * parseFloat(person.humidityDiscount);
 	if (discount === undefined || discount === null || isNaN(discount)) {
 		return 0;
 	}
 
 	const netWeightInput = document.querySelector('#netWeight');
-	if (!netWeightInput || !netWeightInput.dataset.raw) {
+	if (!netWeightInput || !netWeightInput.dataset.raw && !gross && !tare) {
 		return 0;
 	}
 
-	const rawNetWeight = parseFloat(netWeightInput.dataset.raw);
+	const rawNetWeight = gross && tare ? gross - tare : parseFloat(netWeightInput.dataset.raw);
 	if (isNaN(rawNetWeight) || rawNetWeight <= 0) {
 		return 0;
 	}
@@ -34,8 +34,8 @@ function getHumidityDiscount() {
 	return (rawNetWeight * discount) / 100;
 }
 
-function getDamageDiscount() {
-	const damageInput = document.querySelector('input#damage');
+function getDamageDiscount(damage, gross, tare) {
+	const damageInput = damage ? { value: damage } : document.querySelector('input#damage');
 	const exceedingDamage = parseFloat(damageInput.value) - DAMAGE_THRESHOLD;
 
 	if (!damageInput || isNaN(exceedingDamage) || exceedingDamage <= 0) {
@@ -43,11 +43,11 @@ function getDamageDiscount() {
 	}
 
 	const netWeightInput = document.querySelector('#netWeight');
-	if (!netWeightInput || !netWeightInput.dataset.raw) {
+	if (!netWeightInput || !netWeightInput.dataset.raw && !gross && !tare) {
 		return 0;
 	}
 
-	const rawNetWeight = parseFloat(netWeightInput.dataset.raw);
+	const rawNetWeight = gross && tare ? gross - tare : parseFloat(netWeightInput.dataset.raw);
 	if (isNaN(rawNetWeight) || rawNetWeight <= 0) {
 		return 0;
 	}
@@ -55,8 +55,8 @@ function getDamageDiscount() {
 	return (rawNetWeight * exceedingDamage) / 100;
 }
 
-function getImpurityDiscount() {
-	const impurityInput = document.querySelector('input#impurity');
+function getImpurityDiscount(impurity, gross, tare) {
+	const impurityInput = impurity ? { value: impurity } : document.querySelector('input#impurity');
 	const exceedingImpurity = parseFloat(impurityInput.value) - IMPURITY_THRESHOLD;
 
 	if (!impurityInput || isNaN(exceedingImpurity) || exceedingImpurity <= 0) {
@@ -64,11 +64,11 @@ function getImpurityDiscount() {
 	}
 
 	const netWeightInput = document.querySelector('#netWeight');
-	if (!netWeightInput || !netWeightInput.dataset.raw) {
+	if (!netWeightInput || !netWeightInput.dataset.raw && !gross && !tare) {
 		return 0;
 	}
 
-	const rawNetWeight = parseFloat(netWeightInput.dataset.raw);
+	const rawNetWeight = gross && tare ? gross - tare : parseFloat(netWeightInput.dataset.raw);
 	if (isNaN(rawNetWeight) || rawNetWeight <= 0) {
 		return 0;
 	}

@@ -47,11 +47,12 @@ type ReportDisplay struct {
 
 type FullReport struct {
 	ReportDisplay
-	GrossWeight float64
-	Tare        float64
-	City        string
-	State       string
-	Humidity    float64
-	Damage      float64
-	Impurity    float64
+	GrossWeight      float64
+	Tare             float64
+	City             string
+	State            string
+	Humidity         float64
+	Damage           float64
+	Impurity         float64
+	HumidityDiscount float64
 }
