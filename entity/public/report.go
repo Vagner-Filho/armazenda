@@ -3,6 +3,8 @@ package entity_public
 import (
 	"reflect"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type ReportFilter struct {
@@ -47,12 +49,15 @@ type ReportDisplay struct {
 
 type FullReport struct {
 	ReportDisplay
-	GrossWeight      float64
-	Tare             float64
-	City             string
-	State            string
-	Humidity         float64
-	Damage           float64
-	Impurity         float64
-	HumidityDiscount float64
+	GrossWeight        decimal.Decimal
+	Tare               decimal.Decimal
+	City               string
+	State              string
+	Humidity           decimal.Decimal
+	Damage             decimal.Decimal
+	Impurity           decimal.Decimal
+	HumidityDiscount   decimal.Decimal
+	DiscountedHumidity decimal.Decimal `db:"-"`
+	DiscountedDamage   decimal.Decimal `db:"-"`
+	DiscountedImpurity decimal.Decimal `db:"-"`
 }

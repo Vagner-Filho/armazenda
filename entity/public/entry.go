@@ -120,9 +120,9 @@ func (ef EntryFilter) GetFilters(availableFilters filterCollection) filterCollec
 }
 
 type EntryPdf struct {
-	Id                uint32
-	Safra             string
-	VehiclePlate      string
+	Id           uint32
+	Safra        string
+	VehiclePlate string
 	CargoWeight
 	Humidity          *float32
 	Damage            *float32

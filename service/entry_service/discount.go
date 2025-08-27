@@ -10,15 +10,15 @@ var DECIMAL_HUNDRED = decimal.NewFromInt(100)
 
 func DiscountHumidity(humidity *decimal.Decimal, rawNetWeight decimal.Decimal, discountModifier *decimal.Decimal) decimal.Decimal {
 	if humidity == nil {
-		return rawNetWeight
+		return DECIMAL_ZERO
 	}
 	if discountModifier == nil {
-		return rawNetWeight
+		return DECIMAL_ZERO
 	}
 
 	var exceedingHumidity = humidity.Sub(HUMIDITY_THRESHOLD)
 	if exceedingHumidity.LessThanOrEqual(DECIMAL_ZERO) {
-		return rawNetWeight
+		return DECIMAL_ZERO
 	}
 
 	var discount = exceedingHumidity.Mul(*discountModifier)

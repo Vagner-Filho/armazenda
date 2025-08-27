@@ -3,6 +3,7 @@ package report_service
 import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/report_model"
+	"armazenda/service/entry_service"
 )
 
 func GetReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.ReportDisplay, *entity_public.Toast) {
@@ -28,6 +29,11 @@ func FilterReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.R
 func GetFullReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.FullReport, *entity_public.Toast) {
 	rModel := report_model.GetReportModel()
 	report, err := rModel.GetFullReport(rf, farm)
+	for i, r := range report {
+		report[i].DiscountedHumidity = entry_service.DiscountHumidity(&r.Humidity, r.GrossWeight.Sub(r.Tare), &r.HumidityDiscount)
+		report[i].DiscountedDamage = entry_service.DiscountDamage(&r.Damage, r.GrossWeight.Sub(r.Tare))
+		report[i].DiscountedImpurity = entry_service.DiscountImpurity(&r.Impurity, r.GrossWeight.Sub(r.Tare))
+	}
 	if err != nil {
 		toast := entity_public.GetWarningToast("Falha ao gerar relatório", "")
 		return report, &toast
