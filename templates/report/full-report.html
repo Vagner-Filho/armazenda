@@ -103,8 +103,8 @@
           <td class="whitespace-nowrap px-6 py-4 format-weight">{{.GrossWeight}}</td>
           <td class="whitespace-nowrap px-6 py-4 format-weight">{{.Tare}}</td>
           <td class="whitespace-nowrap px-6 py-4">{{.Humidity}}%({{.DiscountedHumidity}})</td>
-          <td class="whitespace-nowrap px-6 py-4">{{.Damage}}%</td>
-          <td class="whitespace-nowrap px-6 py-4">{{.Impurity}}%</td>
+          <td class="whitespace-nowrap px-6 py-4">{{.Damage}}%({{.DiscountedDamage}})</td>
+          <td class="whitespace-nowrap px-6 py-4">{{.Impurity}}%({{.DiscountedImpurity}})</td>
           <td class="whitespace-nowrap px-6 py-4 font-bold format-weight">{{if eq .OperationType 1}}-{{ end }}{{.NetWeight}}</td>
         </tr>
         {{end}}

@@ -27,12 +27,12 @@ func DiscountHumidity(humidity *decimal.Decimal, rawNetWeight decimal.Decimal, d
 
 func DiscountImpurity(impurity *decimal.Decimal, rawNetWeight decimal.Decimal) decimal.Decimal {
 	if impurity == nil {
-		return rawNetWeight
+		return DECIMAL_ZERO
 	}
 
 	var exceedingImpurity = impurity.Sub(IMPURITY_THRESHOLD)
 	if exceedingImpurity.LessThanOrEqual(DECIMAL_ZERO) {
-		return rawNetWeight
+		return DECIMAL_ZERO
 	}
 
 	return rawNetWeight.Mul(exceedingImpurity).Div(DECIMAL_HUNDRED)
@@ -40,12 +40,12 @@ func DiscountImpurity(impurity *decimal.Decimal, rawNetWeight decimal.Decimal) d
 
 func DiscountDamage(damage *decimal.Decimal, rawNetWeight decimal.Decimal) decimal.Decimal {
 	if damage == nil {
-		return rawNetWeight
+		return DECIMAL_ZERO
 	}
 
-	var exceedingDamage = damage.Sub(IMPURITY_THRESHOLD)
+	var exceedingDamage = damage.Sub(DAMAGE_THRESHOLD)
 	if exceedingDamage.LessThanOrEqual(DECIMAL_ZERO) {
-		return rawNetWeight
+		return DECIMAL_ZERO
 	}
 
 	return rawNetWeight.Mul(exceedingDamage).Div(DECIMAL_HUNDRED)
