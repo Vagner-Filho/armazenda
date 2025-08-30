@@ -142,6 +142,7 @@ type EntryPdf struct {
 
 type EntryDraft struct {
 	Id      uint32          `form:"id"`
+	Name    string          `form:"name" binding:"required"`
 	Field   uint16          `form:"field" binding:"required"`
 	Crop    uint8           `form:"crop" binding:"required"`
 	Vehicle string          `form:"vehiclePlate"`
@@ -151,8 +152,9 @@ type EntryDraft struct {
 
 type DisplayEntryDraft struct {
 	Id      uint32          `form:"id"`
-	Field   string          `form:"field" binding:"required"`
-	Crop    string          `form:"crop" binding:"required"`
+	Name    string          `form:"name"`
+	Field   string          `form:"field"`
+	Crop    string          `form:"crop"`
 	Vehicle string          `form:"vehiclePlate"`
-	Tare    decimal.Decimal `form:"tare" binding:"gte=0"`
+	Tare    decimal.Decimal `form:"tare"`
 }

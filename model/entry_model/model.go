@@ -65,10 +65,35 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32) ([]entity_public.Disp
 	return entries, nil
 }
 
+func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.DisplayEntryDraft, *model_error.ModelError) {
+	rows, queryErr := em.conn.Query(context.Background(), `
+		SELECT ed.id, ed.name, f.name, c.name, ed.vehicle, ed.tare
+			FROM entry_draft ed
+			JOIN field f ON ed.field = f.id
+			JOIN crop c ON ed.crop = c.id
+			WHERE ed.farm = @userFarm
+			ORDER BY ed.startedAt DESC
+	`, pgx.NamedArgs{"userFarm": farm})
+
+	if queryErr != nil {
+		fmt.Printf("\n queryErr: %v\n", queryErr.Error())
+		return []entity_public.DisplayEntryDraft{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	drafts, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.DisplayEntryDraft])
+	if collectErr != nil {
+		fmt.Printf("\n collectErr: %v\n", collectErr.Error())
+		return []entity_public.DisplayEntryDraft{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+
+	return drafts, nil
+}
+
 func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft, *model_error.ModelError) {
 	row, queryErr := em.conn.Query(context.Background(), `
-		SELECT * FROM add_get_entry_draft(@vehicle, @tare, @farm, @field, @crop)
+		SELECT * FROM add_get_entry_draft(@name, @field, @crop, @vehicle, @tare, @farm)
 		`, pgx.NamedArgs{
+		"name":    ge.Name,
 		"field":   ge.Field,
 		"crop":    ge.Crop,
 		"vehicle": ge.Vehicle,

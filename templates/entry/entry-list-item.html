@@ -12,7 +12,7 @@
   <td class="py-3 px-4 text-left" data-label="Placa">
     {{ .Vehicle }}
   </td>
-  <td class="py-3 px-4 text-left" data-label="Peso Líquido">
+  <td class="py-3 px-4 text-left" data-label="Peso Líquido" id="netWeight">
     {{ .NetWeight }}
   </td>
   <td id="arrivalDate" class="py-3 px-4 text-left" data-label="Data de Recebimento">
@@ -40,9 +40,11 @@
   </td>
   <script type="module">
     import {formatDateToDisplay} from "/public/assets/js/date.js"
+    import {formatWeight} from '/public/assets/js/weight.js';
     const itemRow = document.querySelector("tr#entry-{{ .Id }}")
     if (itemRow) {
       itemRow.querySelector("td#arrivalDate").textContent = formatDateToDisplay({{ .ArrivalDate}})
+    itemRow.querySelector("td#netWeight").textContent = formatWeight({{ .NetWeight}})
         }
   </script>
 </tr>

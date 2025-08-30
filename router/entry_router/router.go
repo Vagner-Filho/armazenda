@@ -76,7 +76,7 @@ func addEntryDraft(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	c.HTML(http.StatusCreated, "entry-list-item", entry)
+	c.HTML(http.StatusCreated, "entry-draft-list-item", entry)
 }
 
 func addEntry(c *gin.Context) {
@@ -212,7 +212,7 @@ func getEntryPdf(c *gin.Context) {
 func getEntryDraftForm(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
-	formMembers, _ := entry_view.GetEntryForm(farm)
+	formMembers, _ := entry_view.GetEntryDraftForm(farm)
 
 	c.HTML(http.StatusOK, "entry-draft-form", formMembers)
 }

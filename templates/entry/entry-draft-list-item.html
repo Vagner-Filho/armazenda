@@ -1,0 +1,40 @@
+{{ block "entry-draft-list-item" . }}
+<tr class="text-sm sm:text-base border-b border-gray-200 hover:bg-gray-50 whitespace-nowrap" id="entry-draft-{{ .Id }}">
+  <td class="py-3 px-4 text-left" data-label="Nome">
+    {{ .Name }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="Talhão">
+    {{ .Field }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="Safra">
+    {{ .Crop }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="Placa">
+    {{ .Vehicle }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="Tara">
+    {{ .Tare }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="Ações">
+    <div class="flex items-center gap-2">
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+      <button type="button" hx-get="/entry/form?draft_id={{ .Id }}" hx-target="body" hx-swap="beforeend" title="Gerar Entrada a partir do Rascunho"
+        class="icon-btn">
+        <iconify-icon icon="mdi:file-document-plus-outline" class="text-xl"></iconify-icon>
+      </button>
+      <button type="button" hx-get="/entry/draft/form/{{ .Id }}" hx-target="body" hx-swap="beforeend" title="Editar Rascunho"
+        class="icon-btn">
+        <iconify-icon icon="mdi:pencil" class="text-xl"></iconify-icon>
+      </button>
+      <button type="button" hx-trigger="confirmed" hx-delete="/entry/draft/{{ .Id }}" hx-target="#entry-draft-{{ .Id }}"
+        hx-swap="delete" title="Excluir Rascunho" class="icon-btn" onClick="Swal.fire({title: 'Excluir', text:'Deseja excluir o rascunho {{ .Name }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
+                    if (result.isConfirmed) {
+                        htmx.trigger(this, 'confirmed');
+                    }
+                })">
+        <iconify-icon icon="mdi:trash-can" class="text-xl"></iconify-icon>
+      </button>
+    </div>
+  </td>
+</tr>
+{{ end }}

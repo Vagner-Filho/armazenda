@@ -19,6 +19,7 @@ type entryFilters struct {
 
 type entryContent struct {
 	Entries   []entity_public.DisplayEntry
+	Drafts    []entity_public.DisplayEntryDraft
 	Filters   entryFilters
 	NoContent bool
 }
@@ -30,6 +31,15 @@ func GetAllEntryDisplay(farm uint32) []entity_public.DisplayEntry {
 		return []entity_public.DisplayEntry{}
 	}
 	return entries
+}
+
+func GetAllEntryDraftsDisplay(farm uint32) []entity_public.DisplayEntryDraft {
+	eModel := entry_model.GetEntryModel()
+	drafts, getDataErr := eModel.GetEntryDraftsByFarm(farm)
+	if getDataErr != nil {
+		return []entity_public.DisplayEntryDraft{}
+	}
+	return drafts
 }
 
 func GetFiltersForm(farm uint32) entryFilters {
@@ -46,9 +56,11 @@ func GetFiltersForm(farm uint32) entryFilters {
 
 func GetEntryContent(farm uint32) entryContent {
 	entries := GetAllEntryDisplay(farm)
+	drafts := GetAllEntryDraftsDisplay(farm)
 	return entryContent{
 		Entries:   entries,
-		NoContent: len(entries) == 0,
+		Drafts:    drafts,
+		NoContent: len(entries) == 0 && len(drafts) == 0,
 		Filters:   GetFiltersForm(farm),
 	}
 }
@@ -98,4 +110,26 @@ func GetExistingEntryForm(entryId uint32, farm uint32) (EntryForm, []*entity_pub
 
 	formFields.Entry = entry.ToDTO()
 	return formFields, toasts
+}
+
+type EntryDraftForm struct {
+	Vehicles        []entity_public.Vehicle
+	SelectedVehicle string
+	Crops           []entity_public.Crop
+	SelectedCrop    uint8
+	Fields          []entity_public.Field
+	SelectedField   uint16
+	Draft           entity_public.EntryDraft
+}
+
+func GetEntryDraftForm(farm uint32) (EntryDraftForm, []*entity_public.Toast) {
+	vehicles, vToast := vehicle_service.GetVehiclesByFarm(farm)
+	crops, cToast := crop_service.GetCropsByFarm(farm)
+	fields, fToast := field_service.GetFieldsByFarm(farm)
+
+	return EntryDraftForm{
+		Vehicles: vehicles,
+		Crops:    crops,
+		Fields:   fields,
+	}, []*entity_public.Toast{vToast, cToast, fToast}
 }

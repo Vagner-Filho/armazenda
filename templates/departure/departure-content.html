@@ -1,17 +1,34 @@
 {{ block "departure-content" . }}
-    <div class="{{ if .NoContent }} hidden {{ end }}" id="departure-content">
-        {{ template "departure-filters" .Filters }}
-        <div class="w-full flex items-center justify-end py-1">
-            <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/departure/form" hx-target="body" hx-swap="beforeend">
+{{ template "departure-filters" .Filters }}
+<div class="{{ if .NoContent }} hidden {{ end }}" id="departure-content">
+    <div class="flex flex-wrap justify-between items-center mb-4">
+        <div class="flex items-center gap-4 w-full justify-end">
+            <button id="form" type="button"
+                class="btn-shape text-slate-500 hover:text-white hover:bg-slate-500 focus:text-white focus:bg-slate-500 ring ring-inset ring-slate-500 transition-colors duration-300 ease-in-out flex items-center gap-1"
+                hx-get="/departure/draft/form" hx-target="body" hx-swap="beforeend">
+                <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
+                Novo Rascunho
+            </button>
+            <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/departure/form" hx-target="body"
+                hx-swap="beforeend">
                 <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
                 Nova Saída
             </button>
         </div>
-        <main id="list" class="bg-white rounded-lg shadow overflow-hidden">
-            {{ template "departure-table" .Departures }}
-        </main>
     </div>
-    {{ if .NoContent }}
-        {{ template "no-departure" }}
-    {{ end }}
+    <main id="list" class="bg-white rounded-lg shadow overflow-hidden">
+        {{ template "departure-table" .Departures }}
+    </main>
+</div>
+<div class="mt-8">
+    <h2 class="text-2xl font-bold text-slate-700 mb-4 text-center">Rascunhos</h2>
+    <main id="draft-list" class="bg-white rounded-lg shadow overflow-hidden">
+        {{ template "departure-draft-table" .Drafts }}
+    </main>
+</div>
+{{ if .NoContent }}
+<div class="bg-white shadow-md rounded-lg p-4">
+    {{ template "no-departure" }}
+</div>
+{{ end }}
 {{ end }}

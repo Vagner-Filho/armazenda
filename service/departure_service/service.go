@@ -89,3 +89,82 @@ func GetDeparturePdf(id uint32) (*entity_public.DeparturePdf, *entity_public.Toa
 	}
 	return &departure, nil
 }
+
+func CreateDepartureDraft(d entity_public.DepartureDraft) (entity_public.DisplayDepartureDraft, *entity_public.Toast) {
+	dModel := departure_model.GetDepartureModel()
+
+	draft, err := dModel.CreateDepartureDraft(d)
+	if err != nil {
+		if err.IsServerErr == true {
+			toast := entity_public.GetErrorToast("Houve um erro interno ao criar o rascunho", "")
+			return entity_public.DisplayDepartureDraft{}, &toast
+		}
+		toast := entity_public.GetWarningToast(err.Message, "")
+		return entity_public.DisplayDepartureDraft{}, &toast
+	}
+	toast := entity_public.GetSuccessToast("Rascunho de saída criado", "")
+	return draft, &toast
+}
+
+func GetDepartureDraft(id uint32) (entity_public.DepartureDraft, *entity_public.Toast) {
+	dModel := departure_model.GetDepartureModel()
+
+	draft, err := dModel.GetDepartureDraft(id)
+	if err != nil {
+		if err.IsServerErr == true {
+			toast := entity_public.GetErrorToast("Houve um erro interno ao buscar o rascunho", "")
+			return entity_public.DepartureDraft{}, &toast
+		}
+		toast := entity_public.GetWarningToast(err.Message, "")
+		return entity_public.DepartureDraft{}, &toast
+	}
+	return draft, nil
+}
+
+func GetAllDepartureDrafts(farmId uint32) ([]entity_public.DisplayDepartureDraft, *entity_public.Toast) {
+	dModel := departure_model.GetDepartureModel()
+
+	drafts, err := dModel.GetAllDepartureDrafts(farmId)
+	if err != nil {
+		if err.IsServerErr == true {
+			toast := entity_public.GetErrorToast("Houve um erro interno ao buscar os rascunhos", "")
+			return []entity_public.DisplayDepartureDraft{}, &toast
+		}
+		toast := entity_public.GetWarningToast(err.Message, "")
+		return []entity_public.DisplayDepartureDraft{}, &toast
+	}
+	return drafts, nil
+}
+
+func UpdateDepartureDraft(d entity_public.DepartureDraft) (entity_public.DisplayDepartureDraft, *entity_public.Toast) {
+	dModel := departure_model.GetDepartureModel()
+
+	draft, err := dModel.UpdateDepartureDraft(d)
+	if err != nil {
+		if err.IsServerErr == true {
+			toast := entity_public.GetErrorToast("Houve um erro interno ao atualizar o rascunho", "")
+			return entity_public.DisplayDepartureDraft{}, &toast
+		}
+		toast := entity_public.GetWarningToast(err.Message, "")
+		return entity_public.DisplayDepartureDraft{}, &toast
+	}
+	toast := entity_public.GetSuccessToast("Rascunho de saída atualizado", "")
+	return draft, &toast
+}
+
+func DeleteDepartureDraft(id uint32) *entity_public.Toast {
+	dModel := departure_model.GetDepartureModel()
+	err := dModel.DeleteDepartureDraft(id)
+
+	if err != nil {
+		if err.IsServerErr == true {
+			toast := entity_public.GetErrorToast("Houve um erro interno ao deletar o rascunho", "")
+			return &toast
+		}
+		toast := entity_public.GetWarningToast(err.Message, "")
+		return &toast
+	}
+
+	toast := entity_public.GetSuccessToast("Rascunho de saída deletado", "")
+	return &toast
+}

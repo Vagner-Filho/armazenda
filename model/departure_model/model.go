@@ -116,15 +116,15 @@ func (dm *departureModel) GetDisplayDepartures(farm uint32) ([]entity_public.Dis
 
 func (dm *departureModel) GetDeparture(id uint32) (entity_public.Departure, *model_error.ModelError) {
 	row, queryErr := dm.conn.Query(context.Background(), `
-		SELECT d.*, db.personid FROM departure d
-		JOIN departure_recipient dr ON dr.departureid = d.id
+		SELECT d.*, dr.person_id FROM departure d
+		LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
 		WHERE d.id = @id
 	`, pgx.NamedArgs{"id": id})
 	if queryErr != nil {
 		return entity_public.Departure{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
-	departure, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.Departure])
+	departure, collectErr := pgx.CollectExactlyOneRow(row, pgx.RowToStructByPos[entity_public.Departure])
 	if collectErr != nil {
 		return entity_public.Departure{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
@@ -244,4 +244,135 @@ func (dm *departureModel) GetDeparturePdf(id uint32) (entity_public.DeparturePdf
 		return entity_public.DeparturePdf{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
 	return departure, nil
+}
+
+func (dm *departureModel) CreateDepartureDraft(d entity_public.DepartureDraft) (entity_public.DisplayDepartureDraft, *model_error.ModelError) {
+	row, queryErr := dm.conn.Query(context.Background(), `
+		SELECT * FROM add_get_departure_draft(@name, @person, @crop, @vehicle, @tare, @farm)
+		`, pgx.NamedArgs{
+		"name":    d.Name,
+		"person":  d.Person,
+		"crop":    d.Crop,
+		"vehicle": d.Vehicle,
+		"tare":    d.Tare,
+		"farm":    d.Farm,
+	})
+	if queryErr != nil {
+		model_error.Logger(dm.conn, queryErr.Error())
+		return entity_public.DisplayDepartureDraft{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	draft, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.DisplayDepartureDraft])
+	if collectErr != nil {
+		model_error.Logger(dm.conn, collectErr.Error())
+		return entity_public.DisplayDepartureDraft{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+
+	return draft, nil
+}
+
+func (dm *departureModel) GetDepartureDraft(id uint32) (entity_public.DepartureDraft, *model_error.ModelError) {
+	row, queryErr := dm.conn.Query(context.Background(), `
+		SELECT * FROM departure_draft WHERE id = @id
+	`, pgx.NamedArgs{"id": id})
+	if queryErr != nil {
+		return entity_public.DepartureDraft{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	draft, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.DepartureDraft])
+	if collectErr != nil {
+		return entity_public.DepartureDraft{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+	return draft, nil
+}
+
+func (dm *departureModel) GetAllDepartureDrafts(farmId uint32) ([]entity_public.DisplayDepartureDraft, *model_error.ModelError) {
+	rows, queryErr := dm.conn.Query(context.Background(), `
+		SELECT
+			dd.id,
+			dd.name,
+			COALESCE(np.name, lp.fantasyname, lp.companyname, 'Próprio') as person,
+			c.name as crop,
+			v.plate as vehicle,
+			dd.tare
+		FROM departure_draft dd
+		LEFT JOIN person p ON p.id = dd.person
+		LEFT JOIN natural_person np ON p.id = np.personid
+		LEFT JOIN legal_person lp ON p.id = lp.personid
+		LEFT JOIN crop c ON c.id = dd.crop
+		LEFT JOIN vehicle v ON v.plate = dd.vehicle
+		WHERE dd.farm = @farmId
+	`, pgx.NamedArgs{"farmId": farmId})
+	if queryErr != nil {
+		return []entity_public.DisplayDepartureDraft{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	drafts, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.DisplayDepartureDraft])
+	if collectErr != nil {
+		return []entity_public.DisplayDepartureDraft{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+
+	return drafts, nil
+}
+
+func (dm *departureModel) UpdateDepartureDraft(d entity_public.DepartureDraft) (entity_public.DisplayDepartureDraft, *model_error.ModelError) {
+	row, queryErr := dm.conn.Query(context.Background(), `
+		UPDATE departure_draft
+		SET
+			name = @name,
+			person = @person,
+			crop = @crop,
+			vehicle = @vehicle,
+			tare = @tare
+		WHERE id = @id
+		RETURNING (
+			SELECT
+				dd.id,
+				dd.name,
+				COALESCE(np.name, lp.fantasyname, lp.companyname) as person,
+				c.name as crop,
+				v.plate as vehicle,
+				dd.tare
+			FROM departure_draft dd
+			LEFT JOIN person p ON p.id = dd.person
+			LEFT JOIN natural_person np ON p.id = np.personid
+			LEFT JOIN legal_person lp ON p.id = lp.personid
+			LEFT JOIN crop c ON c.id = dd.crop
+			LEFT JOIN vehicle v ON v.plate = dd.vehicle
+			WHERE dd.id = @id
+		)
+		`, pgx.NamedArgs{
+		"id":      d.Id,
+		"name":    d.Name,
+		"person":  d.Person,
+		"crop":    d.Crop,
+		"vehicle": d.Vehicle,
+		"tare":    d.Tare,
+	})
+	if queryErr != nil {
+		model_error.Logger(dm.conn, queryErr.Error())
+		return entity_public.DisplayDepartureDraft{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	draft, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.DisplayDepartureDraft])
+	if collectErr != nil {
+		model_error.Logger(dm.conn, collectErr.Error())
+		return entity_public.DisplayDepartureDraft{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+
+	return draft, nil
+}
+
+func (dm *departureModel) DeleteDepartureDraft(id uint32) *model_error.ModelError {
+	_, err := dm.conn.Exec(context.Background(),
+		"DELETE FROM departure_draft WHERE id = @id",
+		pgx.NamedArgs{"id": id},
+	)
+
+	if err != nil {
+		model_error.Logger(dm.conn, err.Error())
+		return &model_error.ModelError{Message: err.Error()}
+	}
+
+	return nil
 }

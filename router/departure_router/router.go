@@ -5,7 +5,7 @@ import (
 	"armazenda/model/departure_model"
 	"armazenda/service/departure_service"
 	"armazenda/service/user_service"
-	"armazenda/view/departure"
+	departure_view "armazenda/view/departure"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -164,6 +164,86 @@ func getDeparturePdf(c *gin.Context) {
 	c.HTML(200, "departure-pdf", departurePdf)
 }
 
+func getDepartureDraftForm(c *gin.Context) {
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	form, toasts := departure_view.GetDepartureDraftForm(farm)
+	for _, toast := range toasts {
+		if toast != nil {
+			c.Header("HX-Trigger", string(toast.ToJson()))
+		}
+	}
+	c.HTML(http.StatusOK, "departure-draft-form", form)
+}
+
+func addDepartureDraft(c *gin.Context) {
+	var newDraft entity_public.DepartureDraft
+	err := c.Bind(&newDraft)
+	if err != nil {
+		toast := entity_public.GetWarningToast(err.Error(), "")
+		c.Header("HX-Trigger", string(toast.ToJson()))
+		return
+	}
+
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	newDraft.Farm = farm
+	draft, toast := departure_service.CreateDepartureDraft(newDraft)
+	c.Header("HX-Trigger", string(toast.ToJson()))
+
+	if toast.Type == entity_public.WarningToast {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if toast.Type == entity_public.ErrorToast {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	c.HTML(http.StatusCreated, "departure-draft-list-item", draft)
+}
+
+func putDepartureDraft(c *gin.Context) {
+	id := c.Param("id")
+	converted, parseErr := strconv.ParseUint(id, 10, 32)
+	if parseErr != nil {
+		c.String(http.StatusBadRequest, "", parseErr.Error())
+		return
+	}
+
+	var draft entity_public.DepartureDraft
+	err := c.Bind(&draft)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+
+	draft.Id = uint32(converted)
+	updatedDraft, toast := departure_service.UpdateDepartureDraft(draft)
+	c.Header("HX-Trigger", string(toast.ToJson()))
+
+	if toast.Type == entity_public.WarningToast {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if toast.Type == entity_public.ErrorToast {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	c.HTML(http.StatusOK, "departure-draft-list-item", updatedDraft)
+}
+
+func deleteDepartureDraft(c *gin.Context) {
+	id := c.Param("id")
+	converted, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+	}
+
+	toast := departure_service.DeleteDepartureDraft(uint32(converted))
+	c.Header("HX-Trigger", string(toast.ToJson()))
+	c.Status(http.StatusOK)
+}
+
 func UseDepartureRoutes(router *gin.Engine) {
 	router.POST("/departure/filter", filterDepartures)
 	router.GET("/departure/list", getDepartureContent)
@@ -173,4 +253,9 @@ func UseDepartureRoutes(router *gin.Engine) {
 	router.PUT("/departure/:id", putDeparture)
 	router.DELETE("/departure/:id", deleteDeparture)
 	router.GET("/departure/pdf/:id", getDeparturePdf)
+
+	router.GET("/departure/draft/form", getDepartureDraftForm)
+	router.POST("/departure/draft", addDepartureDraft)
+	router.PUT("/departure/draft/:id", putDepartureDraft)
+	router.DELETE("/departure/draft/:id", deleteDepartureDraft)
 }

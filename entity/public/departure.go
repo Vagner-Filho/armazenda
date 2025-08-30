@@ -11,8 +11,8 @@ type Departure struct {
 	VehiclePlate  string    `form:"vehiclePlate" binding:"required"`
 	Crop          uint8     `form:"crop" binding:"required"`
 	CargoWeight
-	Farm   uint32 `form:"farm" binding:"gte=0"`
-	Person uint32 `form:"person" binding:"required"`
+	Farm   uint32  `form:"farm" binding:"gte=0"`
+	Person *uint32 `form:"person" binding:"required"`
 }
 
 func (d Departure) ToDTO() DepartureDTO {
@@ -34,7 +34,7 @@ type DepartureDTO struct {
 	VehiclePlate  string
 	Crop          uint8
 	CargoWeightDTO
-	Person uint32
+	Person *uint32
 	Farm   uint32
 }
 
@@ -90,9 +90,9 @@ func (df DepartureFilter) GetFilters(availableFilters departureFilterCollection)
 }
 
 type DeparturePdf struct {
-	Id                uint32
-	Safra             string
-	VehiclePlate      string
+	Id           uint32
+	Safra        string
+	VehiclePlate string
 	CargoWeight
 	DepartureDate     time.Time `time_format:"2006-01-02T15:04"`
 	InscricaoEstadual string

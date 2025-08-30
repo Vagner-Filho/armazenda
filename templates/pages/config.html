@@ -125,7 +125,6 @@
         import { setupCepListener } from "/public/assets/js/address.js";
 
         document.body.addEventListener('htmx:configRequest', function (evt) {
-            console.log('htmx:configRequest', evt.detail.parameters);
             evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
         });
 

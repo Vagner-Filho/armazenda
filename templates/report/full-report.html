@@ -30,7 +30,7 @@
       <div class="pr-2">Filtros:</div>
       {{ range $key, $value := .AppliedFilters }}
       <span class="bg-gray-300 rounded-lg">
-        <span>{{ $key }}: </span>
+        <span>{{ $key }}:</span>
         <span class="font-bold">{{ $value }}</span>
       </span>
       {{ end }}
@@ -105,15 +105,19 @@
           <td class="whitespace-nowrap px-6 py-4">{{.Humidity}}%({{.DiscountedHumidity}})</td>
           <td class="whitespace-nowrap px-6 py-4">{{.Damage}}%({{.DiscountedDamage}})</td>
           <td class="whitespace-nowrap px-6 py-4">{{.Impurity}}%({{.DiscountedImpurity}})</td>
-          <td class="whitespace-nowrap px-6 py-4 font-bold format-weight">{{if eq .OperationType 1}}-{{ end }}{{.NetWeight}}</td>
+          <td class="whitespace-nowrap px-6 py-4 font-bold format-weight">{{if eq .OperationType 1}}-{{ end
+            }}{{.NetWeight}}</td>
         </tr>
         {{end}}
       </tbody>
     </table>
     <div class="mt-4">
-      <p><strong>Total de Entrada:</strong> <span class="format-weight">{{.EntryTotal}}</span></p>
-      <p><strong>Total de Saída:</strong> <span class="format-weight">{{.DepartureTotal}}</span></p>
-      <p><strong>Saldo:</strong> <span class="format-weight">{{.Balance}}</span></p>
+      <p><strong>Total de Entrada:</strong>
+        <span class="format-weight">{{.EntryTotal}}</span></p>
+      <p><strong>Total de Saída:</strong>
+        <span class="format-weight">{{.DepartureTotal}}</span></p>
+      <p><strong>Saldo:</strong>
+        <span class="format-weight">{{.Balance}}</span></p>
     </div>
   </div>
   <style>
@@ -140,18 +144,18 @@
       }
     }
   </style>
-  <script>
+  <script type="module">
     const weightFormatter = new Intl.NumberFormat('pt-BR', {
-        style: 'decimal',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+      style: 'decimal',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     });
 
     document.querySelectorAll('.format-weight').forEach(el => {
-        const value = parseFloat(el.textContent);
-        if (!isNaN(value)) {
-            el.textContent = weightFormatter.format(value) + ' kg';
-        }
+      const value = parseFloat(el.textContent);
+      if (!isNaN(value)) {
+        el.textContent = weightFormatter.format(value) + ' kg';
+      }
     });
 
     function deleteReport() {

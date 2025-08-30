@@ -3,19 +3,26 @@
     <div class="p-4 relative">
         {{ template "close-dialog-btn" "dialog#addEntryDraftDialog" }}
         <h1 class="text-center font-medium text-xl">
-            {{ if .Entry.Id }}
+            {{ if .Draft.Id }}
             Editando Rascunho
             {{ else }}
             Novo Rascunho
             {{ end }}
         </h1>
-        <form class="flex flex-col gap-4" {{ if .Entry.Id }} hx-put="/entry/draft/{{ .Entry.Id }}"
-            hx-target="#entry-{{ .Entry.Id }}" hx-swap="outerHTML" {{ else }} hx-post="/entry/draft"
-            hx-target="#entries-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#btns-container">
+        <form class="flex flex-col gap-4" {{ if .Draft.Id }} hx-put="/entry/draft/{{ .Draft.Id }}"
+            hx-target="#entry-draft-{{ .Draft.Id }}" hx-swap="outerHTML" {{ else }} hx-post="/entry/draft"
+            hx-target="#entries-draft-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#btns-container">
             <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
                 <legend class="text-lg uppercase rounded-t-lg bg-white px-2 font-light">
                     Identificação
                 </legend>
+                <div class="flex flex-col-reverse">
+                    <input type="text" name="name" id="name" class="peer" required {{ if .Draft.Name }}
+                        value="{{ .Draft.Name }}" {{ end }}>
+                    <label for="name" class="label-peer">
+                        Nome
+                    </label>
+                </div>
                 {{ template "crop-selector" . }}
                 {{ template "field-selector" . }}
             </fieldset>
@@ -25,8 +32,8 @@
                 </legend>
                 {{ template "vehicle-selector" . }}
                 <div class="flex flex-col-reverse">
-                    <input type="number" name="tare" id="tare" class="peer" {{ if ne .Entry.Tare 0.0 }}
-                        value="{{ .Entry.Tare }}" {{ end }}>
+                    <input type="number" name="tare" id="tare" class="peer" {{ if ne .Draft.Tare.String "0" }}
+                        value="{{ .Draft.Tare }}" {{ end }}>
                     <label for="tare" class="label-peer">
                         Tara
                     </label>
@@ -35,7 +42,7 @@
             <div class="flex items-center justify-around mt-2 w-52 mx-auto" id="btns-container">
                 <button class="cancel-btn" type="button" onclick="closeEntryFormDialog()">Cancelar</button>
                 <button class="add-btn" type="submit">
-                    {{ if .Entry.Id }} Editar {{ else }} Salvar {{ end }}
+                    {{ if .Draft.Id }} Editar {{ else }} Salvar {{ end }}
                 </button>
                 <img class="htmx-indicator" src="/public/assets/static/spinner.svg" alt="...">
             </div>
@@ -43,16 +50,10 @@
     </div>
 
     <script type="module">
-        import {formatDateToInput} from "/public/assets/js/date.js"
-        const dateVal = formatDateToInput({{ .Entry.ArrivalDate}})
-
         const dialogEl = document.querySelector("#addEntryDraftDialog")
         if (dialogEl) {
             dialogEl.showModal()
             const arrivalDateEl = dialogEl.querySelector("input#arrival-date")
-            if (!!arrivalDateEl) {
-                arrivalDateEl.setAttribute("value", dateVal)
-            }
 
             function closeEntryFormDialog() {
                 dialogEl.close()
@@ -114,3 +115,4 @@
     </style>
 </dialog>
 {{ end }}
+

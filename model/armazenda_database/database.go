@@ -111,6 +111,7 @@ func initPreEntry(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init entry draft table", `
 		CREATE TABLE IF NOT EXISTS entry_draft (
 			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			name VARCHAR(255) NOT NULL,
 			field SMALLINT,
 			crop SMALLINT,
 			vehicle VARCHAR(255),
@@ -124,6 +125,41 @@ func initPreEntry(c *pgx.Conn) {
 		)
 	`)
 	handleStmtExec(c, stmt, err, "create entry_draft")
+}
+
+func initAddGetEntryDraft(c *pgx.Conn) {
+	_, err := c.Exec(context.Background(), `
+		CREATE OR REPLACE FUNCTION add_get_entry_draft(
+			in_name VARCHAR(255),
+			in_field SMALLINT,
+			in_crop SMALLINT,
+			in_vehicle VARCHAR(255),
+			in_tare NUMERIC(10, 3),
+			in_farm INTEGER,
+			OUT out_id INTEGER,
+			OUT out_name VARCHAR(255),
+			OUT out_field_name VARCHAR(255),
+			OUT out_crop_name VARCHAR(255),
+			OUT out_vehicle_plate VARCHAR(255),
+			OUT out_tare NUMERIC(10, 3)
+		)
+		LANGUAGE plpgsql AS $$
+		BEGIN
+			INSERT INTO entry_draft (name, field, crop, vehicle, tare, farm) VALUES (in_name, in_field, in_crop, in_vehicle, in_tare, in_farm) RETURNING entry_draft.id INTO out_id;
+
+			SELECT f.name FROM field f WHERE f.id = in_field INTO out_field_name;
+			SELECT c.name FROM crop c WHERE c.id = in_crop INTO out_crop_name;
+			
+			out_name := in_name;
+			out_vehicle_plate := in_vehicle;
+			out_tare := in_tare;
+		END;
+		$$;
+	`)
+
+	if err != nil {
+		fmt.Printf("\n error at function add_get_entry_draft:\n%v", err.Error())
+	}
 }
 
 func initEntry(c *pgx.Conn) {
@@ -766,12 +802,12 @@ func initUpdateDepartureProc(c *pgx.Conn) {
 		LANGUAGE plpgsql AS $$
 		BEGIN
 			UPDATE departure d SET
-				departureDate = departure_Date,
-				vehicle = d_vehicle,
-				crop = d_crop,
-				grossweight = d_grossWeight,
-				tare = d_tare,
-				netweight = d_netWeight
+				 departureDate = departure_Date,
+				 vehicle = d_vehicle,
+				 crop = d_crop,
+				 grossweight = d_grossWeight,
+				 tare = d_tare,
+				 netweight = d_netWeight
 			WHERE d.id = departureId;
 
 			SELECT p.name, d.farm INTO productName, farm FROM departure d JOIN crop c ON d.crop = c.id JOIN product p ON c.product = p.id WHERE d.id = departureId;
@@ -779,6 +815,65 @@ func initUpdateDepartureProc(c *pgx.Conn) {
 		$$;
 	`)
 	handleStmtExec(c, stmt, err, "init update departure proc")
+}
+
+func initDepartureDraft(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init departure draft table", `
+		CREATE TABLE IF NOT EXISTS departure_draft (
+			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			name VARCHAR(255) NOT NULL,
+			person INTEGER,
+			crop SMALLINT,
+			vehicle VARCHAR(255),
+			tare NUMERIC(10, 3),
+			farm INTEGER NOT NULL,
+			startedAt TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+			FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
+			FOREIGN KEY (person) REFERENCES person(id),
+			FOREIGN KEY (crop) REFERENCES crop(id),
+			FOREIGN KEY (farm) REFERENCES farm(id)
+		)
+	`)
+	handleStmtExec(c, stmt, err, "create departure_draft")
+}
+
+func initAddGetDepartureDraft(c *pgx.Conn) {
+	_, err := c.Exec(context.Background(), `
+		CREATE OR REPLACE FUNCTION add_get_departure_draft(
+			in_name VARCHAR(255),
+			in_person INTEGER,
+			in_crop SMALLINT,
+			in_vehicle VARCHAR(255),
+			in_tare NUMERIC(10, 3),
+			in_farm INTEGER,
+			OUT out_id INTEGER,
+			OUT out_name VARCHAR(255),
+			OUT out_person_name VARCHAR(255),
+			OUT out_crop_name VARCHAR(255),
+			OUT out_vehicle_plate VARCHAR(255),
+			OUT out_tare NUMERIC(10, 3)
+		)
+		LANGUAGE plpgsql AS $$
+		BEGIN
+			INSERT INTO departure_draft (name, person, crop, vehicle, tare, farm) VALUES (in_name, in_person, in_crop, in_vehicle, in_tare, in_farm) RETURNING departure_draft.id INTO out_id;
+
+			SELECT COALESCE(np.name, lp.fantasyname, lp.companyname) FROM person p 
+			LEFT JOIN natural_person np ON p.id = np.personid
+			LEFT JOIN legal_person lp ON p.id = lp.personid
+			WHERE p.id = in_person INTO out_person_name;
+
+			SELECT c.name FROM crop c WHERE c.id = in_crop INTO out_crop_name;
+			
+			out_name := in_name;
+			out_vehicle_plate := in_vehicle;
+			out_tare := in_tare;
+		END;
+		$$;
+	`)
+
+	if err != nil {
+		fmt.Printf("\n error at function add_get_departure_draft:\n%v", err.Error())
+	}
 }
 
 func InitDb(c *pgx.Conn) {
@@ -799,6 +894,7 @@ func InitDb(c *pgx.Conn) {
 	initPreEntry(c)
 	initEntryAnalysis(c)
 	initDeparture(c)
+	initDepartureDraft(c)
 	initPerson(c)
 	initPersonConfig(c)
 	initDepartureRecipient(c)
@@ -816,11 +912,14 @@ func InitDb(c *pgx.Conn) {
 	initAddNaturalPerson(c)
 	initAddLegalPerson(c)
 	initUpdateDepartureProc(c)
+	initAddGetEntryDraft(c)
+	initAddGetDepartureDraft(c)
 }
 
 func initUserApproval(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init user approval stmt", `
 		CREATE TABLE IF NOT EXISTS user_approval (
+
 			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 			email TEXT UNIQUE NOT NULL,
 			name TEXT NOT NULL,
