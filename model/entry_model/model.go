@@ -72,7 +72,6 @@ func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.Display
 			JOIN field f ON ed.field = f.id
 			JOIN crop c ON ed.crop = c.id
 			WHERE ed.farm = @userFarm
-			ORDER BY ed.startedAt DESC
 	`, pgx.NamedArgs{"userFarm": farm})
 
 	if queryErr != nil {
@@ -113,9 +112,24 @@ func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.
 	}
 	return entry, nil
 }
+func (em *entryModel) GetEntryDraft(id uint32) (entity_public.EntryDraft, *model_error.ModelError) {
+	row, queryErr := em.conn.Query(context.Background(), `SELECT * FROM entry_draft ed WHERE ed.id = @id`, pgx.NamedArgs{"id": id})
+	if queryErr != nil {
+		model_error.Logger(em.conn, queryErr.Error())
+		return entity_public.EntryDraft{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+	draft, collectErr := pgx.CollectExactlyOneRow(row, pgx.RowToStructByPos[entity_public.EntryDraft])
+	if collectErr != nil {
+		model_error.Logger(em.conn, collectErr.Error())
+		if errors.Is(collectErr, pgx.ErrNoRows) {
+			return entity_public.EntryDraft{}, &model_error.ModelError{Message: "Rascunho não encontrado"}
+		}
+		return entity_public.EntryDraft{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+	return draft, nil
+}
 
 func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-	fmt.Printf("\norigin: %v\n", ge.Origin)
 	row, queryErr := em.conn.Query(context.Background(), `
 		SELECT * FROM add_get_entry(@field, @crop, @grossWeight, @tare, @humidity, @vehicle, @netWeight, @arrivalDate, @farm, @damage, @impurity, @origin)
 		`, pgx.NamedArgs{

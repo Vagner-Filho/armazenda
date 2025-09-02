@@ -112,6 +112,25 @@ func GetExistingEntryForm(entryId uint32, farm uint32) (EntryForm, []*entity_pub
 	return formFields, toasts
 }
 
+func GetEntryFormFromDraft(draftId uint32, farm uint32) (EntryForm, []*entity_public.Toast) {
+	formFields, toasts := GetEntryForm(farm)
+	draft, toast := entry_service.GetEntryDraft(draftId)
+
+	if toast != nil {
+		toasts = append(toasts, toast)
+	}
+
+	if draft.Id != 0 {
+		formFields.SelectedCrop = draft.Crop
+		formFields.SelectedVehicle = draft.Vehicle
+		formFields.SelectedField = draft.Field
+		tare, _ := draft.Tare.Float64()
+		formFields.Entry.Tare = tare
+	}
+
+	return formFields, toasts
+}
+
 type EntryDraftForm struct {
 	Vehicles        []entity_public.Vehicle
 	SelectedVehicle string
@@ -120,16 +139,20 @@ type EntryDraftForm struct {
 	Fields          []entity_public.Field
 	SelectedField   uint16
 	Draft           entity_public.EntryDraft
+	People          []entity_public.PersonOption
+	SelectedPerson  *uint32
 }
 
 func GetEntryDraftForm(farm uint32) (EntryDraftForm, []*entity_public.Toast) {
 	vehicles, vToast := vehicle_service.GetVehiclesByFarm(farm)
 	crops, cToast := crop_service.GetCropsByFarm(farm)
 	fields, fToast := field_service.GetFieldsByFarm(farm)
+	people, pToast := person_service.GetPeopleByFarm(farm)
 
 	return EntryDraftForm{
 		Vehicles: vehicles,
 		Crops:    crops,
 		Fields:   fields,
-	}, []*entity_public.Toast{vToast, cToast, fToast}
+		People:   people,
+	}, []*entity_public.Toast{vToast, cToast, fToast, pToast}
 }

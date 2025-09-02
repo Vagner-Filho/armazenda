@@ -111,13 +111,12 @@ func initPreEntry(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init entry draft table", `
 		CREATE TABLE IF NOT EXISTS entry_draft (
 			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-			name VARCHAR(255) NOT NULL,
+			name TEXT NOT NULL,
 			field SMALLINT,
 			crop SMALLINT,
 			vehicle VARCHAR(255),
 			tare NUMERIC(10, 3),
 			farm INTEGER NOT NULL,
-			startedAt TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 			FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
 			FOREIGN KEY (field) REFERENCES field(id),
 			FOREIGN KEY (crop) REFERENCES crop(id),

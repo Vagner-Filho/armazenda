@@ -176,9 +176,25 @@ func getEntryFiltersForm(c *gin.Context) {
 }
 
 func getEmptyEntryForm(c *gin.Context) {
+	draftIdStr := c.Query("draft_id")
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
-	formMembers, toasts := entry_view.GetEntryForm(farm)
+
+	var formMembers entry_view.EntryForm
+	var toasts []*entity_public.Toast
+
+	if draftIdStr != "" {
+		draftId, err := strconv.ParseUint(draftIdStr, 10, 32)
+		if err != nil {
+			toast := entity_public.GetWarningToast("ID de rascunho inválido", "")
+			c.Header("HX-Trigger", string(toast.ToJson()))
+			c.Status(http.StatusBadRequest)
+			return
+		}
+		formMembers, toasts = entry_view.GetEntryFormFromDraft(uint32(draftId), farm)
+	} else {
+		formMembers, toasts = entry_view.GetEntryForm(farm)
+	}
 
 	for _, t := range toasts {
 		if t != nil {
@@ -217,13 +233,38 @@ func getEntryDraftForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "entry-draft-form", formMembers)
 }
 
+func getFilledEntryDraftForm(c *gin.Context) {
+	id := c.Param("id")
+	converted, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+	}
+
+	draft, toast := entry_service.GetEntryDraft(uint32(converted))
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	formMembers, _ := entry_view.GetEntryDraftForm(farm)
+	formMembers.Draft = draft
+	formMembers.SelectedVehicle = draft.Vehicle
+	formMembers.SelectedCrop = draft.Crop
+	formMembers.SelectedField = draft.Field
+
+	if toast != nil {
+		c.Header("HX-Trigger", string(toast.ToJson()))
+		return
+	}
+
+	c.HTML(http.StatusOK, "entry-draft-form", formMembers)
+}
+
 func UseEntryRoutes(router *gin.Engine) {
 	router.GET("/romaneio", getRomaneioPage)
 	router.GET("/entry/list", getEntryContent)
 	router.GET("/entry/filters", getEntryFiltersForm)
 	router.GET("/entry/form", getEmptyEntryForm)
-	router.GET("/entry/draft/form", getEntryDraftForm)
 	router.GET("/entry/form/:id", getEntryForm)
+	router.GET("/entry/draft/form", getEntryDraftForm)
+	router.GET("/entry/draft/form/:id", getFilledEntryDraftForm)
 	router.POST("/entry", addEntry)
 	router.POST("/entry/draft", addEntryDraft)
 	router.PUT("/entry/:id", putEntry)

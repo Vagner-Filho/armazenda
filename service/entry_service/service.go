@@ -18,6 +18,21 @@ func AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft
 	return newEntry, entity_public.GetSuccessToast("Rascunho adicionado", "")
 }
 
+func GetEntryDraft(id uint32) (entity_public.EntryDraft, *entity_public.Toast) {
+	eModel := entry_model.GetEntryModel()
+
+	newEntry, getErr := eModel.GetEntryDraft(id)
+	if getErr != nil {
+		if getErr.IsServerErr == true {
+			toast := entity_public.GetErrorToast("Houve um erro interno ao recuperar o rascunho", "")
+			return entity_public.EntryDraft{}, &toast
+		}
+		toast := entity_public.GetWarningToast(getErr.Message, "")
+		return entity_public.EntryDraft{}, &toast
+	}
+	return newEntry, nil
+}
+
 func AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public.Toast) {
 	eModel := entry_model.GetEntryModel()
 
