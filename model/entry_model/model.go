@@ -67,11 +67,15 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32) ([]entity_public.Disp
 
 func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.DisplayEntryDraft, *model_error.ModelError) {
 	rows, queryErr := em.conn.Query(context.Background(), `
-		SELECT ed.id, ed.name, f.name, c.name, ed.vehicle, ed.tare
+		SELECT ed.id, ed.name, f.name, c.name, ed.vehicle, ed.tare, COALESCE(np.name, lp.fantasyname, lp.companyname, 'Própria') AS origin
 			FROM entry_draft ed
 			JOIN field f ON ed.field = f.id
 			JOIN crop c ON ed.crop = c.id
-			WHERE ed.farm = @userFarm
+			LEFT JOIN entry_draft_origin edo ON edo.entry_draft_id = ed.id
+			LEFT JOIN person p ON p.id = edo.person_id
+			LEFT JOIN natural_person np ON np.personid = p.id
+			LEFT JOIN legal_person lp ON lp.personid = p.id
+			WHERE ed.farm = @userFarm;
 	`, pgx.NamedArgs{"userFarm": farm})
 
 	if queryErr != nil {
@@ -90,7 +94,7 @@ func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.Display
 
 func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft, *model_error.ModelError) {
 	row, queryErr := em.conn.Query(context.Background(), `
-		SELECT * FROM add_get_entry_draft(@name, @field, @crop, @vehicle, @tare, @farm)
+		SELECT * FROM add_get_entry_draft(@name, @field, @crop, @vehicle, @tare, @farm, @origin)
 		`, pgx.NamedArgs{
 		"name":    ge.Name,
 		"field":   ge.Field,
@@ -98,6 +102,7 @@ func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.
 		"vehicle": ge.Vehicle,
 		"tare":    ge.Tare,
 		"farm":    ge.Farm,
+		"origin":  ge.Origin,
 	})
 
 	if queryErr != nil {
@@ -113,7 +118,14 @@ func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.
 	return entry, nil
 }
 func (em *entryModel) GetEntryDraft(id uint32) (entity_public.EntryDraft, *model_error.ModelError) {
-	row, queryErr := em.conn.Query(context.Background(), `SELECT * FROM entry_draft ed WHERE ed.id = @id`, pgx.NamedArgs{"id": id})
+	row, queryErr := em.conn.Query(context.Background(), `
+		SELECT ed.*, edo.person_id AS origin
+			FROM entry_draft ed
+			JOIN field f ON ed.field = f.id
+			JOIN crop c ON ed.crop = c.id
+			LEFT JOIN entry_draft_origin edo ON edo.entry_draft_id = ed.id
+			WHERE ed.id = @id;
+		`, pgx.NamedArgs{"id": id})
 	if queryErr != nil {
 		model_error.Logger(em.conn, queryErr.Error())
 		return entity_public.EntryDraft{}, &model_error.ModelError{Message: queryErr.Error()}

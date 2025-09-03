@@ -126,6 +126,9 @@ func GetEntryFormFromDraft(draftId uint32, farm uint32) (EntryForm, []*entity_pu
 		formFields.SelectedField = draft.Field
 		tare, _ := draft.Tare.Float64()
 		formFields.Entry.Tare = tare
+		if draft.Origin != nil {
+			formFields.SelectedPerson = draft.Origin
+		}
 	}
 
 	return formFields, toasts

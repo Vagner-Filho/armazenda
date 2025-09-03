@@ -875,6 +875,18 @@ func initAddGetDepartureDraft(c *pgx.Conn) {
 	}
 }
 
+func initEntryDraftOrigin(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init entry draft origin table", `
+		CREATE TABLE IF NOT EXISTS entry_draft_origin (
+			entry_draft_id INTEGER UNIQUE NOT NULL,
+			person_id INTEGER NOT NULL,
+			FOREIGN KEY (entry_draft_id) REFERENCES entry_draft(id),
+			FOREIGN KEY (person_id) REFERENCES person(id)
+		);
+		`)
+	handleStmtExec(c, stmt, err, "create entry draft origin")
+}
+
 func InitDb(c *pgx.Conn) {
 	initFarm(c)
 	initFarmConfig(c)
@@ -891,6 +903,7 @@ func InitDb(c *pgx.Conn) {
 	initEntry(c)
 	initEntryOrigin(c)
 	initPreEntry(c)
+	initEntryDraftOrigin(c)
 	initEntryAnalysis(c)
 	initDeparture(c)
 	initDepartureDraft(c)
