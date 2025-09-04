@@ -55,7 +55,6 @@ func authenticate(c *gin.Context) {
 
 	sessionCookie, cookieErr := c.Request.Cookie("session_id")
 	if cookieErr != nil {
-		fmt.Printf("\ncookieErr:\n %+v", cookieErr)
 		c.HTML(http.StatusUnauthorized, "401", gin.H{})
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return

@@ -128,23 +128,36 @@ func initPreEntry(c *pgx.Conn) {
 
 func initAddGetEntryDraft(c *pgx.Conn) {
 	_, err := c.Exec(context.Background(), `
+		DROP FUNCTION IF EXISTS add_get_entry_draft;
 		CREATE OR REPLACE FUNCTION add_get_entry_draft(
-			in_name VARCHAR(255),
+			in_name TEXT,
 			in_field SMALLINT,
 			in_crop SMALLINT,
 			in_vehicle VARCHAR(255),
 			in_tare NUMERIC(10, 3),
 			in_farm INTEGER,
+			in_origin INTEGER,
 			OUT out_id INTEGER,
-			OUT out_name VARCHAR(255),
+			OUT out_name TEXT,
 			OUT out_field_name VARCHAR(255),
 			OUT out_crop_name VARCHAR(255),
 			OUT out_vehicle_plate VARCHAR(255),
-			OUT out_tare NUMERIC(10, 3)
+			OUT out_tare NUMERIC(10, 3),
+			OUT out_origin TEXT
 		)
 		LANGUAGE plpgsql AS $$
 		BEGIN
 			INSERT INTO entry_draft (name, field, crop, vehicle, tare, farm) VALUES (in_name, in_field, in_crop, in_vehicle, in_tare, in_farm) RETURNING entry_draft.id INTO out_id;
+
+			IF in_origin IS NOT NULL THEN
+				INSERT INTO entry_draft_origin (entry_draft_id, person_id) VALUES (out_id, in_origin);
+				SELECT COALESCE(np.name, lp.fantasyname, lp.companyname) FROM person p
+				LEFT JOIN natural_person np ON p.id = np.personid
+				LEFT JOIN legal_person lp ON p.id = lp.personid
+				WHERE p.id = in_origin INTO out_origin;
+			ELSE
+				out_origin := 'Própria';
+			END IF;
 
 			SELECT f.name FROM field f WHERE f.id = in_field INTO out_field_name;
 			SELECT c.name FROM crop c WHERE c.id = in_crop INTO out_crop_name;
@@ -880,7 +893,7 @@ func initEntryDraftOrigin(c *pgx.Conn) {
 		CREATE TABLE IF NOT EXISTS entry_draft_origin (
 			entry_draft_id INTEGER UNIQUE NOT NULL,
 			person_id INTEGER NOT NULL,
-			FOREIGN KEY (entry_draft_id) REFERENCES entry_draft(id),
+			FOREIGN KEY (entry_draft_id) REFERENCES entry_draft(id) ON DELETE CASCADE,
 			FOREIGN KEY (person_id) REFERENCES person(id)
 		);
 		`)

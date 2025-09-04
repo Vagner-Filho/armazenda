@@ -5,6 +5,7 @@ import (
 	"armazenda/service/entry_service"
 	"armazenda/service/user_service"
 	entry_view "armazenda/view/entry"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -192,6 +193,7 @@ func getEmptyEntryForm(c *gin.Context) {
 			return
 		}
 		formMembers, toasts = entry_view.GetEntryFormFromDraft(uint32(draftId), farm)
+		fmt.Printf("formMembers: %+v", formMembers)
 	} else {
 		formMembers, toasts = entry_view.GetEntryForm(farm)
 	}
@@ -233,6 +235,19 @@ func getEntryDraftForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "entry-draft-form", formMembers)
 }
 
+func deleteDraft(c *gin.Context) {
+	id := c.Param("id")
+	converted, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+
+	toast := entry_service.DeleteEntryDraft(uint32(converted))
+	c.Header("HX-Trigger", string(toast.ToJson()))
+	c.Status(http.StatusOK)
+}
+
 func getFilledEntryDraftForm(c *gin.Context) {
 	id := c.Param("id")
 	converted, err := strconv.ParseUint(id, 10, 32)
@@ -269,6 +284,7 @@ func UseEntryRoutes(router *gin.Engine) {
 	router.POST("/entry/draft", addEntryDraft)
 	router.PUT("/entry/:id", putEntry)
 	router.DELETE("/entry/:id", deleteEntry)
+	router.DELETE("/entry/draft/:id", deleteDraft)
 	router.POST("/entry/filter", filterEntries)
 	router.GET("/entry/pdf/:id", getEntryPdf)
 }

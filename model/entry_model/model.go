@@ -172,6 +172,16 @@ func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.DisplayEnt
 	return entry, nil
 }
 
+func (em *entryModel) DeleteEntryDraft(id uint32) error {
+	_, err := em.conn.Exec(context.Background(), "DELETE FROM entry_draft WHERE id = @draftId", pgx.NamedArgs{"draftId": id})
+
+	if err != nil {
+		model_error.Logger(em.conn, err.Error())
+	}
+
+	return nil
+}
+
 func (em *entryModel) DeleteEntry(id uint32) error {
 	_, err := em.conn.Exec(context.Background(), "INSERT INTO inactive_entry (entry_id) VALUES (@entryId)", pgx.NamedArgs{"entryId": id})
 

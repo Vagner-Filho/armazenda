@@ -105,6 +105,19 @@ func DeleteEntry(id uint32) *entity_public.Toast {
 	return &toast
 }
 
+func DeleteEntryDraft(id uint32) *entity_public.Toast {
+	dModel := entry_model.GetEntryModel()
+	err := dModel.DeleteEntryDraft(id)
+
+	if err != nil {
+		toast := entity_public.GetErrorToast("Houve um erro ao deletar o rascunho", "")
+		return &toast
+	}
+
+	toast := entity_public.GetSuccessToast("Rascunho deletado", "")
+	return &toast
+}
+
 func FilterEntries(ef entity_public.EntryFilter) ([]entity_public.DisplayEntry, *entity_public.Toast) {
 	eModel := entry_model.GetEntryModel()
 	entries, err := eModel.FilterEntries(ef)

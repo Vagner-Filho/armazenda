@@ -37,7 +37,7 @@ type Person struct {
 }
 
 type PersonOption struct {
-	Id   *uint8
+	Id   *uint32
 	Name string
 	PersonConfig
 }

@@ -56,6 +56,7 @@
     </div>
 
     <script type="module">
+        import {removeEmptyFields} from "/public/assets/js/form.js"
         const dialogEl = document.querySelector("#addEntryDraftDialog")
         if (dialogEl) {
             dialogEl.showModal()
@@ -88,21 +89,7 @@
                 })
             }
             document.body.addEventListener('htmx:configRequest', function (evt) {
-                const humidity = evt.detail.parameters['humidity'];
-                const damage = evt.detail.parameters['damage'];
-                const impurity = evt.detail.parameters['impurity'];
-
-                if (humidity === "") {
-                    evt.detail.parameters.delete('humidity');
-                }
-
-                if (damage === "") {
-                    evt.detail.parameters.delete('damage');
-                }
-
-                if (impurity === "") {
-                    evt.detail.parameters.delete('impurity');
-                }
+                evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
             });
         }
     </script>

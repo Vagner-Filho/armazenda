@@ -1,8 +1,9 @@
 {{ block "person-selector" $ }}
 <select name="origin" id="person-selector" class="w-full peer">
   {{ range $.People }}
-  <option {{ if eq .Id nil }}value="" {{ else }} value="{{ .Id }}" {{ end }} data-humidity="{{ .HumidityDiscount }}" {{
-    if eq .Id $.SelectedPerson }}selected{{ end }}>
+  <option
+    {{ if eq .Id nil }} value="" {{ else }} value="{{ .Id }}" {{ end }} data-humidity="{{ .HumidityDiscount }}"
+    {{ if eq .Id $.SelectedPerson }} selected {{ end }}>
     {{ .Name }}
   </option>
   {{ else }}

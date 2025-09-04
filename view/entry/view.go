@@ -101,7 +101,12 @@ func GetExistingEntryForm(entryId uint32, farm uint32) (EntryForm, []*entity_pub
 	formFields.SelectedVehicle = entry.Vehicle
 	formFields.SelectedField = entry.Field
 	if entry.Origin != nil {
-		formFields.SelectedPerson = entry.Origin
+		for i, p := range formFields.People {
+			if p.Id != nil && *p.Id == *entry.Origin {
+				formFields.SelectedPerson = formFields.People[i].Id
+				break
+			}
+		}
 	}
 
 	if toast != nil {
@@ -124,10 +129,17 @@ func GetEntryFormFromDraft(draftId uint32, farm uint32) (EntryForm, []*entity_pu
 		formFields.SelectedCrop = draft.Crop
 		formFields.SelectedVehicle = draft.Vehicle
 		formFields.SelectedField = draft.Field
+
 		tare, _ := draft.Tare.Float64()
 		formFields.Entry.Tare = tare
+
 		if draft.Origin != nil {
-			formFields.SelectedPerson = draft.Origin
+			for i, p := range formFields.People {
+				if p.Id != nil && *p.Id == *draft.Origin {
+					formFields.SelectedPerson = formFields.People[i].Id
+					break
+				}
+			}
 		}
 	}
 
