@@ -59,6 +59,26 @@ func getFilledDepartureForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "departure-form", form)
 }
 
+func getDepartureFormFromDraft(c *gin.Context) {
+	id := c.Param("id")
+	converted, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+	}
+
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	form, toasts := departure_view.GetDepartureFormFromDraft(uint32(converted), farm)
+
+	for _, t := range toasts {
+		if t != nil {
+			c.Header("HX-Trigger", string(t.ToJson()))
+		}
+	}
+
+	c.HTML(http.StatusOK, "departure-form", form)
+}
+
 func addDeparture(c *gin.Context) {
 	var df entity_public.Departure
 	err := c.Bind(&df)
@@ -168,6 +188,32 @@ func getDepartureDraftForm(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
 	form, toasts := departure_view.GetDepartureDraftForm(farm)
+
+	draftIdStr := c.Param("id")
+	if draftIdStr != "" {
+		draftId, err := strconv.ParseUint(draftIdStr, 10, 32)
+		if err != nil {
+			toast := entity_public.GetWarningToast("Rascunho não encontrado", "")
+			c.Header("HX-Trigger", string(toast.ToJson()))
+			c.Status(http.StatusBadRequest)
+			return
+		}
+		draft, toast := departure_service.GetDepartureDraft(uint32(draftId))
+		form.SelectedCrop = uint8(draft.Crop)
+		form.SelectedVehicle = draft.Vehicle
+		for i, p := range form.People {
+			if p.Id != nil && *p.Id == *draft.Person {
+				form.SelectedPerson = form.People[i].Id
+				break
+			}
+		}
+
+		if toast != nil {
+			toasts = append(toasts, toast)
+		}
+		form.Draft = draft
+	}
+
 	for _, toast := range toasts {
 		if toast != nil {
 			c.Header("HX-Trigger", string(toast.ToJson()))
@@ -248,6 +294,7 @@ func UseDepartureRoutes(router *gin.Engine) {
 	router.POST("/departure/filter", filterDepartures)
 	router.GET("/departure/list", getDepartureContent)
 	router.GET("/departure/form", getDepartureForm)
+	router.GET("/departure/form/draft/:id", getDepartureFormFromDraft)
 	router.GET("/departure/form/:id", getFilledDepartureForm)
 	router.POST("/departure", addDeparture)
 	router.PUT("/departure/:id", putDeparture)
@@ -255,6 +302,7 @@ func UseDepartureRoutes(router *gin.Engine) {
 	router.GET("/departure/pdf/:id", getDeparturePdf)
 
 	router.GET("/departure/draft/form", getDepartureDraftForm)
+	router.GET("/departure/draft/form/:id", getDepartureDraftForm)
 	router.POST("/departure/draft", addDepartureDraft)
 	router.PUT("/departure/draft/:id", putDepartureDraft)
 	router.DELETE("/departure/draft/:id", deleteDepartureDraft)

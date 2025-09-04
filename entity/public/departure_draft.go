@@ -9,7 +9,7 @@ import (
 type DepartureDraft struct {
 	Id        uint32          `form:"id"`
 	Name      string          `form:"name" binding:"required"`
-	Person    *uint32         `form:"person,omitempty"`
+	Person    *uint32         `form:"origin,omitempty"`
 	Crop      uint32          `form:"crop"`
 	Vehicle   string          `form:"vehiclePlate"`
 	Tare      decimal.Decimal `form:"tare"`

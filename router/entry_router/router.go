@@ -5,7 +5,6 @@ import (
 	"armazenda/service/entry_service"
 	"armazenda/service/user_service"
 	entry_view "armazenda/view/entry"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -173,7 +172,6 @@ func getEntryFiltersForm(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
 	c.HTML(http.StatusOK, "entry-filter-form", entry_view.GetFiltersForm(farm))
-	return
 }
 
 func getEmptyEntryForm(c *gin.Context) {
@@ -193,7 +191,6 @@ func getEmptyEntryForm(c *gin.Context) {
 			return
 		}
 		formMembers, toasts = entry_view.GetEntryFormFromDraft(uint32(draftId), farm)
-		fmt.Printf("formMembers: %+v", formMembers)
 	} else {
 		formMembers, toasts = entry_view.GetEntryForm(farm)
 	}

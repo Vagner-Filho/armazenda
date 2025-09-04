@@ -2,18 +2,27 @@
 <dialog id="addEntryDraftDialog" class="rounded-md w-full max-w-3xl bg-stone-100">
     <div class="p-4 relative">
         {{ template "close-dialog-btn" "dialog#addEntryDraftDialog" }}
-        <h1 class="text-center font-medium text-xl">
-            {{ if .Draft.Id }}
-            Editando Rascunho
-            {{ else }}
-            Novo Rascunho
-            {{ end }}
-        </h1>
+        <header class="text-center mb-4">
+            <h1 class="text-2xl font-bold text-slate-700">
+                {{ if .Draft.Id }}
+                Editando Rascunho de Entrada
+                {{ else }}
+                Novo Rascunho de Entrada
+                {{ end }}
+            </h1>
+            <p class="text-gray-600 mt-2">
+                {{ if .Draft.Id }}
+                Atualize os detalhes deste rascunho de entrada.
+                {{ else }}
+                Preencha os campos abaixo para criar um novo rascunho de entrada.
+                {{ end }}
+            </p>
+        </header>
         <form class="flex flex-col gap-4" {{ if .Draft.Id }} hx-put="/entry/draft/{{ .Draft.Id }}"
             hx-target="#entry-draft-{{ .Draft.Id }}" hx-swap="outerHTML" {{ else }} hx-post="/entry/draft"
             hx-target="#entries-draft-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#btns-container">
             <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
-                <legend class="text-lg uppercase rounded-t-lg bg-white px-2 font-light">
+                <legend class="fieldset-legend">
                     Identificação
                 </legend>
                 <div class="flex flex-col-reverse">
@@ -27,7 +36,7 @@
                 {{ template "field-selector" . }}
             </fieldset>
             <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
-                <legend class="text-lg uppercase rounded-t-lg bg-white px-2 font-light">
+                <legend class="fieldset-legend">
                     Recebimento
                 </legend>
                 <div class="flex flex-col-reverse w-full relative">

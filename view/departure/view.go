@@ -104,3 +104,27 @@ func GetExistingDepartureForm(departureId uint32, farm uint32) (DepartureForm, [
 	return formFields, toasts
 }
 
+func GetDepartureFormFromDraft(draftId uint32, farm uint32) (DepartureForm, []*entity_public.Toast) {
+	formFields, toasts := GetNewDepartureForm(farm)
+	draft, toast := departure_service.GetDepartureDraft(draftId)
+
+	if toast != nil {
+		toasts = append(toasts, toast)
+	}
+
+	if draft.Id != 0 {
+		formFields.SelectedCrop = uint8(draft.Crop)
+		formFields.SelectedVehicle = draft.Vehicle
+		for i, p := range formFields.People {
+			if p.Id != nil && *p.Id == *draft.Person {
+				formFields.SelectedPerson = formFields.People[i].Id
+				break
+			}
+		}
+
+		tare, _ := draft.Tare.Float64()
+		formFields.Departure.Tare = tare
+	}
+
+	return formFields, toasts
+}
