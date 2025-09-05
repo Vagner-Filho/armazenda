@@ -12,7 +12,7 @@ type Departure struct {
 	Crop          uint8     `form:"crop" binding:"required"`
 	CargoWeight
 	Farm   uint32  `form:"farm" binding:"gte=0"`
-	Person *uint32 `form:"person" binding:"required"`
+	Person *uint32 `form:"origin" binding:"required"`
 }
 
 func (d Departure) ToDTO() DepartureDTO {
@@ -57,7 +57,7 @@ type DisplayDeparture struct {
 	VehiclePlate  string
 	DepartureDate time.Time
 	NetWeight     float64
-	Farm          uint32
+	Farm          uint32 `db:"-"`
 }
 
 type DepartureFilter struct {

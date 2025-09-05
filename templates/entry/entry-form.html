@@ -129,6 +129,16 @@
             impurityInput.addEventListener('input', applyDiscounts)
         }
 
+        const grossWeightInput = document.querySelector('input#grossWeight')
+        if (grossWeightInput) {
+            grossWeightInput.addEventListener('input', applyDiscounts)
+        }
+
+        const tareInput = document.querySelector('input#tare')
+        if (tareInput) {
+            tareInput.addEventListener('input', applyDiscounts)
+        }
+
         const dateVal = formatDateToInput({{ .Entry.ArrivalDate}})
 
         const dialogEl = document.querySelector("#addEntryDialog")
@@ -169,6 +179,25 @@
             }
             document.body.addEventListener('htmx:configRequest', function (evt) {
                 evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
+            });
+        }
+
+        function setPersonConfig(el) {
+            const selectedOption = el.options[el.selectedIndex];
+            const humidityDiscount = selectedOption.getAttribute('data-humidity');
+            const personId = selectedOption.value;
+            const personName = selectedOption.textContent.trim();
+
+            sessionStorage.setItem('personConfig', JSON.stringify({
+                humidityDiscount: humidityDiscount
+            }));
+
+            applyDiscounts();
+        }
+        const selector = document.getElementById('person-selector');
+        if (selector) {
+            selector.addEventListener('change', function (evt) {
+                setPersonConfig(evt.target);
             });
         }
     </script>

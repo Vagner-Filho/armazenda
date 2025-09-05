@@ -12,26 +12,6 @@
   </option>
   {{ end }}
   <script type="module">
-    import {applyDiscounts} from "/public/assets/js/discount.js"
-
-    function setPersonConfig(el) {
-      const selectedOption = el.options[el.selectedIndex];
-      const humidityDiscount = selectedOption.getAttribute('data-humidity');
-      const personId = selectedOption.value;
-      const personName = selectedOption.textContent.trim();
-
-      sessionStorage.setItem('personConfig', JSON.stringify({
-        humidityDiscount: humidityDiscount
-      }));
-
-      applyDiscounts();
-    }
-    const selector = document.getElementById('person-selector');
-    if (selector) {
-      selector.addEventListener('change', function (evt) {
-        setPersonConfig(evt.target);
-      });
-    }
   </script>
 </select>
 {{ end }}

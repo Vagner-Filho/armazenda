@@ -21,7 +21,7 @@ function getHumidityDiscount(humidity, gross, tare, h_discount) {
 		return 0;
 	}
 
-	const netWeightInput = document.querySelector('#netWeight');
+	const netWeightInput = document.querySelector('input#netWeight');
 	if (!netWeightInput || !netWeightInput.dataset.raw && !gross && !tare) {
 		return 0;
 	}
@@ -42,7 +42,7 @@ function getDamageDiscount(damage, gross, tare) {
 		return 0;
 	}
 
-	const netWeightInput = document.querySelector('#netWeight');
+	const netWeightInput = document.querySelector('input#netWeight');
 	if (!netWeightInput || !netWeightInput.dataset.raw && !gross && !tare) {
 		return 0;
 	}
@@ -63,7 +63,7 @@ function getImpurityDiscount(impurity, gross, tare) {
 		return 0;
 	}
 
-	const netWeightInput = document.querySelector('#netWeight');
+	const netWeightInput = document.querySelector('input#netWeight');
 	if (!netWeightInput || !netWeightInput.dataset.raw && !gross && !tare) {
 		return 0;
 	}
