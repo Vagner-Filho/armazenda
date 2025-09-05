@@ -20,19 +20,19 @@ func GetDeparture(id uint32) (entity_public.Departure, *entity_public.Toast) {
 	return departure, nil
 }
 
-func GetDisplayDepartures(farm uint32) ([]entity_public.DisplayDeparture, *entity_public.Toast) {
+func GetDisplayDepartures(farm uint32, page int) ([]entity_public.DisplayDeparture, int, *entity_public.Toast) {
 	dModel := departure_model.GetDepartureModel()
 
-	departure, err := dModel.GetDisplayDepartures(farm)
+	departure, total, err := dModel.GetDisplayDepartures(farm, page)
 	if err != nil {
 		if err.IsServerErr == true {
 			toast := entity_public.GetErrorToast("Houve um erro interno ao buscar a saída", "")
-			return []entity_public.DisplayDeparture{}, &toast
+			return []entity_public.DisplayDeparture{}, 0, &toast
 		}
 		toast := entity_public.GetWarningToast(err.Message, "")
-		return []entity_public.DisplayDeparture{}, &toast
+		return []entity_public.DisplayDeparture{}, 0, &toast
 	}
-	return departure, nil
+	return departure, total, nil
 }
 
 func AddDeparture(bd entity_public.Departure) (entity_public.DisplayDeparture, *entity_public.Toast) {

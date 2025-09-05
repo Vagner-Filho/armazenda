@@ -92,7 +92,23 @@ func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter) ([]
 	return departures, nil
 }
 
-func (dm *departureModel) GetDisplayDepartures(farm uint32) ([]entity_public.DisplayDeparture, *model_error.ModelError) {
+func (dm *departureModel) GetDisplayDepartures(farm uint32, page int) ([]entity_public.DisplayDeparture, int, *model_error.ModelError) {
+	pageSize := 10
+	offset := (page - 1) * pageSize
+
+	countQuery := `
+		SELECT COUNT(*)
+		FROM departure d
+		WHERE d.id NOT IN (SELECT departure_id FROM inactive_departure)
+		AND d.farm = @userFarm
+	`
+	var totalDepartures int
+	countRow := dm.conn.QueryRow(context.Background(), countQuery, pgx.NamedArgs{"userFarm": farm})
+	if err := countRow.Scan(&totalDepartures); err != nil {
+		fmt.Printf("\n countErr: %v\n", err.Error())
+		return nil, 0, &model_error.ModelError{Message: err.Error()}
+	}
+
 	rows, queryErr := dm.conn.Query(context.Background(), `
 		SELECT d.id, p.name, d.vehicle, d.departureDate, d.netWeight
 		FROM departure d
@@ -100,18 +116,20 @@ func (dm *departureModel) GetDisplayDepartures(farm uint32) ([]entity_public.Dis
 		JOIN product p ON c.product = p.id
 		WHERE d.id NOT IN (SELECT departure_id FROM inactive_departure)
 		AND d.farm = @userFarm
-	`, pgx.NamedArgs{"userFarm": farm})
+		ORDER BY d.departureDate DESC
+		LIMIT @pageSize OFFSET @offset
+	`, pgx.NamedArgs{"userFarm": farm, "pageSize": pageSize, "offset": offset})
 
 	if queryErr != nil {
-		return []entity_public.DisplayDeparture{}, &model_error.ModelError{Message: queryErr.Error()}
+		return []entity_public.DisplayDeparture{}, 0, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
 	departures, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.DisplayDeparture])
 	if collectErr != nil {
-		return []entity_public.DisplayDeparture{}, &model_error.ModelError{Message: collectErr.Error()}
+		return []entity_public.DisplayDeparture{}, 0, &model_error.ModelError{Message: collectErr.Error()}
 	}
 
-	return departures, nil
+	return departures, totalDepartures, nil
 }
 
 func (dm *departureModel) GetDeparture(id uint32) (entity_public.Departure, *model_error.ModelError) {

@@ -16,7 +16,11 @@ import (
 func getDepartureContent(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
-	content, toasts := departure_view.GetDepartureContent(farm)
+	page, _ := strconv.Atoi(c.Query("page"))
+	if page < 1 {
+		page = 1
+	}
+	content, toasts := departure_view.GetDepartureContent(farm, page)
 	for _, toast := range toasts {
 		if toast != nil {
 			c.Header("HX-Trigger", string(toast.ToJson()))

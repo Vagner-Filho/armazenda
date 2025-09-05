@@ -39,8 +39,25 @@ func GetEntryModel() *entryModel {
 	return entryModelImpl
 }
 
-func (em *entryModel) GetDisplayEntriesByFarm(farm uint32) ([]entity_public.DisplayEntry, *model_error.ModelError) {
-	rows, queryErr := em.conn.Query(context.Background(), `
+func (em *entryModel) GetDisplayEntriesByFarm(farm uint32, page int) ([]entity_public.DisplayEntry, int, *model_error.ModelError) {
+	pageSize := 10
+	offset := (page - 1) * pageSize
+
+	countQuery := `
+		SELECT COUNT(*)
+		FROM entry e
+		LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
+		WHERE ie.entry_id IS NULL AND e.farm = @userFarm
+	`
+	var totalEntries int
+	countRow := em.conn.QueryRow(context.Background(), countQuery, pgx.NamedArgs{"userFarm": farm})
+	if err := countRow.Scan(&totalEntries); err != nil {
+		fmt.Printf("\n countErr: %v\n", err.Error())
+		return nil, 0, &model_error.ModelError{Message: err.Error()}
+	}
+
+
+rows, queryErr := em.conn.Query(context.Background(), `
 		SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate, e.farm
 			FROM entry e
 			JOIN field f ON e.field = f.id
@@ -48,21 +65,22 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32) ([]entity_public.Disp
 			JOIN product p ON c.product = p.id
 			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
 			WHERE ie.entry_id IS NULL AND e.farm = @userFarm
-			ORDER BY c.startdate DESC
-	`, pgx.NamedArgs{"userFarm": farm})
+			ORDER BY e.arrivaldate DESC
+			LIMIT @pageSize OFFSET @offset
+	`, pgx.NamedArgs{"userFarm": farm, "pageSize": pageSize, "offset": offset})
 
 	if queryErr != nil {
 		fmt.Printf("\n queryErr: %v\n", queryErr.Error())
-		return []entity_public.DisplayEntry{}, &model_error.ModelError{Message: queryErr.Error()}
+		return []entity_public.DisplayEntry{}, 0, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
 	entries, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.DisplayEntry])
 	if collectErr != nil {
 		fmt.Printf("\n collectErr: %v\n", collectErr.Error())
-		return []entity_public.DisplayEntry{}, &model_error.ModelError{Message: collectErr.Error()}
+		return []entity_public.DisplayEntry{}, 0, &model_error.ModelError{Message: collectErr.Error()}
 	}
 
-	return entries, nil
+	return entries, totalEntries, nil
 }
 
 func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.DisplayEntryDraft, *model_error.ModelError) {

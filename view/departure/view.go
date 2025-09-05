@@ -15,10 +15,16 @@ type departureFilters struct {
 }
 
 type DepartureContent struct {
-	Departures []entity_public.DisplayDeparture
-	Drafts     []entity_public.DisplayDepartureDraft
-	Filters    departureFilters
-	NoContent  bool
+	Departures  []entity_public.DisplayDeparture
+	Drafts      []entity_public.DisplayDepartureDraft
+	Filters     departureFilters
+	NoContent   bool
+	CurrentPage int
+	TotalPages  int
+	NextPage    int
+	PrevPage    int
+	HasNext     bool
+	HasPrev     bool
 }
 
 func GetFiltersForm(farm uint32) departureFilters {
@@ -33,15 +39,43 @@ func GetFiltersForm(farm uint32) departureFilters {
 	}
 }
 
-func GetDepartureContent(farmId uint32) (DepartureContent, []*entity_public.Toast) {
-	departures, toast := departure_service.GetDisplayDepartures(farmId)
+func GetDepartureContent(farmId uint32, page int) (DepartureContent, []*entity_public.Toast) {
+	if page == 0 {
+		page = 1
+	}
+	pageSize := 10
+	departures, totalDepartures, toast := departure_service.GetDisplayDepartures(farmId, page)
 	drafts, draftToast := departure_service.GetAllDepartureDrafts(farmId)
 
+	totalPages := 0
+	if totalDepartures > 0 {
+		totalPages = (totalDepartures + pageSize - 1) / pageSize
+	}
+
+	hasNext := page < totalPages
+	hasPrev := page > 1
+
+	nextPage := page + 1
+	if !hasNext {
+		nextPage = page
+	}
+
+	prevPage := page - 1
+	if !hasPrev {
+		prevPage = page
+	}
+
 	return DepartureContent{
-		Departures: departures,
-		Drafts:     drafts,
-		NoContent:  len(departures) == 0 && len(drafts) == 0,
-		Filters:    GetFiltersForm(farmId),
+		Departures:  departures,
+		Drafts:      drafts,
+		NoContent:   len(departures) == 0 && len(drafts) == 0,
+		Filters:     GetFiltersForm(farmId),
+		CurrentPage: page,
+		TotalPages:  totalPages,
+		NextPage:    nextPage,
+		PrevPage:    prevPage,
+		HasNext:     hasNext,
+		HasPrev:     hasPrev,
 	}, []*entity_public.Toast{toast, draftToast}
 }
 

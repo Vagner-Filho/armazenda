@@ -19,13 +19,21 @@ type FieldForm struct {
 func getRomaneioPage(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
-	c.HTML(http.StatusOK, "romaneio.html", entry_view.GetEntryContent(farm))
+	page, _ := strconv.Atoi(c.Query("page"))
+	if page < 1 {
+		page = 1
+	}
+	c.HTML(http.StatusOK, "romaneio.html", entry_view.GetEntryContent(farm, page))
 }
 
 func getEntryContent(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
-	c.HTML(http.StatusOK, "entry-content", entry_view.GetEntryContent(farm))
+	page, _ := strconv.Atoi(c.Query("page"))
+	if page < 1 {
+		page = 1
+	}
+	c.HTML(http.StatusOK, "entry-content", entry_view.GetEntryContent(farm, page))
 }
 
 func getEntryForm(c *gin.Context) {
@@ -269,6 +277,12 @@ func getFilledEntryDraftForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "entry-draft-form", formMembers)
 }
 
+func getEntryDraftTable(c *gin.Context) {
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	c.HTML(http.StatusOK, "entry-draft-table", entry_view.GetEntryDraftTable(farm))
+}
+
 func UseEntryRoutes(router *gin.Engine) {
 	router.GET("/romaneio", getRomaneioPage)
 	router.GET("/entry/list", getEntryContent)
@@ -277,6 +291,7 @@ func UseEntryRoutes(router *gin.Engine) {
 	router.GET("/entry/form/:id", getEntryForm)
 	router.GET("/entry/draft/form", getEntryDraftForm)
 	router.GET("/entry/draft/form/:id", getFilledEntryDraftForm)
+	router.GET("/entry/draft/list", getEntryDraftTable)
 	router.POST("/entry", addEntry)
 	router.POST("/entry/draft", addEntryDraft)
 	router.PUT("/entry/:id", putEntry)

@@ -18,19 +18,25 @@ type entryFilters struct {
 }
 
 type entryContent struct {
-	Entries   []entity_public.DisplayEntry
-	Drafts    []entity_public.DisplayEntryDraft
-	Filters   entryFilters
-	NoContent bool
+	Entries     []entity_public.DisplayEntry
+	Drafts      []entity_public.DisplayEntryDraft
+	Filters     entryFilters
+	NoContent   bool
+	CurrentPage int
+	TotalPages  int
+	NextPage    int
+	PrevPage    int
+	HasNext     bool
+	HasPrev     bool
 }
 
-func GetAllEntryDisplay(farm uint32) []entity_public.DisplayEntry {
+func GetAllEntryDisplay(farm uint32, page int) ([]entity_public.DisplayEntry, int) {
 	eModel := entry_model.GetEntryModel()
-	entries, getDataErr := eModel.GetDisplayEntriesByFarm(farm)
+	entries, totalEntries, getDataErr := eModel.GetDisplayEntriesByFarm(farm, page)
 	if getDataErr != nil {
-		return []entity_public.DisplayEntry{}
+		return []entity_public.DisplayEntry{}, 0
 	}
-	return entries
+	return entries, totalEntries
 }
 
 func GetAllEntryDraftsDisplay(farm uint32) []entity_public.DisplayEntryDraft {
@@ -54,14 +60,43 @@ func GetFiltersForm(farm uint32) entryFilters {
 	}
 }
 
-func GetEntryContent(farm uint32) entryContent {
-	entries := GetAllEntryDisplay(farm)
+func GetEntryContent(farm uint32, page int) entryContent {
+	if page == 0 {
+		page = 1
+	}
+	pageSize := 10
+	entries, totalEntries := GetAllEntryDisplay(farm, page)
 	drafts := GetAllEntryDraftsDisplay(farm)
+
+	totalPages := 0
+	if totalEntries > 0 {
+		totalPages = (totalEntries + pageSize - 1) / pageSize
+	}
+
+	hasNext := page < totalPages
+	hasPrev := page > 1
+
+	nextPage := page + 1
+	if !hasNext {
+		nextPage = page
+	}
+
+	prevPage := page - 1
+	if !hasPrev {
+		prevPage = page
+	}
+
 	return entryContent{
-		Entries:   entries,
-		Drafts:    drafts,
-		NoContent: len(entries) == 0 && len(drafts) == 0,
-		Filters:   GetFiltersForm(farm),
+		Entries:     entries,
+		Drafts:      drafts,
+		NoContent:   len(entries) == 0 && len(drafts) == 0,
+		Filters:     GetFiltersForm(farm),
+		CurrentPage: page,
+		TotalPages:  totalPages,
+		NextPage:    nextPage,
+		PrevPage:    prevPage,
+		HasNext:     hasNext,
+		HasPrev:     hasPrev,
 	}
 }
 
@@ -170,4 +205,8 @@ func GetEntryDraftForm(farm uint32) (EntryDraftForm, []*entity_public.Toast) {
 		Fields:   fields,
 		People:   people,
 	}, []*entity_public.Toast{vToast, cToast, fToast, pToast}
+}
+
+func GetEntryDraftTable(farm uint32) []entity_public.DisplayEntryDraft {
+	return GetAllEntryDraftsDisplay(farm)
 }
