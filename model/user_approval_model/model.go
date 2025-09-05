@@ -51,7 +51,7 @@ func (uam *userApprovalModel) GetPendingUsersByFarm(farmId uint32) ([]entity_pub
 
 func (uam *userApprovalModel) ApproveUser(userId uint32) error {
 	// Get user from approval table
-	rows, err := uam.conn.Query(context.Background(), `SELECT email, name, passwd, inscricao_estadual, farm_id, cpf FROM user_approval WHERE id = @id`, pgx.NamedArgs{"id": userId})
+	rows, err := uam.conn.Query(context.Background(), `SELECT id, email, name, passwd, inscricao_estadual, farm_id, cpf, status FROM user_approval WHERE id = @id`, pgx.NamedArgs{"id": userId})
 	if err != nil {
 		return err
 	}

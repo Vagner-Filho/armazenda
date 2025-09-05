@@ -76,7 +76,8 @@ func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32) 
 			LEFT JOIN entry_origin eo ON eo.entry_id = e.id
 			LEFT JOIN people
 			AS prs ON prs.personid = eo.person_id
-			WHERE e.farm = @userFarm
+			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
+			WHERE e.farm = @userFarm AND ie.entry_id IS NULL
 			UNION ALL
 		SELECT d.id, 1 AS operation_type, p.name, d.vehicle, d.netweight , d.departuredate AS date, coalesce(prs.name, 'Pŕopria') AS pessoa, prs.personid, p.id AS product_id
 			FROM departure d
@@ -85,7 +86,8 @@ func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32) 
 			LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
 			LEFT JOIN people
 			AS prs ON prs.personid = dr.person_id
-			WHERE d.farm = @userFarm) AS r`
+			LEFT OUTER JOIN inactive_departure id ON id.departure_id = d.id
+			WHERE d.farm = @userFarm AND id.departure_id IS NULL) AS r`
 
 	if len(filters) > 0 {
 		stmt += " WHERE "
@@ -136,7 +138,8 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 			LEFT JOIN address a ON a.person_id = eo.person_id
 			LEFT JOIN entry_analysis ea ON ea.entryid = e.id
 			LEFT JOIN person_config pc ON pc.person_id = eo.person_id
-			WHERE e.farm = @userFarm
+			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
+			WHERE e.farm = @userFarm AND ie.entry_id IS NULL
 			UNION ALL
 		SELECT d.id, 1 AS operation_type,
 			p.name, d.vehicle, d.netweight, d.departuredate AS date,
@@ -152,7 +155,8 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 			AS prs ON prs.personid = dr.person_id
 			LEFT JOIN address a ON a.person_id = dr.person_id
 			LEFT JOIN person_config pc ON pc.person_id = dr.person_id
-			WHERE d.farm = @userFarm) AS r
+			LEFT OUTER JOIN inactive_departure id ON id.departure_id = d.id
+			WHERE d.farm = @userFarm AND id.departure_id IS NULL) AS r
 	`
 	if len(filters) > 0 {
 		stmt += " WHERE "

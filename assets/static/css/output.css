@@ -708,10 +708,6 @@
   .rounded-xl {
     border-radius: var(--radius-xl);
   }
-  .rounded-t-lg {
-    border-top-left-radius: var(--radius-lg);
-    border-top-right-radius: var(--radius-lg);
-  }
   .rounded-l-none {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
