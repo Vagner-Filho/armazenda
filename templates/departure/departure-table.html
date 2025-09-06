@@ -30,17 +30,17 @@
     </tbody>
 </table>
 {{ if gt .TotalPages 1 }}
-<div class="flex justify-center items-center mt-4 p-4 border-t">
+<div class="flex justify-center items-center p-4 border-t">
     {{ if .HasPrev }}
-    <button hx-get="/departure/list?page={{ .PrevPage }}" hx-target="#content-container" hx-swap="innerHTML" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors">Anterior</button>
+    <button hx-get="/departure/list?page={{ .PrevPage }}" hx-target="#content-container" hx-swap="innerHTML" class="px-2 lg:px-4 py-1 lg:py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors">Anterior</button>
     {{ else }}
-    <button class="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed" disabled>Anterior</button>
+    <button class="px-2 lg:px-4 py-1 lg:py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed" disabled>Anterior</button>
     {{ end }}
-    <span class="mx-4 text-gray-600">Página {{ .CurrentPage }} de {{ .TotalPages }}</span>
+    <span class="text-sm lg:text-base mx-2 lg:mx-4 text-gray-600">Página {{ .CurrentPage }} de {{ .TotalPages }}</span>
     {{ if .HasNext }}
-    <button hx-get="/departure/list?page={{ .NextPage }}" hx-target="#content-container" hx-swap="innerHTML" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors">Próxima</button>
+    <button hx-get="/departure/list?page={{ .NextPage }}" hx-target="#content-container" hx-swap="innerHTML" class="px-2 lg:px-4 py-1 lg:py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors">Próxima</button>
     {{ else }}
-    <button class="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed" disabled>Próxima</button>
+    <button class="px-2 lg:px-4 py-1 lg:py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed" disabled>Próxima</button>
     {{ end }}
 </div>
 {{ end }}

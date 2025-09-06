@@ -16,7 +16,7 @@
     {{ .Tare }}
   </td>
   <td class="py-3 px-4 text-left" data-label="Ações">
-    <div class="flex items-center gap-2">
+    <div class="flex items-center justify-end lg:justify-start gap-2">
       <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
       <button type="button" hx-get="/departure/form/draft/{{ .Id }}" hx-target="body" hx-swap="beforeend" title="Gerar Saída a partir do Rascunho"
         class="icon-btn">
