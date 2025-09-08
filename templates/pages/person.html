@@ -34,26 +34,70 @@
         </button>
       </div>
 
-      <div class="overflow-hidden">
-        <table class="w-full">
-          <thead
-            class="text-xs sm:text-base whitespace-nowrap bg-gray-100 text-gray-600 uppercase hidden md:table-header-group"
-            id="people-header">
-            <tr>
-              <th class="py-3 px-4 text-left">TIPO</th>
-              <th class="py-3 px-4 text-left">NOME</th>
-              <th class="py-3 px-4 text-left">DOCUMENTO</th>
-              <th class="py-3 px-4 text-left">INSCRIÇÃO ESTADUAL</th>
-              <th class="py-3 px-4 text-left">AÇÕES</th>
-            </tr>
-          </thead>
-          <tbody class="overflow-x-auto text-gray-700" id="people-rows">
-            {{ range .People }}
-            {{ template "person-list-item" . }}
-            {{ end }}
-          </tbody>
-        </table>
+      {{ block "people-table" . }}
+      <div id="people-table">
+        <div class="overflow-hidden">
+          <table class="w-full">
+            <thead
+              class="text-xs sm:text-base whitespace-nowrap bg-gray-100 text-gray-600 uppercase hidden md:table-header-group"
+              id="people-header">
+              <tr>
+                <th class="py-3 px-4 text-left">TIPO</th>
+                <th class="py-3 px-4 text-left">NOME</th>
+                <th class="py-3 px-4 text-left">DOCUMENTO</th>
+                <th class="py-3 px-4 text-left">INSCRIÇÃO ESTADUAL</th>
+                <th class="py-3 px-4 text-left">AÇÕES</th>
+              </tr>
+            </thead>
+            <tbody class="overflow-x-auto text-gray-700" id="people-rows">
+              {{ range .People }}
+              {{ template "person-list-item" . }}
+              {{ else }}
+              <tr>
+                <td colspan="5" class="text-center py-4">Nenhuma pessoa encontrada.</td>
+              </tr>
+              {{ end }}
+            </tbody>
+          </table>
+        </div>
+
+        {{ if gt .TotalPages 1 }}
+        <div class="flex justify-center items-center mt-4" id="pagination-controls">
+          {{ if .HasPrevPage }}
+          <button
+             hx-get="/pessoa?page={{ .PrevPage }}"
+             hx-target="#people-table"
+             hx-swap="outerHTML"
+             class="px-4 py-2 mx-1 text-gray-700 capitalize bg-white rounded-md border border-gray-200 hover:bg-gray-100">
+            Anterior
+          </button>
+          {{ else }}
+          <button class="px-4 py-2 mx-1 text-gray-500 capitalize bg-gray-100 rounded-md border border-gray-200 cursor-not-allowed" disabled>
+            Anterior
+          </button>
+          {{ end }}
+
+          <span class="px-4 py-2 mx-1 text-gray-700">
+            Página {{ .CurrentPage }} de {{ .TotalPages }}
+          </span>
+
+          {{ if .HasNextPage }}
+          <button
+             hx-get="/pessoa?page={{ .NextPage }}"
+             hx-target="#people-table"
+             hx-swap="outerHTML"
+             class="px-4 py-2 mx-1 text-gray-700 capitalize bg-white rounded-md border border-gray-200 hover:bg-gray-100">
+            Próxima
+          </button>
+          {{ else }}
+          <button class="px-4 py-2 mx-1 text-gray-500 capitalize bg-gray-100 rounded-md border border-gray-200 cursor-not-allowed" disabled>
+            Próxima
+          </button>
+          {{ end }}
+        </div>
+        {{ end }}
       </div>
+      {{ end }}
     </div>
   </section>
 </body>

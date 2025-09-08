@@ -179,37 +179,55 @@ var availablePersonFilters = map[string]func(pf entity_public.PersonFilter) stri
 	},
 }
 
-func (bm *personModel) FilterPerson(pf entity_public.PersonFilter, farm uint32) ([]entity_public.PersonDisplay, error) {
-	filters := pf.GetFilters(availablePersonFilters)
+func (bm *personModel) FilterPerson(pf entity_public.PersonFilter, farm uint32, page, limit int) ([]entity_public.PersonDisplay, int, *model_error.ModelError) {
+	countStmt := `SELECT COUNT(*) FROM person WHERE farm = @userFarm`
 
-	stmt := `WITH person_ids AS (SELECT b.id FROM person b WHERE b.farm = @userFarm)
+	var total int
+	err := bm.conn.QueryRow(context.Background(), countStmt, pgx.NamedArgs{"userFarm": farm}).Scan(&total)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []entity_public.PersonDisplay{}, 0, nil
+		}
+		model_error.Logger(bm.conn, err.Error())
+		return nil, 0, &model_error.ModelError{Message: "Error counting people", IsServerErr: true}
+	}
+
+	if total == 0 {
+		return []entity_public.PersonDisplay{}, 0, nil
+	}
+
+	offset := (page - 1) * limit
+	stmt := `
         SELECT * FROM (
                 SELECT 0 AS TYPE, np.name, np.cpf AS document, p.ie, np.personid AS id FROM natural_person np
                 JOIN person p ON p.id = np.personid
+                WHERE p.farm = @userFarm
                 UNION ALL
                 SELECT 1 AS TYPE, lp.companyname AS name, lp.cnpj AS document, p.ie, lp.personid AS id FROM legal_person lp
-                JOIN person p ON p.id = lp.personid 
-        ) AS p WHERE p.id IN (SELECT * FROM person_ids)
+                JOIN person p ON p.id = lp.personid
+                WHERE p.farm = @userFarm
+        ) AS p
+		ORDER BY p.name
+		LIMIT @limit OFFSET @offset
 	`
-	for _, filter := range filters {
-		stmt += "\nAND " + filter(pf)
-	}
 
-	rows, queryErr := bm.conn.Query(context.Background(), stmt, pgx.NamedArgs{"userFarm": farm})
+	rows, queryErr := bm.conn.Query(context.Background(), stmt, pgx.NamedArgs{"userFarm": farm, "limit": limit, "offset": offset})
 	if queryErr != nil {
 		model_error.Logger(bm.conn, queryErr.Error())
-		return []entity_public.PersonDisplay{}, queryErr
+		return []entity_public.PersonDisplay{}, 0, &model_error.ModelError{Message: queryErr.Error(), IsServerErr: true}
 	}
 
 	people, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.PersonDisplay])
 
 	if collectErr != nil {
+		if errors.Is(collectErr, pgx.ErrNoRows) {
+			return []entity_public.PersonDisplay{}, total, nil
+		}
 		model_error.Logger(bm.conn, collectErr.Error())
-		return []entity_public.PersonDisplay{}, collectErr
+		return []entity_public.PersonDisplay{}, 0, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
 	}
 
-	return people, nil
-
+	return people, total, nil
 }
 
 func (bm *personModel) CnpjExistsInFarm(cnpj string, farmId uint32) (bool, *model_error.ModelError) {

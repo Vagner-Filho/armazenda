@@ -3,7 +3,18 @@ package person_service
 import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/person_model"
+	"math"
 )
+
+type PersonPageData struct {
+	People      []entity_public.PersonDisplay
+	CurrentPage int
+	TotalPages  int
+	NextPage    int
+	PrevPage    int
+	HasNextPage bool
+	HasPrevPage bool
+}
 
 func GetPeopleByFarm(farm uint32) ([]entity_public.PersonOption, *entity_public.Toast) {
 	bmodel := person_model.GetpersonModel()
@@ -74,12 +85,33 @@ func AddNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDispl
 	return person, &toast
 }
 
-func FilterPerson(filters entity_public.PersonFilter, farm uint32) ([]entity_public.PersonDisplay, *entity_public.Toast) {
+func FilterPerson(filters entity_public.PersonFilter, farm uint32, page, limit int) (PersonPageData, *entity_public.Toast) {
 	bModel := person_model.GetpersonModel()
-	people, err := bModel.FilterPerson(filters, farm)
+	people, total, err := bModel.FilterPerson(filters, farm, page, limit)
 	if err != nil {
-		toast := entity_public.GetErrorToast(err.Error(), "")
-		return []entity_public.PersonDisplay{}, &toast
+		if err.IsServerErr {
+			toast := entity_public.GetErrorToast("Erro ao filtrar pessoas", err.Message)
+			return PersonPageData{}, &toast
+		}
+		toast := entity_public.GetWarningToast(err.Message, "")
+		return PersonPageData{}, &toast
 	}
-	return people, nil
+
+	if total == 0 {
+		return PersonPageData{
+			People: []entity_public.PersonDisplay{},
+		}, nil
+	}
+
+	totalPages := int(math.Ceil(float64(total) / float64(limit)))
+
+	return PersonPageData{
+		People:      people,
+		CurrentPage: page,
+		TotalPages:  totalPages,
+		NextPage:    page + 1,
+		PrevPage:    page - 1,
+		HasNextPage: page < totalPages,
+		HasPrevPage: page > 1,
+	}, nil
 }

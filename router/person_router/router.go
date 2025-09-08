@@ -5,6 +5,7 @@ import (
 	person_service "armazenda/service/person"
 	"armazenda/service/user_service"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -62,13 +63,25 @@ func getPersonForm(c *gin.Context) {
 func getPersonPage(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
-	people, toast := person_service.FilterPerson(entity_public.PersonFilter{}, farm)
+
+	pageStr := c.DefaultQuery("page", "1")
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+	const limit = 15
+
+	peopleData, toast := person_service.FilterPerson(entity_public.PersonFilter{}, farm, page, limit)
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}
-	c.HTML(http.StatusOK, "person.html", gin.H{
-		"People": people,
-	})
+
+	if c.GetHeader("HX-Request") == "true" {
+		c.HTML(http.StatusOK, "people-table", peopleData)
+		return
+	}
+
+	c.HTML(http.StatusOK, "person.html", peopleData)
 }
 
 func UsePersonRoutes(router *gin.Engine) {

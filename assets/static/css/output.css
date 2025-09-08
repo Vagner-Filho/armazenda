@@ -324,6 +324,9 @@
       max-width: 96rem;
     }
   }
+  .mx-1 {
+    margin-inline: calc(var(--spacing) * 1);
+  }
   .mx-2 {
     margin-inline: calc(var(--spacing) * 2);
   }
@@ -1089,6 +1092,9 @@
   .text-yellow-500 {
     color: var(--color-yellow-500);
   }
+  .capitalize {
+    text-transform: capitalize;
+  }
   .uppercase {
     text-transform: uppercase;
   }
@@ -1301,6 +1307,13 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--color-gray-50);
+      }
+    }
+  }
+  .hover\:bg-gray-100 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-gray-100);
       }
     }
   }
