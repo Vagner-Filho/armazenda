@@ -462,6 +462,9 @@
   .w-10 {
     width: calc(var(--spacing) * 10);
   }
+  .w-36 {
+    width: calc(var(--spacing) * 36);
+  }
   .w-52 {
     width: calc(var(--spacing) * 52);
   }
@@ -587,6 +590,9 @@
   }
   .items-center {
     align-items: center;
+  }
+  .items-end {
+    align-items: flex-end;
   }
   .items-start {
     align-items: flex-start;
@@ -768,6 +774,10 @@
   .rounded-r-none {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
+  }
+  .rounded-b-lg {
+    border-bottom-right-radius: var(--radius-lg);
+    border-bottom-left-radius: var(--radius-lg);
   }
   .border {
     border-style: var(--tw-border-style);

@@ -56,8 +56,7 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32, page int) ([]entity_p
 		return nil, 0, &model_error.ModelError{Message: err.Error()}
 	}
 
-
-rows, queryErr := em.conn.Query(context.Background(), `
+	rows, queryErr := em.conn.Query(context.Background(), `
 		SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate, e.farm
 			FROM entry e
 			JOIN field f ON e.field = f.id
@@ -98,6 +97,7 @@ func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.Display
 
 	if queryErr != nil {
 		fmt.Printf("\n queryErr: %v\n", queryErr.Error())
+		rows.Close()
 		return []entity_public.DisplayEntryDraft{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
