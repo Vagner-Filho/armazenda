@@ -1,5 +1,10 @@
 {{ block "filter-entry-vehicle" . }}
-<div class="w-full sm:max-w-28 lg:max-w-36 flex flex-col-reverse filter-card">
+<fieldset class="filter-card">
+    <legend class="w-full text-center">
+        <label for="vehicle-filter" class="font-medium text-sm text-inherit">
+            Talhão
+        </label>
+    </legend>
     <select name="vehiclePlate" id="vehicle-filter" class="w-full text-sm peer">
         <option value="" selected>
             Nenhum
@@ -12,8 +17,5 @@
         </option>
         {{ end }}
     </select>
-    <label for="vehicle-filter" class="px-2 text-xs label-peer">
-        Veículo
-    </label>
-</div>
+</fieldset>
 {{ end }}

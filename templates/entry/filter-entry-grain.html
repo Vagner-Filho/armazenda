@@ -1,5 +1,8 @@
 {{ define "filter-entry-grain" }}
-<div class="w-full sm:max-w-28 lg:max-w-36 flex flex-col-reverse filter-card">
+<fieldset class="filter-card">
+    <legend class="w-full text-center">
+        <label for="grain-filter" class="font-medium text-sm text-inherit">Produto</label>
+    </legend>
     <select name="product" id="grain-filter" class="w-full text-sm peer">
         <option value="" selected>
             Nenhum
@@ -11,6 +14,5 @@
             Soja
         </option>
     </select>
-    <label for="grain-filter" class="px-2 text-xs label-peer">Produto</label>
-</div>
+</fieldset>
 {{ end }}
