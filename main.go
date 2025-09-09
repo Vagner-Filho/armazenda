@@ -22,6 +22,7 @@ import (
 	"armazenda/router/field_router"
 	"armazenda/router/person_router"
 	"armazenda/router/report_router"
+	"armazenda/router/stats_router"
 	"armazenda/router/user_approval_router"
 	"armazenda/router/user_router"
 	"armazenda/router/vehicle_router"
@@ -131,6 +132,7 @@ func main() {
 	report_router.UseReportRoutes(router)
 	farm_config_router.UseFarmConfigRouter(router)
 	user_approval_router.UserApprovalRoutes(router)
+	stats_router.SetupStatsRoutes(router)
 
 	port := os.Getenv("PORT")
 	if port == "" {

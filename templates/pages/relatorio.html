@@ -15,6 +15,7 @@
   <script type="module" src="/public/assets/js/getEntryPdf.js"></script>
   <script type="module" src="/public/assets/js/getDeparturePdf.js"></script>
   <script type="module" src="/public/assets/js/weight.js"></script>
+  <script type="module" src="/public/assets/js/stats.js"></script>
 </head>
 
 <body class="bg-sky-50">
@@ -31,17 +32,11 @@
     </header>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-      {{ range .Stats }}
-        <div class="bg-white p-4 rounded-lg shadow-md">
-          <h3 class="text-sm font-medium text-gray-500">{{ .Title }}</h3>
-          {{ if .IsWeight }}
-          <p class="text-2xl font-semibold text-gray-800 mt-1 weight-value">{{ .Value }}</p>
-          {{ else }}
-          <p class="text-2xl font-semibold text-gray-800 mt-1">{{ .Value }}</p>
-          {{ end }}
-          <p class="text-xs text-gray-600 mt-1">{{ .PersonName }}</p>
-        </div>
-      {{ end }}
+      <div hx-get="/stats/top-supplier" hx-trigger="load" hx-swap="outerHTML"></div>
+      <div hx-get="/stats/top-buyer" hx-trigger="load" hx-swap="outerHTML"></div>
+      <div hx-get="/stats/most-frequent-supplier" hx-trigger="load" hx-swap="outerHTML"></div>
+      <div hx-get="/stats/best-quality-supplier" hx-trigger="load" hx-swap="outerHTML"></div>
+      <div hx-get="/stats/worst-quality-supplier" hx-trigger="load" hx-swap="outerHTML"></div>
     </div>
 
     <div class="bg-white p-4 rounded-lg shadow mb-8">

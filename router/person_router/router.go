@@ -3,7 +3,6 @@ package person_router
 import (
 	entity_public "armazenda/entity/public"
 	person_service "armazenda/service/person"
-	"armazenda/service/stats_service"
 	"armazenda/service/user_service"
 	"net/http"
 	"strconv"
@@ -77,7 +76,6 @@ func getPersonPage(c *gin.Context) {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}
 
-	stats, toast := stats_service.GetPersonPageStats(farm)
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}
@@ -90,7 +88,6 @@ func getPersonPage(c *gin.Context) {
 		"PrevPage":    peopleData.PrevPage,
 		"HasNextPage": peopleData.HasNextPage,
 		"HasPrevPage": peopleData.HasPrevPage,
-		"Stats":       stats,
 	}
 
 	if c.GetHeader("HX-Request") == "true" {

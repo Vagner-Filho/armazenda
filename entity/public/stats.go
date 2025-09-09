@@ -5,4 +5,5 @@ type StatCard struct {
 	Value      string
 	PersonName string
 	IsWeight   bool
+	Type       string
 }

@@ -74,6 +74,7 @@ func (sm *StatsModel) GetTopSupplier(farmId uint32) (entity_public.StatCard, *mo
 		Value:      fmt.Sprintf("%.2f", totalWeight),
 		PersonName: personName,
 		IsWeight:   true,
+		Type:       "top_supplier",
 	}, nil
 }
 
@@ -114,6 +115,7 @@ func (sm *StatsModel) GetTopBuyer(farmId uint32) (entity_public.StatCard, *model
 		Value:      fmt.Sprintf("%.2f", totalWeight),
 		PersonName: personName,
 		IsWeight:   true,
+		Type:       "top_buyer",
 	}, nil
 }
 
@@ -153,6 +155,7 @@ func (sm *StatsModel) GetMostFrequentSupplier(farmId uint32) (entity_public.Stat
 		Title:      "Fornecedor Mais Frequente",
 		Value:      fmt.Sprintf("%d entregas", deliveryCount),
 		PersonName: personName,
+		Type:       "most_frequent_supplier",
 	}, nil
 }
 
@@ -193,6 +196,7 @@ func (sm *StatsModel) GetBestQualitySupplier(farmId uint32) (entity_public.StatC
 		Title:      "Grão de Melhor Qualidade (Umidade)",
 		Value:      fmt.Sprintf("%.2f%%", avgHumidity),
 		PersonName: personName,
+		Type:       "best_quality_supplier",
 	}, nil
 }
 
@@ -233,5 +237,6 @@ func (sm *StatsModel) GetWorstQualitySupplier(farmId uint32) (entity_public.Stat
 		Title:      "Pior Qualidade (Umidade+Impureza+Avaria)",
 		Value:      fmt.Sprintf("%.2f%%", totalAverage),
 		PersonName: personName,
+		Type:       "worst_quality_supplier",
 	}, nil
 }

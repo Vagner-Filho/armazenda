@@ -5,44 +5,52 @@ import (
 	"armazenda/model/stats_model"
 )
 
-func GetPersonPageStats(farmId uint32) ([]entity_public.StatCard, *entity_public.Toast) {
+func GetTopSupplierStat(farmId uint32) (*entity_public.StatCard, *entity_public.Toast) {
 	sm := stats_model.GetStatsModel()
-	stats := make([]entity_public.StatCard, 0, 5)
-
-	topSupplier, err := sm.GetTopSupplier(farmId)
+	stat, err := sm.GetTopSupplier(farmId)
 	if err != nil {
 		toast := entity_public.GetErrorToast("Erro ao buscar estatísticas", "")
-		return []entity_public.StatCard{}, &toast
+		return nil, &toast
 	}
-	stats = append(stats, topSupplier)
+	return &stat, nil
+}
 
-	topBuyer, err := sm.GetTopBuyer(farmId)
+func GetTopBuyerStat(farmId uint32) (*entity_public.StatCard, *entity_public.Toast) {
+	sm := stats_model.GetStatsModel()
+	stat, err := sm.GetTopBuyer(farmId)
 	if err != nil {
 		toast := entity_public.GetErrorToast("Erro ao buscar estatísticas", "")
-		return []entity_public.StatCard{}, &toast
+		return nil, &toast
 	}
-	stats = append(stats, topBuyer)
+	return &stat, nil
+}
 
-	mostFrequent, err := sm.GetMostFrequentSupplier(farmId)
+func GetMostFrequentSupplierStat(farmId uint32) (*entity_public.StatCard, *entity_public.Toast) {
+	sm := stats_model.GetStatsModel()
+	stat, err := sm.GetMostFrequentSupplier(farmId)
 	if err != nil {
 		toast := entity_public.GetErrorToast("Erro ao buscar estatísticas", "")
-		return []entity_public.StatCard{}, &toast
+		return nil, &toast
 	}
-	stats = append(stats, mostFrequent)
+	return &stat, nil
+}
 
-	bestQuality, err := sm.GetBestQualitySupplier(farmId)
+func GetBestQualitySupplierStat(farmId uint32) (*entity_public.StatCard, *entity_public.Toast) {
+	sm := stats_model.GetStatsModel()
+	stat, err := sm.GetBestQualitySupplier(farmId)
 	if err != nil {
 		toast := entity_public.GetErrorToast("Erro ao buscar estatísticas", "")
-		return []entity_public.StatCard{}, &toast
+		return nil, &toast
 	}
-	stats = append(stats, bestQuality)
+	return &stat, nil
+}
 
-	worstQuality, err := sm.GetWorstQualitySupplier(farmId)
+func GetWorstQualitySupplierStat(farmId uint32) (*entity_public.StatCard, *entity_public.Toast) {
+	sm := stats_model.GetStatsModel()
+	stat, err := sm.GetWorstQualitySupplier(farmId)
 	if err != nil {
 		toast := entity_public.GetErrorToast("Erro ao buscar estatísticas", "")
-		return []entity_public.StatCard{}, &toast
+		return nil, &toast
 	}
-	stats = append(stats, worstQuality)
-
-	return stats, nil
+	return &stat, nil
 }
