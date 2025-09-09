@@ -25,6 +25,16 @@
       </p>
     </header>
 
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {{ range .Stats }}
+      <div class="bg-white p-4 rounded-lg shadow-md">
+        <h3 class="text-sm font-medium text-gray-500">{{ .Title }}</h3>
+        <p class="text-2xl font-semibold text-gray-800 mt-1">{{ .Value }}</p>
+        <p class="text-xs text-gray-600 mt-1">{{ .PersonName }}</p>
+      </div>
+      {{ end }}
+    </div>
+
     <div class="bg-white shadow-md rounded-lg p-4">
       <div class="flex justify-end mb-4">
         <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/person/form"

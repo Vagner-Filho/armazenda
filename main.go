@@ -10,6 +10,7 @@ import (
 	"armazenda/model/person_model"
 	"armazenda/model/product_model"
 	"armazenda/model/report_model"
+	"armazenda/model/stats_model"
 	"armazenda/model/user_approval_model"
 	"armazenda/model/user_model"
 
@@ -96,6 +97,7 @@ func main() {
 	report_model.InitReportModel(conn)
 	farm_config_model.InitFarmConfigModel(conn)
 	user_approval_model.InitUserApprovalModel(conn)
+	stats_model.InitStatsModel(conn)
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {

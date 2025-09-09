@@ -21,6 +21,7 @@ type reportView struct {
 	StartDate time.Time `form:"initialDate" binding:"required" time_format:"2006-01-02T15:04"`
 	EndDate   time.Time `form:"endDate" binding:"required" time_format:"2006-01-02T15:04"`
 	People    []entity_public.PersonOption
+	Stats     []entity_public.StatCard
 }
 
 type reportContent struct {

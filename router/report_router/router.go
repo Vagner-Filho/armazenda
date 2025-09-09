@@ -2,6 +2,7 @@ package report_router
 
 import (
 	entity_public "armazenda/entity/public"
+	"armazenda/service/stats_service"
 	"armazenda/service/user_service"
 	report_view "armazenda/view/report"
 	"net/http"
@@ -12,7 +13,16 @@ import (
 func getRelatorioPage(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
-	c.HTML(http.StatusOK, "relatorio.html", report_view.GetReportPage(farm))
+
+	stats, toast := stats_service.GetPersonPageStats(farm)
+	if toast != nil {
+		c.Header("HX-Trigger", string(toast.ToJson()))
+	}
+
+	pageData := report_view.GetReportPage(farm)
+	pageData.Stats = stats
+
+	c.HTML(http.StatusOK, "relatorio.html", pageData)
 }
 
 func filterReport(c *gin.Context) {
