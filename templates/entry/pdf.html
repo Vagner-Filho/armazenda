@@ -83,6 +83,15 @@
                 {{.Origin}}
             </div>
         </div>
+        <div class="flex flex-col" style="width: 100%;">
+            <div class="font-light" style="color: #7a7b87">
+                {{ $docLength := len .Document }}
+                {{ if eq $docLength 11 }}CPF{{ else if eq $docLength 14 }}CNPJ{{ else }}Inscrição Estadual{{ end }}
+            </div>
+            <div class="">
+                {{.Document}}
+            </div>
+        </div>
     </div>
     {{end}}
     <div class="flex justify-between border-b my-1" style="border-color: #909699;">
@@ -156,7 +165,7 @@
                 Umidade
             </div>
             <div class="">
-                {{ if .Humidity }}{{ .Humidity }}{{ else }}0{{ end }}%
+                {{ if .Humidity }}{{ .Humidity }}%{{ else }}N/A{{ end }}
             </div>
         </div>
         <div class="flex flex-col" style="width: 33%;">
@@ -164,7 +173,7 @@
                 Avariado
             </div>
             <div class="">
-                {{ if .Damage }}{{ .Damage }}{{ else }}0{{ end }}%
+                {{ if .Damage }}{{ .Damage }}%{{ else }}N/A{{ end }}
             </div>
         </div>
         <div class="flex flex-col" style="width: 33%;">
@@ -172,7 +181,7 @@
                 Impureza
             </div>
             <div class="">
-                {{ if .Impurity }}{{ .Impurity }}{{ else }}0{{ end }}%
+                {{ if .Impurity }}{{ .Impurity }}%{{ else }}N/A{{ end }}
             </div>
         </div>
     </div>

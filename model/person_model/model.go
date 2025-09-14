@@ -12,22 +12,23 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type personModel struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
 var personModelImpl *personModel
 
-func InitPersonModel(conn *pgx.Conn) (*personModel, error) {
-	if conn == nil {
-		return nil, errors.New("conn cant be null")
+func InitPersonModel(pool *pgxpool.Pool) (*personModel, error) {
+	if pool == nil {
+		return nil, errors.New("pool cant be null")
 	}
 
 	if personModelImpl == nil {
 		personModelImpl = &personModel{
-			conn: conn,
+			pool: pool,
 		}
 	}
 
@@ -42,7 +43,7 @@ func GetpersonModel() *personModel {
 }
 
 func (bm *personModel) AddLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
-	row, queryErr := bm.conn.Query(
+	row, queryErr := bm.pool.Query(
 		context.Background(),
 		`SELECT * FROM add_get_legal_person(@companyName, @cnpj, @ie, @fantasyName, @farm, @humidityDiscount, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone)`,
 		pgx.NamedArgs{
@@ -64,13 +65,11 @@ func (bm *personModel) AddLegalPerson(bc entity_public.LegalPerson) (entity_publ
 		})
 
 	if queryErr != nil {
-		model_error.Logger(bm.conn, queryErr.Error())
 		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
 	person, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.PersonDisplay])
 	if collectErr != nil {
-		model_error.Logger(bm.conn, collectErr.Error())
 		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
 	}
 
@@ -78,7 +77,7 @@ func (bm *personModel) AddLegalPerson(bc entity_public.LegalPerson) (entity_publ
 }
 
 func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
-	row, queryErr := bm.conn.Query(context.Background(), `
+	row, queryErr := bm.pool.Query(context.Background(), `
 			SELECT * FROM add_get_natural_person(@name, @cpf, @ie, @farm, @humidityDiscount, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone)
 		`,
 		pgx.NamedArgs{
@@ -98,13 +97,11 @@ func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_
 			"phone":            bp.PhoneNumber,
 		})
 	if queryErr != nil {
-		model_error.Logger(bm.conn, queryErr.Error())
 		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
 	person, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.PersonDisplay])
 	if collectErr != nil {
-		model_error.Logger(bm.conn, collectErr.Error())
 		var pgErr *pgconn.PgError
 		if errors.As(collectErr, &pgErr) {
 			if pgErr.Code == pgerrcode.UniqueViolation {
@@ -125,7 +122,7 @@ func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_
 }
 
 func (bm *personModel) GetPeopleByFarm(farm uint32) ([]entity_public.PersonOption, *model_error.ModelError) {
-	rows, queryErr := bm.conn.Query(context.Background(), `
+	rows, queryErr := bm.pool.Query(context.Background(), `
 		SELECT id, name, humidity_discount FROM (
 			SELECT p.id, lp.companyname AS name, COALESCE(pc.humidity_discount, 1.7) as humidity_discount
 			FROM person p
@@ -145,13 +142,11 @@ func (bm *personModel) GetPeopleByFarm(farm uint32) ([]entity_public.PersonOptio
 	`, pgx.NamedArgs{"userFarm": farm})
 
 	if queryErr != nil {
-		model_error.Logger(bm.conn, queryErr.Error())
 		return []entity_public.PersonOption{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
 	people, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.PersonOption])
 	if collectErr != nil {
-		model_error.Logger(bm.conn, collectErr.Error())
 		return []entity_public.PersonOption{}, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
 	}
 
@@ -183,12 +178,11 @@ func (bm *personModel) FilterPerson(pf entity_public.PersonFilter, farm uint32, 
 	countStmt := `SELECT COUNT(*) FROM person WHERE farm = @userFarm`
 
 	var total int
-	err := bm.conn.QueryRow(context.Background(), countStmt, pgx.NamedArgs{"userFarm": farm}).Scan(&total)
+	err := bm.pool.QueryRow(context.Background(), countStmt, pgx.NamedArgs{"userFarm": farm}).Scan(&total)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return []entity_public.PersonDisplay{}, 0, nil
 		}
-		model_error.Logger(bm.conn, err.Error())
 		return nil, 0, &model_error.ModelError{Message: "Error counting people", IsServerErr: true}
 	}
 
@@ -211,9 +205,8 @@ func (bm *personModel) FilterPerson(pf entity_public.PersonFilter, farm uint32, 
 		LIMIT @limit OFFSET @offset
 	`
 
-	rows, queryErr := bm.conn.Query(context.Background(), stmt, pgx.NamedArgs{"userFarm": farm, "limit": limit, "offset": offset})
+	rows, queryErr := bm.pool.Query(context.Background(), stmt, pgx.NamedArgs{"userFarm": farm, "limit": limit, "offset": offset})
 	if queryErr != nil {
-		model_error.Logger(bm.conn, queryErr.Error())
 		return []entity_public.PersonDisplay{}, 0, &model_error.ModelError{Message: queryErr.Error(), IsServerErr: true}
 	}
 
@@ -223,7 +216,6 @@ func (bm *personModel) FilterPerson(pf entity_public.PersonFilter, farm uint32, 
 		if errors.Is(collectErr, pgx.ErrNoRows) {
 			return []entity_public.PersonDisplay{}, total, nil
 		}
-		model_error.Logger(bm.conn, collectErr.Error())
 		return []entity_public.PersonDisplay{}, 0, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
 	}
 
@@ -232,7 +224,7 @@ func (bm *personModel) FilterPerson(pf entity_public.PersonFilter, farm uint32, 
 
 func (bm *personModel) CnpjExistsInFarm(cnpj string, farmId uint32) (bool, *model_error.ModelError) {
 	var exists bool
-	err := bm.conn.QueryRow(context.Background(), `
+	err := bm.pool.QueryRow(context.Background(), `
 		SELECT true FROM legal_person lp
 		JOIN person p ON lp.personId = p.id
 		WHERE lp.cnpj = $1 AND p.farm = $2
@@ -242,7 +234,6 @@ func (bm *personModel) CnpjExistsInFarm(cnpj string, farmId uint32) (bool, *mode
 		if errors.Is(err, pgx.ErrNoRows) {
 			return false, nil
 		}
-		model_error.Logger(bm.conn, err.Error())
 		return false, &model_error.ModelError{Message: "Error checking for CNPJ", IsServerErr: true}
 	}
 
@@ -251,7 +242,7 @@ func (bm *personModel) CnpjExistsInFarm(cnpj string, farmId uint32) (bool, *mode
 
 func (bm *personModel) CpfExistsInFarm(cpf string, farmId uint32) (bool, *model_error.ModelError) {
 	var exists bool
-	err := bm.conn.QueryRow(context.Background(), `
+	err := bm.pool.QueryRow(context.Background(), `
 		SELECT true FROM natural_person np
 		JOIN person p ON np.personId = p.id
 		WHERE np.cpf = $1 AND p.farm = $2
@@ -261,7 +252,6 @@ func (bm *personModel) CpfExistsInFarm(cpf string, farmId uint32) (bool, *model_
 		if errors.Is(err, pgx.ErrNoRows) {
 			return false, nil
 		}
-		model_error.Logger(bm.conn, err.Error())
 		return false, &model_error.ModelError{Message: "Error checking for CPF", IsServerErr: true}
 	}
 

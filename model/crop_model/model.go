@@ -10,22 +10,23 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type cropModel struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
 var cropModelImpl *cropModel
 
-func InitCropModel(conn *pgx.Conn) (*cropModel, error) {
-	if conn == nil {
-		return nil, errors.New("conn cant be null")
+func InitCropModel(pool *pgxpool.Pool) (*cropModel, error) {
+	if pool == nil {
+		return nil, errors.New("pool cant be null")
 	}
 
 	if cropModelImpl == nil {
 		cropModelImpl = &cropModel{
-			conn: conn,
+			pool: pool,
 		}
 	}
 
@@ -45,7 +46,7 @@ func (cm *cropModel) AddCrop(c entity_public.Crop) (entity_public.Crop, *model_e
 	var startDateAsTime time.Time
 	var product uint8
 	var farm uint32
-	scanErr := cm.conn.QueryRow(context.Background(), `
+	scanErr := cm.pool.QueryRow(context.Background(), `
 		INSERT INTO crop (name, startDate, product, farm)
 		VALUES (@name, @startDate, @product, @farm) RETURNING id, name, startDate, product, farm
 		`, pgx.NamedArgs{"name": c.Name, "startDate": c.StartDate, "product": c.Product, "farm": c.Farm}).Scan(&id, &name, &startDateAsTime, &product, &farm)
@@ -56,7 +57,6 @@ func (cm *cropModel) AddCrop(c entity_public.Crop) (entity_public.Crop, *model_e
 			return entity_public.Crop{}, &model_error.ModelError{Message: "Já existe uma safra com este nome"}
 		}
 
-		model_error.Logger(cm.conn, scanErr.Error())
 		return entity_public.Crop{}, &model_error.ModelError{Message: "Falhamos ao adicionar a safra", IsServerErr: true}
 	}
 
@@ -70,7 +70,7 @@ func (cm *cropModel) AddCrop(c entity_public.Crop) (entity_public.Crop, *model_e
 }
 
 func (cm *cropModel) GetCropsByFarm(farm uint32) ([]entity_public.Crop, error) {
-	rows, queryErr := cm.conn.Query(context.Background(), "SELECT * FROM crop c WHERE c.farm = @userFarm", pgx.NamedArgs{"userFarm": farm})
+	rows, queryErr := cm.pool.Query(context.Background(), "SELECT * FROM crop c WHERE c.farm = @userFarm", pgx.NamedArgs{"userFarm": farm})
 	if queryErr != nil {
 		return []entity_public.Crop{}, queryErr
 	}

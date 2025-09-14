@@ -8,22 +8,23 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type productModel struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
 var productModelImpl *productModel
 
-func InitProductModel(conn *pgx.Conn) (*productModel, error) {
-	if conn == nil {
-		return nil, errors.New("conn cant be null")
+func InitProductModel(pool *pgxpool.Pool) (*productModel, error) {
+	if pool == nil {
+		return nil, errors.New("pool cant be null")
 	}
 
 	if productModelImpl == nil {
 		productModelImpl = &productModel{
-			conn: conn,
+			pool: pool,
 		}
 	}
 
@@ -38,7 +39,7 @@ func GetProductModel() (*productModel, error) {
 }
 
 func (pm *productModel) GetProducts() ([]entity_public.Product, error) {
-	rows, err := pm.conn.Query(context.Background(), "SELECT * FROM product")
+	rows, err := pm.pool.Query(context.Background(), "SELECT * FROM product")
 	if err != nil {
 		return []entity_public.Product{}, &model_error.ModelError{Message: err.Error()}
 	}

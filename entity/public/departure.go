@@ -12,11 +12,13 @@ type Departure struct {
 	Crop          uint8     `form:"crop" binding:"required"`
 	CargoWeight
 	Farm   uint32  `form:"farm" binding:"gte=0"`
-	Person *uint32 `form:"origin" binding:"required"`
+	Person *uint32 `form:"origin"`
+	Analysis
 }
 
 func (d Departure) ToDTO() DepartureDTO {
 	cargo := d.CargoWeight.ToDTO()
+	analysis := d.Analysis.ToDTO()
 	return DepartureDTO{
 		Id:             d.Id,
 		DepartureDate:  d.DepartureDate,
@@ -25,6 +27,7 @@ func (d Departure) ToDTO() DepartureDTO {
 		CargoWeightDTO: cargo,
 		Person:         d.Person,
 		Farm:           d.Farm,
+		AnalysisDTO:    analysis,
 	}
 }
 
@@ -36,10 +39,12 @@ type DepartureDTO struct {
 	CargoWeightDTO
 	Person *uint32
 	Farm   uint32
+	AnalysisDTO
 }
 
 func (dto DepartureDTO) ToEntity() Departure {
 	cargo := dto.CargoWeightDTO.ToEntity()
+	analysis, _ := dto.AnalysisDTO.ToEntity()
 	return Departure{
 		Id:            dto.Id,
 		DepartureDate: dto.DepartureDate,
@@ -48,6 +53,7 @@ func (dto DepartureDTO) ToEntity() Departure {
 		CargoWeight:   cargo,
 		Person:        dto.Person,
 		Farm:          dto.Farm,
+		Analysis:      analysis,
 	}
 }
 
@@ -98,6 +104,7 @@ type DeparturePdf struct {
 	InscricaoEstadual string
 	Produto           string
 	PersonName        string
+	Document          string
 	FarmName          string
 	FarmStreet        *string
 	FarmCep           *string
@@ -105,4 +112,5 @@ type DeparturePdf struct {
 	FarmNeighborhood  *string
 	FarmCity          *string
 	FarmState         *string
+	AnalysisDTO
 }

@@ -2,7 +2,6 @@ package report_model
 
 import (
 	entity_public "armazenda/entity/public"
-	model_error "armazenda/model/error"
 	"armazenda/utils"
 	"context"
 	"errors"
@@ -10,22 +9,23 @@ import (
 	"strconv"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type reportModel struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
 var reportModelImpl *reportModel
 
-func InitReportModel(conn *pgx.Conn) (*reportModel, error) {
-	if conn == nil {
-		return nil, errors.New("conn cant be null")
+func InitReportModel(pool *pgxpool.Pool) (*reportModel, error) {
+	if pool == nil {
+		return nil, errors.New("pool cant be null")
 	}
 
 	if reportModelImpl == nil {
 		reportModelImpl = &reportModel{
-			conn: conn,
+			pool: pool,
 		}
 	}
 
@@ -102,15 +102,13 @@ func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32) 
 		idx++
 	}
 
-	rows, queryErr := rm.conn.Query(context.Background(), stmt, pgx.NamedArgs{"userFarm": farm})
+	rows, queryErr := rm.pool.Query(context.Background(), stmt, pgx.NamedArgs{"userFarm": farm})
 	if queryErr != nil {
-		model_error.Logger(rm.conn, queryErr.Error())
 		return []entity_public.ReportDisplay{}, queryErr
 	}
 
 	result, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.ReportDisplay])
 	if collectErr != nil {
-		model_error.Logger(rm.conn, collectErr.Error())
 		return []entity_public.ReportDisplay{}, collectErr
 	}
 
@@ -171,15 +169,13 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 		idx++
 	}
 
-	rows, queryErr := rm.conn.Query(context.Background(), stmt, pgx.NamedArgs{"userFarm": farm})
+	rows, queryErr := rm.pool.Query(context.Background(), stmt, pgx.NamedArgs{"userFarm": farm})
 	if queryErr != nil {
-		model_error.Logger(rm.conn, queryErr.Error())
 		return []entity_public.FullReport{}, queryErr
 	}
 
 	result, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.FullReport])
 	if collectErr != nil {
-		model_error.Logger(rm.conn, collectErr.Error())
 		return []entity_public.FullReport{}, collectErr
 	}
 

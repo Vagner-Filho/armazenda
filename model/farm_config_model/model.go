@@ -7,22 +7,23 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type farmConfigModel struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
 var farmConfigModelImpl *farmConfigModel
 
-func InitFarmConfigModel(conn *pgx.Conn) (*farmConfigModel, error) {
-	if conn == nil {
-		return nil, errors.New("conn cant be null")
+func InitFarmConfigModel(pool *pgxpool.Pool) (*farmConfigModel, error) {
+	if pool == nil {
+		return nil, errors.New("pool cant be null")
 	}
 
 	if farmConfigModelImpl == nil {
 		farmConfigModelImpl = &farmConfigModel{
-			conn: conn,
+			pool: pool,
 		}
 	}
 
@@ -40,7 +41,7 @@ func (fcm *farmConfigModel) UpsertFarmConfig(config *entity_public.Farm) error {
 	query := `
 		SELECT * FROM update_get_farm(@id, @inscricao_estadual, @name, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone_number, @humidity_discount);
 	`
-	_, err := fcm.conn.Exec(context.Background(), query, pgx.NamedArgs{
+	_, err := fcm.pool.Exec(context.Background(), query, pgx.NamedArgs{
 		"id":                 config.Id,
 		"inscricao_estadual": config.InscricaoEstadual,
 		"name":               config.Name,
@@ -68,7 +69,7 @@ func (fcm *farmConfigModel) GetFarmConfig(farmID uint32) (*entity_public.Farm, e
 		LEFT JOIN farm_contact fco ON fco.farm_id = f.id
 		WHERE f.id = $1;
 	`
-	rows, _ := fcm.conn.Query(context.Background(), query, farmID)
+	rows, _ := fcm.pool.Query(context.Background(), query, farmID)
 	result, err := pgx.CollectOneRow(rows, pgx.RowToStructByPos[entity_public.Farm])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -91,7 +92,7 @@ func (fcm *farmConfigModel) GetFarmByInscricaoEstadual(inscricaoEstadual string)
 		LEFT JOIN farm_contact fco ON fco.farm_id = f.id
 		WHERE f.inscricao_estadual = $1;
 	`
-	rows, _ := fcm.conn.Query(context.Background(), query, inscricaoEstadual)
+	rows, _ := fcm.pool.Query(context.Background(), query, inscricaoEstadual)
 	result, err := pgx.CollectOneRow(rows, pgx.RowToStructByPos[entity_public.Farm])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

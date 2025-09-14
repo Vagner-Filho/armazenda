@@ -8,22 +8,23 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type StatsModel struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
 var statsModelImpl *StatsModel
 
-func InitStatsModel(conn *pgx.Conn) (*StatsModel, error) {
-	if conn == nil {
-		return nil, errors.New("conn cant be null")
+func InitStatsModel(pool *pgxpool.Pool) (*StatsModel, error) {
+	if pool == nil {
+		return nil, errors.New("pool cant be null")
 	}
 
 	if statsModelImpl == nil {
 		statsModelImpl = &StatsModel{
-			conn: conn,
+			pool: pool,
 		}
 	}
 
@@ -55,7 +56,7 @@ func (sm *StatsModel) GetTopSupplier(farmId uint32) (entity_public.StatCard, *mo
 		ORDER BY total_weight DESC
 		LIMIT 1;
 	`
-	err := sm.conn.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId}).Scan(&personName, &totalWeight)
+	err := sm.pool.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId}).Scan(&personName, &totalWeight)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return entity_public.StatCard{
@@ -65,7 +66,6 @@ func (sm *StatsModel) GetTopSupplier(farmId uint32) (entity_public.StatCard, *mo
 				},
 				nil
 		}
-		model_error.Logger(sm.conn, err.Error())
 		return entity_public.StatCard{}, &model_error.ModelError{Message: "Error fetching top supplier", IsServerErr: true}
 	}
 
@@ -96,7 +96,7 @@ func (sm *StatsModel) GetTopBuyer(farmId uint32) (entity_public.StatCard, *model
 		ORDER BY total_weight DESC
 		LIMIT 1;
 	`
-	err := sm.conn.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId}).Scan(&personName, &totalWeight)
+	err := sm.pool.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId}).Scan(&personName, &totalWeight)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return entity_public.StatCard{
@@ -106,7 +106,6 @@ func (sm *StatsModel) GetTopBuyer(farmId uint32) (entity_public.StatCard, *model
 				},
 				nil
 		}
-		model_error.Logger(sm.conn, err.Error())
 		return entity_public.StatCard{}, &model_error.ModelError{Message: "Error fetching top buyer", IsServerErr: true}
 	}
 
@@ -137,7 +136,7 @@ func (sm *StatsModel) GetMostFrequentSupplier(farmId uint32) (entity_public.Stat
 		ORDER BY delivery_count DESC
 		LIMIT 1;
 	`
-	err := sm.conn.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId}).Scan(&personName, &deliveryCount)
+	err := sm.pool.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId}).Scan(&personName, &deliveryCount)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return entity_public.StatCard{
@@ -147,7 +146,6 @@ func (sm *StatsModel) GetMostFrequentSupplier(farmId uint32) (entity_public.Stat
 				},
 				nil
 		}
-		model_error.Logger(sm.conn, err.Error())
 		return entity_public.StatCard{}, &model_error.ModelError{Message: "Error fetching most frequent supplier", IsServerErr: true}
 	}
 
@@ -178,7 +176,7 @@ func (sm *StatsModel) GetBestQualitySupplier(farmId uint32) (entity_public.StatC
 		ORDER BY avg_humidity ASC
 		LIMIT 1;
 	`
-	err := sm.conn.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId}).Scan(&personName, &avgHumidity)
+	err := sm.pool.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId}).Scan(&personName, &avgHumidity)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return entity_public.StatCard{
@@ -188,7 +186,6 @@ func (sm *StatsModel) GetBestQualitySupplier(farmId uint32) (entity_public.StatC
 				},
 				nil
 		}
-		model_error.Logger(sm.conn, err.Error())
 		return entity_public.StatCard{}, &model_error.ModelError{Message: "Error fetching best quality supplier", IsServerErr: true}
 	}
 
@@ -219,7 +216,7 @@ func (sm *StatsModel) GetWorstQualitySupplier(farmId uint32) (entity_public.Stat
 		ORDER BY total_average DESC
 		LIMIT 1;
 	`
-	err := sm.conn.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId}).Scan(&personName, &totalAverage)
+	err := sm.pool.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId}).Scan(&personName, &totalAverage)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return entity_public.StatCard{
@@ -229,7 +226,6 @@ func (sm *StatsModel) GetWorstQualitySupplier(farmId uint32) (entity_public.Stat
 				},
 				nil
 		}
-		model_error.Logger(sm.conn, err.Error())
 		return entity_public.StatCard{}, &model_error.ModelError{Message: "Error fetching worst quality supplier", IsServerErr: true}
 	}
 

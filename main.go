@@ -5,6 +5,7 @@ import (
 	"armazenda/model/crop_model"
 	"armazenda/model/departure_model"
 	"armazenda/model/entry_model"
+	model_error "armazenda/model/error"
 	"armazenda/model/farm_config_model"
 	"armazenda/model/field_model"
 	"armazenda/model/person_model"
@@ -72,33 +73,41 @@ func authenticate(c *gin.Context) {
 }
 func main() {
 
-	conn, connErr := armazenda_database.GetDbConnection()
+	pool, connErr := armazenda_database.GetDbPool()
 
 	if connErr != nil {
 		fmt.Printf("db connection error: %v \n", connErr.Error())
 		return
 	}
 
-	if conn == nil {
+	if pool == nil {
 		fmt.Print("db connection nil\n")
 		return
 	}
 
-	defer conn.Close(context.Background())
+	defer pool.Close()
 
-	armazenda_database.InitDb(conn)
-	user_model.InitUserModel(conn)
-	crop_model.InitCropModel(conn)
-	field_model.InitFieldModel(conn)
-	vehicle_model.InitVehicleModel(conn)
-	entry_model.InitEntryModel(conn)
-	departure_model.InitDepartureModel(conn)
-	product_model.InitProductModel(conn)
-	person_model.InitPersonModel(conn)
-	report_model.InitReportModel(conn)
-	farm_config_model.InitFarmConfigModel(conn)
-	user_approval_model.InitUserApprovalModel(conn)
-	stats_model.InitStatsModel(conn)
+	conn, err := pool.Acquire(context.Background())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to acquire a connection: %v\n", err)
+		return
+	}
+	armazenda_database.InitDb(conn.Conn())
+	conn.Release()
+
+	user_model.InitUserModel(pool)
+	crop_model.InitCropModel(pool)
+	field_model.InitFieldModel(pool)
+	vehicle_model.InitVehicleModel(pool)
+	entry_model.InitEntryModel(pool)
+	departure_model.InitDepartureModel(pool)
+	product_model.InitProductModel(pool)
+	person_model.InitPersonModel(pool)
+	report_model.InitReportModel(pool)
+	farm_config_model.InitFarmConfigModel(pool)
+	user_approval_model.InitUserApprovalModel(pool)
+	stats_model.InitStatsModel(pool)
+	model_error.InitLoggerModel(pool)
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {

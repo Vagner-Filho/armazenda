@@ -3,9 +3,6 @@
     <div class="text-xl font-bold text-center" style="margin-bottom: 12px;">
         Romaneio de Saída
     </div>
-    <div>
-        Destino: {{ .PersonName }}
-    </div>
     <div class="flex justify-between border-b my-1" style="border-color: #909699;">
         <div class="flex flex-col" style="width: 50%;">
             <div class="font-light" style="color: #7a7b87">
@@ -77,6 +74,25 @@
     </div>
     {{end}}
     <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+        <div class="flex flex-col" style="width: 100%;">
+            <div class="font-light" style="color: #7a7b87">
+                Destino
+            </div>
+            <div class="">
+                {{.PersonName}}
+            </div>
+        </div>
+        <div class="flex flex-col" style="width: 100%;">
+            <div class="font-light" style="color: #7a7b87">
+                {{ $docLength := len .Document }}
+                {{ if eq $docLength 11 }}CPF{{ else if eq $docLength 14 }}CNPJ{{ else }}Inscrição Estadual{{ end }}
+            </div>
+            <div class="">
+                {{.Document}}
+            </div>
+        </div>
+    </div>
+    <div class="flex justify-between border-b my-1" style="border-color: #909699;">
         <div class="flex flex-col" style="width: 50%;">
             <div class="font-light" style="color: #7a7b87">
                 Safra
@@ -135,6 +151,35 @@
             </div>
             <div class="">
                 {{ .NetWeight }}
+            </div>
+        </div>
+    </div>
+    <div style="text-align: left; font-size: 0.85rem; width: 100%; padding-top: 10px; font-weight: bold;">
+        QUALIDADE
+    </div>
+    <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+        <div class="flex flex-col" style="width: 33%;">
+            <div class="font-light" style="color: #7a7b87">
+                Umidade
+            </div>
+            <div class="">
+                {{ if .Humidity }}{{ .Humidity }}%{{ else }}N/A{{ end }}
+            </div>
+        </div>
+        <div class="flex flex-col" style="width: 33%;">
+            <div class="font-light" style="color: #7a7b87">
+                Avariado
+            </div>
+            <div class="">
+                {{ if .Damage }}{{ .Damage }}%{{ else }}N/A{{ end }}
+            </div>
+        </div>
+        <div class="flex flex-col" style="width: 33%;">
+            <div class="font-light" style="color: #7a7b87">
+                Impureza
+            </div>
+            <div class="">
+                {{ if .Impurity }}{{ .Impurity }}%{{ else }}N/A{{ end }}
             </div>
         </div>
     </div>

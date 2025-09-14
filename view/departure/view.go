@@ -149,10 +149,12 @@ func GetDepartureFormFromDraft(draftId uint32, farm uint32) (DepartureForm, []*e
 	if draft.Id != 0 {
 		formFields.SelectedCrop = uint8(draft.Crop)
 		formFields.SelectedVehicle = draft.Vehicle
-		for i, p := range formFields.People {
-			if p.Id != nil && *p.Id == *draft.Person {
-				formFields.SelectedPerson = formFields.People[i].Id
-				break
+		if draft.Person != nil {
+			for i, p := range formFields.People {
+				if p.Id != nil && *p.Id == *draft.Person {
+					formFields.SelectedPerson = formFields.People[i].Id
+					break
+				}
 			}
 		}
 
@@ -162,3 +164,9 @@ func GetDepartureFormFromDraft(draftId uint32, farm uint32) (DepartureForm, []*e
 
 	return formFields, toasts
 }
+
+func GetDepartureDrafts(farmId uint32) ([]entity_public.DisplayDepartureDraft, *entity_public.Toast) {
+	drafts, draftToast := departure_service.GetAllDepartureDrafts(farmId)
+	return drafts, draftToast
+}
+

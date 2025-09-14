@@ -9,22 +9,23 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type vehicleModel struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
 var vehicleModelImpl *vehicleModel
 
-func InitVehicleModel(conn *pgx.Conn) (*vehicleModel, error) {
-	if conn == nil {
-		return nil, errors.New("conn cant be null")
+func InitVehicleModel(pool *pgxpool.Pool) (*vehicleModel, error) {
+	if pool == nil {
+		return nil, errors.New("pool cant be null")
 	}
 
 	if vehicleModelImpl == nil {
 		vehicleModelImpl = &vehicleModel{
-			conn: conn,
+			pool: pool,
 		}
 	}
 
@@ -43,14 +44,13 @@ func (vm *vehicleModel) AddVehicle(v entity_public.Vehicle) (entity_public.Vehic
 	var name string
 	var farm uint32
 
-	scanErr := vm.conn.QueryRow(context.Background(), "INSERT INTO vehicle (plate, name, farm) VALUES (@plate, @name, @farm) RETURNING plate, name, farm", pgx.NamedArgs{"plate": v.Plate, "name": v.Name, "farm": v.Farm}).Scan(&plate, &name, &farm)
+	scanErr := vm.pool.QueryRow(context.Background(), "INSERT INTO vehicle (plate, name, farm) VALUES (@plate, @name, @farm) RETURNING plate, name, farm", pgx.NamedArgs{"plate": v.Plate, "name": v.Name, "farm": v.Farm}).Scan(&plate, &name, &farm)
 
 	if scanErr != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(scanErr, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			return entity_public.Vehicle{}, &model_error.ModelError{Message: "Já existe um veículo com esta placa"}
 		}
-		model_error.Logger(vm.conn, scanErr.Error())
 		return entity_public.Vehicle{}, &model_error.ModelError{Message: "Falhamos ao adicionar o veículo", IsServerErr: true}
 	}
 
@@ -62,7 +62,7 @@ func (vm *vehicleModel) AddVehicle(v entity_public.Vehicle) (entity_public.Vehic
 }
 
 func (vm *vehicleModel) GetVehiclesByFarm(farm uint32) ([]entity_public.Vehicle, error) {
-	rows, queryErr := vm.conn.Query(context.Background(), "SELECT * FROM vehicle v WHERE v.farm = @userFarm", pgx.NamedArgs{"userFarm": farm})
+	rows, queryErr := vm.pool.Query(context.Background(), "SELECT * FROM vehicle v WHERE v.farm = @userFarm", pgx.NamedArgs{"userFarm": farm})
 	if queryErr != nil {
 		return []entity_public.Vehicle{}, queryErr
 	}
@@ -78,7 +78,7 @@ func (vm *vehicleModel) GetVehiclesByFarm(farm uint32) ([]entity_public.Vehicle,
 func (vm *vehicleModel) GetVehicle(plateParam string) (entity_public.Vehicle, *model_error.ModelError) {
 	var plate string
 	var name string
-	scanErr := vm.conn.QueryRow(context.Background(), "SELECT * FROM vehicle WHERE vehicle.plate = @plate", pgx.NamedArgs{"plate": plateParam}).Scan(&plate, &name)
+	scanErr := vm.pool.QueryRow(context.Background(), "SELECT * FROM vehicle WHERE vehicle.plate = @plate", pgx.NamedArgs{"plate": plateParam}).Scan(&plate, &name)
 
 	if scanErr != nil {
 		return entity_public.Vehicle{}, &model_error.ModelError{Message: scanErr.Error()}

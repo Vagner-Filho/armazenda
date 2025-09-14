@@ -6,22 +6,23 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type userApprovalModel struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
 var userApprovalModelImpl *userApprovalModel
 
-func InitUserApprovalModel(conn *pgx.Conn) (*userApprovalModel, error) {
-	if conn == nil {
-		return nil, errors.New("conn cant be null")
+func InitUserApprovalModel(pool *pgxpool.Pool) (*userApprovalModel, error) {
+	if pool == nil {
+		return nil, errors.New("pool cant be null")
 	}
 
 	if userApprovalModelImpl == nil {
 		userApprovalModelImpl = &userApprovalModel{
-			conn: conn,
+			pool: pool,
 		}
 	}
 
@@ -36,7 +37,7 @@ func GetUserApprovalModel() *userApprovalModel {
 }
 
 func (uam *userApprovalModel) GetPendingUsersByFarm(farmId uint32) ([]entity_public.PendingUser, error) {
-	rows, err := uam.conn.Query(context.Background(), `SELECT id, name, email, cpf FROM user_approval WHERE farm_id = @farm_id AND status = 'pending'`, pgx.NamedArgs{"farm_id": farmId})
+	rows, err := uam.pool.Query(context.Background(), `SELECT id, name, email, cpf FROM user_approval WHERE farm_id = @farm_id AND status = 'pending'`, pgx.NamedArgs{"farm_id": farmId})
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +52,7 @@ func (uam *userApprovalModel) GetPendingUsersByFarm(farmId uint32) ([]entity_pub
 
 func (uam *userApprovalModel) ApproveUser(userId uint32) error {
 	// Get user from approval table
-	rows, err := uam.conn.Query(context.Background(), `SELECT id, email, name, passwd, inscricao_estadual, farm_id, cpf, status FROM user_approval WHERE id = @id`, pgx.NamedArgs{"id": userId})
+	rows, err := uam.pool.Query(context.Background(), `SELECT id, email, name, passwd, inscricao_estadual, farm_id, cpf, status FROM user_approval WHERE id = @id`, pgx.NamedArgs{"id": userId})
 	if err != nil {
 		return err
 	}
@@ -62,13 +63,13 @@ func (uam *userApprovalModel) ApproveUser(userId uint32) error {
 	}
 
 	// Insert user into app_user table
-	_, err = uam.conn.Exec(context.Background(), `INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm, cpf) VALUES (@email, @name, @passwd, @inscricao_estadual, @farm, @cpf)`, pgx.NamedArgs{"email": user.Email, "name": user.Name, "passwd": user.Passwd, "inscricao_estadual": user.InscricaoEstadual, "farm": user.FarmID, "cpf": user.Cpf})
+	_, err = uam.pool.Exec(context.Background(), `INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm, cpf) VALUES (@email, @name, @passwd, @inscricao_estadual, @farm, @cpf)`, pgx.NamedArgs{"email": user.Email, "name": user.Name, "passwd": user.Passwd, "inscricao_estadual": user.InscricaoEstadual, "farm": user.FarmID, "cpf": user.Cpf})
 	if err != nil {
 		return err
 	}
 
 	// Update status in user_approval table
-	_, err = uam.conn.Exec(context.Background(), `UPDATE user_approval SET status = 'approved' WHERE id = @id`, pgx.NamedArgs{"id": userId})
+	_, err = uam.pool.Exec(context.Background(), `UPDATE user_approval SET status = 'approved' WHERE id = @id`, pgx.NamedArgs{"id": userId})
 	if err != nil {
 		return err
 	}
@@ -77,7 +78,7 @@ func (uam *userApprovalModel) ApproveUser(userId uint32) error {
 }
 
 func (uam *userApprovalModel) DeclineUser(userId uint32) error {
-	_, err := uam.conn.Exec(context.Background(), `UPDATE user_approval SET status = 'declined' WHERE id = @id`, pgx.NamedArgs{"id": userId})
+	_, err := uam.pool.Exec(context.Background(), `UPDATE user_approval SET status = 'declined' WHERE id = @id`, pgx.NamedArgs{"id": userId})
 	if err != nil {
 		return err
 	}

@@ -10,6 +10,7 @@ import (
 	zerologadapter "github.com/jackc/pgx-zerolog"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -224,6 +225,21 @@ func initEntryAnalysis(c *pgx.Conn) {
 	handleStmtExec(c, stmt, err, "create entry_analysis")
 }
 
+func initDepartureAnalysis(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init departure_analysis table", `
+	CREATE TABLE IF NOT EXISTS departure_analysis (
+		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+		humidity NUMERIC(6, 3),
+		damage NUMERIC(6, 3),
+		impurity NUMERIC(6, 3),
+		departure_id INTEGER UNIQUE NOT NULL,
+		FOREIGN KEY (departure_id) REFERENCES departure(id)
+	);
+	`)
+
+	handleStmtExec(c, stmt, err, "create departure_analysis")
+}
+
 func initInactiveEntry(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init inactive_entry table", `
 	CREATE TABLE IF NOT EXISTS inactive_entry (
@@ -398,6 +414,7 @@ func initLogTable(c *pgx.Conn) {
 
 func initAddDepartureProcedure(c *pgx.Conn) {
 	_, err := c.Exec(context.Background(), `
+		DROP FUNCTION IF EXISTS add_get_departure;
 		CREATE OR REPLACE FUNCTION add_get_departure(
 			IN crop SMALLINT,
 			IN personId INTEGER,
@@ -408,13 +425,23 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 			IN farm INTEGER,
 			IN grossWeight NUMERIC,
 			IN tare NUMERIC,
-			INOUT netWeight NUMERIC
+			INOUT netWeight NUMERIC,
+			IN in_humidity NUMERIC(6, 3),
+			IN in_damage NUMERIC(6, 3),
+			IN in_impurity NUMERIC(6, 3)
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE departure_id INTEGER;
 		BEGIN
 			INSERT INTO departure (departureDate, vehicle, crop, farm, tare, grossWeight, netWeight) VALUES (departureDate, vehicle, crop, farm, tare, grossWeight, netWeight) RETURNING id INTO departure_id;
-			INSERT INTO departure_recipient (departure_id, person_id) VALUES (departure_id, personId);
+
+			IF in_humidity IS NOT NULL OR in_damage IS NOT NULL OR in_impurity IS NOT NULL THEN
+				INSERT INTO departure_analysis (humidity, damage, impurity, departure_id) VALUES (in_humidity, in_damage, in_impurity, departure_id);
+			END IF;
+
+			IF personId IS NOT NULL THEN
+				INSERT INTO departure_recipient (departure_id, person_id) VALUES (departure_id, personId);
+			END IF;
 
 			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = crop INTO productName;
 			departureId := departure_id;
@@ -586,6 +613,7 @@ func initAddEntry(c *pgx.Conn) {
 
 func initUpdateEntry(c *pgx.Conn) {
 	_, err := c.Exec(context.Background(), `
+		DROP FUNCTION IF EXISTS update_get_display_entry;
 		CREATE OR REPLACE FUNCTION update_get_display_entry(
 			in e_field SMALLINT,
 			IN e_crop SMALLINT,
@@ -798,6 +826,7 @@ func initFarmUpdateFunc(c *pgx.Conn) {
 }
 
 func initUpdateDepartureProc(c *pgx.Conn) {
+	c.Exec(context.Background(), "DROP FUNCTION IF EXISTS update_get_departure;")
 	stmt, err := c.Prepare(context.Background(), "init update departure stmt", `
 		CREATE OR REPLACE FUNCTION update_get_departure(
 			IN d_crop SMALLINT,
@@ -809,9 +838,12 @@ func initUpdateDepartureProc(c *pgx.Conn) {
 			IN d_grossWeight NUMERIC,
 			IN d_tare NUMERIC,
 			INOUT d_netWeight NUMERIC,
-			OUT farm INTEGER
+			IN in_humidity NUMERIC(6, 3),
+			IN in_damage NUMERIC(6, 3),
+			IN in_impurity NUMERIC(6, 3)
 		)
 		LANGUAGE plpgsql AS $$
+		DECLARE analysis_exists BOOLEAN;
 		BEGIN
 			UPDATE departure d SET
 				 departureDate = departure_Date,
@@ -822,7 +854,19 @@ func initUpdateDepartureProc(c *pgx.Conn) {
 				 netweight = d_netWeight
 			WHERE d.id = departureId;
 
-			SELECT p.name, d.farm INTO productName, farm FROM departure d JOIN crop c ON d.crop = c.id JOIN product p ON c.product = p.id WHERE d.id = departureId;
+			SELECT EXISTS (SELECT 1 FROM departure_analysis da WHERE da.departure_id = departureId) INTO analysis_exists;
+
+			IF analysis_exists THEN
+				UPDATE departure_analysis da SET
+					humidity = in_humidity,
+					damage = in_damage,
+					impurity = in_impurity
+				WHERE da.departure_id = departureId;
+			ELSIF in_humidity IS NOT NULL OR in_damage IS NOT NULL OR in_impurity IS NOT NULL THEN
+				INSERT INTO departure_analysis (humidity, damage, impurity, departure_id) VALUES (in_humidity, in_damage, in_impurity, departureId);
+			END IF;
+
+			SELECT p.name INTO productName FROM departure d JOIN crop c ON d.crop = c.id JOIN product p ON c.product = p.id WHERE d.id = departureId;
 		END;
 		$$;
 	`)
@@ -939,6 +983,7 @@ func InitDb(c *pgx.Conn) {
 	initUpdateDepartureProc(c)
 	initAddGetEntryDraft(c)
 	initAddGetDepartureDraft(c)
+	initDepartureAnalysis(c)
 }
 
 func initUserApproval(c *pgx.Conn) {
@@ -959,10 +1004,10 @@ func initUserApproval(c *pgx.Conn) {
 	handleStmtExec(c, stmt, err, "init user approval table")
 }
 
-var dbc *pgx.Conn
+var dbPool *pgxpool.Pool
 
-func GetDbConnection() (*pgx.Conn, error) {
-	if dbc == nil {
+func GetDbPool() (*pgxpool.Pool, error) {
+	if dbPool == nil {
 		dbHost := os.Getenv("DB_HOST")
 		dbUser := os.Getenv("DB_USER")
 		dbPass := os.Getenv("DB_PASS")
@@ -973,7 +1018,7 @@ func GetDbConnection() (*pgx.Conn, error) {
 		zlogger := zerolog.New(output).Level(zerolog.ErrorLevel).With().Timestamp().Logger()
 
 		connString := "postgres://" + dbUser + ":" + dbPass + "@" + dbHost + ":" + dbPort + "/" + dbName
-		config, err := pgx.ParseConfig(connString)
+		config, err := pgxpool.ParseConfig(connString)
 		if err != nil {
 			// Handle error
 			log.Fatal().Err(err).Msg("Failed to parse connection string")
@@ -982,12 +1027,12 @@ func GetDbConnection() (*pgx.Conn, error) {
 
 			return nil, errors.New("Falha em conectar ao banco")
 		}
-		config.Tracer = &tracelog.TraceLog{
+		config.ConnConfig.Tracer = &tracelog.TraceLog{
 			LogLevel: tracelog.LogLevelError,
 			Logger:   zerologadapter.NewLogger(zlogger),
 		}
 
-		dbc, err := pgx.ConnectConfig(context.Background(), config)
+		pool, err := pgxpool.NewWithConfig(context.Background(), config)
 
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
@@ -997,7 +1042,8 @@ func GetDbConnection() (*pgx.Conn, error) {
 			return nil, errors.New("Falha em conectar ao banco")
 		}
 
-		return dbc, nil
+		dbPool = pool
+		return dbPool, nil
 	}
-	return dbc, nil
+	return dbPool, nil
 }

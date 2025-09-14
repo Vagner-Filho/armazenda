@@ -19,10 +19,3 @@ export function formatWeight(value) {
 
   return `${numericValue.toLocaleString('pt-BR')} kg`;
 }
-
-document.addEventListener("DOMContentLoaded", function() {
-  const weightElements = document.querySelectorAll(".weight-value");
-  weightElements.forEach(el => {
-    el.textContent = formatWeight(el.textContent);
-  });
-});

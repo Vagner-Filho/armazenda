@@ -10,22 +10,23 @@ import (
 	"strconv"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type entryModel struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
 var entryModelImpl *entryModel
 
-func InitEntryModel(conn *pgx.Conn) (*entryModel, error) {
-	if conn == nil {
-		return nil, errors.New("conn cant be null")
+func InitEntryModel(pool *pgxpool.Pool) (*entryModel, error) {
+	if pool == nil {
+		return nil, errors.New("pool cant be null")
 	}
 
 	if entryModelImpl == nil {
 		entryModelImpl = &entryModel{
-			conn: conn,
+			pool: pool,
 		}
 	}
 
@@ -50,13 +51,13 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32, page int) ([]entity_p
 		WHERE ie.entry_id IS NULL AND e.farm = @userFarm
 	`
 	var totalEntries int
-	countRow := em.conn.QueryRow(context.Background(), countQuery, pgx.NamedArgs{"userFarm": farm})
+	countRow := em.pool.QueryRow(context.Background(), countQuery, pgx.NamedArgs{"userFarm": farm})
 	if err := countRow.Scan(&totalEntries); err != nil {
 		fmt.Printf("\n countErr: %v\n", err.Error())
 		return nil, 0, &model_error.ModelError{Message: err.Error()}
 	}
 
-	rows, queryErr := em.conn.Query(context.Background(), `
+	rows, queryErr := em.pool.Query(context.Background(), `
 		SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate, e.farm
 			FROM entry e
 			JOIN field f ON e.field = f.id
@@ -83,7 +84,8 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32, page int) ([]entity_p
 }
 
 func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.DisplayEntryDraft, *model_error.ModelError) {
-	rows, queryErr := em.conn.Query(context.Background(), `
+
+	rows, queryErr := em.pool.Query(context.Background(), `
 		SELECT ed.id, ed.name, f.name, c.name, ed.vehicle, ed.tare, COALESCE(np.name, lp.fantasyname, lp.companyname, 'Própria') AS origin
 			FROM entry_draft ed
 			JOIN field f ON ed.field = f.id
@@ -97,6 +99,7 @@ func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.Display
 
 	if queryErr != nil {
 		fmt.Printf("\n queryErr: %v\n", queryErr.Error())
+
 		rows.Close()
 		return []entity_public.DisplayEntryDraft{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
@@ -111,7 +114,7 @@ func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.Display
 }
 
 func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft, *model_error.ModelError) {
-	row, queryErr := em.conn.Query(context.Background(), `
+	row, queryErr := em.pool.Query(context.Background(), `
 		SELECT * FROM add_get_entry_draft(@name, @field, @crop, @vehicle, @tare, @farm, @origin)
 		`, pgx.NamedArgs{
 		"name":    ge.Name,
@@ -124,19 +127,17 @@ func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.
 	})
 
 	if queryErr != nil {
-		model_error.Logger(em.conn, queryErr.Error())
 		return entity_public.DisplayEntryDraft{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
 	entry, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.DisplayEntryDraft])
 	if collectErr != nil {
-		model_error.Logger(em.conn, collectErr.Error())
 		return entity_public.DisplayEntryDraft{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
 	return entry, nil
 }
 func (em *entryModel) GetEntryDraft(id uint32) (entity_public.EntryDraft, *model_error.ModelError) {
-	row, queryErr := em.conn.Query(context.Background(), `
+	row, queryErr := em.pool.Query(context.Background(), `
 		SELECT ed.*, edo.person_id AS origin
 			FROM entry_draft ed
 			JOIN field f ON ed.field = f.id
@@ -145,12 +146,10 @@ func (em *entryModel) GetEntryDraft(id uint32) (entity_public.EntryDraft, *model
 			WHERE ed.id = @id;
 		`, pgx.NamedArgs{"id": id})
 	if queryErr != nil {
-		model_error.Logger(em.conn, queryErr.Error())
 		return entity_public.EntryDraft{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 	draft, collectErr := pgx.CollectExactlyOneRow(row, pgx.RowToStructByPos[entity_public.EntryDraft])
 	if collectErr != nil {
-		model_error.Logger(em.conn, collectErr.Error())
 		if errors.Is(collectErr, pgx.ErrNoRows) {
 			return entity_public.EntryDraft{}, &model_error.ModelError{Message: "Rascunho não encontrado"}
 		}
@@ -160,7 +159,7 @@ func (em *entryModel) GetEntryDraft(id uint32) (entity_public.EntryDraft, *model
 }
 
 func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-	row, queryErr := em.conn.Query(context.Background(), `
+	row, queryErr := em.pool.Query(context.Background(), `
 		SELECT * FROM add_get_entry(@field, @crop, @grossWeight, @tare, @humidity, @vehicle, @netWeight, @arrivalDate, @farm, @damage, @impurity, @origin)
 		`, pgx.NamedArgs{
 		"field":       ge.Field,
@@ -178,40 +177,37 @@ func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.DisplayEnt
 	})
 
 	if queryErr != nil {
-		model_error.Logger(em.conn, queryErr.Error())
 		return entity_public.DisplayEntry{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
 	entry, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.DisplayEntry])
 	if collectErr != nil {
-		model_error.Logger(em.conn, collectErr.Error())
 		return entity_public.DisplayEntry{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
 	return entry, nil
 }
 
 func (em *entryModel) DeleteEntryDraft(id uint32) error {
-	_, err := em.conn.Exec(context.Background(), "DELETE FROM entry_draft WHERE id = @draftId", pgx.NamedArgs{"draftId": id})
+	_, err := em.pool.Exec(context.Background(), "DELETE FROM entry_draft WHERE id = @draftId", pgx.NamedArgs{"draftId": id})
 
 	if err != nil {
-		model_error.Logger(em.conn, err.Error())
 	}
 
 	return nil
 }
 
 func (em *entryModel) DeleteEntry(id uint32) error {
-	_, err := em.conn.Exec(context.Background(), "INSERT INTO inactive_entry (entry_id) VALUES (@entryId)", pgx.NamedArgs{"entryId": id})
+	_, err := em.pool.Exec(context.Background(), "INSERT INTO inactive_entry (entry_id) VALUES (@entryId)", pgx.NamedArgs{"entryId": id})
 
 	if err != nil {
-		model_error.Logger(em.conn, err.Error())
 	}
 
 	return nil
 }
 
 func (em *entryModel) GetEntry(id uint32) (entity_public.Entry, *model_error.ModelError) {
-	rows, queryErr := em.conn.Query(context.Background(), "SELECT e.id, e.field, e.crop, e.vehicle, e.grossweight, e.tare, e.netweight, ea.humidity, ea.damage, ea.impurity, e.arrivaldate, e.farm, eo.person_id FROM entry e LEFT JOIN entry_analysis ea ON ea.entryid = e.id LEFT JOIN entry_origin eo ON eo.entry_id = e.id WHERE e.id = @id", pgx.NamedArgs{"id": id})
+
+	rows, queryErr := em.pool.Query(context.Background(), "SELECT e.id, e.field, e.crop, e.vehicle, e.grossweight, e.tare, e.netweight, ea.humidity, ea.damage, ea.impurity, e.arrivaldate, e.farm, eo.person_id FROM entry e LEFT JOIN entry_analysis ea ON ea.entryid = e.id LEFT JOIN entry_origin eo ON eo.entry_id = e.id WHERE e.id = @id", pgx.NamedArgs{"id": id})
 	if queryErr != nil {
 		return entity_public.Entry{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
@@ -224,7 +220,8 @@ func (em *entryModel) GetEntry(id uint32) (entity_public.Entry, *model_error.Mod
 }
 
 func (em *entryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_error.ModelError) {
-	rows, queryErr := em.conn.Query(
+
+	rows, queryErr := em.pool.Query(
 		context.Background(),
 		`SELECT
 			e.id,
@@ -246,7 +243,8 @@ func (em *entryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_err
 			fa.neighborhood as farm_neighborhood,
 			fa.city as farm_city,
 			fa.state as farm_state,
-			person_union.name as origin
+			COALESCE(person_union.name, 'Pŕopria') as origin,
+			COALESCE(person_union.document, f.inscricao_estadual) AS document
 		FROM entry e
 		LEFT JOIN entry_analysis ea ON ea.entryid = e.id
 		JOIN field fi ON fi.id = e.field
@@ -257,9 +255,9 @@ func (em *entryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_err
 		LEFT JOIN farm_address fa ON fa.farm_id = f.id
 		LEFT JOIN entry_origin eo ON eo.entry_id = e.id
 		LEFT JOIN (
-			SELECT lp.personid, COALESCE(lp.fantasyname, lp.companyname) AS name FROM legal_person lp
+			SELECT lp.personid, COALESCE(lp.fantasyname, lp.companyname) AS name, lp.cnpj AS document FROM legal_person lp
 			UNION ALL
-			SELECT np.personid, np.name FROM natural_person np
+			SELECT np.personid, np.name, np.cpf AS document FROM natural_person np
 		) person_union ON person_union.personid = eo.person_id
 	 	WHERE e.id = @id`,
 		pgx.NamedArgs{"id": id},
@@ -277,7 +275,7 @@ func (em *entryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_err
 }
 
 func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-	row, queryErr := em.conn.Query(
+	row, queryErr := em.pool.Query(
 		context.Background(),
 		`SELECT * FROM update_get_display_entry(@field, @crop, @grossWeight, @tare, @humidity, @id, @vehicle, @netWeight, @arrivalDate, @damage, @impurity)`,
 		pgx.NamedArgs{
@@ -295,13 +293,11 @@ func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.DisplayEnt
 		})
 
 	if queryErr != nil {
-		model_error.Logger(em.conn, queryErr.Error())
 		return entity_public.DisplayEntry{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
 	entry, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.DisplayEntry])
 	if collectErr != nil {
-		model_error.Logger(em.conn, collectErr.Error())
 		return entity_public.DisplayEntry{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
 	return entry, nil
@@ -349,15 +345,13 @@ func (em *entryModel) FilterEntries(ef entity_public.EntryFilter) ([]entity_publ
 		stmt += "\nAND " + filter(ef)
 	}
 
-	rows, queryErr := em.conn.Query(context.Background(), stmt)
+	rows, queryErr := em.pool.Query(context.Background(), stmt)
 	if queryErr != nil {
-		model_error.Logger(em.conn, queryErr.Error())
 		return []entity_public.DisplayEntry{}, queryErr
 	}
 
 	entries, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.DisplayEntry])
 	if collectErr != nil {
-		model_error.Logger(em.conn, collectErr.Error())
 		return []entity_public.DisplayEntry{}, collectErr
 	}
 

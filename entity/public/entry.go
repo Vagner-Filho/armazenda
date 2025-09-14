@@ -24,9 +24,7 @@ type Entry struct {
 	Tare        float64   `form:"tare" binding:"required"`
 	NetWeight   float64   `form:"netWeight" binding:"gte=0"`*/
 	CargoWeight
-	Humidity    *float32  `form:"humidity"`
-	Damage      *float32  `form:"damage"`
-	Impurity    *float32  `form:"impurity,omitempty"`
+	Analysis
 	ArrivalDate time.Time `form:"arrivalDate" binding:"required" time_format:"2006-01-02T15:04"`
 	Farm        uint32    `form:"farm" binding:"gte=0"`
 	Origin      *uint32   `form:"origin,omitempty"`
@@ -34,6 +32,7 @@ type Entry struct {
 
 func (e Entry) ToDTO() EntryDTO {
 	cargo := e.CargoWeight.ToDTO()
+	analysis := e.Analysis.ToDTO()
 	return EntryDTO{
 		Id:             e.Id,
 		ArrivalDate:    e.ArrivalDate,
@@ -42,9 +41,7 @@ func (e Entry) ToDTO() EntryDTO {
 		CargoWeightDTO: cargo,
 		Farm:           e.Farm,
 		Field:          e.Field,
-		Humidity:       e.Humidity,
-		Damage:         e.Damage,
-		Impurity:       e.Impurity,
+		AnalysisDTO:    analysis,
 	}
 }
 
@@ -57,15 +54,14 @@ type EntryDTO struct {
 	Tare        float64   `form:"tare" binding:"required"`
 	NetWeight   float64   `form:"netWeight" binding:"gte=0"`*/
 	CargoWeightDTO
-	Humidity    *float32  `form:"humidity" binding:"required"`
-	Damage      *float32  `form:"damage" binding:"required"`
-	Impurity    *float32  `form:"impurity" binding:"required"`
+	AnalysisDTO
 	ArrivalDate time.Time `form:"arrivalDate" binding:"required" time_format:"2006-01-02T15:04"`
 	Farm        uint32    `form:"farm" binding:"gte=0"`
 }
 
 func (dto EntryDTO) ToEntity() Entry {
 	cargo := dto.CargoWeightDTO.ToEntity()
+	analysis, _ := dto.AnalysisDTO.ToEntity()
 	return Entry{
 		Id:          dto.Id,
 		ArrivalDate: dto.ArrivalDate,
@@ -74,9 +70,7 @@ func (dto EntryDTO) ToEntity() Entry {
 		CargoWeight: cargo,
 		Farm:        dto.Farm,
 		Field:       dto.Field,
-		Humidity:    dto.Humidity,
-		Damage:      dto.Damage,
-		Impurity:    dto.Impurity,
+		Analysis:    analysis,
 	}
 }
 
@@ -122,9 +116,7 @@ type EntryPdf struct {
 	Safra        string
 	VehiclePlate string
 	CargoWeight
-	Humidity          *float32
-	Damage            *float32
-	Impurity          *float32
+	AnalysisDTO
 	ArrivalDate       time.Time `time_format:"2006-01-02T15:04"`
 	InscricaoEstadual string
 	Produto           string
@@ -136,4 +128,5 @@ type EntryPdf struct {
 	FarmCity          *string
 	FarmState         *string
 	Origin            *string
+	Document          string
 }

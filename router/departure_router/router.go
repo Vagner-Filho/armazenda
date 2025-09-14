@@ -294,6 +294,18 @@ func deleteDepartureDraft(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+func getDepartureDraftList(c *gin.Context) {
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	drafts, toast := departure_view.GetDepartureDrafts(farm)
+
+	if toast != nil {
+		c.Header("HX-Trigger", string(toast.ToJson()))
+	}
+
+	c.HTML(http.StatusOK, "departure-draft-table", drafts)
+}
+
 func UseDepartureRoutes(router *gin.Engine) {
 	router.POST("/departure/filter", filterDepartures)
 	router.GET("/departure/list", getDepartureContent)
@@ -305,6 +317,7 @@ func UseDepartureRoutes(router *gin.Engine) {
 	router.DELETE("/departure/:id", deleteDeparture)
 	router.GET("/departure/pdf/:id", getDeparturePdf)
 
+	router.GET("/departure/draft/list", getDepartureDraftList)
 	router.GET("/departure/draft/form", getDepartureDraftForm)
 	router.GET("/departure/draft/form/:id", getDepartureDraftForm)
 	router.POST("/departure/draft", addDepartureDraft)

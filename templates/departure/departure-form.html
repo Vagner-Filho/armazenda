@@ -1,16 +1,16 @@
 {{ block "departure-form" . }}
-<dialog id="departure-form-dialog" class="rounded-md w-full max-w-3xl bg-stone-100">
+<dialog id="departure-form-dialog" class="rounded-md w-full max-w-5xl bg-stone-100">
     <div class="p-4 relative">
         {{ template "close-dialog-btn" "dialog#departure-form-dialog" }}
         <header class="text-center mb-4">
-            <h1 class="text-2xl font-bold text-slate-700">
+            <h1 class="text-xl lg:text-2xl font-bold text-slate-700">
                 {{ if .Departure.Id }}
                 Editando Saída
                 {{ else }}
                 Nova Saída
                 {{ end }}
             </h1>
-            <p class="text-gray-600 mt-2">
+            <p class="text-sm lg:text-base text-gray-600 mt-2">
                 {{ if .Departure.Id }}
                 Atualize os detalhes deste registro de saída.
                 {{ else }}
@@ -25,50 +25,80 @@
                 <legend class="fieldset-legend">
                     Identificação
                 </legend>
-                {{ template "crop-selector" . }}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {{ template "crop-selector" . }}
 
-                <div class="flex flex-col-reverse w-full relative pr-[30px]">
-                    {{ template "person-selector" . }}
-                    <label for="person-selector" class="label-peer">
-                        Destino
-                    </label>
-                </div>
-                <div class="flex flex-col-reverse">
-                    <input type="number" name="grossWeight" id="grossWeight" class="peer" {{ if ne
-                        .Departure.GrossWeight 0.0 }} value="{{ .Departure.GrossWeight }}" {{ end }} required>
-                    <label for="grossWeight" class="label-peer">
-                        Peso Bruto
-                    </label>
-                </div>
-                <div class="flex flex-col-reverse">
-                    <input type="number" name="tare" id="tare" class="peer" {{ if ne .Departure.Tare 0.0 }}
-                        value="{{ .Departure.Tare }}" {{ end }} required>
-                    <label for="tare" class="label-peer">
-                        Tara
-                    </label>
-                </div>
-                <div class="flex flex-col-reverse">
-                    <input type="number" name="netWeight" id="netWeight" class="peer cursor-not-allowed" {{ if ne
-                        .Departure.NetWeight 0.0 }} value="{{ .Departure.NetWeight }}" {{ end }} readonly min="0"
-                        required>
-                    <label for="netWeight" class="label-peer">
-                        Peso Líquido (preenchimento automático)
-                    </label>
+                    <div class="flex flex-col-reverse w-full relative pr-[30px]">
+                        {{ template "person-selector" . }}
+                        <label for="person-selector" class="label-peer">
+                            Destino
+                        </label>
+                    </div>
                 </div>
             </fieldset>
-            <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
-                <legend class="fieldset-legend">
-                    Saída
-                </legend>
-                {{ template "vehicle-selector" . }}
-                <div class="flex flex-col-reverse">
-                    <input type="datetime-local" name="departureDate" id="departure-input" class="peer"
-                        value="{{ .Departure.DepartureDate }}" required>
-                    <label for="departure-input" class="label-peer">
-                        Data de Saída
-                    </label>
-                </div>
-            </fieldset>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
+                    <legend class="fieldset-legend">
+                        Saída
+                    </legend>
+                    {{ template "vehicle-selector" . }}
+                    <div class="flex flex-col-reverse">
+                        <input type="number" name="grossWeight" id="grossWeight" class="peer" {{ if ne
+                            .Departure.GrossWeight 0.0 }} value="{{ .Departure.GrossWeight }}" {{ end }} required>
+                        <label for="grossWeight" class="label-peer">
+                            Peso Bruto
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="number" name="tare" id="tare" class="peer" {{ if ne .Departure.Tare 0.0 }}
+                            value="{{ .Departure.Tare }}" {{ end }} required>
+                        <label for="tare" class="label-peer">
+                            Tara
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="number" name="netWeight" id="netWeight" class="peer cursor-not-allowed" {{ if ne
+                            .Departure.NetWeight 0.0 }} value="{{ .Departure.NetWeight }}" {{ end }} readonly min="0"
+                            required>
+                        <label for="netWeight" class="label-peer">
+                            Peso Líquido (preenchimento automático)
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="datetime-local" name="departureDate" id="departure-input" class="peer"
+                            value="{{ .Departure.DepartureDate }}" required>
+                        <label for="departure-input" class="label-peer">
+                            Data de Saída
+                        </label>
+                    </div>
+                </fieldset>
+                <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
+                    <legend class="fieldset-legend">
+                        Análise
+                    </legend>
+                    <div class="flex flex-col-reverse">
+                        <input type="number" step="0.01" min="0" max="100" name="humidity" id="humidity" class="peer"
+                            value="{{ .Departure.Humidity }}">
+                        <label for="humidity" class="label-peer">
+                            % Umidade (opcional)
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="number" step="0.01" min="0" max="100" name="damage" id="damage" class="peer"
+                            value="{{ .Departure.Damage }}">
+                        <label for="damage" class="label-peer">
+                            % Avariado (opcional)
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="number" step="0.01" min="0" max="100" name="impurity" id="impurity" class="peer"
+                            value="{{ .Departure.Impurity }}">
+                        <label for="impurity" class="label-peer">
+                            % Impureza (opcional)
+                        </label>
+                    </div>
+                </fieldset>
+            </div>
             <div class="flex items-center justify-around mt-2 w-52 mx-auto" id="btns-container">
                 <button class="cancel-btn" type="button" onclick="closeDepartureForm()">Cancelar</button>
                 <button class="add-btn" type="submit">
@@ -80,6 +110,7 @@
     </div>
 
     <script type="module">
+        import {removeEmptyFields} from "/public/assets/js/form.js";
         import {formatDateToInput} from "/public/assets/js/date.js"
         const dateVal = formatDateToInput({{ .Departure.DepartureDate}})
         const dialogEl = document.querySelector("#departure-form-dialog")
@@ -119,6 +150,9 @@
                 })
             }
         }
+        document.body.addEventListener('htmx:configRequest', function (evt) {
+            evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
+        });
     </script>
     <style>
         .htmx-indicator {
