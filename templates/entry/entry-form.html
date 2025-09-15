@@ -199,6 +199,13 @@
             selector.addEventListener('change', function (evt) {
                 setPersonConfig(evt.target);
             });
+            const option = selector.querySelector('option[selected]')
+
+            if (option && option.dataset.humidity) {
+                sessionStorage.setItem('personConfig', JSON.stringify({
+                    humidityDiscount: option.dataset.humidity
+                }));
+            }
         }
     </script>
     <style>
