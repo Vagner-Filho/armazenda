@@ -1302,6 +1302,19 @@
       }
     }
   }
+  .after\:ml-auto {
+    &::after {
+      content: var(--tw-content);
+      margin-left: auto;
+    }
+  }
+  .after\:content-\[attr\(data-discounted\)\] {
+    &::after {
+      content: var(--tw-content);
+      --tw-content: attr(data-discounted);
+      content: var(--tw-content);
+    }
+  }
   .hover\:bg-gray-50 {
     &:hover {
       @media (hover: hover) {
@@ -1704,13 +1717,9 @@
 }
 @layer base {
   label {
-    height: calc(var(--spacing) * 4);
     font-size: var(--text-lg);
     line-height: var(--tw-leading, var(--text-lg--line-height));
     color: var(--color-gray-500);
-    @media (width >= 64rem) {
-      height: calc(var(--spacing) * 7);
-    }
   }
   input, select {
     height: calc(var(--spacing) * 8);

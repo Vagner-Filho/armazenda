@@ -41,7 +41,7 @@
 
 @layer base {
     label {
-        @apply text-gray-500 h-4 lg:h-7 text-lg
+        @apply text-gray-500 text-lg
     }
 
     input,

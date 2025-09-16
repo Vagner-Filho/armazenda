@@ -31,6 +31,13 @@ function getHumidityDiscount(humidity, gross, tare, h_discount) {
 		return 0;
 	}
 
+	if (humidityInput instanceof HTMLInputElement) {
+		const label = humidityInput.nextElementSibling;
+		if (label instanceof HTMLLabelElement) {
+			label.dataset.discounted = "Peso descontado: " + ((rawNetWeight * discount) / 100).toFixed(2);
+		}
+	}
+
 	return (rawNetWeight * discount) / 100;
 }
 
