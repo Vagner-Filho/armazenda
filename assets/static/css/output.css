@@ -444,6 +444,9 @@
   .h-dvh {
     height: 100dvh;
   }
+  .h-fit {
+    height: fit-content;
+  }
   .h-full {
     height: 100%;
   }
@@ -1029,6 +1032,9 @@
   .whitespace-nowrap {
     white-space: nowrap;
   }
+  .text-\[\#468000\] {
+    color: #468000;
+  }
   .text-amber-500 {
     color: var(--color-amber-500);
   }
@@ -1300,12 +1306,6 @@
         --tw-content: '-';
         content: var(--tw-content);
       }
-    }
-  }
-  .after\:ml-auto {
-    &::after {
-      content: var(--tw-content);
-      margin-left: auto;
     }
   }
   .after\:content-\[attr\(data-discounted\)\] {

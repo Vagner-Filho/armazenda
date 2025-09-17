@@ -32,9 +32,9 @@ function getHumidityDiscount(humidity, gross, tare, h_discount) {
 	}
 
 	if (humidityInput instanceof HTMLInputElement) {
-		const label = humidityInput.nextElementSibling;
-		if (label instanceof HTMLLabelElement) {
-			label.dataset.discounted = "Peso descontado: " + ((rawNetWeight * discount) / 100).toFixed(2);
+		const label = humidityInput.previousElementSibling;
+		if (label instanceof HTMLElement) {
+			label.textContent = "Peso descontado: " + ((rawNetWeight * discount) / 100).toFixed(2);
 		}
 	}
 
@@ -59,6 +59,13 @@ function getDamageDiscount(damage, gross, tare) {
 		return 0;
 	}
 
+	if (damageInput instanceof HTMLInputElement) {
+		const label = damageInput.previousElementSibling;
+		if (label instanceof HTMLElement) {
+			label.textContent = "Peso descontado: " + ((rawNetWeight * exceedingDamage) / 100).toFixed(2);
+		}
+	}
+
 	return (rawNetWeight * exceedingDamage) / 100;
 }
 
@@ -78,6 +85,13 @@ function getImpurityDiscount(impurity, gross, tare) {
 	const rawNetWeight = gross && tare ? gross - tare : parseFloat(netWeightInput.dataset.raw);
 	if (isNaN(rawNetWeight) || rawNetWeight <= 0) {
 		return 0;
+	}
+
+	if (impurityInput instanceof HTMLInputElement) {
+		const label = impurityInput.previousElementSibling;
+		if (label instanceof HTMLElement) {
+			label.textContent = "Peso descontado: " + ((rawNetWeight * exceedingImpurity) / 100).toFixed(2);
+		}
 	}
 
 	return (rawNetWeight * exceedingImpurity) / 100;
