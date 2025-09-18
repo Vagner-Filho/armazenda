@@ -3,6 +3,9 @@ package entry_service
 import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/entry_model"
+	"armazenda/model/person_model"
+
+	"github.com/shopspring/decimal"
 )
 
 func AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft, entity_public.Toast) {
@@ -36,9 +39,40 @@ func GetEntryDraft(id uint32) (entity_public.EntryDraft, *entity_public.Toast) {
 func AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public.Toast) {
 	eModel := entry_model.GetEntryModel()
 
-	if ge.NetWeight.IsZero() == true {
-		ge.NetWeight = ge.CargoWeight.GrossWeight.Sub(ge.Tare)
+	damageThreshold := decimal.NewFromInt(8)
+	impurityThreshold := decimal.NewFromInt(1)
+	humidityThreshold := decimal.NewFromInt(14)
+	base100 := decimal.NewFromInt(100)
+	var totalDiscount decimal.Decimal
+
+	rawNetWeight := ge.CargoWeight.GrossWeight.Sub(ge.Tare)
+	if ge.Damage != nil {
+		exceedingDamage := ge.Damage.Sub(damageThreshold)
+		if exceedingDamage.GreaterThan(decimal.Zero) {
+			totalDiscount = totalDiscount.Add(rawNetWeight.Mul(exceedingDamage).Div(base100))
+		}
 	}
+	if ge.Impurity != nil {
+		exceedingImpurity := ge.Impurity.Sub(impurityThreshold)
+		if exceedingImpurity.GreaterThan(decimal.Zero) {
+			totalDiscount = totalDiscount.Add(rawNetWeight.Mul(exceedingImpurity).Div(base100))
+		}
+	}
+	if ge.Humidity != nil {
+		exceedingHumidty := ge.Humidity.Sub(humidityThreshold)
+		if exceedingHumidty.GreaterThan(decimal.Zero) {
+			pm := person_model.GetpersonModel()
+			discountModifier, humErr := pm.GetHumidityDiscount(ge.Origin, ge.Farm)
+			if humErr != nil {
+				toast := entity_public.GetWarningToast("Falha ao calcular desconto de humidade", "")
+				return entity_public.DisplayEntry{}, toast
+			} else {
+				discount := exceedingHumidty.Mul(discountModifier)
+				totalDiscount = totalDiscount.Add(rawNetWeight.Mul(discount).Div(base100))
+			}
+		}
+	}
+	ge.NetWeight = rawNetWeight.Sub(totalDiscount)
 
 	newEntry, addErr := eModel.AddEntry(ge)
 	if addErr != nil {

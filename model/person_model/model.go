@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/shopspring/decimal"
 )
 
 type personModel struct {
@@ -256,4 +257,23 @@ func (bm *personModel) CpfExistsInFarm(cpf string, farmId uint32) (bool, *model_
 	}
 
 	return exists, nil
+}
+
+func (bm *personModel) GetHumidityDiscount(person *uint32, farm uint32) (decimal.Decimal, *model_error.ModelError) {
+	var discountModifier decimal.Decimal
+	var err error
+	if person != nil {
+		err = bm.pool.QueryRow(context.Background(), `
+		SELECT pc.humidity_discount FROM person_config pc WHERE pc.person_id = @person
+		`, pgx.NamedArgs{"person": person}).Scan(&discountModifier)
+	} else {
+		err = bm.pool.QueryRow(context.Background(), `
+		SELECT COALESCE(fc.humidity_discount, 1.15) AS humidity_discount FROM farm_config fc WHERE fc.farm_id = @farm
+		`, pgx.NamedArgs{"farm": farm}).Scan(&discountModifier)
+	}
+
+	if err != nil {
+		return discountModifier, &model_error.ModelError{Message: err.Error()}
+	}
+	return discountModifier, nil
 }
