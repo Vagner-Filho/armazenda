@@ -41,7 +41,7 @@
 
 @layer base {
     label {
-        @apply text-gray-500 text-lg
+        @apply text-gray-500
     }
 
     input,
@@ -65,11 +65,7 @@
 }
 
 @utility label-peer {
-    @apply peer-focus:text-green-600 peer-focus:font-bold transition-all duration-300 ease-linear px-2 text-xs lg:text-sm
-}
-
-@utility text-xs {
-    font-size: 12px;
+    @apply peer-focus:text-green-600 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider
 }
 
 @utility btn-shape {

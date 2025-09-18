@@ -1,3 +1,5 @@
+import { formatWeight } from "./weight.js";
+
 const HUMIDITY_THRESHOLD = 14;
 const DAMAGE_THRESHOLD = 8;
 const IMPURITY_THRESHOLD = 1;
@@ -116,6 +118,6 @@ export function applyDiscounts() {
 	if (finalNetWeight < 0) {
 		netWeightInput.value = '0';
 	} else {
-		netWeightInput.value = finalNetWeight.toFixed(2);
+		netWeightInput.value = formatWeight(finalNetWeight.toFixed(2));
 	}
 }
