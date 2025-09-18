@@ -1,3 +1,6 @@
+import { formatDateToDisplay } from "./date.js"
+import { formatWeight } from "./weight.js"
+
 /**
  * fetches an entry and generates a pdf with the received entry html.
  * if the session cookie is not valid, redirects user to loign
@@ -17,6 +20,19 @@ function getEntryPdf(element) {
 					.then((htmlText) => {
 						const parser = new DOMParser();
 						const html = parser.parseFromString(htmlText, "text/html")
+
+						const date = html.querySelector('#emission-date')
+						date.textContent = formatDateToDisplay(date.textContent)
+
+						const gross = html.querySelector('#grossWeight')
+						gross.textContent = formatWeight(gross.textContent)
+
+						const tare = html.querySelector('#tare')
+						tare.textContent = formatWeight(tare.textContent)
+
+						const netWeight = html.querySelector('#netWeight')
+						netWeight.textContent = formatWeight(netWeight.textContent)
+
 						document.body.append(html.body.firstElementChild)
 						function removePdf() {
 							const pdf = document.querySelector(`#entry-pdf`)
