@@ -360,6 +360,12 @@
   .my-8 {
     margin-block: calc(var(--spacing) * 8);
   }
+  .my-\[10vh\] {
+    margin-block: 10vh;
+  }
+  .my-\[20vh\] {
+    margin-block: 20vh;
+  }
   .my-auto {
     margin-block: auto;
   }
@@ -581,9 +587,6 @@
   }
   .shrink-0 {
     flex-shrink: 0;
-  }
-  .flex-grow {
-    flex-grow: 1;
   }
   .grow {
     flex-grow: 1;

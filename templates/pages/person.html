@@ -1,16 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/public/assets/static/css/output.css" rel="stylesheet">
-    <link rel="icon" type="image/x-icon" href="/public/assets/favicon.ico">
-    <title>Pessoa - Armazenda</title>
-    <script src="https://unpkg.com/htmx.org@2.0.0" integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
-    <script type="module" src="/public/assets/js/toast.js"></script>
-  </head>
-  <body class="bg-sky-50">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="/public/assets/static/css/output.css" rel="stylesheet">
+  <link rel="icon" type="image/x-icon" href="/public/assets/favicon.ico">
+  <title>Pessoa - Armazenda</title>
+  <script src="https://unpkg.com/htmx.org@2.0.0"
+    integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
+  <script type="module" src="/public/assets/js/toast.js"></script>
+</head>
+
+<body class="bg-sky-50">
   {{ template "navbar" }}
   {{ template "menu" "pessoa" }}
   <section class="mt-20 pl-12 sm:pl-2 px-2 max-w-screen-xl mx-auto">
@@ -22,7 +26,6 @@
         Gerencie as pessoas cadastradas no sistema.
       </p>
     </header>
-
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       {{ range .Stats }}
       <div class="bg-white p-4 rounded-lg shadow-md">
@@ -32,16 +35,17 @@
       </div>
       {{ end }}
     </div>
-
-    <div class="bg-white shadow-md rounded-lg p-4">
+    {{ if .NoContent }}
+    {{ template "no-person"}}
+    {{ end }}
+    <div class="{{ if .NoContent }}hidden {{ end }}bg-white shadow-md rounded-lg p-4">
       <div class="flex justify-end mb-4">
-        <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/person/form"
-          hx-target="body" hx-swap="beforeend">
+        <button id="form" type="button" class="add-btn flex items-center gap-1" hx-get="/person/form" hx-target="body"
+          hx-swap="beforeend">
           <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
           Nova Pessoa
         </button>
       </div>
-
       {{ block "people-table" . }}
       <div id="people-table">
         <div class="overflow-hidden">
@@ -68,37 +72,32 @@
             </tbody>
           </table>
         </div>
-
         {{ if gt .TotalPages 1 }}
         <div class="flex justify-center items-center mt-4" id="pagination-controls">
           {{ if .HasPrevPage }}
-          <button
-             hx-get="/pessoa?page={{ .PrevPage }}"
-             hx-target="#people-table"
-             hx-swap="outerHTML"
-             class="px-4 py-2 mx-1 text-gray-700 capitalize bg-white rounded-md border border-gray-200 hover:bg-gray-100">
+          <button hx-get="/pessoa?page={{ .PrevPage }}" hx-target="#people-table" hx-swap="outerHTML"
+            class="px-4 py-2 mx-1 text-gray-700 capitalize bg-white rounded-md border border-gray-200 hover:bg-gray-100">
             Anterior
           </button>
           {{ else }}
-          <button class="px-4 py-2 mx-1 text-gray-500 capitalize bg-gray-100 rounded-md border border-gray-200 cursor-not-allowed" disabled>
+          <button
+            class="px-4 py-2 mx-1 text-gray-500 capitalize bg-gray-100 rounded-md border border-gray-200 cursor-not-allowed"
+            disabled>
             Anterior
           </button>
           {{ end }}
-
           <span class="px-4 py-2 mx-1 text-gray-700">
             Página {{ .CurrentPage }} de {{ .TotalPages }}
           </span>
-
           {{ if .HasNextPage }}
-          <button
-             hx-get="/pessoa?page={{ .NextPage }}"
-             hx-target="#people-table"
-             hx-swap="outerHTML"
-             class="px-4 py-2 mx-1 text-gray-700 capitalize bg-white rounded-md border border-gray-200 hover:bg-gray-100">
+          <button hx-get="/pessoa?page={{ .NextPage }}" hx-target="#people-table" hx-swap="outerHTML"
+            class="px-4 py-2 mx-1 text-gray-700 capitalize bg-white rounded-md border border-gray-200 hover:bg-gray-100">
             Próxima
           </button>
           {{ else }}
-          <button class="px-4 py-2 mx-1 text-gray-500 capitalize bg-gray-100 rounded-md border border-gray-200 cursor-not-allowed" disabled>
+          <button
+            class="px-4 py-2 mx-1 text-gray-500 capitalize bg-gray-100 rounded-md border border-gray-200 cursor-not-allowed"
+            disabled>
             Próxima
           </button>
           {{ end }}
@@ -109,4 +108,5 @@
     </div>
   </section>
 </body>
+
 </html>

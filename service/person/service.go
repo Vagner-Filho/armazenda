@@ -14,6 +14,7 @@ type PersonPageData struct {
 	PrevPage    int
 	HasNextPage bool
 	HasPrevPage bool
+	NoContent   bool
 }
 
 func GetPeopleByFarm(farm uint32) ([]entity_public.PersonOption, *entity_public.Toast) {
@@ -99,7 +100,8 @@ func FilterPerson(filters entity_public.PersonFilter, farm uint32, page, limit i
 
 	if total == 0 {
 		return PersonPageData{
-			People: []entity_public.PersonDisplay{},
+			People:    []entity_public.PersonDisplay{},
+			NoContent: true,
 		}, nil
 	}
 
@@ -113,5 +115,6 @@ func FilterPerson(filters entity_public.PersonFilter, farm uint32, page, limit i
 		PrevPage:    page - 1,
 		HasNextPage: page < totalPages,
 		HasPrevPage: page > 1,
+		NoContent:   page == 0 && len(people) == 0,
 	}, nil
 }

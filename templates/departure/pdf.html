@@ -1,5 +1,5 @@
 {{ block "departure-pdf" . }}
-<div class="hidden flex-col print:flex" id="departure-pdf">
+<div class="hidden flex-col print:flex h-dvh" id="departure-pdf">
     <div class="text-xl font-bold text-center" style="margin-bottom: 12px;">
         Romaneio de Saída
     </div>
@@ -181,6 +181,14 @@
             <div class="">
                 {{ if .Impurity }}{{ .Impurity }}%{{ else }}N/A{{ end }}
             </div>
+        </div>
+    </div>
+    <div class="flex justify-between mt-auto" style="text-align: left; font-size: 1rem; width: 100%;">
+        <div class="border-t border-black w-1/4">
+            OPERADOR
+        </div>
+        <div class="border-t border-black w-1/4 text-end">
+            MOTORISTA
         </div>
     </div>
     <style>

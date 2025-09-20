@@ -75,11 +75,6 @@ func getPersonPage(c *gin.Context) {
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}
-
-	if toast != nil {
-		c.Header("HX-Trigger", string(toast.ToJson()))
-	}
-
 	pageData := gin.H{
 		"People":      peopleData.People,
 		"CurrentPage": peopleData.CurrentPage,
@@ -88,6 +83,7 @@ func getPersonPage(c *gin.Context) {
 		"PrevPage":    peopleData.PrevPage,
 		"HasNextPage": peopleData.HasNextPage,
 		"HasPrevPage": peopleData.HasPrevPage,
+		"NoContent":   peopleData.NoContent,
 	}
 
 	if c.GetHeader("HX-Request") == "true" {
