@@ -163,7 +163,12 @@ func filterEntries(c *gin.Context) {
 		return
 	}
 
-	entries, toast := entry_service.FilterEntries(entryFilter)
+	page, _ := strconv.Atoi(c.Query("page"))
+	if page < 1 {
+		page = 1
+	}
+
+	entries, total, toast := entry_service.FilterEntries(entryFilter, page)
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}
@@ -173,7 +178,18 @@ func filterEntries(c *gin.Context) {
 		return
 	}
 
-	c.HTML(http.StatusOK, "entry-table", entries)
+	pageSize := 10
+	totalPages := (total + pageSize - 1) / pageSize
+
+	c.HTML(http.StatusOK, "entry-table", gin.H{
+		"Entries":     entries,
+		"TotalPages":  totalPages,
+		"CurrentPage": page,
+		"HasPrev":     page > 1,
+		"PrevPage":    page - 1,
+		"HasNext":     page < totalPages,
+		"NextPage":    page + 1,
+	})
 }
 
 func getEntryFiltersForm(c *gin.Context) {

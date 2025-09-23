@@ -273,6 +273,18 @@ func (bm *personModel) GetHumidityDiscount(person *uint32, farm uint32) (decimal
 	}
 
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			defaultDisc := "1.15"
+			if person != nil {
+				defaultDisc = "1.7"
+			}
+			discountModifier, newDecErr := decimal.NewFromString(defaultDisc)
+			if newDecErr != nil {
+				return discountModifier, &model_error.ModelError{Message: newDecErr.Error()}
+			}
+			return discountModifier, nil
+
+		}
 		return discountModifier, &model_error.ModelError{Message: err.Error()}
 	}
 	return discountModifier, nil

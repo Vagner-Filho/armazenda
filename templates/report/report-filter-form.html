@@ -1,35 +1,9 @@
 {{ block "report-filter-form" . }}
-<form class="flex flex-col sm:flex-row flex-wrap items-start sm:items-end gap-1 justify-center" id="report-filters-form"
-  hx-post="/report/filter" hx-target="#report-content" hx-swap="outerHTML">
-  <select name="person" id="person-selector" class="appearance-none px-2 peer">
-    <option value="" selected>
-      Nenhuma
-    </option>
-    {{ range .People }}
-    <option value="{{ .Id }}">
-      {{ .Name }}
-    </option>
-    {{ end }}
-  </select>
-  {{ template "filter-entry-grain" }}
-  <fieldset class="grid grid-cols-2 gap-1">
-    <legend class="w-full text-center font-medium hidden sm:block text-xs sm:text-sm">
-      Data da operação
-    </legend>
-    <div class="flex flex-col-reverse w-full sm:max-w-40 lg:max-w-44">
-      <input type="datetime-local" id="startDate" name="startDate" class="text-sm peer w-full"
-        aria-placeholder="Data Inicial">
-      <label for="startDate" class="px-2 text-xs label-peer sm:hidden">Data de:</label>
-      <label for="startDate" class="px-2 text-xs label-peer hidden sm:block">de:</label>
-    </div>
-    <div class="flex flex-col-reverse w-full sm:max-w-40 lg:max-w-44">
-      <input type="datetime-local" id="endDate" name="endDate" class="text-sm peer w-full"
-        aria-placeholder="Data Final">
-      <label for="endDate" class="px-2 text-xs label-peer sm:hidden">Data até:</label>
-      <label for="endDate" class="px-2 text-xs label-peer hidden sm:block">até:</label>
-    </div>
-  </fieldset>
-  {{ template "filter-entry-netweight" }}
-  {{ template "filter-entry-vehicle" .Vehicles }}
+<form class="flex flex-col sm:flex-row flex-wrap items-start gap-1 justify-start" id="report-filters-form" hx-post="/report/filter" hx-target="#report-content" hx-swap="outerHTML">
+  {{ template "filter-report-person" . }}
+    {{ template "filter-entry-grain" }}
+    {{ template "filter-report-date" }}
+    {{ template "filter-entry-netweight" }}
+    {{ template "filter-entry-vehicle" .Vehicles }}
 </form>
 {{ end }}

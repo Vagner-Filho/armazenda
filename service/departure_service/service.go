@@ -75,6 +75,18 @@ func DeleteDeparture(id uint32) *entity_public.Toast {
 	return &toast
 }
 
+func FilterDepartures(df entity_public.DepartureFilter, page int) ([]entity_public.DisplayDeparture, int, *entity_public.Toast) {
+	dModel := departure_model.GetDepartureModel()
+	departures, total, err := dModel.FilterDepartures(df, page)
+
+	if err != nil {
+		toast := entity_public.GetWarningToast("Falha ao filtrar saídas", "")
+		return departures, 0, &toast
+	}
+
+	return departures, total, nil
+}
+
 func GetDeparturePdf(id uint32) (*entity_public.DeparturePdf, *entity_public.Toast) {
 	eModel := departure_model.GetDepartureModel()
 

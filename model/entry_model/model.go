@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -330,30 +331,55 @@ var availableEntryFilters = map[string]func(ef entity_public.EntryFilter) string
 	},
 }
 
-func (em *entryModel) FilterEntries(ef entity_public.EntryFilter) ([]entity_public.DisplayEntry, error) {
+func (em *entryModel) FilterEntries(ef entity_public.EntryFilter, page int) ([]entity_public.DisplayEntry, int, error) {
 	filters := ef.GetFilters(availableEntryFilters)
+	pageSize := 10
+	offset := (page - 1) * pageSize
 
-	stmt := `SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate, e.farm
+	whereClauses := []string{"ie.entry_id IS NULL"}
+	for _, filter := range filters {
+		whereClauses = append(whereClauses, filter(ef))
+	}
+	whereCondition := strings.Join(whereClauses, " AND ")
+
+	countQuery := `SELECT COUNT(*)
 			FROM entry e
 			JOIN field f ON e.field = f.id
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
 			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
-			WHERE ie.entry_id IS NULL`
+			WHERE ` + whereCondition
 
-	for _, filter := range filters {
-		stmt += "\nAND " + filter(ef)
+	var totalEntries int
+	countRow := em.pool.QueryRow(context.Background(), countQuery)
+	if err := countRow.Scan(&totalEntries); err != nil {
+		fmt.Printf("\n countErr: %v\n", err.Error())
+		return nil, 0, err
 	}
 
-	rows, queryErr := em.pool.Query(context.Background(), stmt)
+	if totalEntries == 0 {
+		return []entity_public.DisplayEntry{}, 0, nil
+	}
+
+	query := `SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate, e.farm
+			FROM entry e
+			JOIN field f ON e.field = f.id
+			JOIN crop c ON e.crop = c.id
+			JOIN product p ON c.product = p.id
+			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
+			WHERE ` + whereCondition + `
+			ORDER BY e.arrivaldate DESC
+			LIMIT @pageSize OFFSET @offset`
+
+	rows, queryErr := em.pool.Query(context.Background(), query, pgx.NamedArgs{"pageSize": pageSize, "offset": offset})
 	if queryErr != nil {
-		return []entity_public.DisplayEntry{}, queryErr
+		return []entity_public.DisplayEntry{}, 0, queryErr
 	}
 
 	entries, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.DisplayEntry])
 	if collectErr != nil {
-		return []entity_public.DisplayEntry{}, collectErr
+		return []entity_public.DisplayEntry{}, 0, collectErr
 	}
 
-	return entries, nil
+	return entries, totalEntries, nil
 }

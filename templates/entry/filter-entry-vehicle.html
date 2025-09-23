@@ -1,21 +1,21 @@
 {{ block "filter-entry-vehicle" . }}
 <fieldset class="filter-card">
-    <legend class="w-full text-center">
-        <label for="vehicle-filter" class="font-medium text-sm text-inherit">
-            Talhão
-        </label>
-    </legend>
-    <select name="vehiclePlate" id="vehicle-filter" class="w-full text-sm peer">
-        <option value="" selected>
-            Nenhum
-        </option>
-        {{ range . }}
+  <legend class="w-full text-center">
+    <label for="vehicle-filter" class="font-medium text-sm text-inherit">
+      Veículo
+    </label>
+  </legend>
+  <select name="vehiclePlate" id="vehicle-filter" class="w-full text-sm peer">
+    <option value="" selected>
+      Nenhum
+    </option>
+    {{ range . }}
         {{ template "vehicle-option" . }}
         {{ else }}
-        <option value="-1">
-            Nenhum veículo encontrado
-        </option>
-        {{ end }}
-    </select>
+    <option value="-1">
+      Nenhum veículo encontrado
+    </option>
+    {{ end }}
+  </select>
 </fieldset>
 {{ end }}

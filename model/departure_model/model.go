@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -64,31 +65,54 @@ var availableDepartureFilters = map[string]func(df entity_public.DepartureFilter
 	},
 }
 
-func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter) ([]entity_public.DisplayDeparture, error) {
+func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter, page int) ([]entity_public.DisplayDeparture, int, error) {
 	filters := df.GetFilters(availableDepartureFilters)
+	pageSize := 10
+	offset := (page - 1) * pageSize
 
-	stmt := `SELECT d.id, p.name, d.vehicle, d.departureDate, d.netWeight 
+	whereClauses := []string{"id.departure_id IS NULL"}
+	for _, filter := range filters {
+		whereClauses = append(whereClauses, filter(df))
+	}
+	whereCondition := strings.Join(whereClauses, " AND ")
+
+	countQuery := `SELECT COUNT(*)
 			FROM departure d
 			JOIN crop c ON d.crop = c.id
 			JOIN product p ON c.product = p.id
 			LEFT OUTER JOIN inactive_departure id ON id.departure_id = d.id
-			WHERE id.departure_id IS NULL`
+			WHERE ` + whereCondition
 
-	for _, filter := range filters {
-		stmt += "\nAND " + filter(df)
+	var totalDepartures int
+	countRow := dm.pool.QueryRow(context.Background(), countQuery)
+	if err := countRow.Scan(&totalDepartures); err != nil {
+		return nil, 0, err
 	}
 
-	rows, queryErr := dm.pool.Query(context.Background(), stmt)
+	if totalDepartures == 0 {
+		return []entity_public.DisplayDeparture{}, 0, nil
+	}
+
+	query := `SELECT d.id, p.name, d.vehicle, d.departureDate, d.netWeight 
+			FROM departure d
+			JOIN crop c ON d.crop = c.id
+			JOIN product p ON c.product = p.id
+			LEFT OUTER JOIN inactive_departure id ON id.departure_id = d.id
+			WHERE ` + whereCondition + `
+			ORDER BY d.departureDate DESC
+			LIMIT @pageSize OFFSET @offset`
+
+	rows, queryErr := dm.pool.Query(context.Background(), query, pgx.NamedArgs{"pageSize": pageSize, "offset": offset})
 	if queryErr != nil {
-		return []entity_public.DisplayDeparture{}, queryErr
+		return []entity_public.DisplayDeparture{}, 0, queryErr
 	}
 
 	departures, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.DisplayDeparture])
 	if collectErr != nil {
-		return []entity_public.DisplayDeparture{}, collectErr
+		return []entity_public.DisplayDeparture{}, 0, collectErr
 	}
 
-	return departures, nil
+	return departures, totalDepartures, nil
 }
 
 func (dm *departureModel) GetDisplayDepartures(farm uint32, page int) ([]entity_public.DisplayDeparture, int, *model_error.ModelError) {

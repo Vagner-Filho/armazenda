@@ -2,7 +2,6 @@ package departure_router
 
 import (
 	entity_public "armazenda/entity/public"
-	"armazenda/model/departure_model"
 	"armazenda/service/departure_service"
 	"armazenda/service/user_service"
 	departure_view "armazenda/view/departure"
@@ -148,14 +147,14 @@ func filterDepartures(c *gin.Context) {
 		return
 	}
 
-	dModel := departure_model.GetDepartureModel()
+	page, _ := strconv.Atoi(c.Query("page"))
+	if page < 1 {
+		page = 1
+	}
 
-	departures, err := dModel.FilterDepartures(departureFilter)
-
-	if err != nil {
-		toast := entity_public.GetWarningToast("Falha ao filtrar saídas", "")
+	departures, total, toast := departure_service.FilterDepartures(departureFilter, page)
+	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
-		return
 	}
 
 	if len(departures) == 0 {
@@ -163,7 +162,18 @@ func filterDepartures(c *gin.Context) {
 		return
 	}
 
-	c.HTML(http.StatusOK, "departure-table", departures)
+	pageSize := 10
+	totalPages := (total + pageSize - 1) / pageSize
+
+	c.HTML(http.StatusOK, "departure-table", gin.H{
+		"Departures":  departures,
+		"TotalPages":  totalPages,
+		"CurrentPage": page,
+		"HasPrev":     page > 1,
+		"PrevPage":    page - 1,
+		"HasNext":     page < totalPages,
+		"NextPage":    page + 1,
+	})
 }
 
 func getDeparturePdf(c *gin.Context) {

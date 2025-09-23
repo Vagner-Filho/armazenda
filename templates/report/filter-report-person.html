@@ -1,0 +1,23 @@
+{{ block "filter-report-person" . }}
+<fieldset class="filter-card">
+    <legend class="w-full text-center">
+        <label for="person-filter" class="font-medium text-sm text-inherit">
+            Pessoa
+        </label>
+    </legend>
+    <select name="person" id="person-filter" class="w-full text-sm peer">
+        <option value="" selected>
+            Nenhuma
+        </option>
+        {{ range .People }}
+        <option value="{{ .Id }}">
+            {{ .Name }}
+        </option>
+        {{ else }}
+        <option value="-1">
+            Nenhuma pessoa encontrada
+        </option>
+        {{ end }}
+    </select>
+</fieldset>
+{{ end }}

@@ -1,0 +1,15 @@
+{{ define "filter-report-date" }}
+<fieldset class="filter-card">
+    <legend class="w-full text-center font-medium text-sm">
+        Data da operação
+    </legend>
+    <div class="flex flex-col-reverse w-full sm:max-w-40 lg:max-w-44">
+        <input type="datetime-local" id="startDate" name="startDate" class="text-sm peer w-full" aria-placeholder="Data de recebimento mínimo" />
+        <label for="startDate" class="px-2 text-xs label-peer">de:</label>
+    </div>
+    <div class="flex flex-col-reverse w-full sm:max-w-40 lg:max-w-44">
+        <input type="datetime-local" id="endDate" name="endDate" class="text-sm peer w-full" aria-placeholder="Data de recebimento máximo" />
+        <label for="endDate" class="px-2 text-xs label-peer">até:</label>
+    </div>
+</fieldset>
+{{ end }}
