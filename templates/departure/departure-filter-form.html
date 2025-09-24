@@ -6,5 +6,12 @@
   {{ template "filter-entry-vehicle" .Vehicles }}
   {{ template "filter-entry-grain" }}
   {{ template "filter-departure-weight" }}
+  <script type="module">
+    document.body.addEventListener('htmx:configRequest', function (evt) {
+      if (evt.detail.parameters.person && evt.detail.parameters.person === 'null') {
+        delete evt.detail.parameters.person
+      }
+    });
+  </script>
 </form>
 {{ end }}

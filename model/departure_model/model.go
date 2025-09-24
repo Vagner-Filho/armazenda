@@ -61,7 +61,7 @@ var availableDepartureFilters = map[string]func(df entity_public.DepartureFilter
 		return "d.netWeight <= " + strconv.FormatFloat(df.NetWeightMax, 'f', -1, 64)
 	},
 	"Person": func(df entity_public.DepartureFilter) string {
-		return "d.Person = " + df.Person
+		return "dr.person_id = " + df.Person
 	},
 }
 
@@ -80,7 +80,8 @@ func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter, pag
 			FROM departure d
 			JOIN crop c ON d.crop = c.id
 			JOIN product p ON c.product = p.id
-			LEFT OUTER JOIN inactive_departure id ON id.departure_id = d.id
+			LEFT JOIN inactive_departure id ON id.departure_id = d.id
+			LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
 			WHERE ` + whereCondition
 
 	var totalDepartures int
@@ -97,7 +98,8 @@ func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter, pag
 			FROM departure d
 			JOIN crop c ON d.crop = c.id
 			JOIN product p ON c.product = p.id
-			LEFT OUTER JOIN inactive_departure id ON id.departure_id = d.id
+			LEFT JOIN inactive_departure id ON id.departure_id = d.id
+			LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
 			WHERE ` + whereCondition + `
 			ORDER BY d.departureDate DESC
 			LIMIT @pageSize OFFSET @offset`

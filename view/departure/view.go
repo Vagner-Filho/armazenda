@@ -169,4 +169,3 @@ func GetDepartureDrafts(farmId uint32) ([]entity_public.DisplayDepartureDraft, *
 	drafts, draftToast := departure_service.GetAllDepartureDrafts(farmId)
 	return drafts, draftToast
 }
-
