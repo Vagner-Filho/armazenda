@@ -237,14 +237,14 @@ func (em *entryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_err
 			e.arrivaldate,
 			f.inscricao_estadual,
 			p.name AS produto,
-			fc.name as farm_name,
-			fa.street as farm_street,
-			fa.cep as farm_cep,
-			fa.number as farm_number,
-			fa.neighborhood as farm_neighborhood,
-			fa.city as farm_city,
-			fa.state as farm_state,
-			COALESCE(person_union.name, 'Pŕopria') as origin,
+			fc.name AS farm_name,
+			fa.street AS farm_street,
+			fa.cep AS farm_cep,
+			fa.number AS farm_number,
+			fa.neighborhood AS farm_neighborhood,
+			fa.city AS farm_city,
+			fa.state AS farm_state,
+			COALESCE(person_union.name, 'Pŕopria') AS origin,
 			COALESCE(person_union.document, f.inscricao_estadual) AS document
 		FROM entry e
 		LEFT JOIN entry_analysis ea ON ea.entryid = e.id

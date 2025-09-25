@@ -25,6 +25,7 @@
         FAZENDA
     </div>
     <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+        {{if .FarmName}}
         <div class="flex flex-col" style="width: 50%;">
             <div class="font-light" style="color: #7a7b87">
                 Nome
@@ -33,6 +34,7 @@
                 {{ .FarmName }}
             </div>
         </div>
+        {{end}}
         <div class="flex flex-col" style="width: 50%;">
             <div class="font-light" style="color: #7a7b87">
                 Inscrição Estadual

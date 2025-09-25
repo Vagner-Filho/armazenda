@@ -120,7 +120,7 @@ type EntryPdf struct {
 	ArrivalDate       time.Time `time_format:"2006-01-02T15:04"`
 	InscricaoEstadual string
 	Produto           string
-	FarmName          string
+	FarmName          *string
 	FarmStreet        *string
 	FarmCep           *string
 	FarmNumber        *int

@@ -27,102 +27,13 @@
             <h1 class="text-3xl font-bold text-slate-700">Configurações</h1>
             <p class="text-slate-500">Gerencie as informações da sua fazenda, endereço e contato.</p>
         </header>
-        <form hx-put="/farm/config" hx-target="body" hx-swap="beforeend" class="space-y-8">
-            {{ with .Farm }}
-            <input type="hidden" name="id" value="{{ .Id }}">
-            <fieldset class="bg-white rounded-lg shadow p-6">
-                <legend class="fieldset-legend">Dados da Fazenda
-                </legend>
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="flex flex-col-reverse">
-                        <input type="text" name="name" id="name" value="{{ if .Name }}{{ .Name }}{{ end }}" class="peer"
-                            required>
-                        <label for="name" class="label-peer">Nome da Fazenda</label>
-                    </div>
-                    <div class="flex flex-col-reverse">
-                        <input type="text" name="inscricaoEstadual" id="inscricaoEstadual"
-                            value="{{ .InscricaoEstadual }}" class="peer" required>
-                        <label for="inscricaoEstadual" class="label-peer">Inscrição Estadual</label>
-                    </div>
-                    <div class="flex flex-col-reverse">
-                        <input type="number" step="0.01" name="humidityDiscount" id="humidityDiscount"
-                            value="{{ .HumidityDiscount }}" class="peer" required>
-                        <label for="humidityDiscount" class="label-peer">Desconto de Umidade (%)</label>
-                    </div>
-                </div>
-            </fieldset>
-
-            <fieldset class="bg-white rounded-lg shadow p-6">
-                <legend class="fieldset-legend">Endereço</legend>
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-6 gap-6">
-                    <div class="flex flex-col-reverse md:col-span-2">
-                        <input type="text" name="cep" id="cep" value="{{ if .Cep }}{{ .Cep }}{{ end }}" class="peer">
-                        <label for="cep" class="label-peer">CEP</label>
-                    </div>
-                    <div class="flex flex-col-reverse md:col-span-4">
-                        <input type="text" name="street" id="street" value="{{ if .Street }}{{ .Street }}{{ end }}"
-                            class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse">
-                        <label for="street" class="label-peer">Rua</label>
-                    </div>
-                    <div class="flex flex-col-reverse md:col-span-2">
-                        <input type="text" name="number" id="number" value="{{ if .Number }}{{ .Number }}{{ end }}"
-                            class="peer">
-                        <label for="number" class="label-peer">Número</label>
-                    </div>
-                    <div class="flex flex-col-reverse md:col-span-4">
-                        <input type="text" name="complement" id="complement"
-                            value="{{ if .Complement }}{{ .Complement }}{{ end }}" class="peer">
-                        <label for="complement" class="label-peer">Complemento</label>
-                    </div>
-                    <div class="flex flex-col-reverse md:col-span-3">
-                        <input type="text" name="neighborhood" id="neighborhood"
-                            value="{{ if .Neighborhood }}{{ .Neighborhood }}{{ end }}" class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse">
-                        <label for="neighborhood" class="label-peer">Bairro</label>
-                    </div>
-                    <div class="flex flex-col-reverse md:col-span-2">
-                        <input type="text" name="city" id="city" value="{{ if .City }}{{ .City }}{{ end }}"
-                            class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse">
-                        <label for="city" class="label-peer">Cidade</label>
-                    </div>
-                    <div class="flex flex-col-reverse md:col-span-1">
-                        <input type="text" name="state" id="state" value="{{ if .State }}{{ .State }}{{ end }}"
-                            class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse">
-                        <label for="state" class="label-peer">Estado</label>
-                    </div>
-                </div>
-            </fieldset>
-
-            <fieldset class="bg-white rounded-lg shadow p-6">
-                <legend class="fieldset-legend">Contato</legend>
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="flex flex-col-reverse">
-                        <input type="email" name="email" id="email" value="{{ if .Email }}{{ .Email }}{{ end }}"
-                            class="peer">
-                        <label for="email" class="label-peer">Email</label>
-                    </div>
-                    <div class="flex flex-col-reverse">
-                        <input type="tel" name="phoneNumber" id="phoneNumber"
-                            value="{{ if .PhoneNumber }}{{ .PhoneNumber }}{{ end }}" class="peer">
-                        <label for="phoneNumber" class="label-peer">Telefone</label>
-                    </div>
-                </div>
-            </fieldset>
-            {{ end }}
-            <div class="mt-6 flex justify-end">
-                <button type="submit"
-                    class="add-btn rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white shadow-md transition-colors duration-200 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
-                    Salvar Alterações
-                </button>
-            </div>
-        </form>
-
+        {{ template "config-form" . }}
         <div class="my-8 border-b-2 border-gray-200"></div>
-
         <div hx-get="/user/pending" hx-trigger="load"></div>
     </main>
     <script type="module">
         import {removeEmptyFields} from "/public/assets/js/form.js";
-        import { setupCepListener } from "/public/assets/js/address.js";
+        import {setupCepListener} from "/public/assets/js/address.js";
 
         document.body.addEventListener('htmx:configRequest', function (evt) {
             evt.detail.parameters = removeEmptyFields(evt.detail.parameters);

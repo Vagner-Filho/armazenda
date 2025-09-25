@@ -9,6 +9,12 @@ function getHumidityDiscount(humidity, gross, tare, h_discount) {
 	const exceedingHumidity = parseFloat(humidityInput.value) - HUMIDITY_THRESHOLD;
 
 	if (!humidityInput || exceedingHumidity <= 0) {
+		if (humidityInput instanceof HTMLInputElement) {
+			const label = humidityInput.previousElementSibling;
+			if (label instanceof HTMLElement) {
+				label.textContent = "";
+			}
+		}
 		return 0;
 	}
 
@@ -48,6 +54,12 @@ function getDamageDiscount(damage, gross, tare) {
 	const exceedingDamage = parseFloat(damageInput.value) - DAMAGE_THRESHOLD;
 
 	if (!damageInput || isNaN(exceedingDamage) || exceedingDamage <= 0) {
+		if (damageInput instanceof HTMLInputElement) {
+			const label = damageInput.previousElementSibling;
+			if (label instanceof HTMLElement) {
+				label.textContent = "";
+			}
+		}
 		return 0;
 	}
 
@@ -76,6 +88,12 @@ function getImpurityDiscount(impurity, gross, tare) {
 	const exceedingImpurity = parseFloat(impurityInput.value) - IMPURITY_THRESHOLD;
 
 	if (!impurityInput || isNaN(exceedingImpurity) || exceedingImpurity <= 0) {
+		if (impurityInput instanceof HTMLInputElement) {
+			const label = impurityInput.previousElementSibling;
+			if (label instanceof HTMLElement) {
+				label.textContent = "";
+			}
+		}
 		return 0;
 	}
 

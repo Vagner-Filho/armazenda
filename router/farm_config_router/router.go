@@ -32,7 +32,7 @@ func UseFarmConfigRouter(router *gin.Engine) {
 	router.PUT("/farm/config", func(c *gin.Context) {
 		var form entity_public.Farm
 		if err := c.ShouldBind(&form); err != nil {
-			c.HTML(http.StatusBadRequest, "config.html", gin.H{"error": err.Error(), "Farm": &form})
+			c.HTML(http.StatusBadRequest, "config-form", gin.H{"error": err.Error(), "Farm": &form})
 			return
 		}
 
@@ -41,10 +41,10 @@ func UseFarmConfigRouter(router *gin.Engine) {
 		form.Id = uint32(farmID)
 
 		if err := farm_config_service.UpsertFarmConfig(&form); err != nil {
-			c.HTML(http.StatusInternalServerError, "config.html", gin.H{"error": "Failed to save configuration", "Farm": &form})
+			c.HTML(http.StatusInternalServerError, "config-form", gin.H{"error": "Failed to save configuration", "Farm": &form})
 			return
 		}
 
-		c.HTML(http.StatusOK, "config.html", gin.H{"Farm": &form, "success": "Configuração salva com sucesso!"})
+		c.HTML(http.StatusOK, "config-form", gin.H{"Farm": &form, "success": "Configuração salva com sucesso!"})
 	})
 }
