@@ -1,6 +1,6 @@
 {{ block "crop-selector" $ }}
 <div class="flex flex-col-reverse w-full relative pr-[30px]">
-  <select name="crop" id="crop-selector" class="w-full peer">
+  <select name="crop" id="crop-selector" class="w-full peer" required>
     {{ range $.Crops }}
             {{ if eq .Id $.SelectedCrop }}
                 {{ template "selected-option" . }}

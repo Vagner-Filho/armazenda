@@ -48,7 +48,7 @@ func initProduct(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init product table", `
 	CREATE TABLE IF NOT EXISTS product (
     		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    		name VARCHAR(255) UNIQUE NOT NULL
+    		name TEXT UNIQUE NOT NULL
 	);
 	`)
 	handleStmtExec(c, stmt, err, "create product")
@@ -69,10 +69,11 @@ func initField(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init field table", `
 	CREATE TABLE IF NOT EXISTS field (
     		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-		name VARCHAR(255) NOT NULL,
+		name TEXT NOT NULL,
 		farm INTEGER NOT NULL,
 		hectares NUMERIC(10, 4) NOT NULL,
-		FOREIGN KEY (farm) REFERENCES farm(id)
+		FOREIGN KEY (farm) REFERENCES farm(id),
+		CONSTRAINT unique_field_in_farm UNIQUE (name, farm)
 	);
 	`)
 
@@ -83,12 +84,13 @@ func initCrop(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init crop table", `
 	CREATE TABLE IF NOT EXISTS crop (
 		id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-		name VARCHAR(255) UNIQUE NOT NULL,
+		name TEXT NOT NULL,
 		product SMALLINT NOT NULL,
 		startDate DATE NOT NULL,
 		farm INTEGER NOT NULL,
 		FOREIGN KEY (product) REFERENCES product(id),
-		FOREIGN KEY (farm) REFERENCES farm(id)
+		FOREIGN KEY (farm) REFERENCES farm(id),
+		CONSTRAINT unique_crop_in_farm UNIQUE (name, farm)
 	);
 	`)
 
@@ -98,10 +100,12 @@ func initCrop(c *pgx.Conn) {
 func initVehicle(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init vehicle table", `
 	CREATE TABLE IF NOT EXISTS vehicle (
-		plate VARCHAR(255) PRIMARY KEY,
-		name VARCHAR(255),
+		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+		plate TEXT NOT NULL,
+		name TEXT,
 		farm INTEGER NOT NULL,
-		FOREIGN KEY (farm) REFERENCES farm(id)
+		FOREIGN KEY (farm) REFERENCES farm(id),
+		CONSTRAINT unique_vehicle_in_farm UNIQUE (plate, farm)
 	);
 	`)
 
@@ -115,10 +119,10 @@ func initPreEntry(c *pgx.Conn) {
 			name TEXT NOT NULL,
 			field SMALLINT,
 			crop SMALLINT,
-			vehicle VARCHAR(255),
-			tare NUMERIC(10, 3),
+			vehicle INTEGER,
+			grossWeight NUMERIC(10, 3),
 			farm INTEGER NOT NULL,
-			FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
+			FOREIGN KEY (vehicle) REFERENCES vehicle(id),
 			FOREIGN KEY (field) REFERENCES field(id),
 			FOREIGN KEY (crop) REFERENCES crop(id),
 			FOREIGN KEY (farm) REFERENCES farm(id)
@@ -134,21 +138,21 @@ func initAddGetEntryDraft(c *pgx.Conn) {
 			in_name TEXT,
 			in_field SMALLINT,
 			in_crop SMALLINT,
-			in_vehicle VARCHAR(255),
-			in_tare NUMERIC(10, 3),
+			in_vehicle INTEGER,
+			in_grossWeight NUMERIC(10, 3),
 			in_farm INTEGER,
 			in_origin INTEGER,
 			OUT out_id INTEGER,
 			OUT out_name TEXT,
-			OUT out_field_name VARCHAR(255),
-			OUT out_crop_name VARCHAR(255),
-			OUT out_vehicle_plate VARCHAR(255),
-			OUT out_tare NUMERIC(10, 3),
+			OUT out_field_name TEXT,
+			OUT out_crop_name TEXT,
+			OUT out_vehicle_plate TEXT,
+			OUT out_grossWeight NUMERIC(10, 3),
 			OUT out_origin TEXT
 		)
 		LANGUAGE plpgsql AS $$
 		BEGIN
-			INSERT INTO entry_draft (name, field, crop, vehicle, tare, farm) VALUES (in_name, in_field, in_crop, in_vehicle, in_tare, in_farm) RETURNING entry_draft.id INTO out_id;
+			INSERT INTO entry_draft (name, field, crop, vehicle, grossWeight, farm) VALUES (in_name, in_field, in_crop, in_vehicle, in_grossWeight, in_farm) RETURNING entry_draft.id INTO out_id;
 
 			IF in_origin IS NOT NULL THEN
 				INSERT INTO entry_draft_origin (entry_draft_id, person_id) VALUES (out_id, in_origin);
@@ -165,7 +169,7 @@ func initAddGetEntryDraft(c *pgx.Conn) {
 			
 			out_name := in_name;
 			out_vehicle_plate := in_vehicle;
-			out_tare := in_tare;
+			out_grossWeight := in_grossWeight;
 		END;
 		$$;
 	`)
@@ -181,13 +185,13 @@ func initEntry(c *pgx.Conn) {
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		field SMALLINT NOT NULL,
 		crop SMALLINT NOT NULL,
-		vehicle VARCHAR(255) NOT NULL,
+		vehicle INTEGER NOT NULL,
 		grossWeight NUMERIC(10, 3) NOT NULL,
 		tare NUMERIC(10, 3) NOT NULL,
 		netWeight NUMERIC(10, 3) NOT NULL,
 		arrivalDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 		farm INTEGER NOT NULL,
-		FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
+		FOREIGN KEY (vehicle) REFERENCES vehicle(id),
 		FOREIGN KEY (field) REFERENCES field(id),
 		FOREIGN KEY (crop) REFERENCES crop(id),
 		FOREIGN KEY (farm) REFERENCES farm(id)
@@ -257,13 +261,13 @@ func initDeparture(c *pgx.Conn) {
 	CREATE TABLE IF NOT EXISTS departure (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		departureDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-		vehicle VARCHAR(255),
+		vehicle INTEGER NOT NULL,
 		crop SMALLINT NOT NULL,
 		grossWeight NUMERIC(10, 3) NOT NULL,
 		tare NUMERIC(10, 3) NOT NULL,
 		netWeight NUMERIC(10, 3) NOT NULL,
 		farm INTEGER NOT NULL,
-		FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
+		FOREIGN KEY (vehicle) REFERENCES vehicle(id),
 		FOREIGN KEY (crop) REFERENCES crop(id),
 		FOREIGN KEY (farm) REFERENCES farm(id)
 	);
@@ -317,7 +321,7 @@ func initNaturalPerson(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init natural_person table", `
 	CREATE TABLE IF NOT EXISTS natural_person (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-		name VARCHAR(255) NOT NULL,
+		name TEXT NOT NULL,
 		cpf VARCHAR(11) NOT NULL,
 		personId INTEGER UNIQUE NOT NULL,
 		FOREIGN KEY (personId) REFERENCES person(id)
@@ -333,8 +337,8 @@ func initLegalPerson(c *pgx.Conn) {
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		cnpj VARCHAR(14) NOT NULL,
 		personId INTEGER UNIQUE NOT NULL,
-		companyName VARCHAR(255) NOT NULL,
-		fantasyName VARCHAR(255),
+		companyName TEXT NOT NULL,
+		fantasyName TEXT,
 		FOREIGN KEY (personId) REFERENCES person(id)
 	);
 	`)
@@ -404,7 +408,7 @@ func initLogTable(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init log table", `
 	CREATE TABLE IF NOT EXISTS sys_log (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-		content VARCHAR(255) NOT NULL,
+		content TEXT NOT NULL,
 		at TIMESTAMP WITHOUT TIME ZONE NOT NULL
 	);
 	`)
@@ -419,8 +423,9 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 			IN crop SMALLINT,
 			IN personId INTEGER,
 			OUT departureId INTEGER,
-			OUT productName VARCHAR(255),
-			INOUT vehicle VARCHAR(255),
+			OUT productName TEXT,
+			IN in_vehicle INTEGER,
+			OUT out_vehicle TEXT,
 			INOUT departureDate TIMESTAMP WITHOUT TIME ZONE,
 			IN farm INTEGER,
 			IN grossWeight NUMERIC,
@@ -433,7 +438,7 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 		LANGUAGE plpgsql AS $$
 		DECLARE departure_id INTEGER;
 		BEGIN
-			INSERT INTO departure (departureDate, vehicle, crop, farm, tare, grossWeight, netWeight) VALUES (departureDate, vehicle, crop, farm, tare, grossWeight, netWeight) RETURNING id INTO departure_id;
+			INSERT INTO departure (departureDate, vehicle, crop, farm, tare, grossWeight, netWeight) VALUES (departureDate, in_vehicle, crop, farm, tare, grossWeight, netWeight) RETURNING id INTO departure_id;
 
 			IF in_humidity IS NOT NULL OR in_damage IS NOT NULL OR in_impurity IS NOT NULL THEN
 				INSERT INTO departure_analysis (humidity, damage, impurity, departure_id) VALUES (in_humidity, in_damage, in_impurity, departure_id);
@@ -445,6 +450,8 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 
 			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = crop INTO productName;
 			departureId := departure_id;
+
+			SELECT v.plate FROM vehicle v WHERE v.id = in_vehicle INTO out_vehicle;
 		END;
 		$$;
 	`)
@@ -459,9 +466,9 @@ func initAddNaturalPerson(c *pgx.Conn) {
 		DROP FUNCTION IF EXISTS add_get_natural_person;
 		CREATE OR REPLACE FUNCTION add_get_natural_person(
 			OUT person_type INTEGER,
-			INOUT name VARCHAR(255),
-			INOUT cpf VARCHAR(255),
-			INOUT ie VARCHAR(255),
+			INOUT name TEXT,
+			INOUT cpf TEXT,
+			INOUT ie TEXT,
 			OUT personId INTEGER,
 			IN farm INTEGER,
 			IN humidityDiscount NUMERIC(6, 3) DEFAULT NULL,
@@ -514,10 +521,10 @@ func initAddLegalPerson(c *pgx.Conn) {
 		DROP FUNCTION IF EXISTS add_get_legal_person;
 		CREATE OR REPLACE FUNCTION add_get_legal_person(
 			OUT person_type INTEGER,
-			INOUT companyName VARCHAR(255),
-			INOUT cnpj VARCHAR(14),
-			INOUT ie VARCHAR(255),
-			IN fantasyName VARCHAR(255),
+			INOUT companyName TEXT,
+			INOUT cnpj TEXT,
+			INOUT ie TEXT,
+			IN fantasyName TEXT,
 			IN farm INTEGER,
 			OUT personId INTEGER,
 			IN humidityDiscount NUMERIC(6, 3) DEFAULT NULL,
@@ -567,6 +574,7 @@ func initAddLegalPerson(c *pgx.Conn) {
 
 func initAddEntry(c *pgx.Conn) {
 	_, err := c.Exec(context.Background(), `
+		DROP FUNCTION IF EXISTS add_get_entry;
 		CREATE OR REPLACE FUNCTION add_get_entry(
 			IN field SMALLINT,
 			IN crop SMALLINT,
@@ -575,10 +583,11 @@ func initAddEntry(c *pgx.Conn) {
 		 	IN humidity NUMERIC(6, 3),
 	
 			OUT entryId INTEGER,
-			OUT productName VARCHAR(255),
-			OUT fieldName VARCHAR(255),
+			OUT productName TEXT,
+			OUT fieldName TEXT,
 
-			INOUT vehicle VARCHAR(255),
+			IN in_vehicle INTEGER,
+			OUT out_vehicle TEXT,
 			INOUT netWeight NUMERIC(10, 3),
 			INOUT arrivalDate TIMESTAMP WITHOUT TIME ZONE,
 			INOUT farm INTEGER,
@@ -589,7 +598,7 @@ func initAddEntry(c *pgx.Conn) {
 		LANGUAGE plpgsql AS $$
 		DECLARE entry_id INTEGER;
 		BEGIN
-			INSERT INTO entry (field, crop, vehicle, grossweight, tare, netweight, arrivalDate, farm) VALUES (field, crop, vehicle, grossWeight, tare, netWeight, arrivalDate, farm) RETURNING id INTO entry_id;
+			INSERT INTO entry (field, crop, vehicle, grossweight, tare, netweight, arrivalDate, farm) VALUES (field, crop, in_vehicle, grossWeight, tare, netWeight, arrivalDate, farm) RETURNING id INTO entry_id;
 
 			IF humidity IS NOT NULL OR damage IS NOT NULL OR impurity IS NOT NULL THEN
 				INSERT INTO entry_analysis (humidity, damage, impurity, entryid) VALUES (humidity, damage, impurity, entry_id);
@@ -602,6 +611,7 @@ func initAddEntry(c *pgx.Conn) {
 			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = crop INTO productName;
 			SELECT f.name FROM field f WHERE f.id = field INTO fieldName;
 			entryId := entry_id;
+			SELECT v.plate FROM vehicle v WHERE v.id = in_vehicle INTO out_vehicle;
 		END;
 		$$;
 	`)
@@ -622,9 +632,10 @@ func initUpdateEntry(c *pgx.Conn) {
 		 	in e_humidity NUMERIC(6, 3),
 
 			INOUT e_id INTEGER,
-			OUT productName VARCHAR(255),
-			OUT fieldName VARCHAR(255),
-			INOUT e_vehicle VARCHAR(255),
+			OUT productName TEXT,
+			OUT fieldName TEXT,
+			IN in_vehicle INTEGER,
+			OUT out_vehicle TEXT,
 			INOUT e_netWeight DOUBLE PRECISION,
 			INOUT e_arrivalDate TIMESTAMP WITHOUT TIME ZONE,
 			OUT e_farm INTEGER,
@@ -637,7 +648,7 @@ func initUpdateEntry(c *pgx.Conn) {
 			UPDATE entry e SET
 				field = e_field,
 				crop = e_crop,
-				vehicle = e_vehicle,
+				vehicle = in_vehicle,
 				grossweight = e_grossWeight,
 				tare = e_tare,
 				netweight = e_netWeight,
@@ -658,6 +669,7 @@ func initUpdateEntry(c *pgx.Conn) {
 
 			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = e_crop INTO productName;
 			SELECT f.name FROM field f WHERE f.id = e_field INTO fieldName;
+			SELECT v.plate FROM vehicle v WHERE v.id = in_vehicle INTO out_vehicle;
 		END;
 		$$;
 	`)
@@ -832,8 +844,9 @@ func initUpdateDepartureProc(c *pgx.Conn) {
 			IN d_crop SMALLINT,
 			IN d_personId INTEGER,
 			INOUT departureId INTEGER,
-			OUT productName VARCHAR(255),
-			INOUT d_vehicle VARCHAR(255),
+			OUT productName TEXT,
+			IN in_vehicle INTEGER,
+			OUT out_vehicle TEXT,
 			INOUT departure_Date TIMESTAMP WITHOUT TIME ZONE,
 			IN d_grossWeight NUMERIC,
 			IN d_tare NUMERIC,
@@ -847,7 +860,7 @@ func initUpdateDepartureProc(c *pgx.Conn) {
 		BEGIN
 			UPDATE departure d SET
 				 departureDate = departure_Date,
-				 vehicle = d_vehicle,
+				 vehicle = in_vehicle,
 				 crop = d_crop,
 				 grossweight = d_grossWeight,
 				 tare = d_tare,
@@ -867,6 +880,7 @@ func initUpdateDepartureProc(c *pgx.Conn) {
 			END IF;
 
 			SELECT p.name INTO productName FROM departure d JOIN crop c ON d.crop = c.id JOIN product p ON c.product = p.id WHERE d.id = departureId;
+			SELECT v.plate FROM vehicle v WHERE v.id = in_vehicle INTO out_vehicle;
 		END;
 		$$;
 	`)
@@ -877,14 +891,14 @@ func initDepartureDraft(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init departure draft table", `
 		CREATE TABLE IF NOT EXISTS departure_draft (
 			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-			name VARCHAR(255) NOT NULL,
+			name TEXT NOT NULL,
 			person INTEGER,
 			crop SMALLINT,
-			vehicle VARCHAR(255),
+			vehicle INTEGER,
 			tare NUMERIC(10, 3),
 			farm INTEGER NOT NULL,
 			startedAt TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
-			FOREIGN KEY (vehicle) REFERENCES vehicle(plate),
+			FOREIGN KEY (vehicle) REFERENCES vehicle(id),
 			FOREIGN KEY (person) REFERENCES person(id),
 			FOREIGN KEY (crop) REFERENCES crop(id),
 			FOREIGN KEY (farm) REFERENCES farm(id)
@@ -896,17 +910,17 @@ func initDepartureDraft(c *pgx.Conn) {
 func initAddGetDepartureDraft(c *pgx.Conn) {
 	_, err := c.Exec(context.Background(), `
 		CREATE OR REPLACE FUNCTION add_get_departure_draft(
-			in_name VARCHAR(255),
+			in_name TEXT,
 			in_person INTEGER,
 			in_crop SMALLINT,
-			in_vehicle VARCHAR(255),
+			in_vehicle INTEGER,
 			in_tare NUMERIC(10, 3),
 			in_farm INTEGER,
 			OUT out_id INTEGER,
-			OUT out_name VARCHAR(255),
-			OUT out_person_name VARCHAR(255),
-			OUT out_crop_name VARCHAR(255),
-			OUT out_vehicle_plate VARCHAR(255),
+			OUT out_name TEXT,
+			OUT out_person_name TEXT,
+			OUT out_crop_name TEXT,
+			OUT out_vehicle_plate TEXT,
 			OUT out_tare NUMERIC(10, 3)
 		)
 		LANGUAGE plpgsql AS $$

@@ -72,7 +72,7 @@ func authenticate(c *gin.Context) {
 	c.Next()
 }
 func main() {
-
+	gin.SetMode(gin.ReleaseMode)
 	pool, connErr := armazenda_database.GetDbPool()
 
 	if connErr != nil {
@@ -119,7 +119,6 @@ func main() {
 	}
 
 	router := gin.Default()
-
 	router.Use(authenticate)
 
 	html := template.Must(template.ParseFS(templatesFS, "templates/*.html", "templates/**/*.html"))

@@ -61,11 +61,14 @@ var availableDepartureFilters = map[string]func(df entity_public.DepartureFilter
 		return "d.netWeight <= " + strconv.FormatFloat(df.NetWeightMax, 'f', -1, 64)
 	},
 	"Person": func(df entity_public.DepartureFilter) string {
+		if df.Person == "NULL" {
+			return "dr.person_id IS NULL"
+		}
 		return "dr.person_id = " + df.Person
 	},
 }
 
-func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter, page int) ([]entity_public.DisplayDeparture, int, error) {
+func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter, page int, farm uint32) ([]entity_public.DisplayDeparture, int, error) {
 	filters := df.GetFilters(availableDepartureFilters)
 	pageSize := 10
 	offset := (page - 1) * pageSize
@@ -82,10 +85,10 @@ func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter, pag
 			JOIN product p ON c.product = p.id
 			LEFT JOIN inactive_departure id ON id.departure_id = d.id
 			LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
-			WHERE ` + whereCondition
+			WHERE ` + whereCondition + " AND d.farm = @farm"
 
 	var totalDepartures int
-	countRow := dm.pool.QueryRow(context.Background(), countQuery)
+	countRow := dm.pool.QueryRow(context.Background(), countQuery, pgx.NamedArgs{"farm": farm})
 	if err := countRow.Scan(&totalDepartures); err != nil {
 		return nil, 0, err
 	}
@@ -101,10 +104,11 @@ func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter, pag
 			LEFT JOIN inactive_departure id ON id.departure_id = d.id
 			LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
 			WHERE ` + whereCondition + `
+			AND d.farm = @farm
 			ORDER BY d.departureDate DESC
 			LIMIT @pageSize OFFSET @offset`
 
-	rows, queryErr := dm.pool.Query(context.Background(), query, pgx.NamedArgs{"pageSize": pageSize, "offset": offset})
+	rows, queryErr := dm.pool.Query(context.Background(), query, pgx.NamedArgs{"pageSize": pageSize, "offset": offset, "farm": farm})
 	if queryErr != nil {
 		return []entity_public.DisplayDeparture{}, 0, queryErr
 	}
@@ -350,7 +354,7 @@ func (dm *departureModel) GetAllDepartureDrafts(farmId uint32) ([]entity_public.
 		LEFT JOIN natural_person np ON p.id = np.personid
 		LEFT JOIN legal_person lp ON p.id = lp.personid
 		LEFT JOIN crop c ON c.id = dd.crop
-		LEFT JOIN vehicle v ON v.plate = dd.vehicle
+		LEFT JOIN vehicle v ON v.id = dd.vehicle
 		WHERE dd.farm = @farmId
 	`, pgx.NamedArgs{"farmId": farmId})
 	if queryErr != nil {

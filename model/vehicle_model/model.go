@@ -43,8 +43,9 @@ func (vm *vehicleModel) AddVehicle(v entity_public.Vehicle) (entity_public.Vehic
 	var plate string
 	var name string
 	var farm uint32
+	var id uint16
 
-	scanErr := vm.pool.QueryRow(context.Background(), "INSERT INTO vehicle (plate, name, farm) VALUES (@plate, @name, @farm) RETURNING plate, name, farm", pgx.NamedArgs{"plate": v.Plate, "name": v.Name, "farm": v.Farm}).Scan(&plate, &name, &farm)
+	scanErr := vm.pool.QueryRow(context.Background(), "INSERT INTO vehicle (plate, name, farm) VALUES (@plate, @name, @farm) RETURNING id, plate, name, farm", pgx.NamedArgs{"plate": v.Plate, "name": v.Name, "farm": v.Farm}).Scan(&id, &plate, &name, &farm)
 
 	if scanErr != nil {
 		var pgErr *pgconn.PgError
@@ -55,6 +56,7 @@ func (vm *vehicleModel) AddVehicle(v entity_public.Vehicle) (entity_public.Vehic
 	}
 
 	return entity_public.Vehicle{
+		Id:    id,
 		Plate: plate,
 		Name:  name,
 		Farm:  farm,
@@ -75,17 +77,19 @@ func (vm *vehicleModel) GetVehiclesByFarm(farm uint32) ([]entity_public.Vehicle,
 	return vehicles, nil
 }
 
-func (vm *vehicleModel) GetVehicle(plateParam string) (entity_public.Vehicle, *model_error.ModelError) {
+func (vm *vehicleModel) GetVehicle(vehicleId uint16) (entity_public.Vehicle, *model_error.ModelError) {
 	var plate string
 	var name string
-	scanErr := vm.pool.QueryRow(context.Background(), "SELECT * FROM vehicle WHERE vehicle.plate = @plate", pgx.NamedArgs{"plate": plateParam}).Scan(&plate, &name)
+	scanErr := vm.pool.QueryRow(context.Background(), "SELECT * FROM vehicle v WHERE v.id = @id", pgx.NamedArgs{"id": vehicleId}).Scan(&plate, &name)
 
 	if scanErr != nil {
 		return entity_public.Vehicle{}, &model_error.ModelError{Message: scanErr.Error()}
 	}
 
 	return entity_public.Vehicle{
+		Id:    vehicleId,
 		Plate: plate,
 		Name:  name,
 	}, nil
 }
+

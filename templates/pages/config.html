@@ -61,7 +61,7 @@
                     </div>
                     <div class="flex flex-col-reverse md:col-span-4">
                         <input type="text" name="street" id="street" value="{{ if .Street }}{{ .Street }}{{ end }}"
-                            class="peer">
+                            class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse">
                         <label for="street" class="label-peer">Rua</label>
                     </div>
                     <div class="flex flex-col-reverse md:col-span-2">
@@ -76,17 +76,17 @@
                     </div>
                     <div class="flex flex-col-reverse md:col-span-3">
                         <input type="text" name="neighborhood" id="neighborhood"
-                            value="{{ if .Neighborhood }}{{ .Neighborhood }}{{ end }}" class="peer">
+                            value="{{ if .Neighborhood }}{{ .Neighborhood }}{{ end }}" class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse">
                         <label for="neighborhood" class="label-peer">Bairro</label>
                     </div>
                     <div class="flex flex-col-reverse md:col-span-2">
                         <input type="text" name="city" id="city" value="{{ if .City }}{{ .City }}{{ end }}"
-                            class="peer">
+                            class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse">
                         <label for="city" class="label-peer">Cidade</label>
                     </div>
                     <div class="flex flex-col-reverse md:col-span-1">
                         <input type="text" name="state" id="state" value="{{ if .State }}{{ .State }}{{ end }}"
-                            class="peer">
+                            class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse">
                         <label for="state" class="label-peer">Estado</label>
                     </div>
                 </div>

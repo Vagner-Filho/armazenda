@@ -87,7 +87,7 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32, page int) ([]entity_p
 func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.DisplayEntryDraft, *model_error.ModelError) {
 
 	rows, queryErr := em.pool.Query(context.Background(), `
-		SELECT ed.id, ed.name, f.name, c.name, ed.vehicle, ed.tare, COALESCE(np.name, lp.fantasyname, lp.companyname, 'Própria') AS origin
+		SELECT ed.id, ed.name, f.name, c.name, ed.vehicle, ed.grossWeight, COALESCE(np.name, lp.fantasyname, lp.companyname, 'Própria') AS origin
 			FROM entry_draft ed
 			JOIN field f ON ed.field = f.id
 			JOIN crop c ON ed.crop = c.id
@@ -116,15 +116,15 @@ func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.Display
 
 func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft, *model_error.ModelError) {
 	row, queryErr := em.pool.Query(context.Background(), `
-		SELECT * FROM add_get_entry_draft(@name, @field, @crop, @vehicle, @tare, @farm, @origin)
+		SELECT * FROM add_get_entry_draft(@name, @field, @crop, @vehicle, @grossWeight, @farm, @origin)
 		`, pgx.NamedArgs{
-		"name":    ge.Name,
-		"field":   ge.Field,
-		"crop":    ge.Crop,
-		"vehicle": ge.Vehicle,
-		"tare":    ge.Tare,
-		"farm":    ge.Farm,
-		"origin":  ge.Origin,
+		"name":        ge.Name,
+		"field":       ge.Field,
+		"crop":        ge.Crop,
+		"vehicle":     ge.Vehicle,
+		"grossWeight": ge.GrossWeight,
+		"farm":        ge.Farm,
+		"origin":      ge.Origin,
 	})
 
 	if queryErr != nil {
@@ -331,7 +331,7 @@ var availableEntryFilters = map[string]func(ef entity_public.EntryFilter) string
 	},
 }
 
-func (em *entryModel) FilterEntries(ef entity_public.EntryFilter, page int) ([]entity_public.DisplayEntry, int, error) {
+func (em *entryModel) FilterEntries(ef entity_public.EntryFilter, page int, farm uint32) ([]entity_public.DisplayEntry, int, error) {
 	filters := ef.GetFilters(availableEntryFilters)
 	pageSize := 10
 	offset := (page - 1) * pageSize
@@ -348,10 +348,10 @@ func (em *entryModel) FilterEntries(ef entity_public.EntryFilter, page int) ([]e
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
 			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
-			WHERE ` + whereCondition
+			WHERE ` + whereCondition + " AND e.farm = @farm"
 
 	var totalEntries int
-	countRow := em.pool.QueryRow(context.Background(), countQuery)
+	countRow := em.pool.QueryRow(context.Background(), countQuery, pgx.NamedArgs{"farm": farm})
 	if err := countRow.Scan(&totalEntries); err != nil {
 		fmt.Printf("\n countErr: %v\n", err.Error())
 		return nil, 0, err
@@ -368,10 +368,11 @@ func (em *entryModel) FilterEntries(ef entity_public.EntryFilter, page int) ([]e
 			JOIN product p ON c.product = p.id
 			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
 			WHERE ` + whereCondition + `
+			AND e.farm = @farm
 			ORDER BY e.arrivaldate DESC
 			LIMIT @pageSize OFFSET @offset`
 
-	rows, queryErr := em.pool.Query(context.Background(), query, pgx.NamedArgs{"pageSize": pageSize, "offset": offset})
+	rows, queryErr := em.pool.Query(context.Background(), query, pgx.NamedArgs{"pageSize": pageSize, "offset": offset, "farm": farm})
 	if queryErr != nil {
 		return []entity_public.DisplayEntry{}, 0, queryErr
 	}

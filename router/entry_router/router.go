@@ -168,7 +168,9 @@ func filterEntries(c *gin.Context) {
 		page = 1
 	}
 
-	entries, total, toast := entry_service.FilterEntries(entryFilter, page)
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	entries, total, toast := entry_service.FilterEntries(entryFilter, page, farm)
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}

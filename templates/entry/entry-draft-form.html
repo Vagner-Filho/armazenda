@@ -47,10 +47,11 @@
                 </div>
                 {{ template "vehicle-selector" . }}
                 <div class="flex flex-col-reverse">
-                    <input type="number" name="tare" id="tare" class="peer" {{ if ne .Draft.Tare.String "0" }}
-                        value="{{ .Draft.Tare }}" {{ end }}>
-                    <label for="tare" class="label-peer">
-                        Tara
+                    <input type="number" name="grossWeight" id="grossWeight" class="peer" {{ if ne .Draft.GrossWeight.String "0" }}
+                        value="{{ .Draft.GrossWeight }}" {{ end }}>
+                    <label for="grossWeight" class="label-peer">
+                        Peso Bruto (KG)
+                        <i class="text-xs font-normal text-gray-500 normal-case">Peso total da carga incluindo o transporte</i>
                     </label>
                 </div>
             </fieldset>
@@ -69,34 +70,12 @@
         const dialogEl = document.querySelector("#addEntryDraftDialog")
         if (dialogEl) {
             dialogEl.showModal()
-            const arrivalDateEl = dialogEl.querySelector("input#arrival-date")
-
             function closeEntryFormDialog() {
                 dialogEl.close()
                 dialogEl.remove()
             }
             dialogEl.addEventListener('close', closeEntryFormDialog)
             window.closeEntryFormDialog = closeEntryFormDialog
-
-            const grossWeightInput = dialogEl.querySelector('input#grossWeight')
-            const tareInput = dialogEl.querySelector('input#tare')
-
-            let grossWeightValue = Number(grossWeightInput ? grossWeightInput.value : 0)
-            let tareValue = Number(tareInput ? tareInput.value : 0)
-
-            const netWeightInput = dialogEl.querySelector('input#netWeight')
-            if (netWeightInput) {
-                grossWeightInput.addEventListener('input', (e) => {
-                    grossWeightValue = Number(e.target.value) ?? 0
-
-                    netWeightInput.value = grossWeightValue - tareValue
-                })
-                tareInput.addEventListener('input', (e) => {
-                    tareValue = Number(e.target.value) ?? 0
-
-                    netWeightInput.value = grossWeightValue - tareValue
-                })
-            }
             document.body.addEventListener('htmx:configRequest', function (evt) {
                 evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
             });

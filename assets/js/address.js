@@ -4,6 +4,11 @@ export function setupCepListener(cepFieldId, streetFieldId, neighborhoodFieldId,
         cepInput.addEventListener('input', () => {
             const cep = cepInput.value.replace(/\D/g, '');
             if (cep.length === 8) {
+                const fieldset = cepInput.closest('fieldset')
+                if (fieldset) {
+                    fieldset.classList.toggle('cep-data-loading')
+                }
+                cepInput.setAttribute('disabled', true)
                 fetch(`https://viacep.com.br/ws/${cep}/json/`)
                     .then(response => response.json())
                     .then(data => {
@@ -14,7 +19,13 @@ export function setupCepListener(cepFieldId, streetFieldId, neighborhoodFieldId,
                             document.getElementById(stateFieldId).value = data.uf;
                         }
                     })
-                    .catch(error => console.error('Error fetching CEP:', error));
+                    .catch(error => console.error('Error fetching CEP:', error))
+                    .finally(() => {
+                        if (fieldset) {
+                            fieldset.classList.toggle('cep-data-loading')
+                        }
+                        cepInput.removeAttribute('disabled')
+                    })
             }
         });
     }

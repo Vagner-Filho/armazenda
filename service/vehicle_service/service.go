@@ -17,9 +17,9 @@ func GetVehiclesByFarm(farm uint32) ([]entity_public.Vehicle, *entity_public.Toa
 	return vehicles, nil
 }
 
-func GetVehicle(plate string) (entity_public.Vehicle, error) {
+func GetVehicle(id uint16) (entity_public.Vehicle, error) {
 	vModel, _ := vehicle_model.GetVehicleModel()
-	return vModel.GetVehicle(plate)
+	return vModel.GetVehicle(id)
 }
 
 func AddVehicle(v entity_public.Vehicle) (entity_public.Vehicle, error) {

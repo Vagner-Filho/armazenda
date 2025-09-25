@@ -152,7 +152,9 @@ func filterDepartures(c *gin.Context) {
 		page = 1
 	}
 
-	departures, total, toast := departure_service.FilterDepartures(departureFilter, page)
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	departures, total, toast := departure_service.FilterDepartures(departureFilter, page, farm)
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}

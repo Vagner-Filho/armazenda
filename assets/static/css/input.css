@@ -44,6 +44,10 @@
         @apply text-gray-500
     }
 
+    label > i {
+        @apply text-xs font-normal text-gray-500 normal-case
+    }
+
     input,
     select {
         @apply transition-all duration-300 ease-linear outline-0 rounded-md h-8 lg:h-10 px-2 py-2 text-gray-700 focus:ring-green-600 focus:ring-2 focus:ring-inset bg-stone-100 focus-visible:outline-0 focus-visible:outline-none text-sm lg:text-base

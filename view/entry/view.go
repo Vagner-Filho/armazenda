@@ -165,8 +165,8 @@ func GetEntryFormFromDraft(draftId uint32, farm uint32) (EntryForm, []*entity_pu
 		formFields.SelectedVehicle = draft.Vehicle
 		formFields.SelectedField = draft.Field
 
-		tare, _ := draft.Tare.Float64()
-		formFields.Entry.Tare = tare
+		grossWeight, _ := draft.GrossWeight.Float64()
+		formFields.Entry.GrossWeight = grossWeight
 
 		if draft.Origin != nil {
 			for i, p := range formFields.People {

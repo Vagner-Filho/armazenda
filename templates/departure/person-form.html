@@ -10,22 +10,15 @@
         Selecione o tipo de pessoa e preencha os dados para cadastrar um novo comprador.
       </p>
     </header>
-
     <div class="flex items-center justify-center w-full py-4">
-      <button type="button" id="pessoa-juridica-btn"
-        class="h-10 px-4 font-semibold rounded-md rounded-r-none ring-2 ring-inset ring-sky-500 text-white bg-sky-500 transition-colors duration-300"
-        onclick="toggleForm()">
+      <button type="button" id="pessoa-juridica-btn" class="h-10 px-4 font-semibold rounded-md rounded-r-none ring-2 ring-inset ring-sky-500 text-white bg-sky-500 transition-colors duration-300" onclick="toggleForm()">
         Pessoa Jurídica
       </button>
-      <button type="button" id="pessoa-fisica-btn"
-        class="h-10 px-4 font-semibold rounded-md rounded-l-none ring-2 ring-inset ring-sky-500 text-sky-500 transition-colors duration-300"
-        onclick="toggleForm()">
+      <button type="button" id="pessoa-fisica-btn" class="h-10 px-4 font-semibold rounded-md rounded-l-none ring-2 ring-inset ring-sky-500 text-sky-500 transition-colors duration-300" onclick="toggleForm()">
         Pessoa Física
       </button>
     </div>
-
-    <form id="pessoa-juridica-form" hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend"
-      class="flex flex-col gap-4">
+    <!--<form id="pessoa-juridica-form" hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend" class="flex flex-col gap-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
           <legend class="fieldset-legend">
@@ -56,8 +49,7 @@
             </label>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="number" step="0.1" name="humidityDiscount" id="desconto-umidade-pj" class="peer" required
-              value="1.7">
+            <input type="number" step="0.1" name="humidityDiscount" id="desconto-umidade-pj" class="peer" required value="1.7">
             <label for="desconto-umidade-pj" class="label-peer">
               Desconto Umidade
             </label>
@@ -73,12 +65,45 @@
           Adicionar
         </button>
       </div>
-    </form>
-
-    <form id="pessoa-fisica-form" hx-post="/person/natural" hx-target="#people-rows" hx-swap="beforeend"
-      class="hidden flex-col gap-4">
+    </form>-->
+    <form id="pessoa-form" hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend" class="gap-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
+        <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow" id="pessoa-juridica-fieldset">
+          <legend class="fieldset-legend">
+            Identificação
+          </legend>
+          <div class="flex flex-col-reverse">
+            <input type="text" name="companyName" id="person-name-pj" class="peer" required>
+            <label for="person-name-pj" class="label-peer">
+              Razão Social
+            </label>
+          </div>
+          <div class="flex flex-col-reverse">
+            <input type="text" name="fantasyName" id="fantasy-name" class="peer">
+            <label for="fantasy-name" class="label-peer">
+              Nome Fantasia (opcional)
+            </label>
+          </div>
+          <div class="flex flex-col-reverse">
+            <input type="text" name="cnpj" id="document-pj" class="peer" required maxlength="14">
+            <label for="document-pj" class="label-peer">
+              CNPJ
+            </label>
+          </div>
+          <div class="flex flex-col-reverse">
+            <input type="text" name="inscricaoEstadual" id="ie-pj" class="peer" required>
+            <label for="ie-pj" class="label-peer">
+              Inscrição Estadual
+            </label>
+          </div>
+          <div class="flex flex-col-reverse">
+            <input type="number" step="0.1" name="humidityDiscount" id="desconto-umidade-pj" class="peer" required value="1.7">
+            <label for="desconto-umidade-pj" class="label-peer">
+              Desconto Umidade
+            </label>
+          </div>
+        </fieldset>
+        <fieldset class="flex-col gap-2 p-2 bg-white rounded-lg shadow hidden" id="pessoa-fisica-fieldset">
           <legend class="fieldset-legend">
             Identificação
           </legend>
@@ -101,8 +126,7 @@
             </label>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="number" step="0.1" name="humidityDiscount" id="desconto-umidade-pf" class="peer" required
-              value="1.7">
+            <input type="number" step="0.1" name="humidityDiscount" id="desconto-umidade-pf" class="peer" required value="1.7">
             <label for="desconto-umidade-pf" class="label-peer">
               Desconto Umidade
             </label>
@@ -121,7 +145,7 @@
     </form>
   </div>
   <script type="module">
-    import { removeEmptyFields } from "/public/assets/js/form.js"
+    import {removeEmptyFields} from "/public/assets/js/form.js"
     const dialogEl = document.querySelector("dialog#personFormDialog")
     if (dialogEl) {
       dialogEl.showModal()
@@ -139,30 +163,40 @@
       });
     }
 
-    let pessoaJuridicaForm = document.querySelector('form#pessoa-juridica-form')
     let pessoaJuridicaBtn = document.querySelector('button#pessoa-juridica-btn')
-    let pessoaFisicaForm = document.querySelector('form#pessoa-fisica-form')
     let pessoaFisicaBtn = document.querySelector('button#pessoa-fisica-btn')
+    let pessoaForm = document.querySelector('form#pessoa-form')
+    let naturalFieldset = document.querySelector('fieldset#pessoa-fisica-fieldset')
+    let legalFieldset = document.querySelector('fieldset#pessoa-juridica-fieldset')
 
     function toggleForm() {
-      if (pessoaFisicaForm && pessoaFisicaForm.classList.contains('hidden')) {
-        pessoaJuridicaForm.classList.add('hidden')
-        pessoaFisicaForm.classList.remove('hidden')
+      if (naturalFieldset && naturalFieldset.classList.contains('hidden')) {
+        legalFieldset.classList.add('hidden')
+        legalFieldset.classList.remove('flex')
+
+        naturalFieldset.classList.add('flex')
+        naturalFieldset.classList.remove('hidden')
 
         pessoaJuridicaBtn.classList.remove('text-white', 'bg-sky-500')
         pessoaJuridicaBtn.classList.add('text-sky-500')
         pessoaFisicaBtn.classList.remove('text-sky-500')
         pessoaFisicaBtn.classList.add('text-white', 'bg-sky-500')
 
+        pessoaForm.setAttribute('hx-post', '/person/natural')
         return
       }
-      pessoaFisicaForm.classList.add('hidden')
-      pessoaJuridicaForm.classList.remove('hidden')
+      naturalFieldset.classList.add('hidden')
+      naturalFieldset.classList.remove('flex')
+
+      legalFieldset.classList.add('flex')
+      legalFieldset.classList.remove('hidden')
 
       pessoaFisicaBtn.classList.remove('text-white', 'bg-sky-500')
       pessoaFisicaBtn.classList.add('text-sky-500')
       pessoaJuridicaBtn.classList.remove('text-sky-500')
       pessoaJuridicaBtn.classList.add('text-white', 'bg-sky-500')
+
+      pessoaForm.setAttribute('hx-post', '/person/legal')
     }
 
     window.toggleForm = toggleForm

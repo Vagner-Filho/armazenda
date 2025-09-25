@@ -42,6 +42,7 @@
     --color-gray-800: oklch(27.8% 0.033 256.848);
     --color-stone-50: oklch(98.5% 0.001 106.423);
     --color-stone-100: oklch(97% 0.001 106.424);
+    --color-stone-300: oklch(86.9% 0.005 56.366);
     --color-stone-400: oklch(70.9% 0.01 56.259);
     --color-black: #000;
     --color-white: #fff;
@@ -82,6 +83,7 @@
     --drop-shadow-lg: 0 4px 4px rgb(0 0 0 / 0.15);
     --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
     --animate-spin: spin 1s linear infinite;
+    --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     --default-transition-duration: 150ms;
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     --default-font-family: var(--font-sans);
@@ -566,6 +568,9 @@
   }
   .shrink-0 {
     flex-shrink: 0;
+  }
+  .flex-grow {
+    flex-grow: 1;
   }
   .grow {
     flex-grow: 1;
@@ -1296,6 +1301,26 @@
       rotate: 180deg;
     }
   }
+  .group-\[\.cep-data-loading\]\:animate-pulse {
+    &:is(:where(.group):is(.cep-data-loading) *) {
+      animation: var(--animate-pulse);
+    }
+  }
+  .group-\[\.cep-data-loading\]\:\!bg-blue-500 {
+    &:is(:where(.group):is(.cep-data-loading) *) {
+      background-color: var(--color-blue-500) !important;
+    }
+  }
+  .group-\[\.cep-data-loading\]\:text-stone-300 {
+    &:is(:where(.group):is(.cep-data-loading) *) {
+      color: var(--color-stone-300);
+    }
+  }
+  .group-\[\.cep-data-loading\]\:ring-stone-400 {
+    &:is(:where(.group):is(.cep-data-loading) *) {
+      --tw-ring-color: var(--color-stone-400);
+    }
+  }
   .peer-focus\:text-green-600 {
     &:is(:where(.peer):focus ~ *) {
       color: var(--color-green-600);
@@ -1806,6 +1831,14 @@
   label {
     color: var(--color-gray-500);
   }
+  label > i {
+    font-size: var(--text-xs);
+    line-height: var(--tw-leading, var(--text-xs--line-height));
+    --tw-font-weight: var(--font-weight-normal);
+    font-weight: var(--font-weight-normal);
+    color: var(--color-gray-500);
+    text-transform: none;
+  }
   input, select {
     height: calc(var(--spacing) * 8);
     border-radius: var(--radius-md);
@@ -2092,6 +2125,11 @@
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
   }
 }
 @layer properties {

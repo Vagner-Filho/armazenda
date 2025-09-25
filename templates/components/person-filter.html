@@ -6,11 +6,13 @@
         </label>
     </legend>
     <select name="person" id="person-filter" class="w-full text-sm peer">
-        <option value="null" selected>
+        <option value="" selected>
             Nenhum
         </option>
         {{ range . }}
-        {{ template "simple-option" . }}
+        <option value="{{ if ne .Id nil }}{{ .Id }}{{ else }}NULL{{ end }}">
+            {{ .Name }}
+        </option>
         {{ else }}
         <option value="-1">
             Nenhum comprador encontrado
