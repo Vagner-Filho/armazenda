@@ -1,25 +1,13 @@
 {{ define "cpf-field" }}
 <div class="flex flex-col-reverse py-1">
-  <input
-    type="text"
-    id="cpf"
-    name="cpf"
-    class="peer px-2"
-    placeholder="000.000.000-00"
-    required
-    maxlength="14"
-    pattern="\d{3}\.\d{3}\.\d{3}-\d{2}"
-    title="Digite o CPF no formato 000.000.000-00"
-    oninput="formatCPF(this)"
-    autofocus
-  >
+  <input type="text" id="cpf" name="cpf" class="peer px-2" placeholder="000.000.000-00" required maxlength="14" pattern="\d{3}\.\d{3}\.\d{3}-\d{2}" title="Digite o CPF no formato 000.000.000-00" oninput="formatCPF(this)">
   <label for="cpf" class="label-peer">CPF</label>
   <script>
     /**
-         * Formats the input value to the Brazilian CPF format (XXX.XXX.XXX-XX)
-         * as the user types.
-         * @param {HTMLInputElement} inputElement - The input element to format.
-         */
+                                 * Formats the input value to the Brazilian CPF format (XXX.XXX.XXX-XX)
+                                 * as the user types.
+                                 * @param {HTMLInputElement} inputElement - The input element to format.
+                                 */
         function formatCPF(inputElement) {
             // 1. Get the raw value and remove non-digit characters
             let value = inputElement.value.replace(/\D/g, '');
@@ -46,8 +34,10 @@
             // 4. Update the input field's value
             inputElement.value = formattedValue;
         }
-        document.body.addEventListener('htmx:configRequest', function(evt) {
-          evt.detail.parameters['cpf'] = evt.detail.parameters['cpf'].replace(/\D/g, '');
+        document.body.addEventListener('htmx:configRequest', function (evt) {
+            if (evt.detail.parameters.has('cpf')) {
+                evt.detail.parameters['cpf'] = evt.detail.parameters['cpf'].replace(/\D/g, '');
+            }
         });
   </script>
 </div>

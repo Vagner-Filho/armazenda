@@ -16,7 +16,7 @@
             <div class="font-light" style="color: #7a7b87">
                 Data de emissão
             </div>
-            <div class="">
+            <div class="" id="emission-date">
                 {{ .DepartureDate }}
             </div>
         </div>
@@ -25,6 +25,7 @@
         FAZENDA
     </div>
     <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+        {{if .FarmName}}
         <div class="flex flex-col" style="width: 50%;">
             <div class="font-light" style="color: #7a7b87">
                 Nome
@@ -33,6 +34,7 @@
                 {{ .FarmName }}
             </div>
         </div>
+        {{end}}
         <div class="flex flex-col" style="width: 50%;">
             <div class="font-light" style="color: #7a7b87">
                 Inscrição Estadual
@@ -123,7 +125,7 @@
             <div class="font-light" style="color: #7a7b87">
                 Peso Bruto
             </div>
-            <div class="">
+            <div class="" id="grossWeight">
                 {{ .GrossWeight }}
             </div>
         </div>
@@ -131,7 +133,7 @@
             <div class="font-light" style="color: #7a7b87">
                 Tara
             </div>
-            <div class="">
+            <div class="" id="tare">
                 {{ .Tare }}
             </div>
         </div>
@@ -149,7 +151,7 @@
             <div class="font-light" style="color: #7a7b87">
                 Peso Líquido
             </div>
-            <div class="">
+            <div class="" id="netWeight">
                 {{ .NetWeight }}
             </div>
         </div>

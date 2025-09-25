@@ -59,12 +59,13 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32, page int) ([]entity_p
 	}
 
 	rows, queryErr := em.pool.Query(context.Background(), `
-		SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate, e.farm
+		SELECT e.id, p.name, f.name, v.plate, e.netweight, e.arrivaldate, e.farm
 			FROM entry e
 			JOIN field f ON e.field = f.id
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
-			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
+			LEFT JOIN inactive_entry ie ON ie.entry_Id = e.id
+			LEFT JOIN vehicle v ON v.id = e.vehicle
 			WHERE ie.entry_id IS NULL AND e.farm = @userFarm
 			ORDER BY e.arrivaldate DESC
 			LIMIT @pageSize OFFSET @offset
@@ -227,7 +228,7 @@ func (em *entryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_err
 		`SELECT
 			e.id,
 			c.name AS safra,
-			e.vehicle,
+			v.plate,
 			e.grossweight,
 			e.tare,
 			e.netweight,
@@ -252,6 +253,7 @@ func (em *entryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_err
 		JOIN crop c ON c.id = e.crop
 		JOIN product p ON p.id = c.product
 		JOIN farm f ON f.id = e.farm
+		JOIN vehicle v ON v.id = e.vehicle
 		LEFT JOIN farm_config fc ON fc.farm_id = f.id
 		LEFT JOIN farm_address fa ON fa.farm_id = f.id
 		LEFT JOIN entry_origin eo ON eo.entry_id = e.id
@@ -347,6 +349,7 @@ func (em *entryModel) FilterEntries(ef entity_public.EntryFilter, page int, farm
 			JOIN field f ON e.field = f.id
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
+			JOIN vehicle v ON v.id = e.vehicle
 			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
 			WHERE ` + whereCondition + " AND e.farm = @farm"
 
@@ -361,11 +364,12 @@ func (em *entryModel) FilterEntries(ef entity_public.EntryFilter, page int, farm
 		return []entity_public.DisplayEntry{}, 0, nil
 	}
 
-	query := `SELECT e.id, p.name, f.name, e.vehicle, e.netweight, e.arrivaldate, e.farm
+	query := `SELECT e.id, p.name, f.name, v.plate, e.netweight, e.arrivaldate, e.farm
 			FROM entry e
 			JOIN field f ON e.field = f.id
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
+			JOIN vehicle v ON v.id = e.vehicle
 			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
 			WHERE ` + whereCondition + `
 			AND e.farm = @farm

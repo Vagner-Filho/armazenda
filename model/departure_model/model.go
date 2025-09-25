@@ -85,6 +85,7 @@ func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter, pag
 			JOIN product p ON c.product = p.id
 			LEFT JOIN inactive_departure id ON id.departure_id = d.id
 			LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
+			JOIN vehicle v ON v.id = d.id
 			WHERE ` + whereCondition + " AND d.farm = @farm"
 
 	var totalDepartures int
@@ -97,12 +98,13 @@ func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter, pag
 		return []entity_public.DisplayDeparture{}, 0, nil
 	}
 
-	query := `SELECT d.id, p.name, d.vehicle, d.departureDate, d.netWeight 
+	query := `SELECT d.id, p.name, v.plate, d.departureDate, d.netWeight 
 			FROM departure d
 			JOIN crop c ON d.crop = c.id
 			JOIN product p ON c.product = p.id
 			LEFT JOIN inactive_departure id ON id.departure_id = d.id
 			LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
+			JOIN vehicle v ON v.id = d.id
 			WHERE ` + whereCondition + `
 			AND d.farm = @farm
 			ORDER BY d.departureDate DESC
@@ -139,10 +141,11 @@ func (dm *departureModel) GetDisplayDepartures(farm uint32, page int) ([]entity_
 	}
 
 	rows, queryErr := dm.pool.Query(context.Background(), `
-		SELECT d.id, p.name, d.vehicle, d.departureDate, d.netWeight
+		SELECT d.id, p.name, v.plate, d.departureDate, d.netWeight
 		FROM departure d
 		JOIN crop c ON d.crop = c.id
 		JOIN product p ON c.product = p.id
+		JOIN vehicle v ON v.id = d.vehicle
 		WHERE d.id NOT IN (SELECT departure_id FROM inactive_departure)
 		AND d.farm = @userFarm
 		ORDER BY d.departureDate DESC
@@ -254,7 +257,7 @@ func (dm *departureModel) GetDeparturePdf(id uint32) (entity_public.DeparturePdf
 		`SELECT
 			d.id,
 			c.name AS safra,
-			d.vehicle,
+			v.plate,
 			d.grossweight,
 			d.tare,
 			d.netweight,
@@ -277,6 +280,7 @@ func (dm *departureModel) GetDeparturePdf(id uint32) (entity_public.DeparturePdf
 		JOIN crop c ON c.id = d.crop
 		JOIN product prod ON prod.id = c.product
 		JOIN farm f ON f.id = d.farm
+		JOIN vehicle v ON v.id = d.vehicle
 		LEFT JOIN farm_config fc ON fc.farm_id = f.id
 		LEFT JOIN farm_address fa ON fa.farm_id = f.id
 		LEFT JOIN departure_recipient dr ON dr.departure_id = d.id

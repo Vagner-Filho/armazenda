@@ -1,15 +1,15 @@
 {{ define "navbar" }}
 <nav class="fixed top-0 left-0 w-screen h-10 lg:h-14 bg-sky-50 text-center leading-10 shadow-lg">
-        <div class="ml-auto flex items-center gap-2 w-fit h-full px-2">
-            {{ template "user-icon" "text-green-900 size-6 lg:size-9" }}
-            <h3 id="username" class="text-green-900 text-lg lg:text-xl">...</h3>
-        </div>
-    <script type="module">
-        const username = document.cookie.slice(document.cookie.indexOf('username=') + 9)
+  <div class="ml-auto flex items-center gap-2 w-fit h-full px-2">
+    {{ template "user-icon" "text-green-900 size-6 lg:size-9" }}
+    <h3 id="username" class="text-green-900 text-lg lg:text-xl">...</h3>
+  </div>
+  <script type="module">
+    const username = document.cookie.slice(document.cookie.indexOf('username=') + 9)
         const usernameEl = document.querySelector('nav h3')
         if (usernameEl && username) {
-            usernameEl.textContent = username
+            usernameEl.textContent = username.replaceAll('+', ' ')
         }
-    </script>
+  </script>
 </nav>
 {{ end }}

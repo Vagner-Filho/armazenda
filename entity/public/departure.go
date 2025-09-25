@@ -105,7 +105,7 @@ type DeparturePdf struct {
 	Produto           string
 	PersonName        string
 	Document          string
-	FarmName          string
+	FarmName          *string
 	FarmStreet        *string
 	FarmCep           *string
 	FarmNumber        *int

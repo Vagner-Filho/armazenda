@@ -20,7 +20,7 @@
         </header>
         <form class="flex flex-col gap-4" {{ if .Entry.Id }} hx-put="/entry/{{ .Entry.Id }}"
             hx-target="#entry-{{ .Entry.Id }}" hx-swap="outerHTML" {{ else }} hx-post="/entry"
-            hx-target="#entries-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#btns-container">
+            hx-target="#entries-table-body" hx-swap="afterbegin" {{ end }} hx-indicator="#btns-container">
             <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
                 <legend class="fieldset-legend">
                     Identificação
@@ -203,6 +203,11 @@
             }
             document.body.addEventListener('htmx:configRequest', function (evt) {
                 evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
+            });
+            document.body.addEventListener('htmx:afterRequest', function (evt) {
+                if (evt.detail.successful && evt.detail.requestConfig.path === '/entry' && (evt.detail.requestConfig.verb === 'post' || evt.detail.requestConfig.verb === 'put')) {
+                    closeEntryFormDialog()
+                }
             });
         }
 
