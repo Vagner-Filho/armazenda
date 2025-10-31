@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupStatsRoutes(router *gin.Engine) {
+func UseStatsRoutes(router *gin.Engine) {
 	statsGroup := router.Group("/stats")
 	{
 		statsGroup.GET("/top-supplier", stats.TopSupplierCard)

@@ -25,13 +25,6 @@
           Gere relatórios detalhados sobre as operações do seu armazém.
         </p>
       </header>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        <div hx-get="/stats/top-supplier" hx-trigger="load" hx-swap="outerHTML"></div>
-        <div hx-get="/stats/top-buyer" hx-trigger="load" hx-swap="outerHTML"></div>
-        <div hx-get="/stats/most-frequent-supplier" hx-trigger="load" hx-swap="outerHTML"></div>
-        <div hx-get="/stats/best-quality-supplier" hx-trigger="load" hx-swap="outerHTML"></div>
-        <div hx-get="/stats/worst-quality-supplier" hx-trigger="load" hx-swap="outerHTML"></div>
-      </div>
       <div class="bg-white p-4 rounded-lg shadow mb-8">
         <div class="flex justify-between items-end gap-2 mb-4">
           {{ template "report-filters" . }}

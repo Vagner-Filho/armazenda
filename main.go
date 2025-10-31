@@ -1,6 +1,7 @@
 package main
 
 import (
+	"armazenda/model/analysis_model"
 	"armazenda/model/armazenda_database"
 	"armazenda/model/crop_model"
 	"armazenda/model/departure_model"
@@ -16,6 +17,7 @@ import (
 	"armazenda/model/user_model"
 
 	"armazenda/model/vehicle_model"
+	"armazenda/router/analysis_router"
 	"armazenda/router/crop_router"
 	"armazenda/router/departure_router"
 	"armazenda/router/entry_router"
@@ -59,7 +61,6 @@ func authenticate(c *gin.Context) {
 	sessionCookie, cookieErr := c.Request.Cookie("session_id")
 	if cookieErr != nil {
 		c.HTML(http.StatusUnauthorized, "401", gin.H{})
-		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
@@ -107,6 +108,7 @@ func main() {
 	farm_config_model.InitFarmConfigModel(pool)
 	user_approval_model.InitUserApprovalModel(pool)
 	stats_model.InitStatsModel(pool)
+	analysis_model.InitAnalysisModel(pool)
 	model_error.InitLoggerModel(pool)
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
@@ -140,7 +142,8 @@ func main() {
 	report_router.UseReportRoutes(router)
 	farm_config_router.UseFarmConfigRouter(router)
 	user_approval_router.UserApprovalRoutes(router)
-	stats_router.SetupStatsRoutes(router)
+	stats_router.UseStatsRoutes(router)
+	analysis_router.UseAnalysisRoutes(router)
 
 	port := os.Getenv("PORT")
 	if port == "" {
