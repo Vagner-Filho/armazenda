@@ -1,11 +1,11 @@
 package entity_public
 
 type ProductiveField struct {
-	Name         string  `json:"name"`
-	Productivity float64 `json:"productivity"`
+	Name         string
+	Productivity float64
 }
 
 type ProductiveFields struct {
-	Nominal  *ProductiveField `json:"nominal"`
-	Relative *ProductiveField `json:"relative"`
+	Nominal  []ProductiveField
+	Relative []ProductiveField
 }

@@ -32,16 +32,32 @@ function getDeparturePdf(element) {
 
 						const netWeight = html.querySelector('#netWeight')
 						netWeight.textContent = formatWeight(netWeight.textContent)
-						document.body.append(html.body.firstElementChild)
+
+						const css = document.querySelector("link[href*='output.css']");
+						const iframe = document.createElement("iframe");
+						iframe.style.display = "none";
+						document.body.appendChild(iframe);
+
+						iframe.contentDocument.write(html.documentElement.outerHTML);
+						iframe.contentDocument.close();
+
 						function removePdf() {
-							const pdf = document.querySelector(`#departure-pdf`)
-							if (pdf) {
-								pdf.remove()
-							}
+							iframe.remove();
 						}
-						window.addEventListener('afterprint', removePdf)
-						window.print()
-						window.removeEventListener('afterprint', removePdf)
+
+						window.addEventListener("afterprint", removePdf, { once: true });
+
+						if (css) {
+							const link = iframe.contentDocument.createElement("link");
+							link.rel = "stylesheet";
+							link.href = css.href;
+							link.onload = () => {
+								iframe.contentWindow.print();
+							};
+							iframe.contentDocument.head.appendChild(link);
+						} else {
+							iframe.contentWindow.print();
+						}
 					})
 			}
 		})

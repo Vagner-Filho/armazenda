@@ -429,10 +429,6 @@
     width: calc(var(--spacing) * 9);
     height: calc(var(--spacing) * 9);
   }
-  .size-60 {
-    width: calc(var(--spacing) * 60);
-    height: calc(var(--spacing) * 60);
-  }
   .h-5 {
     height: calc(var(--spacing) * 5);
   }
@@ -447,9 +443,6 @@
   }
   .h-60 {
     height: calc(var(--spacing) * 60);
-  }
-  .h-96 {
-    height: calc(var(--spacing) * 96);
   }
   .h-\[130px\] {
     height: 130px;

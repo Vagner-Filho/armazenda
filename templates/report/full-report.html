@@ -1,4 +1,4 @@
-<div id="full-report" class="p-4 hidden print:block">
+<div id="full-report" class="hidden print:block">
   <div class="mx-auto">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
@@ -120,37 +120,13 @@
         <span class="format-weight">{{.Balance}}</span></p>
     </div>
   </div>
-  <style>
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-
-      #full-report,
-      #full-report * {
-        visibility: visible;
-      }
-
-      #full-report {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-      }
-
-      @page {
-        size: A4 landscape;
-        margin: 0;
-      }
-    }
-  </style>
   <script type="module">
+    // Format weights before printing
     const weightFormatter = new Intl.NumberFormat('pt-BR', {
       style: 'decimal',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
-
     document.querySelectorAll('.format-weight').forEach(el => {
       const value = parseFloat(el.textContent);
       if (!isNaN(value)) {
@@ -158,14 +134,58 @@
       }
     });
 
-    function deleteReport() {
-      const reportDiv = document.getElementById('full-report');
-      if (reportDiv) {
-        reportDiv.remove();
-        window.removeEventListener("afterprint", deleteReport);
+    // Printing logic
+    const reportElement = document.getElementById('full-report');
+    const reportHtml = reportElement.cloneNode(true);
+
+    // Remove the script from the clone to prevent recursion
+    reportHtml.querySelector('script')?.remove();
+
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument;
+    doc.write('<!DOCTYPE html><html><head><title>Relatório</title></head><body></body></html>');
+    
+    // Add print-specific styles for landscape orientation
+    const style = doc.createElement('style');
+    style.textContent = `
+      @media print {
+        @page {
+          size: landscape;
+          margin: .4cm;
+        }
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
       }
+    `;
+    doc.head.appendChild(style);
+    
+    doc.body.appendChild(reportHtml);
+    doc.close();
+
+    function cleanup() {
+      reportElement.remove();
+      iframe.remove();
+      window.removeEventListener('afterprint', cleanup);
     }
-    window.addEventListener("afterprint", deleteReport);
-    window.print();
+    window.addEventListener('afterprint', cleanup);
+
+    const css = document.querySelector("link[href*='output.css']");
+    if (css) {
+      const link = doc.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = css.href;
+      link.onload = () => {
+        iframe.contentWindow.print();
+      };
+      doc.head.appendChild(link);
+    } else {
+      // Fallback if CSS is not found
+      iframe.contentWindow.print();
+    }
   </script>
 </div>

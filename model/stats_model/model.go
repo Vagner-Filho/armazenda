@@ -236,3 +236,72 @@ func (sm *StatsModel) GetWorstQualitySupplier(farmId uint32) (entity_public.Stat
 		Type:       "worst_quality_supplier",
 	}, nil
 }
+
+func (sm *StatsModel) GetNominalMostProductiveField(farmID uint32) ([]entity_public.ProductiveField, error) {
+	query := `
+		SELECT
+			f.name,
+			SUM(e.netweight) as total_weight
+		FROM
+			entry e
+		JOIN
+			field f ON e.field = f.id
+		LEFT JOIN
+			inactive_entry ie ON e.id = ie.entry_id
+		WHERE
+			e.farm = @farm AND ie.entry_id IS NULL
+		GROUP BY
+			f.name
+		ORDER BY
+			total_weight DESC
+		LIMIT 5;`
+
+	rows, queryErr := sm.pool.Query(context.Background(), query, pgx.NamedArgs{"farm": farmID})
+	if queryErr != nil {
+		fmt.Printf("\n queryErr: %v\n", queryErr.Error())
+		return []entity_public.ProductiveField{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	data, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.ProductiveField])
+	if collectErr != nil {
+		fmt.Printf("\n collectErr: %v\n", collectErr.Error())
+		return []entity_public.ProductiveField{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+
+	return data, nil
+
+}
+
+func (sm *StatsModel) GetRelativeMostProductiveField(farmID uint32) ([]entity_public.ProductiveField, error) {
+	query := `
+		SELECT
+			f.name,
+			SUM(e.netweight) / f.hectares as productivity
+		FROM
+			entry e
+		JOIN
+			field f ON e.field = f.id
+		LEFT JOIN
+			inactive_entry ie ON e.id = ie.entry_id
+		WHERE
+			e.farm = @farm AND ie.entry_id IS NULL
+		GROUP BY
+			f.name, f.hectares
+		ORDER BY
+			productivity DESC
+		LIMIT 5;`
+
+	rows, queryErr := sm.pool.Query(context.Background(), query, pgx.NamedArgs{"farm": farmID})
+	if queryErr != nil {
+		fmt.Printf("\n queryErr: %v\n", queryErr.Error())
+		return []entity_public.ProductiveField{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	data, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.ProductiveField])
+	if collectErr != nil {
+		fmt.Printf("\n collectErr: %v\n", collectErr.Error())
+		return []entity_public.ProductiveField{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+
+	return data, nil
+}

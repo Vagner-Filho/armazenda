@@ -15,4 +15,6 @@ func UseStatsRoutes(router *gin.Engine) {
 		statsGroup.GET("/best-quality-supplier", stats.BestQualitySupplierCard)
 		statsGroup.GET("/worst-quality-supplier", stats.WorstQualitySupplierCard)
 	}
+	router.GET("/analise", stats.GetAnalysisPage)
+	router.GET("/analise/most-productive-field", stats.GetProductiveFields)
 }

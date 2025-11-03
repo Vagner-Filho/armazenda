@@ -54,3 +54,23 @@ func GetWorstQualitySupplierStat(farmId uint32) (*entity_public.StatCard, *entit
 	}
 	return &stat, nil
 }
+
+func GetProductiveFields(farmID uint32) (*entity_public.ProductiveFields, *entity_public.Toast) {
+	model := stats_model.GetStatsModel()
+	nominal, err := model.GetNominalMostProductiveField(farmID)
+	if err != nil {
+		toast := entity_public.GetErrorToast("Houve um erro interno ao buscar o campo produtivo nominal", "")
+		return nil, &toast
+	}
+
+	relative, err := model.GetRelativeMostProductiveField(farmID)
+	if err != nil {
+		toast := entity_public.GetErrorToast("Houve um erro interno ao buscar o campo produtivo relativo", "")
+		return nil, &toast
+	}
+
+	return &entity_public.ProductiveFields{
+		Nominal:  nominal,
+		Relative: relative,
+	}, nil
+}

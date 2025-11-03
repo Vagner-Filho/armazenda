@@ -9,7 +9,7 @@
 </div>
 <script type="module">
   import {setupFieldProdChart} from "/public/assets/js/chart.js"
-  setupFieldProdChart('fieldVolumeProdChart', 'Talhão Maior Volume', ['{{ .Nominal.Name }}'], [{{ .Nominal.Productivity}}]);
-  setupFieldProdChart('fieldSizeRelativeProdChart', 'Talhão Mais Produtivo (Peso Líquido / hectare)', ['{{ .Relative.Name }}'], [{{ .Relative.Productivity}}]);
+  setupFieldProdChart('fieldVolumeProdChart', 'Talhão Maior Volume', [{{ range .Nominal }}'{{ .Name }}',{{ end }}], [{{ range .Nominal }}{{ .Productivity }},{{ end }}]);
+  setupFieldProdChart('fieldSizeRelativeProdChart', 'Talhão Mais Produtivo (Peso Líquido / hectare)', [{{ range .Relative }}'{{ .Name }}',{{ end }}], [{{ range .Relative }}{{ .Productivity }},{{ end }}]);
 </script>
 {{ end }}

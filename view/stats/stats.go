@@ -62,3 +62,19 @@ func WorstQualitySupplierCard(c *gin.Context) {
 	}
 	c.HTML(http.StatusOK, "worst-quality-supplier-card.html", stat)
 }
+
+func GetAnalysisPage(c *gin.Context) {
+	c.HTML(http.StatusOK, "analise.html", gin.H{})
+}
+
+func GetProductiveFields(c *gin.Context) {
+	sessionCookie, _ := c.Request.Cookie("session_id")
+	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
+	fields, toast := stats_service.GetProductiveFields(farmId)
+	if toast != nil {
+		c.Header("HX-Trigger", string(toast.ToJson()))
+		return
+	}
+
+	c.HTML(http.StatusOK, "most-productive-field", fields)
+}
