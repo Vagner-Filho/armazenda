@@ -6,4 +6,5 @@ type Farm struct {
 	Name              *string `form:"name"`
 	HumidityDiscount  float64 `form:"humidityDiscount" binding:"required"`
 	Address
+	StorageName *string `form:"storageName"`
 }

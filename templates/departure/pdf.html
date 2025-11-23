@@ -22,10 +22,19 @@
         </div>
     </div>
     <div style="text-align: left; font-size: 0.85rem; width: 100%; padding-top: 10px; font-weight: bold;">
-        FAZENDA
+        ARMAZÉM
     </div>
     <div class="flex justify-between border-b my-1" style="border-color: #909699;">
-        {{if .FarmName}}
+        {{if .StorageName }}
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                Nome
+            </div>
+            <div class="">
+                {{ .StorageName }}
+            </div>
+        </div>
+        {{ else if .FarmName }}
         <div class="flex flex-col" style="width: 50%;">
             <div class="font-light" style="color: #7a7b87">
                 Nome

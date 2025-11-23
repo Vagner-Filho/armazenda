@@ -166,9 +166,10 @@ func (dm *departureModel) GetDisplayDepartures(farm uint32, page int) ([]entity_
 
 func (dm *departureModel) GetDeparture(id uint32) (entity_public.Departure, *model_error.ModelError) {
 	row, queryErr := dm.pool.Query(context.Background(), `
-		SELECT d.*, dr.person_id, da.humidity, da.damage, da.impurity FROM departure d
+		SELECT d.*, dr.person_id, da.humidity, da.damage, da.impurity, dor.person_id FROM departure d
 		LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
 		LEFT JOIN departure_analysis da ON da.departure_id = d.id
+		LEFT JOIN departure_origin dor ON dor.departure_id = d.id
 		WHERE d.id = @id
 	`, pgx.NamedArgs{"id": id})
 	if queryErr != nil {
@@ -184,10 +185,10 @@ func (dm *departureModel) GetDeparture(id uint32) (entity_public.Departure, *mod
 
 func (dm *departureModel) AddDeparture(d entity_public.Departure) (entity_public.DisplayDeparture, *model_error.ModelError) {
 	row, queryErr := dm.pool.Query(context.Background(), `
-		SELECT * FROM add_get_departure(@crop, @person, @vehicle, @departureDate, @farm, @tare, @grossWeight, @netWeight, @humidity, @damage, @impurity)
+		SELECT * FROM add_get_departure(@crop, @recipientId, @vehicle, @departureDate, @farm, @tare, @grossWeight, @netWeight, @humidity, @damage, @impurity, @originId)
 		`, pgx.NamedArgs{
 		"crop":          d.Crop,
-		"person":        d.Person,
+		"recipientId":   d.Recipient,
 		"vehicle":       d.VehiclePlate,
 		"departureDate": d.DepartureDate,
 		"farm":          d.Farm,
@@ -197,6 +198,7 @@ func (dm *departureModel) AddDeparture(d entity_public.Departure) (entity_public
 		"humidity":      d.Humidity,
 		"damage":        d.Damage,
 		"impurity":      d.Impurity,
+		"originId":      d.Origin,
 	})
 	if queryErr != nil {
 		fmt.Printf("\nadd departure query err:\n%v", queryErr.Error())
@@ -213,7 +215,7 @@ func (dm *departureModel) AddDeparture(d entity_public.Departure) (entity_public
 func (dm *departureModel) PutDeparture(d entity_public.Departure) (entity_public.DisplayDeparture, *model_error.ModelError) {
 	row, queryErr := dm.pool.Query(
 		context.Background(),
-		"SELECT * FROM update_get_departure(@crop, @personId, @departureId, @vehicle, @departureDate, @grossWeight, @tare, @netWeight, @humidity, @damage, @impurity)",
+		"SELECT * FROM update_get_departure(@crop, @recipientId, @departureId, @vehicle, @departureDate, @grossWeight, @tare, @netWeight, @humidity, @damage, @impurity, @originId)",
 		pgx.NamedArgs{
 			"departureId":   d.Id,
 			"crop":          d.Crop,
@@ -221,11 +223,12 @@ func (dm *departureModel) PutDeparture(d entity_public.Departure) (entity_public
 			"grossWeight":   d.GrossWeight,
 			"tare":          d.Tare,
 			"netWeight":     d.NetWeight,
-			"personId":      d.Person,
+			"recipientId":   d.Recipient,
 			"departureDate": d.DepartureDate,
 			"humidity":      d.Humidity,
 			"damage":        d.Damage,
 			"impurity":      d.Impurity,
+			"originId":      d.Origin,
 		})
 	if queryErr != nil {
 		return entity_public.DisplayDeparture{}, &model_error.ModelError{Message: queryErr.Error()}
@@ -275,7 +278,8 @@ func (dm *departureModel) GetDeparturePdf(id uint32) (entity_public.DeparturePdf
 			fa.state as farm_state,
 			da.humidity,
 			da.damage,
-			da.impurity
+			da.impurity,
+			fc.storage_name
 		FROM departure d
 		JOIN crop c ON c.id = d.crop
 		JOIN product prod ON prod.id = c.product

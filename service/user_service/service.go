@@ -23,12 +23,13 @@ func getSecret() []byte {
 var secretKey = getSecret()
 
 func GetFarmFromToken(sessionId string) uint32 {
-	token, _ := jwt.ParseWithClaims(sessionId, &ArmazendaUserClaims{}, func(token *jwt.Token) (any, error) {
+	allocatedClaims := &ArmazendaUserClaims{}
+	token, _ := jwt.ParseWithClaims(sessionId, allocatedClaims, func(token *jwt.Token) (any, error) {
 		return secretKey, nil
 	})
 
-	claims := token.Claims.(*ArmazendaUserClaims)
-	return claims.Farm
+	retrievedClaims := token.Claims.(*ArmazendaUserClaims)
+	return retrievedClaims.Farm
 }
 
 type ArmazendaUserClaims struct {

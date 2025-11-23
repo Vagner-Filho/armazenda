@@ -246,7 +246,8 @@ func (em *entryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_err
 			fa.city AS farm_city,
 			fa.state AS farm_state,
 			COALESCE(person_union.name, 'Pŕopria') AS origin,
-			COALESCE(person_union.document, f.inscricao_estadual) AS document
+			COALESCE(person_union.document, f.inscricao_estadual) AS document,
+			fc.storage_name
 		FROM entry e
 		LEFT JOIN entry_analysis ea ON ea.entryid = e.id
 		JOIN field fi ON fi.id = e.field

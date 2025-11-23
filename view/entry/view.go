@@ -110,7 +110,7 @@ type EntryForm struct {
 	Products        []entity_public.Product
 	Entry           entity_public.EntryDTO
 	People          []entity_public.PersonOption
-	SelectedPerson  *uint32
+	SelectedOrigin  *uint32
 }
 
 func GetEntryForm(farm uint32) (EntryForm, []*entity_public.Toast) {
@@ -138,7 +138,7 @@ func GetExistingEntryForm(entryId uint32, farm uint32) (EntryForm, []*entity_pub
 	if entry.Origin != nil {
 		for i, p := range formFields.People {
 			if p.Id != nil && *p.Id == *entry.Origin {
-				formFields.SelectedPerson = formFields.People[i].Id
+				formFields.SelectedOrigin = formFields.People[i].Id
 				break
 			}
 		}
@@ -171,7 +171,7 @@ func GetEntryFormFromDraft(draftId uint32, farm uint32) (EntryForm, []*entity_pu
 		if draft.Origin != nil {
 			for i, p := range formFields.People {
 				if p.Id != nil && *p.Id == *draft.Origin {
-					formFields.SelectedPerson = formFields.People[i].Id
+					formFields.SelectedOrigin = formFields.People[i].Id
 					break
 				}
 			}
@@ -190,7 +190,7 @@ type EntryDraftForm struct {
 	SelectedField   uint16
 	Draft           entity_public.EntryDraft
 	People          []entity_public.PersonOption
-	SelectedPerson  *uint32
+	SelectedOrigin  *uint32
 }
 
 func GetEntryDraftForm(farm uint32) (EntryDraftForm, []*entity_public.Toast) {

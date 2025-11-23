@@ -99,6 +99,7 @@ func GetDeparturePdf(id uint32) (*entity_public.DeparturePdf, *entity_public.Toa
 		toast := entity_public.GetWarningToast(err.Message, "")
 		return nil, &toast
 	}
+
 	return &departure, nil
 }
 

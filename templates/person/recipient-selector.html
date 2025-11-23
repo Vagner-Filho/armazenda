@@ -1,0 +1,15 @@
+{{ block "recipient-selector" $ }}
+<select name="recipient" id="recipient-selector" class="w-full peer">
+  {{ range $.People }}
+  <option
+    {{ if eq .Id nil }} value="" {{ else }} value="{{ .Id }}" {{ end }} data-humidity="{{ .HumidityDiscount }}"
+    {{ if eq .Id $.SelectedRecipient }} selected {{ end }}>
+    {{ .Name }}
+  </option>
+  {{ else }}
+  <option value="-1">
+    Nenhuma pessoa encontrada
+  </option>
+  {{ end }}
+</select>
+{{ end }}

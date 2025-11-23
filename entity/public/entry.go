@@ -3,6 +3,8 @@ package entity_public
 import (
 	"reflect"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type DisplayEntry struct {
@@ -117,16 +119,20 @@ type EntryPdf struct {
 	VehiclePlate string
 	CargoWeight
 	AnalysisDTO
-	ArrivalDate       time.Time `time_format:"2006-01-02T15:04"`
-	InscricaoEstadual string
-	Produto           string
-	FarmName          *string
-	FarmStreet        *string
-	FarmCep           *string
-	FarmNumber        *int
-	FarmNeighborhood  *string
-	FarmCity          *string
-	FarmState         *string
-	Origin            *string
-	Document          string
+	ArrivalDate        time.Time `time_format:"2006-01-02T15:04"`
+	InscricaoEstadual  string
+	Produto            string
+	FarmName           *string
+	FarmStreet         *string
+	FarmCep            *string
+	FarmNumber         *int
+	FarmNeighborhood   *string
+	FarmCity           *string
+	FarmState          *string
+	Origin             *string
+	Document           string
+	StorageName        *string
+	DiscountedHumidity decimal.Decimal `db:"-"`
+	DiscountedDamage   decimal.Decimal `db:"-"`
+	DiscountedImpurity decimal.Decimal `db:"-"`
 }

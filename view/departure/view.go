@@ -102,13 +102,14 @@ func GetDepartureDraftForm(farm uint32) (DepartureDraftForm, []*entity_public.To
 }
 
 type DepartureForm struct {
-	Vehicles        []entity_public.Vehicle
-	SelectedVehicle string
-	Crops           []entity_public.Crop
-	SelectedCrop    uint8
-	People          []entity_public.PersonOption
-	SelectedPerson  *uint32
-	Departure       entity_public.DepartureDTO
+	Vehicles          []entity_public.Vehicle
+	SelectedVehicle   string
+	Crops             []entity_public.Crop
+	SelectedCrop      uint8
+	People            []entity_public.PersonOption
+	SelectedRecipient *uint32
+	SelectedOrigin    *uint32
+	Departure         entity_public.DepartureDTO
 }
 
 func GetNewDepartureForm(farm uint32) (DepartureForm, []*entity_public.Toast) {
@@ -128,8 +129,8 @@ func GetExistingDepartureForm(departureId uint32, farm uint32) (DepartureForm, [
 	departure, toast := departure_service.GetDeparture(departureId)
 	formFields.SelectedCrop = departure.Crop
 	formFields.SelectedVehicle = departure.VehiclePlate
-	formFields.SelectedPerson = departure.Person
-
+	formFields.SelectedRecipient = departure.Recipient
+	formFields.SelectedOrigin = departure.Origin
 	if toast != nil {
 		toasts = append(toasts, toast)
 	}
@@ -152,7 +153,7 @@ func GetDepartureFormFromDraft(draftId uint32, farm uint32) (DepartureForm, []*e
 		if draft.Person != nil {
 			for i, p := range formFields.People {
 				if p.Id != nil && *p.Id == *draft.Person {
-					formFields.SelectedPerson = formFields.People[i].Id
+					formFields.SelectedRecipient = formFields.People[i].Id
 					break
 				}
 			}

@@ -3,6 +3,8 @@ package entity_public
 import (
 	"reflect"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type Departure struct {
@@ -11,9 +13,10 @@ type Departure struct {
 	VehiclePlate  string    `form:"vehiclePlate" binding:"required"`
 	Crop          uint8     `form:"crop" binding:"required"`
 	CargoWeight
-	Farm   uint32  `form:"farm" binding:"gte=0"`
-	Person *uint32 `form:"origin"`
+	Farm      uint32  `form:"farm" binding:"gte=0"`
+	Recipient *uint32 `form:"recipient"`
 	Analysis
+	Origin *uint32 `form:"origin,omitempty"`
 }
 
 func (d Departure) ToDTO() DepartureDTO {
@@ -25,9 +28,10 @@ func (d Departure) ToDTO() DepartureDTO {
 		VehiclePlate:   d.VehiclePlate,
 		Crop:           d.Crop,
 		CargoWeightDTO: cargo,
-		Person:         d.Person,
+		Recipient:      d.Recipient,
 		Farm:           d.Farm,
 		AnalysisDTO:    analysis,
+		Origin:         d.Origin,
 	}
 }
 
@@ -37,9 +41,10 @@ type DepartureDTO struct {
 	VehiclePlate  string
 	Crop          uint8
 	CargoWeightDTO
-	Person *uint32
-	Farm   uint32
+	Recipient *uint32
+	Farm      uint32
 	AnalysisDTO
+	Origin *uint32
 }
 
 func (dto DepartureDTO) ToEntity() Departure {
@@ -51,7 +56,7 @@ func (dto DepartureDTO) ToEntity() Departure {
 		VehiclePlate:  dto.VehiclePlate,
 		Crop:          dto.Crop,
 		CargoWeight:   cargo,
-		Person:        dto.Person,
+		Recipient:     dto.Recipient,
 		Farm:          dto.Farm,
 		Analysis:      analysis,
 	}
@@ -113,4 +118,8 @@ type DeparturePdf struct {
 	FarmCity          *string
 	FarmState         *string
 	AnalysisDTO
+	StorageName        *string
+	DiscountedHumidity decimal.Decimal `db:"-"`
+	DiscountedDamage   decimal.Decimal `db:"-"`
+	DiscountedImpurity decimal.Decimal `db:"-"`
 }

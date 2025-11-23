@@ -101,8 +101,9 @@ func GetEntry(id uint32) (*entity_public.Entry, *entity_public.Toast) {
 
 func GetEntryPdf(id uint32) (*entity_public.EntryPdf, *entity_public.Toast) {
 	eModel := entry_model.GetEntryModel()
+	pModel := person_model.GetpersonModel()
 
-	entry, err := eModel.GetEntryPdf(id)
+	entryPdf, err := eModel.GetEntryPdf(id)
 	if err != nil {
 		if err.IsServerErr == true {
 			toast := entity_public.GetErrorToast("Houve um erro interno ao buscar a entrada :(", "")
@@ -111,7 +112,28 @@ func GetEntryPdf(id uint32) (*entity_public.EntryPdf, *entity_public.Toast) {
 		toast := entity_public.GetWarningToast(err.Message, "")
 		return nil, &toast
 	}
-	return &entry, nil
+
+	entry, err := eModel.GetEntry(id)
+	if err != nil {
+		if err.IsServerErr == true {
+			toast := entity_public.GetErrorToast("Houve um erro interno ao buscar a entrada :(", "")
+			return nil, &toast
+		}
+		toast := entity_public.GetWarningToast(err.Message, "")
+		return nil, &toast
+	}
+
+	humidityDisc, err := pModel.GetHumidityDiscount(entry.Origin, entry.Farm)
+
+	discountedHumidity := DiscountHumidity(entry.Humidity, entry.GrossWeight.Sub(entry.Tare), &humidityDisc)
+	discountedDamage := DiscountDamage(entry.Damage, entry.GrossWeight.Sub(entry.Tare))
+	discountedImpurity := DiscountImpurity(entry.Impurity, entry.GrossWeight.Sub(entry.Tare))
+
+	entryPdf.DiscountedHumidity = discountedHumidity
+	entryPdf.DiscountedDamage = discountedDamage
+	entryPdf.DiscountedImpurity = discountedImpurity
+
+	return &entryPdf, nil
 }
 
 func PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public.Toast) {

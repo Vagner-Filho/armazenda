@@ -29,8 +29,8 @@
                     {{ template "crop-selector" . }}
                     {{ template "field-selector" . }}
                     <div class="flex flex-col-reverse w-full relative pr-[30px]">
-                        {{ template "person-selector" . }}
-                        <label for="person-selector" class="label-peer">
+                        {{ template "origin-selector" . }}
+                        <label for="origin-selector" class="label-peer">
                             Origem
                         </label>
                     </div>
@@ -223,7 +223,7 @@
 
             applyDiscounts();
         }
-        const selector = document.getElementById('person-selector');
+        const selector = document.getElementById('origin-selector');
         if (selector) {
             selector.addEventListener('change', function (evt) {
                 setPersonConfig(evt.target);

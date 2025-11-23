@@ -11,12 +11,10 @@ import (
 
 func UseFarmConfigRouter(router *gin.Engine) {
 	router.GET("/farm/config", func(c *gin.Context) {
-		// For now, let's assume a fixed farm ID. This should be retrieved from the user's session in a real application.
 		sid, _ := c.Cookie("session_id")
 		farm := user_service.GetFarmFromToken(sid)
 		config, err := farm_config_service.GetFarmConfig(farm)
 		if err != nil || config == nil {
-			// If no config is found, render the page with default values.
 			c.HTML(http.StatusOK, "config.html", gin.H{
 				"Farm": &entity_public.Farm{
 					Id:               farm,

@@ -20,17 +20,23 @@
         </header>
         <form class="flex flex-col gap-4" {{ if .Departure.Id }} hx-put="/departure/{{ .Departure.Id }}"
             hx-target="#departure-{{ .Departure.Id }}" hx-swap="outerHTML" {{ else }} hx-post="/departure"
-            hx-target="#departure-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#btns-container">
+            hx-target="#departure-table-body" hx-swap="afterbegin" {{ end }} hx-indicator="#btns-container">
             <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
                 <legend class="fieldset-legend">
                     Identificação
                 </legend>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
                     {{ template "crop-selector" . }}
 
-                    <div class="flex flex-col-reverse w-full relative pr-[30px]">
-                        {{ template "person-selector" . }}
-                        <label for="person-selector" class="label-peer">
+                    <div class="flex flex-col-reverse w-full relative">
+                        {{ template "origin-selector" . }}
+                        <label for="origin-selector" class="label-peer">
+                            Origem
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse w-full relative">
+                        {{ template "recipient-selector" . }}
+                        <label for="recipient-selector" class="label-peer">
                             Destino
                         </label>
                     </div>
@@ -149,6 +155,12 @@
                     netWeightInput.value = grossWeightValue - tareValue
                 })
             }
+
+            document.body.addEventListener('htmx:afterRequest', function (evt) {
+                if (evt.detail.successful && evt.detail.requestConfig.path === '/departure' && (evt.detail.requestConfig.verb === 'post' || evt.detail.requestConfig.verb === 'put')) {
+                    closeDepartureForm()
+                }
+            });
         }
         document.body.addEventListener('htmx:configRequest', function (evt) {
             evt.detail.parameters = removeEmptyFields(evt.detail.parameters);

@@ -359,6 +359,19 @@ func initDepartureRecipient(c *pgx.Conn) {
 	handleStmtExec(c, stmt, err, "create departure_recipient")
 }
 
+func initDepartureOrigin(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init departure_origin table", `
+	CREATE TABLE IF NOT EXISTS departure_origin (
+		departure_id INTEGER UNIQUE NOT NULL,
+		person_id INTEGER NOT NULL,
+		FOREIGN KEY (person_id) REFERENCES person(id),
+		FOREIGN KEY (departure_id) REFERENCES departure(id)
+	);
+	`)
+
+	handleStmtExec(c, stmt, err, "create departure_recipient")
+}
+
 func initAddrress(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init address table", `
 	CREATE TABLE IF NOT EXISTS address (
@@ -421,7 +434,7 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 		DROP FUNCTION IF EXISTS add_get_departure;
 		CREATE OR REPLACE FUNCTION add_get_departure(
 			IN crop SMALLINT,
-			IN personId INTEGER,
+			IN recipient_id INTEGER,
 			OUT departureId INTEGER,
 			OUT productName TEXT,
 			IN in_vehicle INTEGER,
@@ -433,7 +446,8 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 			INOUT netWeight NUMERIC,
 			IN in_humidity NUMERIC(6, 3),
 			IN in_damage NUMERIC(6, 3),
-			IN in_impurity NUMERIC(6, 3)
+			IN in_impurity NUMERIC(6, 3),
+			IN in_origin_id INTEGER
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE departure_id INTEGER;
@@ -444,8 +458,12 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 				INSERT INTO departure_analysis (humidity, damage, impurity, departure_id) VALUES (in_humidity, in_damage, in_impurity, departure_id);
 			END IF;
 
-			IF personId IS NOT NULL THEN
-				INSERT INTO departure_recipient (departure_id, person_id) VALUES (departure_id, personId);
+			IF recipient_id IS NOT NULL THEN
+				INSERT INTO departure_recipient (departure_id, person_id) VALUES (departure_id, recipient_id);
+			END IF;
+
+			IF in_origin_id IS NOT NULL THEN
+				INSERT INTO departure_origin (departure_id, person_id) VALUES (departure_id, in_origin_id);
 			END IF;
 
 			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = crop INTO productName;
@@ -712,6 +730,7 @@ func initFarmConfig(c *pgx.Conn) {
 			farm_id INTEGER NOT NULL UNIQUE,
 			name TEXT NOT NULL,
 			humidity_discount NUMERIC(6, 3) DEFAULT 1.15,
+			storage_name TEXT NOT NULL,
 			FOREIGN KEY (farm_id) REFERENCES farm(id)
 		);
 	`)
@@ -780,6 +799,7 @@ func initFarmUpdateFunc(c *pgx.Conn) {
 			INOUT f_complement TEXT,
 			INOUT f_email TEXT,
 			INOUT f_phone_number TEXT,
+			INOUT f_storage_name TEXT,
 			INOUT f_humidity_discount NUMERIC(6, 3) DEFAULT 1.15
 		)
 		LANGUAGE plpgsql AS $$
@@ -795,9 +815,9 @@ func initFarmUpdateFunc(c *pgx.Conn) {
 				SELECT EXISTS (SELECT 1 FROM farm_config fc WHERE fc.farm_id = f_id) INTO config_exists;
 
 				IF config_exists THEN
-					UPDATE farm_config SET name = f_name, humidity_discount = f_humidity_discount WHERE farm_id = f_id;
+					UPDATE farm_config SET name = f_name, humidity_discount = f_humidity_discount, storage_name = f_storage_name WHERE farm_id = f_id;
 				ELSE
-					INSERT INTO farm_config (farm_id, name, humidity_discount) VALUES (f_id, f_name, f_humidity_discount);
+					INSERT INTO farm_config (farm_id, name, humidity_discount, storage_name) VALUES (f_id, f_name, f_humidity_discount, f_storage_name);
 				END IF;
 			END IF;
 
@@ -842,7 +862,7 @@ func initUpdateDepartureProc(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init update departure stmt", `
 		CREATE OR REPLACE FUNCTION update_get_departure(
 			IN d_crop SMALLINT,
-			IN d_personId INTEGER,
+			IN in_recipient_id INTEGER,
 			INOUT departureId INTEGER,
 			OUT productName TEXT,
 			IN in_vehicle INTEGER,
@@ -853,10 +873,13 @@ func initUpdateDepartureProc(c *pgx.Conn) {
 			INOUT d_netWeight NUMERIC,
 			IN in_humidity NUMERIC(6, 3),
 			IN in_damage NUMERIC(6, 3),
-			IN in_impurity NUMERIC(6, 3)
+			IN in_impurity NUMERIC(6, 3),
+			IN in_origin_id INTEGER
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE analysis_exists BOOLEAN;
+		DECLARE existing_recipient_id INTEGER;
+		DECLARE existing_origin_id INTEGER;
 		BEGIN
 			UPDATE departure d SET
 				 departureDate = departure_Date,
@@ -877,6 +900,32 @@ func initUpdateDepartureProc(c *pgx.Conn) {
 				WHERE da.departure_id = departureId;
 			ELSIF in_humidity IS NOT NULL OR in_damage IS NOT NULL OR in_impurity IS NOT NULL THEN
 				INSERT INTO departure_analysis (humidity, damage, impurity, departure_id) VALUES (in_humidity, in_damage, in_impurity, departureId);
+			END IF;
+
+			SELECT dr.person_id FROM departure_recipient dr WHERE dr.departure_id = departureId INTO existing_recipient_id;
+			IF existing_recipient_id != in_recipient_id THEN
+				IF in_recipient_id IS NOT NULL THEN
+					IF existing_recipient_id IS NULL THEN
+						INSERT INTO departure_recipient (departure_id, person_id) VALUES (departureId, in_recipient_id);
+					ELSE
+						UPDATE departure_recipient dr SET person_id = in_recipient_id WHERE dr.departure_id = departureId;
+					END IF;
+				ELSE
+					DELETE FROM departure_recipient dr WHERE dr.departure_id = departureId;
+				END IF;
+			END IF;
+
+			SELECT dor.person_id FROM departure_origin dor WHERE dor.departure_id = departureId INTO existing_origin_id;
+			IF existing_origin_id != in_origin_id THEN
+				IF in_origin_id IS NOT NULL THEN
+					IF existing_origin_id IS NULL THEN
+						INSERT INTO departure_origin (departure_id, person_id) VALUES (departureId, in_origin_id);
+					ELSE
+						UPDATE departure_origin dor SET person_id = in_origin_id WHERE dor.departure_id = departureId;
+					END IF;
+				ELSE
+					DELETE FROM departure_origin dor WHERE dor.departure_id = departureId;
+				END IF;
 			END IF;
 
 			SELECT p.name INTO productName FROM departure d JOIN crop c ON d.crop = c.id JOIN product p ON c.product = p.id WHERE d.id = departureId;
@@ -981,6 +1030,7 @@ func InitDb(c *pgx.Conn) {
 	initDepartureDraft(c)
 	initPersonConfig(c)
 	initDepartureRecipient(c)
+	initDepartureOrigin(c)
 	initNaturalPerson(c)
 	initLegalPerson(c)
 	initContact(c)

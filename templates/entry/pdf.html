@@ -22,10 +22,19 @@
         </div>
     </div>
     <div style="text-align: left; font-size: 0.85rem; width: 100%; padding-top: 10px; font-weight: bold;">
-        FAZENDA
+        ARMAZÉM
     </div>
     <div class="flex justify-between border-b my-1" style="border-color: #909699;">
-        {{if .FarmName}}
+        {{if .StorageName}}
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                Nome
+            </div>
+            <div class="">
+                {{ .StorageName }}
+            </div>
+        </div>
+        {{ else if .FarmName }}
         <div class="flex flex-col" style="width: 50%;">
             <div class="font-light" style="color: #7a7b87">
                 Nome
@@ -167,7 +176,7 @@
                 Umidade
             </div>
             <div class="">
-                {{ if .Humidity }}{{ .Humidity }}%{{ else }}N/A{{ end }}
+                {{ if .Humidity }}{{ .Humidity }}% ({{ .DiscountedHumidity }} KG){{ else }}N/A{{ end }}
             </div>
         </div>
         <div class="flex flex-col" style="width: 33%;">
@@ -175,7 +184,7 @@
                 Avariado
             </div>
             <div class="">
-                {{ if .Damage }}{{ .Damage }}%{{ else }}N/A{{ end }}
+                {{ if .Damage }}{{ .Damage }}% ({{ .DiscountedDamage }} KG){{ else }}N/A{{ end }}
             </div>
         </div>
         <div class="flex flex-col" style="width: 33%;">
@@ -183,7 +192,7 @@
                 Impureza
             </div>
             <div class="">
-                {{ if .Impurity }}{{ .Impurity }}%{{ else }}N/A{{ end }}
+                {{ if .Impurity }}{{ .Impurity }}% ({{ .DiscountedImpurity }} KG){{ else }}N/A{{ end }}
             </div>
         </div>
     </div>
