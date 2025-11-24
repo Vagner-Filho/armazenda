@@ -15,6 +15,7 @@ type DisplayEntry struct {
 	NetWeight   float64
 	ArrivalDate time.Time `time_format:"2006-01-02T15:04"`
 	Farm        uint32
+	Origin      string
 }
 
 type Entry struct {

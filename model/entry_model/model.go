@@ -59,13 +59,19 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32, page int) ([]entity_p
 	}
 
 	rows, queryErr := em.pool.Query(context.Background(), `
-		SELECT e.id, p.name, f.name, v.plate, e.netweight, e.arrivaldate, e.farm
+		SELECT e.id, p.name, f.name, v.plate, e.netweight, e.arrivaldate, e.farm, COALESCE(origin_union.name, 'Própria')
 			FROM entry e
 			JOIN field f ON e.field = f.id
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
 			LEFT JOIN inactive_entry ie ON ie.entry_Id = e.id
 			LEFT JOIN vehicle v ON v.id = e.vehicle
+			LEFT JOIN entry_origin eo ON eo.entry_id = e.id
+			LEFT JOIN (
+				SELECT lp.personid, COALESCE(lp.fantasyname, lp.companyname) AS name FROM legal_person lp
+				UNION ALL
+				SELECT np.personid, np.name FROM natural_person np
+			) origin_union ON origin_union.personid = eo.person_id
 			WHERE ie.entry_id IS NULL AND e.farm = @userFarm
 			ORDER BY e.arrivaldate DESC
 			LIMIT @pageSize OFFSET @offset

@@ -69,6 +69,7 @@ type DisplayDeparture struct {
 	DepartureDate time.Time
 	NetWeight     float64
 	Farm          uint32 `db:"-"`
+	Origin        string
 }
 
 type DepartureFilter struct {
@@ -108,7 +109,7 @@ type DeparturePdf struct {
 	DepartureDate     time.Time `time_format:"2006-01-02T15:04"`
 	InscricaoEstadual string
 	Produto           string
-	PersonName        string
+	RecipientName     string
 	Document          string
 	FarmName          *string
 	FarmStreet        *string
@@ -122,4 +123,6 @@ type DeparturePdf struct {
 	DiscountedHumidity decimal.Decimal `db:"-"`
 	DiscountedDamage   decimal.Decimal `db:"-"`
 	DiscountedImpurity decimal.Decimal `db:"-"`
+	OriginName         string
+	OriginDocument     string
 }

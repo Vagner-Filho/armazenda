@@ -129,8 +129,22 @@ func GetExistingDepartureForm(departureId uint32, farm uint32) (DepartureForm, [
 	departure, toast := departure_service.GetDeparture(departureId)
 	formFields.SelectedCrop = departure.Crop
 	formFields.SelectedVehicle = departure.VehiclePlate
-	formFields.SelectedRecipient = departure.Recipient
-	formFields.SelectedOrigin = departure.Origin
+	if departure.Origin != nil {
+		for i, p := range formFields.People {
+			if p.Id != nil && *p.Id == *departure.Origin {
+				formFields.SelectedOrigin = formFields.People[i].Id
+				break
+			}
+		}
+	}
+	if departure.Recipient != nil {
+		for i, p := range formFields.People {
+			if p.Id != nil && *p.Id == *departure.Recipient {
+				formFields.SelectedRecipient = formFields.People[i].Id
+				break
+			}
+		}
+	}
 	if toast != nil {
 		toasts = append(toasts, toast)
 	}

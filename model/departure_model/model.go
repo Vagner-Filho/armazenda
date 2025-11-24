@@ -141,11 +141,17 @@ func (dm *departureModel) GetDisplayDepartures(farm uint32, page int) ([]entity_
 	}
 
 	rows, queryErr := dm.pool.Query(context.Background(), `
-		SELECT d.id, p.name, v.plate, d.departureDate, d.netWeight
+		SELECT d.id, p.name, v.plate, d.departureDate, d.netWeight, COALESCE(origin_union.name, 'Própria')
 		FROM departure d
 		JOIN crop c ON d.crop = c.id
 		JOIN product p ON c.product = p.id
 		JOIN vehicle v ON v.id = d.vehicle
+		LEFT JOIN departure_origin dor ON dor.departure_id = d.id
+		LEFT JOIN (
+			SELECT lp.personid, COALESCE(lp.fantasyname, lp.companyname) AS name FROM legal_person lp
+			UNION ALL
+			SELECT np.personid, np.name FROM natural_person np
+		) origin_union ON origin_union.personid = dor.person_id
 		WHERE d.id NOT IN (SELECT departure_id FROM inactive_departure)
 		AND d.farm = @userFarm
 		ORDER BY d.departureDate DESC
@@ -267,8 +273,8 @@ func (dm *departureModel) GetDeparturePdf(id uint32) (entity_public.DeparturePdf
 			d.departuredate,
 			f.inscricao_estadual,
 			prod.name AS produto,
-			COALESCE(person_union.name, 'Próprio') AS person_name,
-			COALESCE(person_union.document, f.inscricao_estadual) AS document,
+			COALESCE(recipient_union.name, 'Próprio') AS person_name,
+			COALESCE(recipient_union.document, f.inscricao_estadual) AS document,
 			fc.name as farm_name,
 			fa.street as farm_street,
 			fa.cep as farm_cep,
@@ -279,7 +285,9 @@ func (dm *departureModel) GetDeparturePdf(id uint32) (entity_public.DeparturePdf
 			da.humidity,
 			da.damage,
 			da.impurity,
-			fc.storage_name
+			fc.storage_name,
+			COALESCE(origin_union.name, 'Própria') AS origin_name,
+			COALESCE(origin_union.document, f.inscricao_estadual) AS origin_document
 		FROM departure d
 		JOIN crop c ON c.id = d.crop
 		JOIN product prod ON prod.id = c.product
@@ -292,8 +300,14 @@ func (dm *departureModel) GetDeparturePdf(id uint32) (entity_public.DeparturePdf
 			SELECT lp.personid, COALESCE(lp.fantasyname, lp.companyname) AS name, lp.cnpj AS document FROM legal_person lp
 			UNION ALL
 			SELECT np.personid, np.name, np.cpf AS document FROM natural_person np
-		) person_union ON person_union.personid = dr.person_id
+		) recipient_union ON recipient_union.personid = dr.person_id
 		LEFT JOIN departure_analysis da ON da.departure_id = d.id
+		LEFT JOIN departure_origin dor ON dor.departure_id = d.id
+		LEFT JOIN (
+			SELECT lp.personid, COALESCE(lp.fantasyname, lp.companyname) AS name, lp.cnpj AS document FROM legal_person lp
+			UNION ALL
+			SELECT np.personid, np.name, np.cpf AS document FROM natural_person np
+		) origin_union ON origin_union.personid = dor.person_id
 		WHERE d.id = @id;`,
 		pgx.NamedArgs{"id": id},
 	)

@@ -86,11 +86,30 @@
     {{end}}
     <div class="flex justify-between border-b my-1" style="border-color: #909699;">
         <div class="flex flex-col" style="width: 100%;">
-            <div class="font-light" style="color: #7a7b87">
-                Destino
+            <div style="color: #7a7b87; font-size: 0.85rem; font-weight: bold;">
+                ORIGEM
             </div>
             <div class="">
-                {{.PersonName}}
+                {{.OriginName}}
+            </div>
+        </div>
+        <div class="flex flex-col" style="width: 100%;">
+            <div class="font-light" style="color: #7a7b87">
+                {{ $docLength := len .OriginDocument }}
+                {{ if eq $docLength 11 }}CPF{{ else if eq $docLength 14 }}CNPJ{{ else }}Inscrição Estadual{{ end }}
+            </div>
+            <div class="">
+                {{.OriginDocument}}
+            </div>
+        </div>
+    </div>
+    <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+        <div class="flex flex-col" style="width: 100%;">
+            <div style="color: #7a7b87; font-size: 0.85rem; font-weight: bold;">
+                DESTINO
+            </div>
+            <div class="">
+                {{.RecipientName}}
             </div>
         </div>
         <div class="flex flex-col" style="width: 100%;">

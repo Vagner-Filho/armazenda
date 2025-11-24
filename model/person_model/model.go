@@ -125,7 +125,7 @@ func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_
 func (bm *personModel) GetPeopleByFarm(farm uint32) ([]entity_public.PersonOption, *model_error.ModelError) {
 	rows, queryErr := bm.pool.Query(context.Background(), `
 		SELECT id, name, humidity_discount FROM (
-			SELECT p.id, lp.companyname AS name, COALESCE(pc.humidity_discount, 1.7) as humidity_discount
+			SELECT p.id, COALESCE(lp.fantasyname, lp.companyname) AS name, COALESCE(pc.humidity_discount, 1.7) as humidity_discount
 			FROM person p
 			JOIN legal_person lp ON p.id = lp.personid
 			LEFT JOIN person_config pc ON p.id = pc.person_id
