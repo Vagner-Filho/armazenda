@@ -80,13 +80,10 @@ func GetDepartureContent(farmId uint32, page int) (DepartureContent, []*entity_p
 }
 
 type DepartureDraftForm struct {
-	Vehicles        []entity_public.Vehicle
-	SelectedVehicle string
-	Crops           []entity_public.Crop
-	SelectedCrop    uint8
-	People          []entity_public.PersonOption
-	SelectedPerson  *uint32
-	Draft           entity_public.DepartureDraft
+	Vehicles []entity_public.Vehicle
+	Crops    []entity_public.Crop
+	People   []entity_public.PersonOption
+	Draft    entity_public.DepartureDraft
 }
 
 func GetDepartureDraftForm(farm uint32) (DepartureDraftForm, []*entity_public.Toast) {
@@ -164,10 +161,18 @@ func GetDepartureFormFromDraft(draftId uint32, farm uint32) (DepartureForm, []*e
 	if draft.Id != 0 {
 		formFields.SelectedCrop = uint8(draft.Crop)
 		formFields.SelectedVehicle = draft.Vehicle
-		if draft.Person != nil {
+		if draft.Recipient != nil {
 			for i, p := range formFields.People {
-				if p.Id != nil && *p.Id == *draft.Person {
+				if p.Id != nil && *p.Id == *draft.Recipient {
 					formFields.SelectedRecipient = formFields.People[i].Id
+					break
+				}
+			}
+		}
+		if draft.Origin != nil {
+			for i, p := range formFields.People {
+				if p.Id != nil && *p.Id == *draft.Origin {
+					formFields.SelectedOrigin = formFields.People[i].Id
 					break
 				}
 			}

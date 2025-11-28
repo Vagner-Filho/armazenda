@@ -325,14 +325,14 @@ func (dm *departureModel) GetDeparturePdf(id uint32) (entity_public.DeparturePdf
 
 func (dm *departureModel) CreateDepartureDraft(d entity_public.DepartureDraft) (entity_public.DisplayDepartureDraft, *model_error.ModelError) {
 	row, queryErr := dm.pool.Query(context.Background(), `
-		SELECT * FROM add_get_departure_draft(@name, @person, @crop, @vehicle, @tare, @farm)
+		SELECT * FROM add_get_departure_draft(@name, @recipient, @crop, @vehicle, @tare, @farm)
 		`, pgx.NamedArgs{
-		"name":    d.Name,
-		"person":  d.Person,
-		"crop":    d.Crop,
-		"vehicle": d.Vehicle,
-		"tare":    d.Tare,
-		"farm":    d.Farm,
+		"name":      d.Name,
+		"recipient": d.Recipient,
+		"crop":      d.Crop,
+		"vehicle":   d.Vehicle,
+		"tare":      d.Tare,
+		"farm":      d.Farm,
 	})
 	if queryErr != nil {
 		return entity_public.DisplayDepartureDraft{}, &model_error.ModelError{Message: queryErr.Error()}
@@ -418,12 +418,12 @@ func (dm *departureModel) UpdateDepartureDraft(d entity_public.DepartureDraft) (
 			WHERE dd.id = @id
 		)
 		`, pgx.NamedArgs{
-		"id":      d.Id,
-		"name":    d.Name,
-		"person":  d.Person,
-		"crop":    d.Crop,
-		"vehicle": d.Vehicle,
-		"tare":    d.Tare,
+		"id":        d.Id,
+		"name":      d.Name,
+		"recipient": d.Recipient,
+		"crop":      d.Crop,
+		"vehicle":   d.Vehicle,
+		"tare":      d.Tare,
 	})
 	if queryErr != nil {
 		return entity_public.DisplayDepartureDraft{}, &model_error.ModelError{Message: queryErr.Error()}

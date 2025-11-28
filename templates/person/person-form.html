@@ -18,9 +18,9 @@
         Pessoa Física
       </button>
     </div>
-    <!--<form id="pessoa-juridica-form" hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend" class="flex flex-col gap-4">
+    <form id="pessoa-juridica-form" hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend" class="gap-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
+        <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow" id="pessoa-juridica-fieldset">
           <legend class="fieldset-legend">
             Identificação
           </legend>
@@ -37,7 +37,7 @@
             </label>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="text" name="cnpj" id="document-pj" class="peer" required maxlength="14">
+            <input type="text" name="cnpj" id="document-pj" class="peer" required maxlength="14" {{ with .Cnpj}} value="{{ . }}" {{ end }}>
             <label for="document-pj" class="label-peer">
               CNPJ
             </label>
@@ -65,68 +65,33 @@
           Adicionar
         </button>
       </div>
-    </form>-->
-    <form id="pessoa-form" hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend" class="gap-4">
+    </form>
+    <form id="pessoa-fisica-form" hx-post="/person/natural" hx-target="#people-rows" hx-swap="beforeend" class="gap-4 hidden">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow" id="pessoa-juridica-fieldset">
+        <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow" id="pessoa-fisica-fieldset">
           <legend class="fieldset-legend">
             Identificação
           </legend>
           <div class="flex flex-col-reverse">
-            <input type="text" name="companyName" id="person-name-pj" class="peer" required>
-            <label for="person-name-pj" class="label-peer">
-              Razão Social
-            </label>
-          </div>
-          <div class="flex flex-col-reverse">
-            <input type="text" name="fantasyName" id="fantasy-name" class="peer">
-            <label for="fantasy-name" class="label-peer">
-              Nome Fantasia (opcional)
-            </label>
-          </div>
-          <div class="flex flex-col-reverse">
-            <input type="text" name="cnpj" id="document-pj" class="peer" required maxlength="14">
-            <label for="document-pj" class="label-peer">
-              CNPJ
-            </label>
-          </div>
-          <div class="flex flex-col-reverse">
-            <input type="text" name="inscricaoEstadual" id="ie-pj" class="peer" required>
-            <label for="ie-pj" class="label-peer">
-              Inscrição Estadual
-            </label>
-          </div>
-          <div class="flex flex-col-reverse">
-            <input type="number" step="0.1" name="humidityDiscount" id="desconto-umidade-pj" class="peer" required value="1.7">
-            <label for="desconto-umidade-pj" class="label-peer">
-              Desconto Umidade
-            </label>
-          </div>
-        </fieldset>
-        <fieldset class="flex-col gap-2 p-2 bg-white rounded-lg shadow hidden" id="pessoa-fisica-fieldset">
-          <legend class="fieldset-legend">
-            Identificação
-          </legend>
-          <div class="flex flex-col-reverse">
-            <input type="text" name="name" id="person-name-pf" class="peer" required disabled>
+            <input type="text" name="name" id="person-name-pf" class="peer" required>
             <label for="person-name-pf" class="label-peer">
               Nome
             </label>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="text" name="cpf" id="document-pf" class="peer" required maxlength="11" disabled>
+            <input type="text" name="cpf" id="document-pf" class="peer" required maxlength="11">
             <label for="document-pf" class="label-peer">
               CPF
             </label>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="text" name="inscricaoEstadual" id="ie-pf" class="peer" required disabled>
+            <input type="text" name="inscricaoEstadual" id="ie-pf" class="peer" required>
             <label for="ie-pf" class="label-peer">
               Inscrição Estadual
             </label>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="number" step="0.1" name="humidityDiscount" id="desconto-umidade-pf" class="peer" required value="1.7" disabled>
+            <input type="number" step="0.1" name="humidityDiscount" id="desconto-umidade-pf" class="peer" required value="1.7">
             <label for="desconto-umidade-pf" class="label-peer">
               Desconto Umidade
             </label>
@@ -146,6 +111,11 @@
   </div>
   <script type="module">
     import {removeEmptyFields} from "/public/assets/js/form.js"
+    import {setupCepListener} from "/public/assets/js/address.js";
+
+    setupCepListener('pessoa-juridica-form', 'cep-input', 'street-input', 'neighborhood-input', 'city-input', 'state-input');
+    setupCepListener('pessoa-fisica-form', 'cep-input', 'street-input', 'neighborhood-input', 'city-input', 'state-input');
+
     const dialogEl = document.querySelector("dialog#personFormDialog")
     if (dialogEl) {
       dialogEl.showModal()
@@ -163,60 +133,21 @@
       });
     }
 
-    let pessoaJuridicaBtn = document.querySelector('button#pessoa-juridica-btn')
-    let pessoaFisicaBtn = document.querySelector('button#pessoa-fisica-btn')
-    let pessoaForm = document.querySelector('form#pessoa-form')
-    let naturalFieldset = document.querySelector('fieldset#pessoa-fisica-fieldset')
-    let legalFieldset = document.querySelector('fieldset#pessoa-juridica-fieldset')
-
+    const pessoaJuridicaBtn = document.querySelector('button#pessoa-juridica-btn')
+    const pessoaFisicaBtn = document.querySelector('button#pessoa-fisica-btn')
+    const pessoaJuridicaForm = document.querySelector('form#pessoa-juridica-form')
+    const pessoaFisicaForm = document.querySelector('form#pessoa-fisica-form')
     function toggleForm() {
-        if (naturalFieldset && naturalFieldset.classList.contains('hidden')) {
-          legalFieldset.classList.add('hidden')
-          legalFieldset.classList.remove('flex')
+        pessoaFisicaForm.classList.toggle('hidden')
+        pessoaJuridicaForm.classList.toggle('hidden')
 
-          legalFieldset.querySelectorAll('input')
-            .forEach((i) => {
-              i.setAttribute('disabled', true)
-            })
+        pessoaJuridicaBtn.classList.toggle('text-white')
+        pessoaJuridicaBtn.classList.toggle('text-sky-500')
+        pessoaJuridicaBtn.classList.toggle('bg-sky-500')
 
-          naturalFieldset.querySelectorAll('input')
-            .forEach((i) => {
-              i.removeAttribute('disabled')
-            })
-
-          naturalFieldset.classList.add('flex')
-          naturalFieldset.classList.remove('hidden')
-
-          pessoaJuridicaBtn.classList.remove('text-white', 'bg-sky-500')
-          pessoaJuridicaBtn.classList.add('text-sky-500')
-          pessoaFisicaBtn.classList.remove('text-sky-500')
-          pessoaFisicaBtn.classList.add('text-white', 'bg-sky-500')
-
-          pessoaForm.setAttribute('hx-post', '/person/natural')
-          return
-        }
-        naturalFieldset.classList.add('hidden')
-        naturalFieldset.classList.remove('flex')
-
-        naturalFieldset.querySelectorAll('input')
-          .forEach((i) => {
-            i.setAttribute('disabled', true)
-          })
-
-        legalFieldset.querySelectorAll('input')
-          .forEach((i) => {
-            i.removeAttribute('disabled')
-          })
-
-        legalFieldset.classList.add('flex')
-        legalFieldset.classList.remove('hidden')
-
-        pessoaFisicaBtn.classList.remove('text-white', 'bg-sky-500')
-        pessoaFisicaBtn.classList.add('text-sky-500')
-        pessoaJuridicaBtn.classList.remove('text-sky-500')
-        pessoaJuridicaBtn.classList.add('text-white', 'bg-sky-500')
-
-        pessoaForm.setAttribute('hx-post', '/person/legal')
+        pessoaFisicaBtn.classList.toggle('text-white')
+        pessoaFisicaBtn.classList.toggle('bg-sky-500')
+        pessoaFisicaBtn.classList.toggle('text-sky-500')
       }
 
     window.toggleForm = toggleForm

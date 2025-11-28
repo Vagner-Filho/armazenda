@@ -120,7 +120,7 @@ func initPreEntry(c *pgx.Conn) {
 			field SMALLINT,
 			crop SMALLINT,
 			vehicle INTEGER,
-			grossWeight NUMERIC(10, 3),
+			tare NUMERIC(10, 3),
 			farm INTEGER NOT NULL,
 			FOREIGN KEY (vehicle) REFERENCES vehicle(id),
 			FOREIGN KEY (field) REFERENCES field(id),
@@ -139,7 +139,7 @@ func initAddGetEntryDraft(c *pgx.Conn) {
 			in_field SMALLINT,
 			in_crop SMALLINT,
 			in_vehicle INTEGER,
-			in_grossWeight NUMERIC(10, 3),
+			in_tare NUMERIC(10, 3),
 			in_farm INTEGER,
 			in_origin INTEGER,
 			OUT out_id INTEGER,
@@ -147,12 +147,12 @@ func initAddGetEntryDraft(c *pgx.Conn) {
 			OUT out_field_name TEXT,
 			OUT out_crop_name TEXT,
 			OUT out_vehicle_plate TEXT,
-			OUT out_grossWeight NUMERIC(10, 3),
+			OUT out_tare NUMERIC(10, 3),
 			OUT out_origin TEXT
 		)
 		LANGUAGE plpgsql AS $$
 		BEGIN
-			INSERT INTO entry_draft (name, field, crop, vehicle, grossWeight, farm) VALUES (in_name, in_field, in_crop, in_vehicle, in_grossWeight, in_farm) RETURNING entry_draft.id INTO out_id;
+			INSERT INTO entry_draft (name, field, crop, vehicle, tare, farm) VALUES (in_name, in_field, in_crop, in_vehicle, in_tare, in_farm) RETURNING entry_draft.id INTO out_id;
 
 			IF in_origin IS NOT NULL THEN
 				INSERT INTO entry_draft_origin (entry_draft_id, person_id) VALUES (out_id, in_origin);
@@ -169,7 +169,7 @@ func initAddGetEntryDraft(c *pgx.Conn) {
 			
 			out_name := in_name;
 			out_vehicle_plate := in_vehicle;
-			out_grossWeight := in_grossWeight;
+			out_tare := in_tare;
 		END;
 		$$;
 	`)

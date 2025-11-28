@@ -94,7 +94,7 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32, page int) ([]entity_p
 func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.DisplayEntryDraft, *model_error.ModelError) {
 
 	rows, queryErr := em.pool.Query(context.Background(), `
-		SELECT ed.id, ed.name, f.name, c.name, ed.vehicle, ed.grossWeight, COALESCE(np.name, lp.fantasyname, lp.companyname, 'Própria') AS origin
+		SELECT ed.id, ed.name, f.name, c.name, ed.vehicle, ed.tare, COALESCE(np.name, lp.fantasyname, lp.companyname, 'Própria') AS origin
 			FROM entry_draft ed
 			JOIN field f ON ed.field = f.id
 			JOIN crop c ON ed.crop = c.id
@@ -123,15 +123,15 @@ func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.Display
 
 func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft, *model_error.ModelError) {
 	row, queryErr := em.pool.Query(context.Background(), `
-		SELECT * FROM add_get_entry_draft(@name, @field, @crop, @vehicle, @grossWeight, @farm, @origin)
+		SELECT * FROM add_get_entry_draft(@name, @field, @crop, @vehicle, @tare, @farm, @origin)
 		`, pgx.NamedArgs{
-		"name":        ge.Name,
-		"field":       ge.Field,
-		"crop":        ge.Crop,
-		"vehicle":     ge.Vehicle,
-		"grossWeight": ge.GrossWeight,
-		"farm":        ge.Farm,
-		"origin":      ge.Origin,
+		"name":    ge.Name,
+		"field":   ge.Field,
+		"crop":    ge.Crop,
+		"vehicle": ge.Vehicle,
+		"tare":    ge.Tare,
+		"farm":    ge.Farm,
+		"origin":  ge.Origin,
 	})
 
 	if queryErr != nil {
@@ -371,13 +371,19 @@ func (em *entryModel) FilterEntries(ef entity_public.EntryFilter, page int, farm
 		return []entity_public.DisplayEntry{}, 0, nil
 	}
 
-	query := `SELECT e.id, p.name, f.name, v.plate, e.netweight, e.arrivaldate, e.farm
+	query := `SELECT e.id, p.name, f.name, v.plate, e.netweight, e.arrivaldate, e.farm, COALESCE(origin_union.name, 'Própria')
 			FROM entry e
 			JOIN field f ON e.field = f.id
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
 			JOIN vehicle v ON v.id = e.vehicle
 			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
+			LEFT JOIN entry_origin eo ON eo.entry_id = e.id
+			LEFT JOIN (
+				SELECT lp.personid, COALESCE(lp.fantasyname, lp.companyname) AS name FROM legal_person lp
+				UNION ALL
+				SELECT np.personid, np.name FROM natural_person np
+			) origin_union ON origin_union.personid = eo.person_id
 			WHERE ` + whereCondition + `
 			AND e.farm = @farm
 			ORDER BY e.arrivaldate DESC

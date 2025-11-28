@@ -4,6 +4,7 @@ import (
 	entity_public "armazenda/entity/public"
 	person_service "armazenda/service/person"
 	"armazenda/service/user_service"
+	person_view "armazenda/view/person"
 	"net/http"
 	"strconv"
 
@@ -60,6 +61,36 @@ func getPersonForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "person-form", gin.H{})
 }
 
+func getFilledNaturalPersonForm(c *gin.Context) {
+	id := c.Param("id")
+	converted, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+	}
+
+	person, t := person_view.GetFilledNaturalPersonForm(uint32(converted))
+	if t != nil {
+		c.Header("HX-Trigger", string(t.ToJson()))
+		return
+	}
+	c.HTML(http.StatusOK, "person-form", person)
+}
+
+func getFilledLegalPersonForm(c *gin.Context) {
+	id := c.Param("id")
+	converted, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+	}
+
+	person, t := person_view.GetFilledLegalPersonForm(uint32(converted))
+	if t != nil {
+		c.Header("HX-Trigger", string(t.ToJson()))
+		return
+	}
+	c.HTML(http.StatusOK, "person-form", person)
+}
+
 func getPersonPage(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
@@ -99,4 +130,6 @@ func UsePersonRoutes(router *gin.Engine) {
 	router.GET("/person/form", getPersonForm)
 	router.POST("/person/natural", addNaturalPerson)
 	router.POST("/person/legal", addLegalPerson)
+	router.GET("/person/legal/form/:id", getFilledLegalPersonForm)
+	router.GET("/person/natural/form/:id", getFilledNaturalPersonForm)
 }

@@ -43,12 +43,45 @@ func GetpersonModel() *personModel {
 	return personModelImpl
 }
 
+type basePerson struct {
+	entity_public.Address
+	entity_public.Person
+}
+
+const basePersonQuery = `
+	SELECT ad.id, ad.street, ad.cep, ad.number, adc.complement, ad.neighborhood, ad.city, ad.state, c.email, c.phone_number, p.ie, p.id, p.farm, pc.humidity_discount FROM person p
+		LEFT JOIN address ad ON ad.person_id = p.id
+		LEFT JOIN address_complement adc ON adc.address_id = ad.id
+		LEFT JOIN contact c ON c.person_id = p.id
+		LEFT JOIN person_config pc ON pc.person_id = p.id
+		WHERE p.id = @id
+	`
+
+func (pm *personModel) getBasePerson(id uint32) (basePerson, *model_error.ModelError) {
+	var base basePerson
+	row, queryErr := pm.pool.Query(context.Background(), basePersonQuery,
+		pgx.NamedArgs{"id": id})
+
+	if queryErr != nil {
+		return base, &model_error.ModelError{Message: queryErr.Error(), IsServerErr: true}
+	}
+	base, collectErr := pgx.CollectExactlyOneRow(row, pgx.RowToStructByPos[basePerson])
+
+	if collectErr != nil {
+		if errors.Is(collectErr, pgx.ErrNoRows) {
+			return base, &model_error.ModelError{Message: "Pessoa não encontrada"}
+		}
+		return base, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
+	}
+	return base, nil
+}
+
 func (bm *personModel) AddLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
 	row, queryErr := bm.pool.Query(
 		context.Background(),
 		`SELECT * FROM add_get_legal_person(@companyName, @cnpj, @ie, @fantasyName, @farm, @humidityDiscount, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone)`,
 		pgx.NamedArgs{
-			"ie":               bc.InscricaoEstadual,
+			"ie":               bc.Person.Ie,
 			"cnpj":             bc.Cnpj,
 			"fantasyName":      bc.FantasyName,
 			"farm":             bc.Person.Farm,
@@ -82,7 +115,7 @@ func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_
 			SELECT * FROM add_get_natural_person(@name, @cpf, @ie, @farm, @humidityDiscount, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone)
 		`,
 		pgx.NamedArgs{
-			"ie":               bp.InscricaoEstadual,
+			"ie":               bp.Person.Ie,
 			"cpf":              bp.Cpf,
 			"name":             bp.Name,
 			"farm":             bp.Person.Farm,
@@ -288,4 +321,58 @@ func (bm *personModel) GetHumidityDiscount(person *uint32, farm uint32) (decimal
 		return discountModifier, &model_error.ModelError{Message: err.Error()}
 	}
 	return discountModifier, nil
+}
+
+func (pm *personModel) GetLegalPersonById(id uint32) (entity_public.LegalPerson, *model_error.ModelError) {
+	var legalPerson entity_public.LegalPerson
+
+	scanErr := pm.pool.QueryRow(context.Background(), `
+		SELECT lp.id, lp.companyname, lp.fantasyname, lp.cnpj FROM person p
+			JOIN legal_person lp ON lp.personid = p.id
+			WHERE p.id = @id
+		`,
+		pgx.NamedArgs{"id": id}).Scan(&legalPerson.Id, &legalPerson.CompanyName, &legalPerson.FantasyName, &legalPerson.Cnpj)
+
+	if scanErr != nil {
+		if errors.Is(scanErr, pgx.ErrNoRows) {
+			return legalPerson, &model_error.ModelError{Message: "Pessoa não encontrada"}
+		}
+		return legalPerson, &model_error.ModelError{Message: scanErr.Error()}
+	}
+
+	base, err := pm.getBasePerson(id)
+	if err != nil {
+		return legalPerson, err
+	}
+
+	legalPerson.Address = base.Address
+	legalPerson.Person = base.Person
+	return legalPerson, nil
+}
+
+func (pm *personModel) GetNaturalPersonById(id uint32) (entity_public.NaturalPerson, *model_error.ModelError) {
+	var naturalPerson entity_public.NaturalPerson
+
+	scanErr := pm.pool.QueryRow(context.Background(), `
+		SELECT np.id, np.name, np.cpf FROM person p
+			JOIN natural_person np ON np.personid = p.id
+			WHERE p.id = @id
+		`,
+		pgx.NamedArgs{"id": id}).Scan(&naturalPerson.Id, &naturalPerson.Name, &naturalPerson.Cpf)
+
+	if scanErr != nil {
+		if errors.Is(scanErr, pgx.ErrNoRows) {
+			return naturalPerson, &model_error.ModelError{Message: "Pessoa não encontrada"}
+		}
+		return naturalPerson, &model_error.ModelError{Message: scanErr.Error()}
+	}
+
+	base, err := pm.getBasePerson(id)
+	if err != nil {
+		return naturalPerson, err
+	}
+
+	naturalPerson.Address = base.Address
+	naturalPerson.Person = base.Person
+	return naturalPerson, nil
 }

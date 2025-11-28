@@ -9,12 +9,13 @@ import (
 type DepartureDraft struct {
 	Id        uint32          `form:"id"`
 	Name      string          `form:"name" binding:"required"`
-	Person    *uint32         `form:"origin,omitempty"`
+	Origin    *uint32         `form:"origin,omitempty"`
 	Crop      uint32          `form:"crop"`
 	Vehicle   string          `form:"vehiclePlate"`
 	Tare      decimal.Decimal `form:"tare"`
 	Farm      uint32          `form:"farm"`
 	StartedAt time.Time       `form:"started_at"`
+	Recipient *uint32         `form:"recipient,omitempty"`
 }
 
 type DisplayDepartureDraft struct {

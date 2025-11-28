@@ -215,12 +215,15 @@ func getDepartureDraftForm(c *gin.Context) {
 			return
 		}
 		draft, toast := departure_service.GetDepartureDraft(uint32(draftId))
-		form.SelectedCrop = uint8(draft.Crop)
-		form.SelectedVehicle = draft.Vehicle
 		for i, p := range form.People {
-			if p.Id != nil && *p.Id == *draft.Person {
-				form.SelectedPerson = form.People[i].Id
-				break
+			if p.Id != nil {
+				if *p.Id == *draft.Recipient {
+					form.Draft.Recipient = form.People[i].Id
+					continue
+				} else if *p.Id == *draft.Origin {
+					form.Draft.Origin = form.People[i].Id
+					continue
+				}
 			}
 		}
 

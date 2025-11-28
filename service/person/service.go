@@ -118,3 +118,31 @@ func FilterPerson(filters entity_public.PersonFilter, farm uint32, page, limit i
 		NoContent:   page == 0 && len(people) == 0,
 	}, nil
 }
+
+func GetNaturalPerson(id uint32) (entity_public.NaturalPerson, *entity_public.Toast) {
+	pmodel := person_model.GetpersonModel()
+
+	var person entity_public.NaturalPerson
+	person, err := pmodel.GetNaturalPersonById(id)
+
+	if err != nil {
+		toast := entity_public.GetWarningToast(err.Message, "")
+		return person, &toast
+	}
+
+	return person, nil
+}
+
+func GetLegalPerson(id uint32) (entity_public.LegalPerson, *entity_public.Toast) {
+	pmodel := person_model.GetpersonModel()
+
+	var person entity_public.LegalPerson
+	person, err := pmodel.GetLegalPersonById(id)
+
+	if err != nil {
+		toast := entity_public.GetWarningToast(err.Message, "")
+		return person, &toast
+	}
+
+	return person, nil
+}
