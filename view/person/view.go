@@ -13,12 +13,21 @@ func GetPersonPage(farm uint32) personPage {
 	return personPage{}
 }
 
-func GetFilledLegalPersonForm(id uint32) (entity_public.LegalPerson, *entity_public.Toast) {
-	person, t := person_service.GetLegalPerson(id)
-	return person, t
+type FilledPersonForm struct {
+	Legal   *entity_public.LegalPerson
+	Natural *entity_public.NaturalPerson
 }
 
-func GetFilledNaturalPersonForm(id uint32) (entity_public.NaturalPerson, *entity_public.Toast) {
+func GetFilledLegalPersonForm(id uint32) (FilledPersonForm, *entity_public.Toast) {
+	var pform FilledPersonForm
+	person, t := person_service.GetLegalPerson(id)
+	pform.Legal = &person
+	return pform, t
+}
+
+func GetFilledNaturalPersonForm(id uint32) (FilledPersonForm, *entity_public.Toast) {
+	var pform FilledPersonForm
 	person, t := person_service.GetNaturalPerson(id)
-	return person, t
+	pform.Natural = &person
+	return pform, t
 }

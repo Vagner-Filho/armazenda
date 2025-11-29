@@ -22,6 +22,10 @@ func addLegalPerson(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
 	newLegalPerson.Person.Farm = farm
+
+	ie := c.PostForm("inscricaoEstadual")
+	newLegalPerson.Person.Ie = ie
+
 	person, toast := person_service.AddLegalPerson(newLegalPerson)
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
@@ -30,8 +34,8 @@ func addLegalPerson(c *gin.Context) {
 }
 
 func addNaturalPerson(c *gin.Context) {
-	var newPersonal entity_public.NaturalPerson
-	err := c.Bind(&newPersonal)
+	var newNatural entity_public.NaturalPerson
+	err := c.Bind(&newNatural)
 	if err != nil {
 		c.String(http.StatusBadRequest, "", err.Error())
 		return
@@ -39,8 +43,11 @@ func addNaturalPerson(c *gin.Context) {
 
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
-	newPersonal.Person.Farm = farm
-	person, toast := person_service.AddNaturalPerson(newPersonal)
+	newNatural.Person.Farm = farm
+
+	ie := c.PostForm("inscricaoEstadual")
+	newNatural.Person.Ie = ie
+	person, toast := person_service.AddNaturalPerson(newNatural)
 	if toast != nil {
 		if toast.Type == entity_public.ErrorToast {
 			c.Header("HX-Trigger", string(toast.ToJson()))
@@ -83,12 +90,12 @@ func getFilledLegalPersonForm(c *gin.Context) {
 		c.String(http.StatusBadRequest, "", err.Error())
 	}
 
-	person, t := person_view.GetFilledLegalPersonForm(uint32(converted))
+	pform, t := person_view.GetFilledLegalPersonForm(uint32(converted))
 	if t != nil {
 		c.Header("HX-Trigger", string(t.ToJson()))
 		return
 	}
-	c.HTML(http.StatusOK, "person-form", person)
+	c.HTML(http.StatusOK, "person-form", pform)
 }
 
 func getPersonPage(c *gin.Context) {

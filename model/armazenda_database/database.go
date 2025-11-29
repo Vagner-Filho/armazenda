@@ -611,7 +611,8 @@ func initAddEntry(c *pgx.Conn) {
 			INOUT farm INTEGER,
 			IN damage NUMERIC(6, 3),
 			IN impurity NUMERIC(6, 3),
-			IN origin INTEGER
+			IN origin INTEGER,
+			OUT out_origin TEXT
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE entry_id INTEGER;
@@ -630,6 +631,14 @@ func initAddEntry(c *pgx.Conn) {
 			SELECT f.name FROM field f WHERE f.id = field INTO fieldName;
 			entryId := entry_id;
 			SELECT v.plate FROM vehicle v WHERE v.id = in_vehicle INTO out_vehicle;
+
+			SELECT COALESCE(name, 'Própria') FROM
+			(SELECT np.name, np.personid FROM natural_person np UNION ALL SELECT lp.companyname AS name, lp.personid FROM legal_person lp)
+			WHERE personid = origin INTO out_origin;
+
+			IF out_origin IS NULL THEN
+				out_origin := 'Própria';
+			END IF;
 		END;
 		$$;
 	`)
