@@ -166,9 +166,9 @@ func initAddGetEntryDraft(c *pgx.Conn) {
 
 			SELECT f.name FROM field f WHERE f.id = in_field INTO out_field_name;
 			SELECT c.name FROM crop c WHERE c.id = in_crop INTO out_crop_name;
+			SELECT v.plate FROM vehicle v WHERE v.id = in_vehicle INTO out_vehicle_plate;
 			
 			out_name := in_name;
-			out_vehicle_plate := in_vehicle;
 			out_tare := in_tare;
 		END;
 		$$;
@@ -176,6 +176,79 @@ func initAddGetEntryDraft(c *pgx.Conn) {
 
 	if err != nil {
 		fmt.Printf("\n error at function add_get_entry_draft:\n%v", err.Error())
+	}
+}
+
+func initUpdateEntryDraft(c *pgx.Conn) {
+	_, err := c.Exec(context.Background(), `
+		DROP FUNCTION IF EXISTS update_get_entry_draft;
+		CREATE OR REPLACE FUNCTION update_get_entry_draft(
+			INOUT draft_id INTEGER,
+			IN in_name TEXT,
+			IN in_field SMALLINT,
+			IN in_crop SMALLINT,
+			IN in_vehicle INTEGER,
+			IN in_tare NUMERIC(10, 3),
+			IN in_farm INTEGER,
+			IN in_origin INTEGER,
+			OUT out_name TEXT,
+			OUT out_field_name TEXT,
+			OUT out_crop_name TEXT,
+			OUT out_vehicle_plate TEXT,
+			OUT out_tare NUMERIC(10, 3),
+			OUT out_origin TEXT
+		)
+		LANGUAGE plpgsql AS $$
+		DECLARE origin_exists BOOLEAN;
+		BEGIN
+			UPDATE entry_draft SET
+				name = in_name,
+				field = in_field,
+				crop = in_crop,
+				vehicle = in_vehicle,
+				tare = in_tare
+			WHERE id = draft_id;
+
+			-- Handle origin relationship
+			SELECT EXISTS (SELECT 1 FROM entry_draft_origin edo WHERE edo.entry_draft_id = draft_id) INTO origin_exists;
+			
+			IF in_origin IS NOT NULL THEN
+				IF origin_exists THEN
+					UPDATE entry_draft_origin SET person_id = in_origin WHERE entry_draft_id = draft_id;
+					-- Get origin name
+					SELECT COALESCE(np.name, lp.fantasyname, lp.companyname) FROM person p
+					LEFT JOIN natural_person np ON p.id = np.personid
+					LEFT JOIN legal_person lp ON p.id = lp.personid
+					WHERE p.id = in_origin INTO out_origin;
+				ELSE
+					INSERT INTO entry_draft_origin (entry_draft_id, person_id) VALUES (draft_id, in_origin);
+					-- Get origin name
+					SELECT COALESCE(np.name, lp.fantasyname, lp.companyname) FROM person p
+					LEFT JOIN natural_person np ON p.id = np.personid
+					LEFT JOIN legal_person lp ON p.id = lp.personid
+					WHERE p.id = in_origin INTO out_origin;
+				END IF;
+			ELSE
+				-- Remove origin if it exists and new origin is null
+				IF origin_exists THEN
+					DELETE FROM entry_draft_origin WHERE entry_draft_id = draft_id;
+				END IF;
+				out_origin := 'Própria';
+			END IF;
+
+			-- Get related names
+			SELECT f.name FROM field f WHERE f.id = in_field INTO out_field_name;
+			SELECT c.name FROM crop c WHERE c.id = in_crop INTO out_crop_name;
+			SELECT v.plate FROM vehicle v WHERE v.id = in_vehicle INTO out_vehicle_plate;
+			
+			out_name := in_name;
+			out_tare := in_tare;
+		END;
+		$$;
+	`)
+
+	if err != nil {
+		fmt.Printf("\n error at function update_get_entry_draft:\n%v", err.Error())
 	}
 }
 
@@ -1212,6 +1285,7 @@ func InitDb(c *pgx.Conn) {
 	initUpdateLegalPerson(c)
 	initUpdateDepartureProc(c)
 	initAddGetEntryDraft(c)
+	initUpdateEntryDraft(c)
 	initAddGetDepartureDraft(c)
 	initDepartureAnalysis(c)
 }

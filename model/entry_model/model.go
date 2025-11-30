@@ -12,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/shopspring/decimal"
 )
 
 type entryModel struct {
@@ -94,7 +95,7 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32, page int) ([]entity_p
 func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.DisplayEntryDraft, *model_error.ModelError) {
 
 	rows, queryErr := em.pool.Query(context.Background(), `
-		SELECT ed.id, ed.name, f.name, c.name, ed.vehicle, ed.tare, COALESCE(np.name, lp.fantasyname, lp.companyname, 'Própria') AS origin
+		SELECT ed.id, ed.name, f.name, c.name, v.plate, ed.tare, COALESCE(np.name, lp.fantasyname, lp.companyname, 'Própria') AS origin
 			FROM entry_draft ed
 			JOIN field f ON ed.field = f.id
 			JOIN crop c ON ed.crop = c.id
@@ -102,6 +103,7 @@ func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.Display
 			LEFT JOIN person p ON p.id = edo.person_id
 			LEFT JOIN natural_person np ON np.personid = p.id
 			LEFT JOIN legal_person lp ON lp.personid = p.id
+			LEFT JOIN vehicle v ON v.id = ed.vehicle
 			WHERE ed.farm = @userFarm;
 	`, pgx.NamedArgs{"userFarm": farm})
 
@@ -122,6 +124,11 @@ func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.Display
 }
 
 func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft, *model_error.ModelError) {
+	var tare *decimal.Decimal = ge.Tare
+
+	if ge.Tare.Equal(decimal.Zero) {
+		tare = nil
+	}
 	row, queryErr := em.pool.Query(context.Background(), `
 		SELECT * FROM add_get_entry_draft(@name, @field, @crop, @vehicle, @tare, @farm, @origin)
 		`, pgx.NamedArgs{
@@ -129,7 +136,7 @@ func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.
 		"field":   ge.Field,
 		"crop":    ge.Crop,
 		"vehicle": ge.Vehicle,
-		"tare":    ge.Tare,
+		"tare":    tare,
 		"farm":    ge.Farm,
 		"origin":  ge.Origin,
 	})
@@ -309,6 +316,36 @@ func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.DisplayEnt
 	entry, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.DisplayEntry])
 	if collectErr != nil {
 		return entity_public.DisplayEntry{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+	return entry, nil
+}
+
+func (em *entryModel) PutEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft, *model_error.ModelError) {
+	var tare *decimal.Decimal = ge.Tare
+
+	if ge.Tare.Equal(decimal.Zero) {
+		tare = nil
+	}
+	row, queryErr := em.pool.Query(context.Background(), `
+		SELECT * FROM update_get_entry_draft(@id, @name, @field, @crop, @vehicle, @tare, @farm, @origin)
+		`, pgx.NamedArgs{
+		"id":      ge.Id,
+		"name":    ge.Name,
+		"field":   ge.Field,
+		"crop":    ge.Crop,
+		"vehicle": ge.Vehicle,
+		"tare":    tare,
+		"farm":    ge.Farm,
+		"origin":  ge.Origin,
+	})
+
+	if queryErr != nil {
+		return entity_public.DisplayEntryDraft{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	entry, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.DisplayEntryDraft])
+	if collectErr != nil {
+		return entity_public.DisplayEntryDraft{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
 	return entry, nil
 }

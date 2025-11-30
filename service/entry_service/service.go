@@ -46,6 +46,10 @@ func AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public
 	var totalDiscount decimal.Decimal
 
 	rawNetWeight := ge.CargoWeight.GrossWeight.Sub(ge.Tare)
+	if rawNetWeight.LessThan(decimal.Zero) {
+		t := entity_public.GetWarningToast("O peso líquido não pode ser menor do que zero", "confira o peso bruto e a tara")
+		return entity_public.DisplayEntry{}, t
+	}
 	if ge.Damage != nil {
 		exceedingDamage := ge.Damage.Sub(damageThreshold)
 		if exceedingDamage.GreaterThan(decimal.Zero) {
@@ -147,6 +151,19 @@ func PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public
 		return entity_public.DisplayEntry{}, entity_public.GetWarningToast(putErr.Message, "")
 	}
 	return entry, entity_public.GetSuccessToast("Entrada editada", "")
+}
+
+func PutEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft, entity_public.Toast) {
+	eModel := entry_model.GetEntryModel()
+
+	entry, putErr := eModel.PutEntryDraft(ge)
+	if putErr != nil {
+		if putErr.IsServerErr == true {
+			return entity_public.DisplayEntryDraft{}, entity_public.GetErrorToast("Houve um erro interno ao editar o rascunho", "")
+		}
+		return entity_public.DisplayEntryDraft{}, entity_public.GetWarningToast(putErr.Message, "")
+	}
+	return entry, entity_public.GetSuccessToast("Rascunho editado", "")
 }
 
 func DeleteEntry(id uint32) *entity_public.Toast {

@@ -155,6 +155,36 @@ func putEntry(c *gin.Context) {
 	c.HTML(http.StatusOK, "entry-list-item", updatedEntry)
 }
 
+func putEntryDraft(c *gin.Context) {
+	id := c.Param("id")
+	converted, parseErr := strconv.ParseUint(id, 10, 32)
+	if parseErr != nil {
+		c.String(http.StatusBadRequest, "", parseErr.Error())
+		return
+	}
+
+	var entryDraft entity_public.EntryDraft
+	err := c.Bind(&entryDraft)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+
+	entryDraft.Id = uint32(converted)
+	var updatedEntryDraft, toast = entry_service.PutEntryDraft(entryDraft)
+	c.Header("HX-Trigger", string(toast.ToJson()))
+
+	if toast.Type == entity_public.WarningToast {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if toast.Type == entity_public.ErrorToast {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	c.HTML(http.StatusOK, "entry-draft-list-item", updatedEntryDraft)
+}
+
 func filterEntries(c *gin.Context) {
 	var entryFilter entity_public.EntryFilter
 	err := c.Bind(&entryFilter)
@@ -313,6 +343,7 @@ func UseEntryRoutes(router *gin.Engine) {
 	router.POST("/entry", addEntry)
 	router.POST("/entry/draft", addEntryDraft)
 	router.PUT("/entry/:id", putEntry)
+	router.PUT("/entry/draft/:id", putEntryDraft)
 	router.DELETE("/entry/:id", deleteEntry)
 	router.DELETE("/entry/draft/:id", deleteDraft)
 	router.POST("/entry/filter", filterEntries)

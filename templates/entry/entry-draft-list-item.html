@@ -16,7 +16,7 @@
     {{ .Vehicle }}
   </td>
   <td class="py-3 px-4 text-left" data-label="Tara">
-    {{ .Tare }}
+    {{ if eq .Tare nil }}N/A{{ else }}{{ .Tare }}{{ end }}
   </td>
   <td class="py-3 px-4 text-left" data-label="Ações">
     <div class="flex items-center justify-end lg:justify-start gap-2">
