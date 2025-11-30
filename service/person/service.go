@@ -146,3 +146,37 @@ func GetLegalPerson(id uint32) (entity_public.LegalPerson, *entity_public.Toast)
 
 	return person, nil
 }
+
+func UpdateNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *entity_public.Toast) {
+	bmodel := person_model.GetpersonModel()
+
+	person, err := bmodel.UpdateNaturalPerson(bp)
+	if err != nil {
+		if err.IsServerErr == true {
+			toast := entity_public.GetErrorToast(err.Error(), "")
+			return entity_public.PersonDisplay{}, &toast
+		}
+		toast := entity_public.GetWarningToast(err.Error(), "")
+		return entity_public.PersonDisplay{}, &toast
+	}
+
+	toast := entity_public.GetSuccessToast("Pessoa atualizada!", "")
+	return person, &toast
+}
+
+func UpdateLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, *entity_public.Toast) {
+	bmodel := person_model.GetpersonModel()
+
+	person, err := bmodel.UpdateLegalPerson(bc)
+	if err != nil {
+		if err.IsServerErr == true {
+			toast := entity_public.GetErrorToast(err.Error(), "")
+			return entity_public.PersonDisplay{}, &toast
+		}
+		toast := entity_public.GetWarningToast(err.Error(), "")
+		return entity_public.PersonDisplay{}, &toast
+	}
+
+	toast := entity_public.GetSuccessToast("Pessoa atualizada!", "")
+	return person, &toast
+}

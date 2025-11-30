@@ -4,21 +4,23 @@
     {{ template "close-dialog-btn" "dialog#personFormDialog" }}
     <header class="text-center">
       <h1 class="text-2xl font-bold text-slate-700">
-        Novo Comprador
+        {{ if or (and .Legal .Legal.Person.Id) (and .Natural .Natural.Person.Id) }}Editar Comprador{{ else }}Novo Comprador{{ end }}
       </h1>
       <p class="text-gray-600 mt-2">
-        Selecione o tipo de pessoa e preencha os dados para cadastrar um novo comprador.
+        {{ if or (and .Legal .Legal.Person.Id) (and .Natural .Natural.Person.Id) }}Atualize os dados do comprador.{{ else }}Selecione o tipo de pessoa e preencha os dados para cadastrar um novo comprador.{{ end }}
       </p>
     </header>
-    <div class="flex items-center justify-center w-full py-4">
-      <button type="button" id="pessoa-juridica-btn" class="h-10 px-4 font-semibold rounded-md rounded-r-none ring-2 ring-inset ring-sky-500 text-white bg-sky-500 transition-colors duration-300" onclick="toggleForm()">
-        Pessoa Jurídica
-      </button>
-      <button type="button" id="pessoa-fisica-btn" class="h-10 px-4 font-semibold rounded-md rounded-l-none ring-2 ring-inset ring-sky-500 text-sky-500 transition-colors duration-300" onclick="toggleForm()">
-        Pessoa Física
-      </button>
-    </div>
-    <form id="pessoa-juridica-form" hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend" class="gap-4">
+    {{ if and (eq .Legal nil) (eq .Natural nil) }}
+      <div class="flex items-center justify-center w-full py-4">
+        <button type="button" id="pessoa-juridica-btn" class="h-10 px-4 font-semibold rounded-md rounded-r-none ring-2 ring-inset ring-sky-500 text-white bg-sky-500 transition-colors duration-300" onclick="toggleForm()">
+          Pessoa Jurídica
+        </button>
+        <button type="button" id="pessoa-fisica-btn" class="h-10 px-4 font-semibold rounded-md rounded-l-none ring-2 ring-inset ring-sky-500 text-sky-500 transition-colors duration-300" onclick="toggleForm()">
+          Pessoa Física
+        </button>
+      </div>
+    {{ end }}
+    <form id="pessoa-juridica-form" {{ with .Legal }}{{ if .Person.Id }}hx-put="/person/legal/{{ .Person.Id }}" hx-target="#person-{{ .Person.Id }}" hx-swap="outerHTML"{{ else }}hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend"{{ end }}{{ else }}hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend"{{ end }} class="gap-4 {{ if ne .Natural nil }} hidden {{ end }}">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow" id="pessoa-juridica-fieldset">
           <legend class="fieldset-legend">
@@ -31,9 +33,10 @@
             </label>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="text" name="fantasyName" id="fantasy-name" class="peer" {{ with .Legal }} value="{{ .FantasyName }}" {{ end }}>
+            <input type="text" name="fantasyName" id="fantasy-name" class="peer" {{ with .Legal }} {{ with .FantasyName }}value="{{ . }}"{{ end }} {{ end }}>
             <label for="fantasy-name" class="label-peer">
-              Nome Fantasia (opcional)
+              Nome Fantasia
+              <i class="text-xs font-normal text-gray-500 normal-case">(opcional) - Aparece como opção de pessoa</i>
             </label>
           </div>
           <div class="flex flex-col-reverse">
@@ -66,11 +69,11 @@
           Cancelar
         </button>
         <button class="add-btn" type="submit">
-          Adicionar
+          {{ with .Legal }}{{ if .Person.Id }}Salvar{{ else }}Adicionar{{ end }}{{ else }}Adicionar{{ end }}
         </button>
       </div>
     </form>
-    <form id="pessoa-fisica-form" hx-post="/person/natural" hx-target="#people-rows" hx-swap="beforeend" class="gap-4 hidden">
+    <form id="pessoa-fisica-form" {{ with .Natural }}{{ if .Person.Id }}hx-put="/person/natural/{{ .Person.Id }}" hx-target="#person-{{ .Person.Id }}" hx-swap="outerHTML"{{ else }}hx-post="/person/natural" hx-target="#people-rows" hx-swap="beforeend"{{ end }}{{ else }}hx-post="/person/natural" hx-target="#people-rows" hx-swap="beforeend"{{ end }} class="gap-4 {{ if eq .Natural nil }} hidden {{ end }}">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow" id="pessoa-fisica-fieldset">
           <legend class="fieldset-legend">
@@ -112,7 +115,7 @@
           Cancelar
         </button>
         <button class="add-btn" type="submit">
-          Adicionar
+          {{ with .Natural }}{{ if .Person.Id }}Salvar{{ else }}Adicionar{{ end }}{{ else }}Adicionar{{ end }}
         </button>
       </div>
     </form>
@@ -141,26 +144,25 @@
       });
     }
 
-    const pessoaJuridicaBtn = document.querySelector('button#pessoa-juridica-btn')
-    const pessoaFisicaBtn = document.querySelector('button#pessoa-fisica-btn')
-    const pessoaJuridicaForm = document.querySelector('form#pessoa-juridica-form')
-    const pessoaFisicaForm = document.querySelector('form#pessoa-fisica-form')
-    function toggleForm() {
-        pessoaFisicaForm.classList.toggle('hidden')
-        pessoaJuridicaForm.classList.toggle('hidden')
+    {{ if and (eq .Legal nil) (eq .Natural nil) }}
+      const pessoaJuridicaBtn = document.querySelector('button#pessoa-juridica-btn')
+      const pessoaFisicaBtn = document.querySelector('button#pessoa-fisica-btn')
+      const pessoaJuridicaForm = document.querySelector('form#pessoa-juridica-form')
+      const pessoaFisicaForm = document.querySelector('form#pessoa-fisica-form')
+      function toggleForm() {
+          pessoaFisicaForm.classList.toggle('hidden')
+          pessoaJuridicaForm.classList.toggle('hidden')
 
-        pessoaJuridicaBtn.classList.toggle('text-white')
-        pessoaJuridicaBtn.classList.toggle('text-sky-500')
-        pessoaJuridicaBtn.classList.toggle('bg-sky-500')
+          pessoaJuridicaBtn.classList.toggle('text-white')
+          pessoaJuridicaBtn.classList.toggle('text-sky-500')
+          pessoaJuridicaBtn.classList.toggle('bg-sky-500')
 
-        pessoaFisicaBtn.classList.toggle('text-white')
-        pessoaFisicaBtn.classList.toggle('bg-sky-500')
-        pessoaFisicaBtn.classList.toggle('text-sky-500')
-      }
+          pessoaFisicaBtn.classList.toggle('text-white')
+          pessoaFisicaBtn.classList.toggle('bg-sky-500')
+          pessoaFisicaBtn.classList.toggle('text-sky-500')
+        }
 
-    window.toggleForm = toggleForm
-    {{ if ne .Natural nil }}
-    toggleForm()
+      window.toggleForm = toggleForm
     {{ end }}
   </script>
 </dialog>

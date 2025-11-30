@@ -24,9 +24,13 @@ var secretKey = getSecret()
 
 func GetFarmFromToken(sessionId string) uint32 {
 	allocatedClaims := &ArmazendaUserClaims{}
-	token, _ := jwt.ParseWithClaims(sessionId, allocatedClaims, func(token *jwt.Token) (any, error) {
+	token, err := jwt.ParseWithClaims(sessionId, allocatedClaims, func(token *jwt.Token) (any, error) {
 		return secretKey, nil
 	})
+
+	if err != nil || token == nil || !token.Valid {
+		return 0
+	}
 
 	retrievedClaims := token.Claims.(*ArmazendaUserClaims)
 	return retrievedClaims.Farm

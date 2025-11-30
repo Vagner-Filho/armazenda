@@ -376,3 +376,84 @@ func (pm *personModel) GetNaturalPersonById(id uint32) (entity_public.NaturalPer
 	naturalPerson.Person = base.Person
 	return naturalPerson, nil
 }
+
+func (bm *personModel) UpdateNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
+	row, queryErr := bm.pool.Query(context.Background(), `
+			SELECT * FROM update_get_natural_person(@name, @cpf, @ie, @id, @farm, @humidityDiscount, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone)
+		`,
+		pgx.NamedArgs{
+			"id":               bp.Person.Id,
+			"ie":               bp.Person.Ie,
+			"cpf":              bp.Cpf,
+			"name":             bp.Name,
+			"farm":             bp.Person.Farm,
+			"humidityDiscount": bp.Person.HumidityDiscount,
+			"street":           bp.Street,
+			"cep":              bp.Cep,
+			"number":           bp.Number,
+			"neighborhood":     bp.Neighborhood,
+			"city":             bp.City,
+			"state":            bp.State,
+			"complement":       bp.Complement,
+			"email":            bp.Email,
+			"phone":            bp.PhoneNumber,
+		})
+	if queryErr != nil {
+		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	person, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.PersonDisplay])
+	if collectErr != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(collectErr, &pgErr) {
+			if pgErr.Code == pgerrcode.UniqueViolation {
+				var message string = "Esta pessoa já existe"
+				if strings.Contains(collectErr.Error(), "person_ie") {
+					message = "Inscrição Estadual em uso"
+				}
+				if strings.Contains(collectErr.Error(), "natural_person_cpf") {
+					message = "CPF em uso"
+				}
+				return entity_public.PersonDisplay{}, &model_error.ModelError{Message: message}
+			}
+		}
+		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
+	}
+
+	return person, nil
+}
+
+func (bm *personModel) UpdateLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
+	row, queryErr := bm.pool.Query(
+		context.Background(),
+		`SELECT * FROM update_get_legal_person(@companyName, @cnpj, @ie, @id, @fantasyName, @farm, @humidityDiscount, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone)`,
+		pgx.NamedArgs{
+			"id":               bc.Person.Id,
+			"ie":               bc.Person.Ie,
+			"cnpj":             bc.Cnpj,
+			"fantasyName":      bc.FantasyName,
+			"farm":             bc.Person.Farm,
+			"companyName":      bc.CompanyName,
+			"humidityDiscount": bc.Person.HumidityDiscount,
+			"street":           bc.Street,
+			"cep":              bc.Cep,
+			"number":           bc.Number,
+			"neighborhood":     bc.Neighborhood,
+			"city":             bc.City,
+			"state":            bc.State,
+			"complement":       bc.Complement,
+			"email":            bc.Email,
+			"phone":            bc.PhoneNumber,
+		})
+
+	if queryErr != nil {
+		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	person, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.PersonDisplay])
+	if collectErr != nil {
+		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
+	}
+
+	return person, nil
+}

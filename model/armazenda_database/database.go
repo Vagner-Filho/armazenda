@@ -590,6 +590,161 @@ func initAddLegalPerson(c *pgx.Conn) {
 	}
 }
 
+func initUpdateNaturalPerson(c *pgx.Conn) {
+	_, err := c.Exec(context.Background(), `
+		DROP FUNCTION IF EXISTS update_get_natural_person;
+		CREATE OR REPLACE FUNCTION update_get_natural_person(
+			OUT person_type INTEGER,
+			INOUT name TEXT,
+			INOUT cpf TEXT,
+			INOUT ie TEXT,
+			INOUT p_id INTEGER,
+			IN farm INTEGER,
+			IN humidityDiscount NUMERIC(6, 3) DEFAULT NULL,
+			IN street TEXT DEFAULT NULL,
+			IN cep CHARACTER(8) DEFAULT NULL,
+			IN number INTEGER DEFAULT NULL,
+			IN neighborhood TEXT DEFAULT NULL,
+			IN city TEXT DEFAULT NULL,
+			IN state CHARACTER(2) DEFAULT NULL,
+			IN complement TEXT DEFAULT NULL,
+			IN email TEXT DEFAULT NULL,
+			IN phoneNumber TEXT DEFAULT NULL
+		)
+		LANGUAGE plpgsql AS $$
+		DECLARE addressId INTEGER;
+		DECLARE config_exists BOOLEAN;
+		DECLARE address_exists BOOLEAN;
+		DECLARE address_complement_exists BOOLEAN;
+		DECLARE contact_exists BOOLEAN;
+		BEGIN
+			UPDATE person SET ie = update_get_natural_person.ie WHERE id = p_id;
+			UPDATE natural_person SET name = update_get_natural_person.name, cpf = update_get_natural_person.cpf WHERE personId = p_id;
+
+			person_type := 0;
+
+			IF humidityDiscount IS NOT NULL THEN
+				SELECT EXISTS (SELECT 1 FROM person_config pc WHERE pc.person_id = p_id) INTO config_exists;
+				IF config_exists THEN
+					UPDATE person_config SET humidity_discount = humidityDiscount WHERE person_id = p_id;
+				ELSE
+					INSERT INTO person_config (person_id, ie, farm, humidity_discount) VALUES (p_id, update_get_natural_person.ie, farm, humidityDiscount);
+				END IF;
+			END IF;
+
+			IF street IS NOT NULL AND cep IS NOT NULL AND neighborhood IS NOT NULL AND city IS NOT NULL AND state IS NOT NULL THEN
+				SELECT EXISTS (SELECT 1 FROM address a WHERE a.person_id = p_id) INTO address_exists;
+				IF address_exists THEN
+					UPDATE address SET street = update_get_natural_person.street, cep = update_get_natural_person.cep, number = update_get_natural_person.number, neighborhood = update_get_natural_person.neighborhood, city = update_get_natural_person.city, state = update_get_natural_person.state WHERE person_id = p_id RETURNING id INTO addressId;
+				ELSE
+					INSERT INTO address (street, cep, number, neighborhood, city, state, person_id) VALUES (street, cep, number, neighborhood, city, state, p_id) RETURNING id INTO addressId;
+				END IF;
+
+				IF complement IS NOT NULL AND addressId IS NOT NULL THEN
+					SELECT EXISTS (SELECT 1 FROM address_complement ac WHERE ac.address_id = addressId) INTO address_complement_exists;
+					IF address_complement_exists THEN
+						UPDATE address_complement SET complement = update_get_natural_person.complement WHERE address_id = addressId;
+					ELSE
+						INSERT INTO address_complement (complement, address_id) VALUES (complement, addressId);
+					END IF;
+				END IF;
+			END IF;
+
+			IF email IS NOT NULL OR phoneNumber IS NOT NULL THEN
+				SELECT EXISTS (SELECT 1 FROM contact c WHERE c.person_id = p_id) INTO contact_exists;
+				IF contact_exists THEN
+					UPDATE contact SET email = update_get_natural_person.email, phone_number = phoneNumber WHERE person_id = p_id;
+				ELSE
+					INSERT INTO contact (email, phone_number, person_id) VALUES (email, phoneNumber, p_id);
+				END IF;
+			END IF;
+		END;
+		$$;
+	`)
+
+	if err != nil {
+		fmt.Printf("\n error at function update_get_natural_person:\n%v", err.Error())
+	}
+}
+
+func initUpdateLegalPerson(c *pgx.Conn) {
+	_, err := c.Exec(context.Background(), `
+		DROP FUNCTION IF EXISTS update_get_legal_person;
+		CREATE OR REPLACE FUNCTION update_get_legal_person(
+			OUT person_type INTEGER,
+			INOUT p_companyName TEXT,
+			INOUT cnpj TEXT,
+			INOUT ie TEXT,
+			INOUT p_id INTEGER,
+			IN p_fantasyName TEXT,
+			IN farm INTEGER,
+			IN humidityDiscount NUMERIC(6, 3) DEFAULT NULL,
+			IN street TEXT DEFAULT NULL,
+			IN cep CHARACTER(8) DEFAULT NULL,
+			IN number INTEGER DEFAULT NULL,
+			IN neighborhood TEXT DEFAULT NULL,
+			IN city TEXT DEFAULT NULL,
+			IN state CHARACTER(2) DEFAULT NULL,
+			IN complement TEXT DEFAULT NULL,
+			IN email TEXT DEFAULT NULL,
+			IN phoneNumber TEXT DEFAULT NULL
+		)
+		LANGUAGE plpgsql AS $$
+		DECLARE addressId INTEGER;
+		DECLARE config_exists BOOLEAN;
+		DECLARE address_exists BOOLEAN;
+		DECLARE address_complement_exists BOOLEAN;
+		DECLARE contact_exists BOOLEAN;
+		BEGIN
+			UPDATE person SET ie = update_get_legal_person.ie WHERE id = p_id;
+			UPDATE legal_person SET cnpj = update_get_legal_person.cnpj, companyname = p_companyName, fantasyname = p_fantasyName WHERE personId = p_id;
+
+			person_type := 1;
+
+			IF humidityDiscount IS NOT NULL THEN
+				SELECT EXISTS (SELECT 1 FROM person_config pc WHERE pc.person_id = p_id) INTO config_exists;
+				IF config_exists THEN
+					UPDATE person_config SET humidity_discount = humidityDiscount WHERE person_id = p_id;
+				ELSE
+					INSERT INTO person_config (person_id, ie, farm, humidity_discount) VALUES (p_id, update_get_legal_person.ie, farm, humidityDiscount);
+				END IF;
+			END IF;
+
+			IF street IS NOT NULL AND cep IS NOT NULL AND neighborhood IS NOT NULL AND city IS NOT NULL AND state IS NOT NULL THEN
+				SELECT EXISTS (SELECT 1 FROM address a WHERE a.person_id = p_id) INTO address_exists;
+				IF address_exists THEN
+					UPDATE address SET street = update_get_legal_person.street, cep = update_get_legal_person.cep, number = update_get_legal_person.number, neighborhood = update_get_legal_person.neighborhood, city = update_get_legal_person.city, state = update_get_legal_person.state WHERE person_id = p_id RETURNING id INTO addressId;
+				ELSE
+					INSERT INTO address (street, cep, number, neighborhood, city, state, person_id) VALUES (street, cep, number, neighborhood, city, state, p_id) RETURNING id INTO addressId;
+				END IF;
+
+				IF complement IS NOT NULL AND addressId IS NOT NULL THEN
+					SELECT EXISTS (SELECT 1 FROM address_complement ac WHERE ac.address_id = addressId) INTO address_complement_exists;
+					IF address_complement_exists THEN
+						UPDATE address_complement SET complement = update_get_legal_person.complement WHERE address_id = addressId;
+					ELSE
+						INSERT INTO address_complement (complement, address_id) VALUES (complement, addressId);
+					END IF;
+				END IF;
+			END IF;
+
+			IF email IS NOT NULL OR phoneNumber IS NOT NULL THEN
+				SELECT EXISTS (SELECT 1 FROM contact c WHERE c.person_id = p_id) INTO contact_exists;
+				IF contact_exists THEN
+					UPDATE contact SET email = update_get_legal_person.email, phone_number = phoneNumber WHERE person_id = p_id;
+				ELSE
+					INSERT INTO contact (email, phone_number, person_id) VALUES (email, phoneNumber, p_id);
+				END IF;
+			END IF;
+		END;
+		$$;
+	`)
+
+	if err != nil {
+		fmt.Printf("\n error at function update_get_legal_person:\n%v", err.Error())
+	}
+}
+
 func initAddEntry(c *pgx.Conn) {
 	_, err := c.Exec(context.Background(), `
 		DROP FUNCTION IF EXISTS add_get_entry;
@@ -1053,6 +1208,8 @@ func InitDb(c *pgx.Conn) {
 	initAddDepartureProcedure(c)
 	initAddNaturalPerson(c)
 	initAddLegalPerson(c)
+	initUpdateNaturalPerson(c)
+	initUpdateLegalPerson(c)
 	initUpdateDepartureProc(c)
 	initAddGetEntryDraft(c)
 	initAddGetDepartureDraft(c)

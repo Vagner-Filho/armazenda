@@ -132,6 +132,86 @@ func getPersonPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "person.html", pageData)
 }
 
+func updateNaturalPerson(c *gin.Context) {
+	var updatedNatural entity_public.NaturalPerson
+	err := c.Bind(&updatedNatural)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+
+	id := c.Param("id")
+	converted, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	updatedNatural.Person.Farm = farm
+	updatedNatural.Person.Id = uint32(converted)
+
+	ie := c.PostForm("inscricaoEstadual")
+	updatedNatural.Person.Ie = ie
+
+	person, toast := person_service.UpdateNaturalPerson(updatedNatural)
+	if toast != nil {
+		if toast.Type == entity_public.ErrorToast {
+			c.Header("HX-Trigger", string(toast.ToJson()))
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		if toast.Type == entity_public.WarningToast {
+			c.Header("HX-Trigger", string(toast.ToJson()))
+			c.Status(http.StatusUnprocessableEntity)
+			return
+		}
+		c.Header("HX-Trigger", string(toast.ToJson()))
+	}
+	c.HTML(http.StatusOK, "person-list-item", person)
+}
+
+func updateLegalPerson(c *gin.Context) {
+	var updatedLegal entity_public.LegalPerson
+	err := c.Bind(&updatedLegal)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+
+	id := c.Param("id")
+	converted, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	updatedLegal.Person.Farm = farm
+	updatedLegal.Person.Id = uint32(converted)
+
+	ie := c.PostForm("inscricaoEstadual")
+	updatedLegal.Person.Ie = ie
+
+	person, toast := person_service.UpdateLegalPerson(updatedLegal)
+	if toast != nil {
+		if toast.Type == entity_public.ErrorToast {
+			c.Header("HX-Trigger", string(toast.ToJson()))
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		if toast.Type == entity_public.WarningToast {
+			c.Header("HX-Trigger", string(toast.ToJson()))
+			c.Status(http.StatusUnprocessableEntity)
+			return
+		}
+		c.Header("HX-Trigger", string(toast.ToJson()))
+	}
+	c.HTML(http.StatusOK, "person-list-item", person)
+}
+
 func UsePersonRoutes(router *gin.Engine) {
 	router.GET("/pessoa", getPersonPage)
 	router.GET("/person/form", getPersonForm)
@@ -139,4 +219,6 @@ func UsePersonRoutes(router *gin.Engine) {
 	router.POST("/person/legal", addLegalPerson)
 	router.GET("/person/legal/form/:id", getFilledLegalPersonForm)
 	router.GET("/person/natural/form/:id", getFilledNaturalPersonForm)
+	router.PUT("/person/natural/:id", updateNaturalPerson)
+	router.PUT("/person/legal/:id", updateLegalPerson)
 }
