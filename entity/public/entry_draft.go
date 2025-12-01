@@ -7,8 +7,8 @@ type EntryDraft struct {
 	Name    string           `form:"name" binding:"required"`
 	Field   uint16           `form:"field" binding:"required"`
 	Crop    uint8            `form:"crop" binding:"required"`
-	Vehicle string           `form:"vehiclePlate"`
-	Tare    *decimal.Decimal `form:"tare, omitempty" binding:"gte=0"`
+	Vehicle uint16           `form:"vehiclePlate"`
+	Tare    *decimal.Decimal `form:"tare,omitempty"`
 	Farm    uint32           `form:"farm" binding:"gte=0"`
 	Origin  *uint32          `form:"origin,omitempty"`
 }

@@ -102,7 +102,7 @@ func GetEntryContent(farm uint32, page int) entryContent {
 
 type EntryForm struct {
 	Vehicles        []entity_public.Vehicle
-	SelectedVehicle string
+	SelectedVehicle uint16
 	Crops           []entity_public.Crop
 	SelectedCrop    uint8
 	Fields          []entity_public.Field
@@ -185,7 +185,7 @@ func GetEntryFormFromDraft(draftId uint32, farm uint32) (EntryForm, []*entity_pu
 
 type EntryDraftForm struct {
 	Vehicles        []entity_public.Vehicle
-	SelectedVehicle string
+	SelectedVehicle uint16
 	Crops           []entity_public.Crop
 	SelectedCrop    uint8
 	Fields          []entity_public.Field

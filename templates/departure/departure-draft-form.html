@@ -34,6 +34,12 @@
                 </div>
                 {{ template "crop-selector" . }}
                 <div class="flex flex-col-reverse w-full relative pr-[30px]">
+                    {{ template "origin-selector" . }}
+                    <label for="origin-selector" class="label-peer">
+                        Origem
+                    </label>
+                </div>
+                <div class="flex flex-col-reverse w-full relative pr-[30px]">
                     {{ template "recipient-selector" . }}
                     <label for="recipient-selector" class="label-peer">
                         Destino
@@ -46,8 +52,8 @@
                 </legend>
                 {{ template "vehicle-selector" . }}
                 <div class="flex flex-col-reverse">
-                    <input type="number" name="tare" id="tare" class="peer" {{ if ne .Draft.Tare.String "0" }}
-                        value="{{ .Draft.Tare }}" {{ end }}>
+                    <input type="number" name="tare" id="tare" class="peer" {{ if ne .Draft.Tare nil }}{{ if ne .Draft.Tare.String "0" }}
+                        value="{{ .Draft.Tare }}" {{ end }}{{ end }}>
                     <label for="tare" class="label-peer">
                         Tara
                     </label>

@@ -124,11 +124,6 @@ func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.Display
 }
 
 func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft, *model_error.ModelError) {
-	var tare *decimal.Decimal = ge.Tare
-
-	if ge.Tare.Equal(decimal.Zero) {
-		tare = nil
-	}
 	row, queryErr := em.pool.Query(context.Background(), `
 		SELECT * FROM add_get_entry_draft(@name, @field, @crop, @vehicle, @tare, @farm, @origin)
 		`, pgx.NamedArgs{
@@ -136,7 +131,7 @@ func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.
 		"field":   ge.Field,
 		"crop":    ge.Crop,
 		"vehicle": ge.Vehicle,
-		"tare":    tare,
+		"tare":    ge.Tare,
 		"farm":    ge.Farm,
 		"origin":  ge.Origin,
 	})

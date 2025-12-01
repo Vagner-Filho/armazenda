@@ -80,10 +80,14 @@ func GetDepartureContent(farmId uint32, page int) (DepartureContent, []*entity_p
 }
 
 type DepartureDraftForm struct {
-	Vehicles []entity_public.Vehicle
-	Crops    []entity_public.Crop
-	People   []entity_public.PersonOption
-	Draft    entity_public.DepartureDraft
+	Vehicles          []entity_public.Vehicle
+	Crops             []entity_public.Crop
+	People            []entity_public.PersonOption
+	Draft             entity_public.DepartureDraft
+	SelectedRecipient *uint32
+	SelectedOrigin    *uint32
+	SelectedVehicle   uint16
+	SelectedCrop      uint8
 }
 
 func GetDepartureDraftForm(farm uint32) (DepartureDraftForm, []*entity_public.Toast) {
@@ -100,7 +104,7 @@ func GetDepartureDraftForm(farm uint32) (DepartureDraftForm, []*entity_public.To
 
 type DepartureForm struct {
 	Vehicles          []entity_public.Vehicle
-	SelectedVehicle   string
+	SelectedVehicle   uint16
 	Crops             []entity_public.Crop
 	SelectedCrop      uint8
 	People            []entity_public.PersonOption
@@ -125,7 +129,7 @@ func GetExistingDepartureForm(departureId uint32, farm uint32) (DepartureForm, [
 	formFields, toasts := GetNewDepartureForm(farm)
 	departure, toast := departure_service.GetDeparture(departureId)
 	formFields.SelectedCrop = departure.Crop
-	formFields.SelectedVehicle = departure.VehiclePlate
+	formFields.SelectedVehicle = departure.Vehicle
 	if departure.Origin != nil {
 		for i, p := range formFields.People {
 			if p.Id != nil && *p.Id == *departure.Origin {
@@ -178,8 +182,10 @@ func GetDepartureFormFromDraft(draftId uint32, farm uint32) (DepartureForm, []*e
 			}
 		}
 
-		tare, _ := draft.Tare.Float64()
-		formFields.Departure.Tare = tare
+		if draft.Tare != nil {
+			tare, _ := draft.Tare.Float64()
+			formFields.Departure.Tare = tare
+		}
 	}
 
 	return formFields, toasts

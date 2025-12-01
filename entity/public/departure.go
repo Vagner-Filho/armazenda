@@ -10,7 +10,7 @@ import (
 type Departure struct {
 	Id            uint32    `form:"id"`
 	DepartureDate time.Time `form:"departureDate" binding:"required" time_format:"2006-01-02T15:04"`
-	VehiclePlate  string    `form:"vehiclePlate" binding:"required"`
+	Vehicle       uint16    `form:"vehiclePlate" binding:"required"`
 	Crop          uint8     `form:"crop" binding:"required"`
 	CargoWeight
 	Farm      uint32  `form:"farm" binding:"gte=0"`
@@ -25,7 +25,7 @@ func (d Departure) ToDTO() DepartureDTO {
 	return DepartureDTO{
 		Id:             d.Id,
 		DepartureDate:  d.DepartureDate,
-		VehiclePlate:   d.VehiclePlate,
+		Vehicle:        d.Vehicle,
 		Crop:           d.Crop,
 		CargoWeightDTO: cargo,
 		Recipient:      d.Recipient,
@@ -38,7 +38,7 @@ func (d Departure) ToDTO() DepartureDTO {
 type DepartureDTO struct {
 	Id            uint32
 	DepartureDate time.Time
-	VehiclePlate  string
+	Vehicle       uint16
 	Crop          uint8
 	CargoWeightDTO
 	Recipient *uint32
@@ -53,7 +53,7 @@ func (dto DepartureDTO) ToEntity() Departure {
 	return Departure{
 		Id:            dto.Id,
 		DepartureDate: dto.DepartureDate,
-		VehiclePlate:  dto.VehiclePlate,
+		Vehicle:       dto.Vehicle,
 		Crop:          dto.Crop,
 		CargoWeight:   cargo,
 		Recipient:     dto.Recipient,

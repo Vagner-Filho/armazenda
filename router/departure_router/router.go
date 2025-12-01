@@ -203,7 +203,7 @@ func getDeparturePdf(c *gin.Context) {
 func getDepartureDraftForm(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
-	form, toasts := departure_view.GetDepartureDraftForm(farm)
+	formFields, toasts := departure_view.GetDepartureDraftForm(farm)
 
 	draftIdStr := c.Param("id")
 	if draftIdStr != "" {
@@ -215,22 +215,33 @@ func getDepartureDraftForm(c *gin.Context) {
 			return
 		}
 		draft, toast := departure_service.GetDepartureDraft(uint32(draftId))
-		for i, p := range form.People {
-			if p.Id != nil {
-				if *p.Id == *draft.Recipient {
-					form.Draft.Recipient = form.People[i].Id
-					continue
-				} else if *p.Id == *draft.Origin {
-					form.Draft.Origin = form.People[i].Id
-					continue
+		if draft.Id != 0 {
+			formFields.SelectedCrop = uint8(draft.Crop)
+			formFields.SelectedVehicle = draft.Vehicle
+			if draft.Recipient != nil {
+				for i, p := range formFields.People {
+					if p.Id != nil && *p.Id == *draft.Recipient {
+						formFields.SelectedRecipient = formFields.People[i].Id
+						break
+					}
 				}
 			}
+			if draft.Origin != nil {
+				for i, p := range formFields.People {
+					if p.Id != nil && *p.Id == *draft.Origin {
+						formFields.SelectedOrigin = formFields.People[i].Id
+						break
+					}
+				}
+			}
+
+			formFields.Draft.Tare = draft.Tare
 		}
 
 		if toast != nil {
 			toasts = append(toasts, toast)
 		}
-		form.Draft = draft
+		formFields.Draft = draft
 	}
 
 	for _, toast := range toasts {
@@ -238,7 +249,7 @@ func getDepartureDraftForm(c *gin.Context) {
 			c.Header("HX-Trigger", string(toast.ToJson()))
 		}
 	}
-	c.HTML(http.StatusOK, "departure-draft-form", form)
+	c.HTML(http.StatusOK, "departure-draft-form", formFields)
 }
 
 func addDepartureDraft(c *gin.Context) {

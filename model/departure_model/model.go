@@ -195,7 +195,7 @@ func (dm *departureModel) AddDeparture(d entity_public.Departure) (entity_public
 		`, pgx.NamedArgs{
 		"crop":          d.Crop,
 		"recipientId":   d.Recipient,
-		"vehicle":       d.VehiclePlate,
+		"vehicle":       d.Vehicle,
 		"departureDate": d.DepartureDate,
 		"farm":          d.Farm,
 		"tare":          d.Tare,
@@ -225,7 +225,7 @@ func (dm *departureModel) PutDeparture(d entity_public.Departure) (entity_public
 		pgx.NamedArgs{
 			"departureId":   d.Id,
 			"crop":          d.Crop,
-			"vehicle":       d.VehiclePlate,
+			"vehicle":       d.Vehicle,
 			"grossWeight":   d.GrossWeight,
 			"tare":          d.Tare,
 			"netWeight":     d.NetWeight,
@@ -325,7 +325,7 @@ func (dm *departureModel) GetDeparturePdf(id uint32) (entity_public.DeparturePdf
 
 func (dm *departureModel) CreateDepartureDraft(d entity_public.DepartureDraft) (entity_public.DisplayDepartureDraft, *model_error.ModelError) {
 	row, queryErr := dm.pool.Query(context.Background(), `
-		SELECT * FROM add_get_departure_draft(@name, @recipient, @crop, @vehicle, @tare, @farm)
+		SELECT * FROM add_get_departure_draft(@name, @recipient, @crop, @vehicle, @tare, @farm, @origin)
 		`, pgx.NamedArgs{
 		"name":      d.Name,
 		"recipient": d.Recipient,
@@ -333,6 +333,7 @@ func (dm *departureModel) CreateDepartureDraft(d entity_public.DepartureDraft) (
 		"vehicle":   d.Vehicle,
 		"tare":      d.Tare,
 		"farm":      d.Farm,
+		"origin":    d.Origin,
 	})
 	if queryErr != nil {
 		return entity_public.DisplayDepartureDraft{}, &model_error.ModelError{Message: queryErr.Error()}
@@ -348,7 +349,12 @@ func (dm *departureModel) CreateDepartureDraft(d entity_public.DepartureDraft) (
 
 func (dm *departureModel) GetDepartureDraft(id uint32) (entity_public.DepartureDraft, *model_error.ModelError) {
 	row, queryErr := dm.pool.Query(context.Background(), `
-		SELECT * FROM departure_draft WHERE id = @id
+		SELECT dd.id, dd.name, ddo.person_id, dd.crop, dd.vehicle, dd.tare, dd.farm, ddr.person_id FROM departure_draft dd
+		LEFT JOIN departure_draft_origin ddo ON ddo.departure_draft_id = dd.id
+		LEFT JOIN person p1 ON p1.id = ddo.person_id
+		LEFT JOIN departure_draft_recipient ddr ON ddr.departure_draft_id = dd.id
+		LEFT JOIN person p2 ON p2.id = ddr.person_id
+		WHERE dd.id = @id
 	`, pgx.NamedArgs{"id": id})
 	if queryErr != nil {
 		return entity_public.DepartureDraft{}, &model_error.ModelError{Message: queryErr.Error()}
@@ -367,12 +373,13 @@ func (dm *departureModel) GetAllDepartureDrafts(farmId uint32) ([]entity_public.
 		SELECT
 			dd.id,
 			dd.name,
-			COALESCE(np.name, lp.fantasyname, lp.companyname, 'Próprio') as person,
+			COALESCE(np.name, lp.fantasyname, lp.companyname, 'Própria') as person,
 			c.name as crop,
 			v.plate as vehicle,
 			dd.tare
 		FROM departure_draft dd
-		LEFT JOIN person p ON p.id = dd.person
+		LEFT JOIN departure_draft_origin ddo ON ddo.departure_draft_id = dd.id
+		LEFT JOIN person p ON p.id = ddo.person_id
 		LEFT JOIN natural_person np ON p.id = np.personid
 		LEFT JOIN legal_person lp ON p.id = lp.personid
 		LEFT JOIN crop c ON c.id = dd.crop
@@ -393,30 +400,7 @@ func (dm *departureModel) GetAllDepartureDrafts(farmId uint32) ([]entity_public.
 
 func (dm *departureModel) UpdateDepartureDraft(d entity_public.DepartureDraft) (entity_public.DisplayDepartureDraft, *model_error.ModelError) {
 	row, queryErr := dm.pool.Query(context.Background(), `
-		UPDATE departure_draft
-		SET
-			name = @name,
-			person = @person,
-			crop = @crop,
-			vehicle = @vehicle,
-			tare = @tare
-		WHERE id = @id
-		RETURNING (
-			SELECT
-				dd.id,
-				dd.name,
-				COALESCE(np.name, lp.fantasyname, lp.companyname) as person,
-				c.name as crop,
-				v.plate as vehicle,
-				dd.tare
-			FROM departure_draft dd
-			LEFT JOIN person p ON p.id = dd.person
-			LEFT JOIN natural_person np ON p.id = np.personid
-			LEFT JOIN legal_person lp ON p.id = lp.personid
-			LEFT JOIN crop c ON c.id = dd.crop
-			LEFT JOIN vehicle v ON v.plate = dd.vehicle
-			WHERE dd.id = @id
-		)
+		SELECT * FROM update_get_departure_draft(@id, @name, @recipient, @crop, @vehicle, @tare, @farm, @origin)
 		`, pgx.NamedArgs{
 		"id":        d.Id,
 		"name":      d.Name,
@@ -424,6 +408,8 @@ func (dm *departureModel) UpdateDepartureDraft(d entity_public.DepartureDraft) (
 		"crop":      d.Crop,
 		"vehicle":   d.Vehicle,
 		"tare":      d.Tare,
+		"farm":      d.Farm,
+		"origin":    d.Origin,
 	})
 	if queryErr != nil {
 		return entity_public.DisplayDepartureDraft{}, &model_error.ModelError{Message: queryErr.Error()}

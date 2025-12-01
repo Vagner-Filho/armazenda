@@ -520,7 +520,8 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 			IN in_humidity NUMERIC(6, 3),
 			IN in_damage NUMERIC(6, 3),
 			IN in_impurity NUMERIC(6, 3),
-			IN in_origin_id INTEGER
+			IN in_origin_id INTEGER,
+			OUT out_origin TEXT
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE departure_id INTEGER;
@@ -543,6 +544,14 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 			departureId := departure_id;
 
 			SELECT v.plate FROM vehicle v WHERE v.id = in_vehicle INTO out_vehicle;
+
+			SELECT COALESCE(name, 'Própria') FROM
+			(SELECT np.name, np.personid FROM natural_person np UNION ALL SELECT lp.companyname AS name, lp.personid FROM legal_person lp)
+			WHERE personid = in_origin_id INTO out_origin;
+
+			IF out_origin IS NULL THEN
+				out_origin := 'Própria';
+			END IF;
 		END;
 		$$;
 	`)
@@ -1178,14 +1187,11 @@ func initDepartureDraft(c *pgx.Conn) {
 		CREATE TABLE IF NOT EXISTS departure_draft (
 			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 			name TEXT NOT NULL,
-			person INTEGER,
 			crop SMALLINT,
 			vehicle INTEGER,
 			tare NUMERIC(10, 3),
 			farm INTEGER NOT NULL,
-			startedAt TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 			FOREIGN KEY (vehicle) REFERENCES vehicle(id),
-			FOREIGN KEY (person) REFERENCES person(id),
 			FOREIGN KEY (crop) REFERENCES crop(id),
 			FOREIGN KEY (farm) REFERENCES farm(id)
 		)
@@ -1193,35 +1199,71 @@ func initDepartureDraft(c *pgx.Conn) {
 	handleStmtExec(c, stmt, err, "create departure_draft")
 }
 
+func initDepartureDraftOrigin(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init departure draft origin table", `
+		CREATE TABLE IF NOT EXISTS departure_draft_origin (
+			departure_draft_id INTEGER UNIQUE NOT NULL,
+			person_id INTEGER NOT NULL,
+			FOREIGN KEY (departure_draft_id) REFERENCES departure_draft(id) ON DELETE CASCADE,
+			FOREIGN KEY (person_id) REFERENCES person(id)
+		);
+		`)
+	handleStmtExec(c, stmt, err, "create departure draft origin")
+}
+
+func initDepartureDraftRecipient(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init departure draft recipient table", `
+		CREATE TABLE IF NOT EXISTS departure_draft_recipient (
+			departure_draft_id INTEGER UNIQUE NOT NULL,
+			person_id INTEGER NOT NULL,
+			FOREIGN KEY (departure_draft_id) REFERENCES departure_draft(id) ON DELETE CASCADE,
+			FOREIGN KEY (person_id) REFERENCES person(id)
+		);
+		`)
+	handleStmtExec(c, stmt, err, "create departure draft recipient")
+}
+
 func initAddGetDepartureDraft(c *pgx.Conn) {
 	_, err := c.Exec(context.Background(), `
+		DROP FUNCTION IF EXISTS add_get_departure_draft;
 		CREATE OR REPLACE FUNCTION add_get_departure_draft(
 			in_name TEXT,
-			in_person INTEGER,
+			in_recipient INTEGER,
 			in_crop SMALLINT,
 			in_vehicle INTEGER,
 			in_tare NUMERIC(10, 3),
 			in_farm INTEGER,
+			in_origin INTEGER,
 			OUT out_id INTEGER,
 			OUT out_name TEXT,
-			OUT out_person_name TEXT,
+			OUT out_origin_name TEXT,
 			OUT out_crop_name TEXT,
 			OUT out_vehicle_plate TEXT,
 			OUT out_tare NUMERIC(10, 3)
 		)
 		LANGUAGE plpgsql AS $$
 		BEGIN
-			INSERT INTO departure_draft (name, person, crop, vehicle, tare, farm) VALUES (in_name, in_person, in_crop, in_vehicle, in_tare, in_farm) RETURNING departure_draft.id INTO out_id;
+			INSERT INTO departure_draft (name, crop, vehicle, tare, farm) VALUES (in_name, in_crop, in_vehicle, in_tare, in_farm) RETURNING departure_draft.id INTO out_id;
 
-			SELECT COALESCE(np.name, lp.fantasyname, lp.companyname) FROM person p 
-			LEFT JOIN natural_person np ON p.id = np.personid
-			LEFT JOIN legal_person lp ON p.id = lp.personid
-			WHERE p.id = in_person INTO out_person_name;
+			IF in_origin IS NOT NULL THEN
+				INSERT INTO departure_draft_origin (departure_draft_id, person_id) VALUES (out_id, in_origin);
+				SELECT COALESCE(np.name, lp.fantasyname, lp.companyname) FROM person p
+				LEFT JOIN natural_person np ON p.id = np.personid
+				LEFT JOIN legal_person lp ON p.id = lp.personid
+				WHERE p.id = in_origin INTO out_origin_name;
+			ELSE
+				out_origin_name := 'Pŕopria';
+			END IF;
+
+			IF in_recipient IS NOT NULL THEN
+				INSERT INTO departure_draft_recipient (departure_draft_id, person_id) VALUES (out_id, in_recipient);
+			END IF;
 
 			SELECT c.name FROM crop c WHERE c.id = in_crop INTO out_crop_name;
+
+			SELECT v.plate FROM vehicle v WHERE v.id = in_vehicle INTO out_vehicle_plate;
 			
 			out_name := in_name;
-			out_vehicle_plate := in_vehicle;
 			out_tare := in_tare;
 		END;
 		$$;
@@ -1229,6 +1271,93 @@ func initAddGetDepartureDraft(c *pgx.Conn) {
 
 	if err != nil {
 		fmt.Printf("\n error at function add_get_departure_draft:\n%v", err.Error())
+	}
+}
+
+func initUpdateDepartureDraft(c *pgx.Conn) {
+	_, err := c.Exec(context.Background(), `
+		DROP FUNCTION IF EXISTS update_get_departure_draft;
+		CREATE OR REPLACE FUNCTION update_get_departure_draft(
+			INOUT draft_id INTEGER,
+			IN in_name TEXT,
+			IN in_recipient INTEGER,
+			IN in_crop SMALLINT,
+			IN in_vehicle INTEGER,
+			IN in_tare NUMERIC(10, 3),
+			IN in_farm INTEGER,
+			IN in_origin INTEGER,
+			OUT out_name TEXT,
+			OUT out_origin_name TEXT,
+			OUT out_crop_name TEXT,
+			OUT out_vehicle_plate TEXT,
+			OUT out_tare NUMERIC(10, 3)
+		)
+		LANGUAGE plpgsql AS $$
+		DECLARE origin_exists BOOLEAN;
+		DECLARE recipient_exists BOOLEAN;
+		BEGIN
+			UPDATE departure_draft SET
+				name = in_name,
+				crop = in_crop,
+				vehicle = in_vehicle,
+				tare = in_tare
+			WHERE id = draft_id;
+
+			-- Handle origin relationship
+			SELECT EXISTS (SELECT 1 FROM departure_draft_origin ddo WHERE ddo.departure_draft_id = draft_id) INTO origin_exists;
+			
+			IF in_origin IS NOT NULL THEN
+				IF origin_exists THEN
+					UPDATE departure_draft_origin SET person_id = in_origin WHERE departure_draft_id = draft_id;
+					-- Get origin name
+					SELECT COALESCE(np.name, lp.fantasyname, lp.companyname) FROM person p
+					LEFT JOIN natural_person np ON p.id = np.personid
+					LEFT JOIN legal_person lp ON p.id = lp.personid
+					WHERE p.id = in_origin INTO out_origin_name;
+				ELSE
+					INSERT INTO departure_draft_origin (departure_draft_id, person_id) VALUES (draft_id, in_origin);
+					-- Get origin name
+					SELECT COALESCE(np.name, lp.fantasyname, lp.companyname) FROM person p
+					LEFT JOIN natural_person np ON p.id = np.personid
+					LEFT JOIN legal_person lp ON p.id = lp.personid
+					WHERE p.id = in_origin INTO out_origin_name;
+				END IF;
+			ELSE
+				-- Remove origin if it exists and new origin is null
+				IF origin_exists THEN
+					DELETE FROM departure_draft_origin WHERE departure_draft_id = draft_id;
+				END IF;
+				out_origin_name := 'Pŕopria';
+			END IF;
+
+			-- Handle recipient relationship
+			SELECT EXISTS (SELECT 1 FROM departure_draft_recipient ddr WHERE ddr.departure_draft_id = draft_id) INTO recipient_exists;
+			
+			IF in_recipient IS NOT NULL THEN
+				IF recipient_exists THEN
+					UPDATE departure_draft_recipient SET person_id = in_recipient WHERE departure_draft_id = draft_id;
+				ELSE
+					INSERT INTO departure_draft_recipient (departure_draft_id, person_id) VALUES (draft_id, in_recipient);
+				END IF;
+			ELSE
+				-- Remove recipient if it exists and new recipient is null
+				IF recipient_exists THEN
+					DELETE FROM departure_draft_recipient WHERE departure_draft_id = draft_id;
+				END IF;
+			END IF;
+
+			-- Get related names
+			SELECT c.name FROM crop c WHERE c.id = in_crop INTO out_crop_name;
+			SELECT v.plate FROM vehicle v WHERE v.id = in_vehicle INTO out_vehicle_plate;
+			
+			out_name := in_name;
+			out_tare := in_tare;
+		END;
+		$$;
+	`)
+
+	if err != nil {
+		fmt.Printf("\n error at function update_get_departure_draft:\n%v", err.Error())
 	}
 }
 
@@ -1265,6 +1394,9 @@ func InitDb(c *pgx.Conn) {
 	initEntryAnalysis(c)
 	initDeparture(c)
 	initDepartureDraft(c)
+	initDepartureDraftOrigin(c)
+	initDepartureDraftRecipient(c)
+	initUpdateDepartureDraft(c)
 	initPersonConfig(c)
 	initDepartureRecipient(c)
 	initDepartureOrigin(c)

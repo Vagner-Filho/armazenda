@@ -22,7 +22,7 @@ type Entry struct {
 	Id      uint32 `form:"id"`
 	Field   uint16 `form:"field" binding:"required"`
 	Crop    uint8  `form:"crop" binding:"required"`
-	Vehicle string `form:"vehiclePlate"`
+	Vehicle uint16 `form:"vehiclePlate"`
 	/*GrossWeight float64   `form:"grossWeight" binding:"required"`
 	Tare        float64   `form:"tare" binding:"required"`
 	NetWeight   float64   `form:"netWeight" binding:"gte=0"`*/
@@ -52,7 +52,7 @@ type EntryDTO struct {
 	Id      uint32 `form:"id"`
 	Field   uint16 `form:"field" binding:"required"`
 	Crop    uint8  `form:"crop" binding:"required"`
-	Vehicle string `form:"vehiclePlate"`
+	Vehicle uint16 `form:"vehiclePlate"`
 	/*GrossWeight float64   `form:"grossWeight" binding:"required"`
 	Tare        float64   `form:"tare" binding:"required"`
 	NetWeight   float64   `form:"netWeight" binding:"gte=0"`*/
