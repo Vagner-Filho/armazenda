@@ -904,10 +904,13 @@ func initUpdateEntry(c *pgx.Conn) {
 			INOUT e_arrivalDate TIMESTAMP WITHOUT TIME ZONE,
 			OUT e_farm INTEGER,
 			IN e_damage NUMERIC(6, 3),
-			IN e_impurity NUMERIC(6, 3)
+			IN e_impurity NUMERIC(6, 3),
+			IN origin_id INTEGER,
+			OUT out_origin TEXT
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE analysis_exists BOOLEAN;
+		DECLARE origin_exists BOOLEAN;
 		BEGIN
 			UPDATE entry e SET
 				field = e_field,
@@ -929,6 +932,25 @@ func initUpdateEntry(c *pgx.Conn) {
 				WHERE ea.entryid = e_id;
 			ELSIF e_humidity IS NOT NULL OR e_damage IS NOT NULL OR e_impurity IS NOT NULL THEN
 				INSERT INTO entry_analysis (humidity, damage, impurity, entryid) VALUES (e_humidity, e_damage, e_impurity, e_id);
+			END IF;
+
+			SELECT EXISTS (SELECT 1 FROM entry_origin eo WHERE eo.entry_id = e_id) INTO origin_exists;
+			IF origin_exists THEN
+				IF origin_id IS NULL THEN
+					DELETE FROM entry_origin WHERE entry_id = e_id;
+				ELSE
+					UPDATE entry_origin SET person_id = origin_id WHERE entry_id = e_id;
+				END IF;
+			ELSE
+				INSERT INTO entry_origin (entry_id, person_id) VALUES (e_id, origin_id);
+			END IF;
+
+			SELECT COALESCE(name, 'Própria') FROM
+			(SELECT np.name, np.personid FROM natural_person np UNION ALL SELECT COALESCE(lp.fantasyname, lp.companyname) AS name, lp.personid FROM legal_person lp)
+			WHERE personid = origin_id INTO out_origin;
+
+			IF out_origin IS NULL THEN
+				out_origin := 'Própria';
 			END IF;
 
 			SELECT p.name FROM product p JOIN crop c ON c.product = p.id WHERE c.id = e_crop INTO productName;
@@ -1120,12 +1142,13 @@ func initUpdateDepartureProc(c *pgx.Conn) {
 			IN in_humidity NUMERIC(6, 3),
 			IN in_damage NUMERIC(6, 3),
 			IN in_impurity NUMERIC(6, 3),
-			IN in_origin_id INTEGER
+			IN in_origin_id INTEGER,
+			OUT out_origin TEXT
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE analysis_exists BOOLEAN;
-		DECLARE existing_recipient_id INTEGER;
-		DECLARE existing_origin_id INTEGER;
+		DECLARE recipient_exists BOOLEAN;
+		DECLARE origin_exists BOOLEAN;
 		BEGIN
 			UPDATE departure d SET
 				 departureDate = departure_Date,
@@ -1148,30 +1171,34 @@ func initUpdateDepartureProc(c *pgx.Conn) {
 				INSERT INTO departure_analysis (humidity, damage, impurity, departure_id) VALUES (in_humidity, in_damage, in_impurity, departureId);
 			END IF;
 
-			SELECT dr.person_id FROM departure_recipient dr WHERE dr.departure_id = departureId INTO existing_recipient_id;
-			IF existing_recipient_id != in_recipient_id THEN
-				IF in_recipient_id IS NOT NULL THEN
-					IF existing_recipient_id IS NULL THEN
-						INSERT INTO departure_recipient (departure_id, person_id) VALUES (departureId, in_recipient_id);
-					ELSE
-						UPDATE departure_recipient dr SET person_id = in_recipient_id WHERE dr.departure_id = departureId;
-					END IF;
+			SELECT EXISTS (SELECT 1 FROM departure_recipient dor WHERE dor.departure_id = departureId) INTO recipient_exists;
+			IF recipient_exists THEN
+				IF in_recipient_id IS NULL THEN
+					DELETE FROM departure_recipient WHERE departure_id = departureId;
 				ELSE
-					DELETE FROM departure_recipient dr WHERE dr.departure_id = departureId;
+					UPDATE departure_recipient SET person_id = in_recipient_id WHERE departure_id = departureId;
 				END IF;
+			ELSIF in_recipient_id IS NOT NULL THEN
+				INSERT INTO departure_recipient (departure_id, person_id) VALUES (departureId, in_recipient_id);
 			END IF;
 
-			SELECT dor.person_id FROM departure_origin dor WHERE dor.departure_id = departureId INTO existing_origin_id;
-			IF existing_origin_id != in_origin_id THEN
-				IF in_origin_id IS NOT NULL THEN
-					IF existing_origin_id IS NULL THEN
-						INSERT INTO departure_origin (departure_id, person_id) VALUES (departureId, in_origin_id);
-					ELSE
-						UPDATE departure_origin dor SET person_id = in_origin_id WHERE dor.departure_id = departureId;
-					END IF;
+			SELECT EXISTS (SELECT 1 FROM departure_origin dor WHERE dor.departure_id = departureId) INTO origin_exists;
+			IF origin_exists THEN
+				IF in_origin_id IS NULL THEN
+					DELETE FROM departure_origin WHERE departure_id = departureId;
 				ELSE
-					DELETE FROM departure_origin dor WHERE dor.departure_id = departureId;
+					UPDATE departure_origin SET person_id = in_origin_id WHERE departure_id = departureId;
 				END IF;
+			ELSIF in_origin_id IS NOT NULL THEN
+				INSERT INTO departure_origin (departure_id, person_id) VALUES (departureId, in_origin_id);
+			END IF;
+
+			SELECT COALESCE(name, 'Própria') FROM
+			(SELECT np.name, np.personid FROM natural_person np UNION ALL SELECT COALESCE(lp.fantasyname, lp.companyname) AS name, lp.personid FROM legal_person lp)
+			WHERE personid = in_origin_id INTO out_origin;
+
+			IF out_origin IS NULL THEN
+				out_origin := 'Própria';
 			END IF;
 
 			SELECT p.name INTO productName FROM departure d JOIN crop c ON d.crop = c.id JOIN product p ON c.product = p.id WHERE d.id = departureId;

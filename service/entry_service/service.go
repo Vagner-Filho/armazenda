@@ -143,6 +143,45 @@ func GetEntryPdf(id uint32) (*entity_public.EntryPdf, *entity_public.Toast) {
 func PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public.Toast) {
 	eModel := entry_model.GetEntryModel()
 
+	damageThreshold := decimal.NewFromInt(8)
+	impurityThreshold := decimal.NewFromInt(1)
+	humidityThreshold := decimal.NewFromInt(14)
+	base100 := decimal.NewFromInt(100)
+	var totalDiscount decimal.Decimal
+
+	rawNetWeight := ge.CargoWeight.GrossWeight.Sub(ge.Tare)
+	if rawNetWeight.LessThan(decimal.Zero) {
+		t := entity_public.GetWarningToast("O peso líquido não pode ser menor do que zero", "confira o peso bruto e a tara")
+		return entity_public.DisplayEntry{}, t
+	}
+	if ge.Damage != nil {
+		exceedingDamage := ge.Damage.Sub(damageThreshold)
+		if exceedingDamage.GreaterThan(decimal.Zero) {
+			totalDiscount = totalDiscount.Add(rawNetWeight.Mul(exceedingDamage).Div(base100))
+		}
+	}
+	if ge.Impurity != nil {
+		exceedingImpurity := ge.Impurity.Sub(impurityThreshold)
+		if exceedingImpurity.GreaterThan(decimal.Zero) {
+			totalDiscount = totalDiscount.Add(rawNetWeight.Mul(exceedingImpurity).Div(base100))
+		}
+	}
+	if ge.Humidity != nil {
+		exceedingHumidty := ge.Humidity.Sub(humidityThreshold)
+		if exceedingHumidty.GreaterThan(decimal.Zero) {
+			pm := person_model.GetpersonModel()
+			discountModifier, humErr := pm.GetHumidityDiscount(ge.Origin, ge.Farm)
+			if humErr != nil {
+				toast := entity_public.GetWarningToast("Falha ao calcular desconto de humidade", "")
+				return entity_public.DisplayEntry{}, toast
+			} else {
+				discount := exceedingHumidty.Mul(discountModifier)
+				totalDiscount = totalDiscount.Add(rawNetWeight.Mul(discount).Div(base100))
+			}
+		}
+	}
+	ge.NetWeight = rawNetWeight.Sub(totalDiscount)
+
 	entry, putErr := eModel.PutEntry(ge)
 	if putErr != nil {
 		if putErr.IsServerErr == true {

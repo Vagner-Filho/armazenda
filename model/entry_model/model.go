@@ -289,7 +289,7 @@ func (em *entryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_err
 func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
 	row, queryErr := em.pool.Query(
 		context.Background(),
-		`SELECT * FROM update_get_display_entry(@field, @crop, @grossWeight, @tare, @humidity, @id, @vehicle, @netWeight, @arrivalDate, @damage, @impurity)`,
+		`SELECT * FROM update_get_display_entry(@field, @crop, @grossWeight, @tare, @humidity, @id, @vehicle, @netWeight, @arrivalDate, @damage, @impurity, @origin)`,
 		pgx.NamedArgs{
 			"id":          ge.Id,
 			"field":       ge.Field,
@@ -302,6 +302,7 @@ func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.DisplayEnt
 			"arrivalDate": ge.ArrivalDate,
 			"damage":      ge.Damage,
 			"impurity":    ge.Impurity,
+			"origin":      ge.Origin,
 		})
 
 	if queryErr != nil {
