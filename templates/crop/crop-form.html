@@ -36,21 +36,8 @@
         </form>
     </div>
     <script type="module">
-        import {setTodayDatetimeInput} from "/public/assets/js/date.js"
-
-        const dialogEl = document.querySelector("dialog#cropFormDialog")
-        if (dialogEl) {
-            setTodayDatetimeInput("input#start-date", true)
-
-            dialogEl.showModal()
-            function closeCropForm() {
-                dialogEl.close()
-                dialogEl.remove()
-                window.closeCropForm = undefined
-            }
-            dialogEl.addEventListener('close', closeCropForm)
-            window.closeCropForm = closeCropForm
-        }
+        import { cropDialogSetup } from "/public/assets/js/cropDialog.js"
+        cropDialogSetup()
     </script>
 </dialog>
 {{ end }}

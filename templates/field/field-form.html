@@ -25,17 +25,8 @@
     </form>
   </div>
   <script type="module">
-    const dialogEl = document.querySelector("dialog#fieldFormDialog")
-    if (dialogEl) {
-      dialogEl.showModal()
-      function closeFieldForm() {
-        dialogEl.close()
-        dialogEl.remove()
-        window.closeFieldForm = undefined
-      }
-      dialogEl.addEventListener('close', closeFieldForm)
-      window.closeFieldForm = closeFieldForm
-    }
+    import { fieldDialogSetup } from "/public/assets/js/fieldDialog.js"
+    fieldDialogSetup()
   </script>
 </dialog>
 {{ end }}
