@@ -286,7 +286,7 @@ func (dm *departureModel) GetDeparturePdf(id uint32) (entity_public.DeparturePdf
 			da.damage,
 			da.impurity,
 			fc.storage_name,
-			COALESCE(origin_union.name, 'Própria') AS origin_name,
+			COALESCE(origin_union.name, fc.name, 'Própria') AS origin_name,
 			COALESCE(origin_union.document, f.inscricao_estadual) AS origin_document
 		FROM departure d
 		JOIN crop c ON c.id = d.crop
@@ -297,14 +297,14 @@ func (dm *departureModel) GetDeparturePdf(id uint32) (entity_public.DeparturePdf
 		LEFT JOIN farm_address fa ON fa.farm_id = f.id
 		LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
 		LEFT JOIN (
-			SELECT lp.personid, COALESCE(lp.fantasyname, lp.companyname) AS name, lp.cnpj AS document FROM legal_person lp
+			SELECT lp.personid, COALESCE(lp.companyname, lp.fantasyname) AS name, lp.cnpj AS document FROM legal_person lp
 			UNION ALL
 			SELECT np.personid, np.name, np.cpf AS document FROM natural_person np
 		) recipient_union ON recipient_union.personid = dr.person_id
 		LEFT JOIN departure_analysis da ON da.departure_id = d.id
 		LEFT JOIN departure_origin dor ON dor.departure_id = d.id
 		LEFT JOIN (
-			SELECT lp.personid, COALESCE(lp.fantasyname, lp.companyname) AS name, lp.cnpj AS document FROM legal_person lp
+			SELECT lp.personid, COALESCE(lp.companyname, lp.fantasyname) AS name, lp.cnpj AS document FROM legal_person lp
 			UNION ALL
 			SELECT np.personid, np.name, np.cpf AS document FROM natural_person np
 		) origin_union ON origin_union.personid = dor.person_id
