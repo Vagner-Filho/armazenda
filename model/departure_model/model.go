@@ -191,7 +191,7 @@ func (dm *departureModel) GetDeparture(id uint32) (entity_public.Departure, *mod
 
 func (dm *departureModel) AddDeparture(d entity_public.Departure) (entity_public.DisplayDeparture, *model_error.ModelError) {
 	row, queryErr := dm.pool.Query(context.Background(), `
-		SELECT * FROM add_get_departure(@crop, @recipientId, @vehicle, @departureDate, @farm, @tare, @grossWeight, @netWeight, @humidity, @damage, @impurity, @originId)
+		SELECT * FROM add_get_departure(@crop, @recipientId, @vehicle, @departureDate, @farm, @grossWeight, @tare, @netWeight, @humidity, @damage, @impurity, @originId)
 		`, pgx.NamedArgs{
 		"crop":          d.Crop,
 		"recipientId":   d.Recipient,
