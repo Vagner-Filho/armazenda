@@ -382,12 +382,40 @@ func initPersonConfig(c *pgx.Conn) {
 		person_id INTEGER UNIQUE NOT NULL,
 		ie TEXT NOT NULL,
 		farm INTEGER NOT NULL,
-		humidity_discount NUMERIC(6, 3) NOT NULL,
+		humidity_discount NUMERIC(4, 2),
+		entry_soy_discount NUMERIC (4, 2),
+		entry_corn_discount NUMERIC (4, 2),
 		FOREIGN KEY (farm) REFERENCES farm(id)
 	);
 	`)
 
 	handleStmtExec(c, stmt, err, "create person config")
+}
+
+func initDefaultPersonConfig(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init default_person_config table", `
+	CREATE TABLE IF NOT EXISTS default_person_config (
+		id INTEGER PRIMARY KEY DEFAULT 1,
+		humidity_discount NUMERIC(4, 2) NOT NULL DEFAULT 1.7,
+		entry_soy_discount NUMERIC (4, 2) NOT NULL DEFAULT 3.5,
+		entry_corn_discount NUMERIC (4, 2) NOT NULL DEFAULT 5.5,
+		CONSTRAINT single_row CHECK (id = 1)
+	);
+	`)
+
+	handleStmtExec(c, stmt, err, "create default person config")
+
+	if err == nil {
+		var count int
+		err = c.QueryRow(context.Background(), "SELECT COUNT(*) FROM default_person_config").Scan(&count)
+		if err == nil && count == 0 {
+			_, insertErr := c.Exec(context.Background(),
+				"INSERT INTO default_person_config (id, humidity_discount, entry_soy_discount, entry_corn_discount) VALUES (1, 1.7, 3.5, 5.5)")
+			if insertErr != nil {
+				fmt.Printf("error inserting default person config: %v\n", insertErr.Error())
+			}
+		}
+	}
 }
 
 func initNaturalPerson(c *pgx.Conn) {
@@ -558,61 +586,6 @@ func initAddDepartureProcedure(c *pgx.Conn) {
 
 	if err != nil {
 		fmt.Printf("\n error at function add_get_departure:\n%v", err.Error())
-	}
-}
-
-func initAddNaturalPerson(c *pgx.Conn) {
-	_, err := c.Exec(context.Background(), `
-		DROP FUNCTION IF EXISTS add_get_natural_person;
-		CREATE OR REPLACE FUNCTION add_get_natural_person(
-			OUT person_type INTEGER,
-			INOUT name TEXT,
-			INOUT cpf TEXT,
-			INOUT ie TEXT,
-			OUT personId INTEGER,
-			IN farm INTEGER,
-			IN humidityDiscount NUMERIC(6, 3) DEFAULT NULL,
-			IN street TEXT DEFAULT NULL,
-			IN cep CHARACTER(8) DEFAULT NULL,
-			IN number INTEGER DEFAULT NULL,
-			IN neighborhood TEXT DEFAULT NULL,
-			IN city TEXT DEFAULT NULL,
-			IN state CHARACTER(2) DEFAULT NULL,
-			IN complement TEXT DEFAULT NULL,
-			IN email TEXT DEFAULT NULL,
-			IN phoneNumber TEXT DEFAULT NULL
-		)
-		LANGUAGE plpgsql AS $$
-		DECLARE person_id INTEGER;
-		DECLARE addressId INTEGER;
-		BEGIN
-			INSERT INTO person (ie, farm) VALUES (ie, farm) RETURNING id INTO person_id;
-			INSERT INTO natural_person (name, cpf, personId) VALUES (name, cpf, person_id);
-
-			personId := person_id;
-			person_type := 0;
-
-			IF humidityDiscount IS NOT NULL THEN
-				INSERT INTO person_config (person_id, ie, farm, humidity_discount) VALUES (person_id, ie, farm, humidityDiscount);
-			END IF;
-
-			IF street IS NOT NULL AND cep IS NOT NULL AND neighborhood IS NOT NULL AND city IS NOT NULL AND state IS NOT NULL THEN
-				INSERT INTO address (street, cep, number, neighborhood, city, state, person_id) VALUES (street, cep, number, neighborhood, city, state, person_id) RETURNING id INTO addressId;
-
-				IF complement IS NOT NULL THEN
-					INSERT INTO address_complement (complement, address_id) VALUES (complement, addressId);
-				END IF;
-			END IF;
-
-			IF email IS NOT NULL OR phoneNumber IS NOT NULL THEN
-				INSERT INTO contact (email, phone_number, person_id) VALUES (email, phoneNumber, person_id);
-			END IF;
-		END;
-		$$;
-	`)
-
-	if err != nil {
-		fmt.Printf("\n error at function add_get_natural_person:\n%v", err.Error())
 	}
 }
 
@@ -1425,6 +1398,7 @@ func InitDb(c *pgx.Conn) {
 	initDepartureDraftRecipient(c)
 	initUpdateDepartureDraft(c)
 	initPersonConfig(c)
+	initDefaultPersonConfig(c)
 	initDepartureRecipient(c)
 	initDepartureOrigin(c)
 	initNaturalPerson(c)
@@ -1438,7 +1412,6 @@ func InitDb(c *pgx.Conn) {
 	initAddEntry(c)
 	initUpdateEntry(c)
 	initAddDepartureProcedure(c)
-	initAddNaturalPerson(c)
 	initAddLegalPerson(c)
 	initUpdateNaturalPerson(c)
 	initUpdateLegalPerson(c)

@@ -2,7 +2,7 @@
 <select name="origin" id="origin-selector" class="w-full peer">
   {{ range $.People }}
   <option
-    {{ if eq .Id nil }} value="" {{ else }} value="{{ .Id }}" {{ end }} data-humidity="{{ .HumidityDiscount }}"
+    {{ if eq .Id nil }} value="" {{ else }} value="{{ .Id }}" {{ end }} data-humidity="{{ .HumidityDiscount }}" data-entry-soy-discount="{{ .EntrySoyDiscount }}" data-entry-corn-discount="{{ .EntryCornDiscount }}"
     {{ if eq .Id $.SelectedOrigin }} selected {{ end }}>
     {{ .Name }}
   </option>

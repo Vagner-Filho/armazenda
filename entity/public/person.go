@@ -25,8 +25,11 @@ type NaturalPerson struct {
 }
 
 type PersonConfig struct {
-	HumidityDiscount decimal.Decimal `form:"humidityDiscount"`
+	HumidityDiscount  decimal.Decimal `form:"humidityDiscount"`
+	EntrySoyDiscount  decimal.Decimal `form:"entrySoyDiscount"`
+	EntryCornDiscount decimal.Decimal `form:"entryCornDiscount"`
 }
+
 type Person struct {
 	Ie   string
 	Id   uint32

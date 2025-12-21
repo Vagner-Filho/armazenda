@@ -111,68 +111,113 @@ func (bm *personModel) AddLegalPerson(bc entity_public.LegalPerson) (entity_publ
 }
 
 func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
-	row, queryErr := bm.pool.Query(context.Background(), `
-			SELECT * FROM add_get_natural_person(@name, @cpf, @ie, @farm, @humidityDiscount, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone)
-		`,
-		pgx.NamedArgs{
-			"ie":               bp.Person.Ie,
-			"cpf":              bp.Cpf,
-			"name":             bp.Name,
-			"farm":             bp.Person.Farm,
-			"humidityDiscount": bp.Person.HumidityDiscount,
-			"street":           bp.Street,
-			"cep":              bp.Cep,
-			"number":           bp.Number,
-			"neighborhood":     bp.Neighborhood,
-			"city":             bp.City,
-			"state":            bp.State,
-			"complement":       bp.Complement,
-			"email":            bp.Email,
-			"phone":            bp.PhoneNumber,
-		})
-	if queryErr != nil {
-		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: queryErr.Error()}
+	ctx := context.Background()
+	tx, err := bm.pool.Begin(ctx)
+	if err != nil {
+		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+	}
+	defer tx.Rollback(ctx)
+
+	// 1. Insert Person
+	var personID uint32
+	err = tx.QueryRow(ctx, "INSERT INTO person (ie, farm) VALUES ($1, $2) RETURNING id", bp.Person.Ie, bp.Person.Farm).Scan(&personID)
+	if err != nil {
+		return handleInsertError(err)
 	}
 
-	person, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.PersonDisplay])
-	if collectErr != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(collectErr, &pgErr) {
-			if pgErr.Code == pgerrcode.UniqueViolation {
-				var message string = "Esta pessoa já existe"
-				if strings.Contains(collectErr.Error(), "person_ie") {
-					message = "Inscrição Estadual em uso"
-				}
-				if strings.Contains(collectErr.Error(), "natural_person_cpf") {
-					message = "CPF em uso"
-				}
-				return entity_public.PersonDisplay{}, &model_error.ModelError{Message: message}
+	// 2. Insert Natural Person
+	_, err = tx.Exec(ctx, "INSERT INTO natural_person (name, cpf, personId) VALUES ($1, $2, $3)", bp.Name, bp.Cpf, personID)
+	if err != nil {
+		return handleInsertError(err)
+	}
+
+	// 3. Insert Config (if any discount is provided)
+	if !bp.Person.HumidityDiscount.IsZero() || !bp.Person.EntrySoyDiscount.IsZero() || !bp.Person.EntryCornDiscount.IsZero() {
+		_, err = tx.Exec(ctx, `INSERT INTO person_config 
+			(person_id, ie, farm, humidity_discount, entry_soy_discount, entry_corn_discount) 
+			VALUES ($1, $2, $3, $4, $5, $6)`,
+			personID, bp.Person.Ie, bp.Person.Farm,
+			bp.Person.HumidityDiscount, bp.Person.EntrySoyDiscount, bp.Person.EntryCornDiscount)
+		if err != nil {
+			return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+		}
+	}
+
+	// 4. Insert Address (if required fields are present)
+	if bp.Street != nil && bp.Cep != nil && bp.Neighborhood != nil && bp.City != nil && bp.State != nil {
+		var addressID uint32
+		err = tx.QueryRow(ctx, `INSERT INTO address 
+			(street, cep, number, neighborhood, city, state, person_id) 
+			VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+			bp.Street, bp.Cep, bp.Number, bp.Neighborhood, bp.City, bp.State, personID).Scan(&addressID)
+		if err != nil {
+			return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+		}
+
+		if bp.Complement != nil {
+			_, err = tx.Exec(ctx, "INSERT INTO address_complement (complement, address_id) VALUES ($1, $2)", bp.Complement, addressID)
+			if err != nil {
+				return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
 			}
 		}
-		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
 	}
 
-	return person, nil
+	// 5. Insert Contact
+	if bp.Email != nil || bp.PhoneNumber != nil {
+		_, err = tx.Exec(ctx, "INSERT INTO contact (email, phone_number, person_id) VALUES ($1, $2, $3)", bp.Email, bp.PhoneNumber, personID)
+		if err != nil {
+			return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+		}
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+	}
+
+	return entity_public.PersonDisplay{
+		Type:     0, // Natural Person
+		Name:     bp.Name,
+		Document: bp.Cpf,
+		IE:       bp.Person.Ie,
+		Id:       personID,
+	}, nil
+}
+
+func handleInsertError(err error) (entity_public.PersonDisplay, *model_error.ModelError) {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		if pgErr.Code == pgerrcode.UniqueViolation {
+			var message string = "Esta pessoa já existe"
+			if strings.Contains(err.Error(), "person_ie") {
+				message = "Inscrição Estadual em uso"
+			}
+			if strings.Contains(err.Error(), "natural_person_cpf") {
+				message = "CPF em uso"
+			}
+			return entity_public.PersonDisplay{}, &model_error.ModelError{Message: message}
+		}
+	}
+	return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
 }
 
 func (bm *personModel) GetPeopleByFarm(farm uint32) ([]entity_public.PersonOption, *model_error.ModelError) {
 	rows, queryErr := bm.pool.Query(context.Background(), `
-		SELECT id, name, humidity_discount FROM (
-			SELECT p.id, COALESCE(lp.fantasyname, lp.companyname) AS name, COALESCE(pc.humidity_discount, 1.7) as humidity_discount
+		SELECT result.id, result.name, COALESCE(result.humidity_discount, dpc.humidity_discount), COALESCE(result.entry_soy_discount, dpc.entry_soy_discount), COALESCE(result.entry_corn_discount, dpc.entry_corn_discount) FROM (
+			SELECT p.id, COALESCE(lp.fantasyname, lp.companyname) AS name, pc.humidity_discount as humidity_discount, pc.entry_soy_discount, pc.entry_corn_discount
 			FROM person p
 			JOIN legal_person lp ON p.id = lp.personid
 			LEFT JOIN person_config pc ON p.id = pc.person_id
 			WHERE p.farm = @userFarm
 			UNION
-			SELECT p.id, np.name, COALESCE(pc.humidity_discount, 1.7) as humidity_discount
+			SELECT p.id, np.name, pc.humidity_discount as humidity_discount, pc.entry_soy_discount, pc.entry_corn_discount
 			FROM person p
 			JOIN natural_person np ON p.id = np.personid
 			LEFT JOIN person_config pc ON p.id = pc.person_id
 			WHERE p.farm = @userFarm
 			UNION
-			SELECT NULL, 'Própria', COALESCE((SELECT humidity_discount FROM farm_config WHERE farm_id = @userFarm), 1.15) as humidity_discount
-		) AS result
-		ORDER BY CASE WHEN id IS NULL THEN 0 ELSE 1 END, name
+			SELECT NULL, 'Própria', COALESCE((SELECT humidity_discount FROM farm_config WHERE farm_id = @userFarm), 1.15) as humidity_discount, 0.0, 0.0
+		) AS result, default_person_config dpc
+		ORDER BY CASE WHEN result.id IS NULL THEN 0 ELSE 1 END, name
 	`, pgx.NamedArgs{"userFarm": farm})
 
 	if queryErr != nil {
