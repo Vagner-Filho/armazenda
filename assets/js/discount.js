@@ -117,7 +117,63 @@ function getImpurityDiscount(impurity, gross, tare) {
 	return (rawNetWeight * exceedingImpurity) / 100;
 }
 
+function getSoyDiscount(weightAfterQualityDiscount) {
+	const personConfig = sessionStorage.getItem('personConfig');
+	if (!personConfig) {
+		return 0;
+	}
+
+	const person = JSON.parse(personConfig);
+	const discount = parseFloat(person.entrySoyDiscount);
+	if (discount === undefined || discount === null || isNaN(discount)) {
+		return 0;
+	}
+
+	let rawNetWeight = weightAfterQualityDiscount;
+	if (isNaN(rawNetWeight)) {
+		rawNetWeight = parseFloat(weightAfterQualityDiscount);
+		if (isNaN(rawNetWeight) || rawNetWeight <= 0) {
+			return 0;
+		}
+	}
+
+	return (rawNetWeight * discount) / 100;
+}
+
+function getCornDiscount(weightAfterQualityDiscount) {
+	const personConfig = sessionStorage.getItem('personConfig');
+	if (!personConfig) {
+		return 0;
+	}
+
+	const person = JSON.parse(personConfig);
+	const discount = parseFloat(person.entryCornDiscount);
+	if (discount === undefined || discount === null || isNaN(discount)) {
+		return 0;
+	}
+
+	let rawNetWeight = weightAfterQualityDiscount;
+	if (isNaN(rawNetWeight)) {
+		rawNetWeight = parseFloat(weightAfterQualityDiscount);
+		if (isNaN(rawNetWeight) || rawNetWeight <= 0) {
+			return 0;
+		}
+	}
+
+	return (rawNetWeight * discount) / 100;
+}
+
+const productTypeDiscountHandler = {
+	1: getCornDiscount,
+	2: getSoyDiscount
+}
+
 export function applyDiscounts() {
+	const hasGrossValue = document.querySelector('input#grossWeight')?.value
+	const hasTareValue = document.querySelector('input#tare')?.value
+	if (!hasGrossValue || !hasTareValue) {
+		return
+	}
 	const humidityDiscount = getHumidityDiscount();
 	const damageDiscount = getDamageDiscount();
 	const impurityDiscount = getImpurityDiscount();
@@ -132,10 +188,21 @@ export function applyDiscounts() {
 	if (isNaN(rawNetWeight) || rawNetWeight <= 0) {
 		return;
 	}
-	const finalNetWeight = rawNetWeight - totalDiscount;
+
+	const netWeightAfterQualityDiscount = rawNetWeight - totalDiscount;
+
+	const productTypeRaw = Number(sessionStorage.getItem("product"));
+	const getEntryDiscount = productTypeDiscountHandler[productTypeRaw]
+	const entryProductDiscount = getEntryDiscount(netWeightAfterQualityDiscount);
+
+	const finalNetWeight = netWeightAfterQualityDiscount - entryProductDiscount;
+
 	if (finalNetWeight < 0) {
 		netWeightInput.value = '0';
 	} else {
 		netWeightInput.value = formatWeight(finalNetWeight.toFixed(2));
 	}
+
+	const entryTaxField = document.querySelector('input#entryTax')
+	entryTaxField.value = formatWeight(entryProductDiscount.toFixed(2));
 }

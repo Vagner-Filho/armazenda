@@ -69,6 +69,13 @@
                             .Entry.NetWeight 0.0 }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0"
                             data-raw="0" required disabled>
                     </div>
+                    <div class="flex flex-col">
+                        <label for="entryTax" class="label-peer">
+                            Taxa de Serviço
+                            <i class="text-xs font-normal text-gray-500 normal-case">Obtido após descontos de qualidade</i>
+                        </label>
+                        <input type="text" name="entryTax" id="entryTax" class="cursor-not-allowed" readonly min="0" required disabled>
+                    </div>
                     <div class="flex flex-col-reverse">
                         <input type="datetime-local" name="arrivalDate" id="arrival-date" class="peer"
                             value="{{ .Entry.ArrivalDate }}" required>
@@ -211,14 +218,28 @@
             });
         }
 
+        const cropInput = document.querySelector('select#crop-selector')
+        if (cropInput) {
+            cropInput.addEventListener('change', function setProduct(ev) {
+                const selectedOption = ev.target.options[ev.target.selectedIndex]
+                sessionStorage.setItem('product', selectedOption.dataset.productId)
+            })
+            const selectedOption = cropInput.options[cropInput.selectedIndex]
+            sessionStorage.setItem('product', selectedOption.dataset.productId)
+        }
+
         function setPersonConfig(el) {
             const selectedOption = el.options[el.selectedIndex];
             const humidityDiscount = selectedOption.getAttribute('data-humidity');
+            const entrySoyDiscount = selectedOption.getAttribute('data-entry-soy-discount');
+            const entryCornDiscount = selectedOption.getAttribute('data-entry-soy-discount');
             const personId = selectedOption.value;
             const personName = selectedOption.textContent.trim();
 
             sessionStorage.setItem('personConfig', JSON.stringify({
-                humidityDiscount: humidityDiscount
+                humidityDiscount: humidityDiscount,
+                entrySoyDiscount: entrySoyDiscount,
+                entryCornDiscount: entryCornDiscount
             }));
 
             applyDiscounts();
@@ -232,7 +253,9 @@
 
             if (option && option.dataset.humidity) {
                 sessionStorage.setItem('personConfig', JSON.stringify({
-                    humidityDiscount: option.dataset.humidity
+                    humidityDiscount: option.dataset.humidity,
+                    entrySoyDiscount: option.dataset.entrySoyDiscount,
+                    entryCornDiscount: option.dataset.entryCornDiscount
                 }));
             }
         }

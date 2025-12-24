@@ -3,9 +3,13 @@
   <select name="crop" id="crop-selector" class="w-full peer" required>
     {{ range $.Crops }}
             {{ if eq .Id $.SelectedCrop }}
-                {{ template "selected-option" . }}
+                <option value="{{ .Id }}" selected data-product-id="{{ .Product }}">
+                  {{ .Name }}
+                </option>
             {{ else }}
-                {{ template "simple-option" . }}
+                <option value="{{ if ne .Id nil }}{{ .Id }}{{ end }}" data-product-id="{{ .Product }}">
+                  {{ .Name }}
+                </option>
             {{ end }}
          {{ else }}
     <option value="-1">

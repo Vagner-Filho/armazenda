@@ -49,11 +49,12 @@ type basePerson struct {
 }
 
 const basePersonQuery = `
-	SELECT ad.id, ad.street, ad.cep, ad.number, adc.complement, ad.neighborhood, ad.city, ad.state, c.email, c.phone_number, p.ie, p.id, p.farm, pc.humidity_discount FROM person p
+	SELECT ad.id, ad.street, ad.cep, ad.number, adc.complement, ad.neighborhood, ad.city, ad.state, c.email, c.phone_number, p.ie, p.id, p.farm, COALESCE(pc.humidity_discount, dpc.humidity_discount), COALESCE(pc.entry_soy_discount, dpc.entry_soy_discount), COALESCE(pc.entry_corn_discount, dpc.entry_corn_discount) FROM person p
 		LEFT JOIN address ad ON ad.person_id = p.id
 		LEFT JOIN address_complement adc ON adc.address_id = ad.id
 		LEFT JOIN contact c ON c.person_id = p.id
 		LEFT JOIN person_config pc ON pc.person_id = p.id
+		LEFT JOIN default_person_config dpc ON dpc.id = 1
 		WHERE p.id = @id
 	`
 
@@ -76,38 +77,112 @@ func (pm *personModel) getBasePerson(id uint32) (basePerson, *model_error.ModelE
 	return base, nil
 }
 
-func (bm *personModel) AddLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
-	row, queryErr := bm.pool.Query(
-		context.Background(),
-		`SELECT * FROM add_get_legal_person(@companyName, @cnpj, @ie, @fantasyName, @farm, @humidityDiscount, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone)`,
+func (bm *personModel) AddLegalPerson(lp entity_public.LegalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
+	ctx := context.Background()
+	tx, err := bm.pool.Begin(ctx)
+	if err != nil {
+		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+	}
+	defer tx.Rollback(ctx)
+
+	// 1. Insert Person
+	var personID uint32
+	err = tx.QueryRow(ctx, "INSERT INTO person (ie, farm) VALUES ($1, $2) RETURNING id", lp.Person.Ie, lp.Person.Farm).Scan(&personID)
+	if err != nil {
+		return handleInsertError(err)
+	}
+
+	// 2. Insert Legal Person
+	_, err = tx.Exec(
+		ctx,
+		"INSERT INTO legal_person (cnpj, personId, companyName, fantasyName) VALUES (@cnpj, @personId, @companyName, @fantasyName)",
 		pgx.NamedArgs{
-			"ie":               bc.Person.Ie,
-			"cnpj":             bc.Cnpj,
-			"fantasyName":      bc.FantasyName,
-			"farm":             bc.Person.Farm,
-			"companyName":      bc.CompanyName,
-			"humidityDiscount": bc.Person.HumidityDiscount,
-			"street":           bc.Street,
-			"cep":              bc.Cep,
-			"number":           bc.Number,
-			"neighborhood":     bc.Neighborhood,
-			"city":             bc.City,
-			"state":            bc.State,
-			"complement":       bc.Complement,
-			"email":            bc.Email,
-			"phone":            bc.PhoneNumber,
-		})
-
-	if queryErr != nil {
-		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: queryErr.Error()}
+			"cnpj":        lp.Cnpj,
+			"personId":    personID,
+			"companyName": lp.CompanyName,
+			"fantasyName": lp.FantasyName,
+		},
+	)
+	if err != nil {
+		return handleInsertError(err)
 	}
 
-	person, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.PersonDisplay])
-	if collectErr != nil {
-		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
+	// 3. Insert Config (if any discount differs from default)
+	defaultConfig, err := bm.getDefaultPersonConfig(ctx)
+	if err != nil {
+		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: "Failed to get default person config", IsServerErr: true}
 	}
 
-	return person, nil
+	var humDiscount *decimal.Decimal
+	if !lp.Person.HumidityDiscount.Equal(defaultConfig.HumidityDiscount) {
+		humDiscount = &lp.Person.HumidityDiscount
+	}
+
+	var soyDiscount *decimal.Decimal
+	if !lp.Person.EntrySoyDiscount.Equal(defaultConfig.EntrySoyDiscount) {
+		soyDiscount = &lp.Person.EntrySoyDiscount
+	}
+
+	var cornDiscount *decimal.Decimal
+	if !lp.Person.EntryCornDiscount.Equal(defaultConfig.EntryCornDiscount) {
+		cornDiscount = &lp.Person.EntryCornDiscount
+	}
+
+	if humDiscount != nil || soyDiscount != nil || cornDiscount != nil {
+		_, err = tx.Exec(ctx, `INSERT INTO person_config 
+			(person_id, ie, farm, humidity_discount, entry_soy_discount, entry_corn_discount) 
+			VALUES ($1, $2, $3, $4, $5, $6)`,
+			personID, lp.Person.Ie, lp.Person.Farm,
+			humDiscount, soyDiscount, cornDiscount)
+		if err != nil {
+			return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+		}
+	}
+
+	// 4. Insert Address (if required fields are present)
+	if lp.Street != nil && lp.Cep != nil && lp.Neighborhood != nil && lp.City != nil && lp.State != nil {
+		var addressID uint32
+		err = tx.QueryRow(ctx, `INSERT INTO address 
+			(street, cep, number, neighborhood, city, state, person_id) 
+			VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+			lp.Street, lp.Cep, lp.Number, lp.Neighborhood, lp.City, lp.State, personID).Scan(&addressID)
+		if err != nil {
+			return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+		}
+
+		if lp.Complement != nil {
+			_, err = tx.Exec(ctx, "INSERT INTO address_complement (complement, address_id) VALUES ($1, $2)", lp.Complement, addressID)
+			if err != nil {
+				return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+			}
+		}
+	}
+
+	// 5. Insert Contact
+	if lp.Email != nil || lp.PhoneNumber != nil {
+		_, err = tx.Exec(ctx, "INSERT INTO contact (email, phone_number, person_id) VALUES ($1, $2, $3)", lp.Email, lp.PhoneNumber, personID)
+		if err != nil {
+			return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+		}
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+	}
+
+	var displayName string
+	if lp.FantasyName == nil {
+		displayName = lp.CompanyName
+	} else {
+		displayName = *lp.FantasyName
+	}
+	return entity_public.PersonDisplay{
+		Type:     0, // Natural Person
+		Name:     displayName,
+		Document: lp.Cnpj,
+		IE:       lp.Person.Ie,
+		Id:       personID,
+	}, nil
 }
 
 func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
@@ -131,13 +206,33 @@ func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_
 		return handleInsertError(err)
 	}
 
-	// 3. Insert Config (if any discount is provided)
-	if !bp.Person.HumidityDiscount.IsZero() || !bp.Person.EntrySoyDiscount.IsZero() || !bp.Person.EntryCornDiscount.IsZero() {
+	// 3. Insert Config (if any discount differs from default)
+	defaultConfig, err := bm.getDefaultPersonConfig(ctx)
+	if err != nil {
+		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: "Failed to get default person config", IsServerErr: true}
+	}
+
+	var humDiscount *decimal.Decimal
+	if !bp.Person.HumidityDiscount.Equal(defaultConfig.HumidityDiscount) {
+		humDiscount = &bp.Person.HumidityDiscount
+	}
+
+	var soyDiscount *decimal.Decimal
+	if !bp.Person.EntrySoyDiscount.Equal(defaultConfig.EntrySoyDiscount) {
+		soyDiscount = &bp.Person.EntrySoyDiscount
+	}
+
+	var cornDiscount *decimal.Decimal
+	if !bp.Person.EntryCornDiscount.Equal(defaultConfig.EntryCornDiscount) {
+		cornDiscount = &bp.Person.EntryCornDiscount
+	}
+
+	if humDiscount != nil || soyDiscount != nil || cornDiscount != nil {
 		_, err = tx.Exec(ctx, `INSERT INTO person_config 
 			(person_id, ie, farm, humidity_discount, entry_soy_discount, entry_corn_discount) 
 			VALUES ($1, $2, $3, $4, $5, $6)`,
 			personID, bp.Person.Ie, bp.Person.Farm,
-			bp.Person.HumidityDiscount, bp.Person.EntrySoyDiscount, bp.Person.EntryCornDiscount)
+			humDiscount, soyDiscount, cornDiscount)
 		if err != nil {
 			return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
 		}
@@ -501,4 +596,10 @@ func (bm *personModel) UpdateLegalPerson(bc entity_public.LegalPerson) (entity_p
 	}
 
 	return person, nil
+}
+
+func (bm *personModel) getDefaultPersonConfig(ctx context.Context) (entity_public.PersonConfig, error) {
+	var config entity_public.PersonConfig
+	err := bm.pool.QueryRow(ctx, "SELECT humidity_discount, entry_soy_discount, entry_corn_discount FROM default_person_config WHERE id = 1").Scan(&config.HumidityDiscount, &config.EntrySoyDiscount, &config.EntryCornDiscount)
+	return config, err
 }
