@@ -603,3 +603,27 @@ func (bm *personModel) getDefaultPersonConfig(ctx context.Context) (entity_publi
 	err := bm.pool.QueryRow(ctx, "SELECT humidity_discount, entry_soy_discount, entry_corn_discount FROM default_person_config WHERE id = 1").Scan(&config.HumidityDiscount, &config.EntrySoyDiscount, &config.EntryCornDiscount)
 	return config, err
 }
+
+func (bm *personModel) GetPersonConfig(person uint32) (entity_public.PersonConfig, *model_error.ModelError) {
+	rows, err := bm.pool.Query(context.Background(), `
+		SELECT COALESCE(pc.humidity_discount, dpc.humidity_discount), COALESCE(pc.entry_soy_discount, dpc.entry_soy_discount), COALESCE(pc.entry_corn_discount, dpc.entry_corn_discount)
+			FROM person_config pc
+			LEFT JOIN default_person_config dpc ON dpc.id = 1
+			WHERE pc.person_id = @person
+		`, pgx.NamedArgs{"person": person})
+
+	personConfig, err := pgx.CollectExactlyOneRow(rows, pgx.RowToStructByPos[entity_public.PersonConfig])
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return entity_public.PersonConfig{
+				HumidityDiscount:  decimal.NewFromFloat(1.7),
+				EntrySoyDiscount:  decimal.NewFromFloat(3.5),
+				EntryCornDiscount: decimal.NewFromFloat(5.5),
+			}, nil
+
+		}
+		return entity_public.PersonConfig{}, &model_error.ModelError{Message: err.Error()}
+	}
+	return personConfig, nil
+}

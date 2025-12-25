@@ -41,7 +41,7 @@ func addCrop(c *gin.Context) {
 
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
-	cropModel, _ := crop_model.GetCropModel()
+	cropModel := crop_model.GetCropModel()
 	addedCrop, addErr := cropModel.AddCrop(entity_public.Crop{
 		Name:      newCrop.Name,
 		StartDate: startDateTime,

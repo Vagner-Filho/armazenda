@@ -274,6 +274,19 @@ func initEntry(c *pgx.Conn) {
 	handleStmtExec(c, stmt, err, "create entry")
 }
 
+func initEntryTax(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init entry tax table", `
+	CREATE TABLE IF NOT EXISTS entry_tax (
+		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+		entry_id INTEGER UNIQUE NOT NULL,
+		weight NUMERIC(10, 3) NOT NULL,
+		FOREIGN KEY (entry_id) REFERENCES entry(id)
+	);
+	`)
+
+	handleStmtExec(c, stmt, err, "create entry tax")
+}
+
 func initEntryOrigin(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init entry origin table", `
 	CREATE TABLE IF NOT EXISTS entry_origin (
@@ -1388,6 +1401,7 @@ func InitDb(c *pgx.Conn) {
 	initVehicle(c)
 	initField(c)
 	initEntry(c)
+	initEntryTax(c)
 	initEntryOrigin(c)
 	initPreEntry(c)
 	initEntryDraftOrigin(c)

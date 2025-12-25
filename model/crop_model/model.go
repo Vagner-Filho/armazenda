@@ -33,11 +33,11 @@ func InitCropModel(pool *pgxpool.Pool) (*cropModel, error) {
 	return cropModelImpl, nil
 }
 
-func GetCropModel() (*cropModel, error) {
+func GetCropModel() *cropModel {
 	if cropModelImpl == nil {
-		return nil, errors.New("crop model hasnt been initialized")
+		panic("\ncrop model hasnt been initialized\n")
 	}
-	return cropModelImpl, nil
+	return cropModelImpl
 }
 
 func (cm *cropModel) AddCrop(c entity_public.Crop) (entity_public.Crop, *model_error.ModelError) {
@@ -81,4 +81,21 @@ func (cm *cropModel) GetCropsByFarm(farm uint32) ([]entity_public.Crop, error) {
 	}
 
 	return crops, nil
+}
+
+func (cm *cropModel) GetCropById(id uint8) (entity_public.Crop, error) {
+	rows, err := cm.pool.Query(context.Background(), "SELECT * FROM crop WHERE id = @id", pgx.NamedArgs{"id": id})
+	if err != nil {
+		return entity_public.Crop{}, &model_error.ModelError{Message: err.Error()}
+	}
+
+	product, collectErr := pgx.CollectOneRow(rows, pgx.RowToStructByPos[entity_public.Crop])
+	if collectErr != nil {
+		if errors.Is(collectErr, pgx.ErrNoRows) {
+			return entity_public.Crop{}, &model_error.ModelError{Message: "Produto não encontrado"}
+		}
+		return entity_public.Crop{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+
+	return product, nil
 }

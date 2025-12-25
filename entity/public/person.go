@@ -30,6 +30,17 @@ type PersonConfig struct {
 	EntryCornDiscount decimal.Decimal `form:"entryCornDiscount"`
 }
 
+func (pc PersonConfig) GetProductEntryDiscount(product uint8) decimal.Decimal {
+	if product == 1 {
+		return pc.EntryCornDiscount
+	}
+	if product == 2 {
+		return pc.EntrySoyDiscount
+	}
+
+	return decimal.NewFromInt(0)
+}
+
 type Person struct {
 	Ie   string
 	Id   uint32

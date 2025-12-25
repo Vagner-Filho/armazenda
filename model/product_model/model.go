@@ -31,11 +31,11 @@ func InitProductModel(pool *pgxpool.Pool) (*productModel, error) {
 	return productModelImpl, nil
 }
 
-func GetProductModel() (*productModel, error) {
+func GetProductModel() *productModel {
 	if productModelImpl == nil {
-		return nil, errors.New("product model hasnt been initialized")
+		panic("\nproduct model hasnt been initialized\n")
 	}
-	return productModelImpl, nil
+	return productModelImpl
 }
 
 func (pm *productModel) GetProducts() ([]entity_public.Product, error) {
@@ -51,4 +51,21 @@ func (pm *productModel) GetProducts() ([]entity_public.Product, error) {
 	}
 
 	return products, nil
+}
+
+func (pm *productModel) GetProductById(id uint8) (entity_public.Product, error) {
+	rows, err := pm.pool.Query(context.Background(), "SELECT * FROM product WHERE id = @id", pgx.NamedArgs{"id": id})
+	if err != nil {
+		return entity_public.Product{}, &model_error.ModelError{Message: err.Error()}
+	}
+
+	product, collectErr := pgx.CollectOneRow(rows, pgx.RowToStructByPos[entity_public.Product])
+	if collectErr != nil {
+		if errors.Is(collectErr, pgx.ErrNoRows) {
+			return entity_public.Product{}, &model_error.ModelError{Message: "Produto não encontrado"}
+		}
+		return entity_public.Product{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+
+	return product, nil
 }

@@ -2,8 +2,10 @@ package entry_service
 
 import (
 	entity_public "armazenda/entity/public"
+	"armazenda/model/crop_model"
 	"armazenda/model/entry_model"
 	"armazenda/model/person_model"
+	"armazenda/model/product_model"
 
 	"github.com/shopspring/decimal"
 )
@@ -78,12 +80,42 @@ func AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public
 	}
 	ge.NetWeight = rawNetWeight.Sub(totalDiscount)
 
+	var storageTax decimal.Decimal
+	if ge.Origin != nil {
+		cm := crop_model.GetCropModel()
+		crop, err := cm.GetCropById(ge.Crop)
+		if err != nil {
+
+		}
+
+		pm := product_model.GetProductModel()
+		product, err := pm.GetProductById(crop.Product)
+		if err != nil {
+
+		}
+
+		personM := person_model.GetpersonModel()
+		personConfig, err := personM.GetPersonConfig(*ge.Origin)
+
+		weightAfterQualityDiscount := ge.NetWeight
+		storageTax = weightAfterQualityDiscount.Mul(personConfig.GetProductEntryDiscount(product.Id)).Div(base100)
+
+		ge.NetWeight = weightAfterQualityDiscount.Sub(storageTax)
+	}
+
 	newEntry, addErr := eModel.AddEntry(ge)
 	if addErr != nil {
 		if addErr.IsServerErr == true {
 			return entity_public.DisplayEntry{}, entity_public.GetErrorToast("Houve um erro interno ao adicionar a entrada", "")
 		}
 		return entity_public.DisplayEntry{}, entity_public.GetWarningToast(addErr.Message, "")
+	}
+
+	if ge.Origin != nil {
+		err := eModel.AddEntryTax(newEntry.Id, storageTax)
+		if err != nil {
+
+		}
 	}
 	return newEntry, entity_public.GetSuccessToast("Entrada adicionada", "")
 }

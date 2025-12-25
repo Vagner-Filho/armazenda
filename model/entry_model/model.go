@@ -434,3 +434,15 @@ func (em *entryModel) FilterEntries(ef entity_public.EntryFilter, page int, farm
 
 	return entries, totalEntries, nil
 }
+
+func (em *entryModel) AddEntryTax(id uint32, tax decimal.Decimal) error {
+	_, err := em.pool.Exec(context.Background(), `
+		INSERT INTO entry_tax (entry_id, weight) VALUES (@id, @tax)
+		`, pgx.NamedArgs{"id": id, "tax": tax})
+
+	if err != nil {
+
+	}
+
+	return nil
+}

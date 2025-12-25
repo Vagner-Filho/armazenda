@@ -6,11 +6,7 @@ import (
 )
 
 func GetProducts() ([]entity_public.Product, *entity_public.Toast) {
-	pModel, modelError := product_model.GetProductModel()
-	if modelError != nil {
-		toast := entity_public.GetErrorToast(modelError.Error(), "")
-		return []entity_public.Product{}, &toast
-	}
+	pModel := product_model.GetProductModel()
 
 	products, err := pModel.GetProducts()
 	if err != nil {
