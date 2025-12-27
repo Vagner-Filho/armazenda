@@ -9,9 +9,10 @@ import (
 )
 
 type Analysis struct {
-	Humidity *decimal.Decimal `form:"humidity"`
-	Damage   *decimal.Decimal `form:"damage"`
-	Impurity *decimal.Decimal `form:"impurity,omitempty"`
+	Humidity                 *decimal.Decimal `form:"humidity"`
+	Damage                   *decimal.Decimal `form:"damage"`
+	Impurity                 *decimal.Decimal `form:"impurity,omitempty"`
+	HumidityDiscountModifier *decimal.Decimal `f̀orm:"humidityDiscountModifier,omitempty"`
 }
 
 func (a *Analysis) ToDTO() AnalysisDTO {

@@ -136,4 +136,6 @@ type EntryPdf struct {
 	DiscountedHumidity decimal.Decimal `db:"-"`
 	DiscountedDamage   decimal.Decimal `db:"-"`
 	DiscountedImpurity decimal.Decimal `db:"-"`
+	StorageTax         decimal.Decimal
+	StorageTaxModifier decimal.Decimal
 }

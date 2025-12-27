@@ -280,6 +280,7 @@ func initEntryTax(c *pgx.Conn) {
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		entry_id INTEGER UNIQUE NOT NULL,
 		weight NUMERIC(10, 3) NOT NULL,
+		applied_tax NUMERIC(5, 2) NOT NULL,
 		FOREIGN KEY (entry_id) REFERENCES entry(id)
 	);
 	`)
@@ -304,10 +305,11 @@ func initEntryAnalysis(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init entry_analysis table", `
 	CREATE TABLE IF NOT EXISTS entry_analysis (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-		humidity NUMERIC(6, 3),
-		damage NUMERIC(6, 3),
-		impurity NUMERIC(6, 3),
+		humidity NUMERIC(5, 2),
+		damage NUMERIC(5, 2),
+		impurity NUMERIC(5, 2),
 		entryId INTEGER UNIQUE NOT NULL,
+		humidity_discount_modifier NUMERIC(5, 2),
 		FOREIGN KEY (entryId) REFERENCES entry(id)
 	);
 	`)
@@ -395,9 +397,9 @@ func initPersonConfig(c *pgx.Conn) {
 		person_id INTEGER UNIQUE NOT NULL,
 		ie TEXT NOT NULL,
 		farm INTEGER NOT NULL,
-		humidity_discount NUMERIC(4, 2),
-		entry_soy_discount NUMERIC (4, 2),
-		entry_corn_discount NUMERIC (4, 2),
+		humidity_discount NUMERIC(5, 2),
+		entry_soy_discount NUMERIC (5, 2),
+		entry_corn_discount NUMERIC (5, 2),
 		FOREIGN KEY (farm) REFERENCES farm(id)
 	);
 	`)
@@ -409,9 +411,9 @@ func initDefaultPersonConfig(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init default_person_config table", `
 	CREATE TABLE IF NOT EXISTS default_person_config (
 		id INTEGER PRIMARY KEY DEFAULT 1,
-		humidity_discount NUMERIC(4, 2) NOT NULL DEFAULT 1.7,
-		entry_soy_discount NUMERIC (4, 2) NOT NULL DEFAULT 3.5,
-		entry_corn_discount NUMERIC (4, 2) NOT NULL DEFAULT 5.5,
+		humidity_discount NUMERIC(5, 2) NOT NULL DEFAULT 1.7,
+		entry_soy_discount NUMERIC (5, 2) NOT NULL DEFAULT 3.5,
+		entry_corn_discount NUMERIC (5, 2) NOT NULL DEFAULT 5.5,
 		CONSTRAINT single_row CHECK (id = 1)
 	);
 	`)
@@ -821,7 +823,7 @@ func initAddEntry(c *pgx.Conn) {
 			IN crop SMALLINT,
 			IN grossWeight NUMERIC(10, 3),
 			IN tare NUMERIC(10, 3),
-		 	IN humidity NUMERIC(6, 3),
+		 	IN humidity NUMERIC(5, 2),
 	
 			OUT entryId INTEGER,
 			OUT productName TEXT,
@@ -832,8 +834,9 @@ func initAddEntry(c *pgx.Conn) {
 			INOUT netWeight NUMERIC(10, 3),
 			INOUT arrivalDate TIMESTAMP WITHOUT TIME ZONE,
 			INOUT farm INTEGER,
-			IN damage NUMERIC(6, 3),
-			IN impurity NUMERIC(6, 3),
+			IN damage NUMERIC(5, 2),
+			IN impurity NUMERIC(5, 2),
+			IN in_humidity_discount_modifier NUMERIC(5, 2),
 			IN origin INTEGER,
 			OUT out_origin TEXT
 		)
@@ -843,7 +846,7 @@ func initAddEntry(c *pgx.Conn) {
 			INSERT INTO entry (field, crop, vehicle, grossweight, tare, netweight, arrivalDate, farm) VALUES (field, crop, in_vehicle, grossWeight, tare, netWeight, arrivalDate, farm) RETURNING id INTO entry_id;
 
 			IF humidity IS NOT NULL OR damage IS NOT NULL OR impurity IS NOT NULL THEN
-				INSERT INTO entry_analysis (humidity, damage, impurity, entryid) VALUES (humidity, damage, impurity, entry_id);
+				INSERT INTO entry_analysis (humidity, damage, impurity, entryid, humidity_discount_modifier) VALUES (humidity, damage, impurity, entry_id, in_humidity_discount_modifier);
 			END IF;
 			
 			IF origin IS NOT NULL THEN
@@ -889,8 +892,9 @@ func initUpdateEntry(c *pgx.Conn) {
 			INOUT e_netWeight DOUBLE PRECISION,
 			INOUT e_arrivalDate TIMESTAMP WITHOUT TIME ZONE,
 			OUT e_farm INTEGER,
-			IN e_damage NUMERIC(6, 3),
-			IN e_impurity NUMERIC(6, 3),
+			IN e_damage NUMERIC(5, 2),
+			IN e_impurity NUMERIC(5, 2),
+			IN in_humidity_discount_modifier NUMERIC(5, 2),
 			IN origin_id INTEGER,
 			OUT out_origin TEXT
 		)
@@ -914,10 +918,11 @@ func initUpdateEntry(c *pgx.Conn) {
 				UPDATE entry_analysis ea SET
 					humidity = e_humidity,
 					damage = e_damage,
-					impurity = e_impurity
+					impurity = e_impurity,
+					humidity_discount_modifier = in_humidity_discount_modifier
 				WHERE ea.entryid = e_id;
 			ELSIF e_humidity IS NOT NULL OR e_damage IS NOT NULL OR e_impurity IS NOT NULL THEN
-				INSERT INTO entry_analysis (humidity, damage, impurity, entryid) VALUES (e_humidity, e_damage, e_impurity, e_id);
+				INSERT INTO entry_analysis (humidity, damage, impurity, entryid, humidity_discount_modifier) VALUES (e_humidity, e_damage, e_impurity, e_id, in_humidity_discount_modifier);
 			END IF;
 
 			SELECT EXISTS (SELECT 1 FROM entry_origin eo WHERE eo.entry_id = e_id) INTO origin_exists;

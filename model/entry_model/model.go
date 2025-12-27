@@ -170,20 +170,21 @@ func (em *entryModel) GetEntryDraft(id uint32) (entity_public.EntryDraft, *model
 
 func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
 	row, queryErr := em.pool.Query(context.Background(), `
-		SELECT * FROM add_get_entry(@field, @crop, @grossWeight, @tare, @humidity, @vehicle, @netWeight, @arrivalDate, @farm, @damage, @impurity, @origin)
+		SELECT * FROM add_get_entry(@field, @crop, @grossWeight, @tare, @humidity, @vehicle, @netWeight, @arrivalDate, @farm, @damage, @impurity, @humidity_discount_modifier, @origin)
 		`, pgx.NamedArgs{
-		"field":       ge.Field,
-		"crop":        ge.Crop,
-		"vehicle":     ge.Vehicle,
-		"grossWeight": ge.GrossWeight,
-		"tare":        ge.Tare,
-		"netWeight":   ge.NetWeight,
-		"humidity":    ge.Humidity,
-		"arrivalDate": ge.ArrivalDate,
-		"farm":        ge.Farm,
-		"damage":      ge.Damage,
-		"impurity":    ge.Impurity,
-		"origin":      ge.Origin,
+		"field":                      ge.Field,
+		"crop":                       ge.Crop,
+		"vehicle":                    ge.Vehicle,
+		"grossWeight":                ge.GrossWeight,
+		"tare":                       ge.Tare,
+		"netWeight":                  ge.NetWeight,
+		"humidity":                   ge.Humidity,
+		"arrivalDate":                ge.ArrivalDate,
+		"farm":                       ge.Farm,
+		"damage":                     ge.Damage,
+		"impurity":                   ge.Impurity,
+		"origin":                     ge.Origin,
+		"humidity_discount_modifier": ge.HumidityDiscountModifier,
 	})
 
 	if queryErr != nil {
@@ -217,7 +218,7 @@ func (em *entryModel) DeleteEntry(id uint32) error {
 
 func (em *entryModel) GetEntry(id uint32) (entity_public.Entry, *model_error.ModelError) {
 
-	rows, queryErr := em.pool.Query(context.Background(), "SELECT e.id, e.field, e.crop, e.vehicle, e.grossweight, e.tare, e.netweight, ea.humidity, ea.damage, ea.impurity, e.arrivaldate, e.farm, eo.person_id FROM entry e LEFT JOIN entry_analysis ea ON ea.entryid = e.id LEFT JOIN entry_origin eo ON eo.entry_id = e.id WHERE e.id = @id", pgx.NamedArgs{"id": id})
+	rows, queryErr := em.pool.Query(context.Background(), "SELECT e.id, e.field, e.crop, e.vehicle, e.grossweight, e.tare, e.netweight, ea.humidity, ea.damage, ea.impurity, ea.humidity_discount_modifier, e.arrivaldate, e.farm, eo.person_id FROM entry e LEFT JOIN entry_analysis ea ON ea.entryid = e.id LEFT JOIN entry_origin eo ON eo.entry_id = e.id WHERE e.id = @id", pgx.NamedArgs{"id": id})
 	if queryErr != nil {
 		return entity_public.Entry{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
@@ -255,7 +256,9 @@ func (em *entryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_err
 			fa.state AS farm_state,
 			COALESCE(person_union.name, fc.name, 'Pŕopria') AS origin,
 			COALESCE(person_union.document, f.inscricao_estadual) AS document,
-			fc.storage_name
+			fc.storage_name,
+			COALESCE(et.weight, 0.0),
+			COALESCE(et.applied_tax, 0.0)
 		FROM entry e
 		LEFT JOIN entry_analysis ea ON ea.entryid = e.id
 		JOIN field fi ON fi.id = e.field
@@ -271,6 +274,7 @@ func (em *entryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_err
 			UNION ALL
 			SELECT np.personid, np.name, np.cpf AS document FROM natural_person np
 		) person_union ON person_union.personid = eo.person_id
+		LEFT JOIN entry_tax et ON et.entry_id = e.id
 	 	WHERE e.id = @id`,
 		pgx.NamedArgs{"id": id},
 	)
@@ -289,20 +293,21 @@ func (em *entryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_err
 func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
 	row, queryErr := em.pool.Query(
 		context.Background(),
-		`SELECT * FROM update_get_display_entry(@field, @crop, @grossWeight, @tare, @humidity, @id, @vehicle, @netWeight, @arrivalDate, @damage, @impurity, @origin)`,
+		`SELECT * FROM update_get_display_entry(@field, @crop, @grossWeight, @tare, @humidity, @id, @vehicle, @netWeight, @arrivalDate, @damage, @impurity, @humidity_discount_modifier, @origin)`,
 		pgx.NamedArgs{
-			"id":          ge.Id,
-			"field":       ge.Field,
-			"crop":        ge.Crop,
-			"vehicle":     ge.Vehicle,
-			"grossWeight": ge.GrossWeight,
-			"tare":        ge.Tare,
-			"netWeight":   ge.NetWeight,
-			"humidity":    ge.Humidity,
-			"arrivalDate": ge.ArrivalDate,
-			"damage":      ge.Damage,
-			"impurity":    ge.Impurity,
-			"origin":      ge.Origin,
+			"id":                         ge.Id,
+			"field":                      ge.Field,
+			"crop":                       ge.Crop,
+			"vehicle":                    ge.Vehicle,
+			"grossWeight":                ge.GrossWeight,
+			"tare":                       ge.Tare,
+			"netWeight":                  ge.NetWeight,
+			"humidity":                   ge.Humidity,
+			"arrivalDate":                ge.ArrivalDate,
+			"damage":                     ge.Damage,
+			"impurity":                   ge.Impurity,
+			"origin":                     ge.Origin,
+			"humidity_discount_modifier": ge.HumidityDiscountModifier,
 		})
 
 	if queryErr != nil {
@@ -435,10 +440,10 @@ func (em *entryModel) FilterEntries(ef entity_public.EntryFilter, page int, farm
 	return entries, totalEntries, nil
 }
 
-func (em *entryModel) AddEntryTax(id uint32, tax decimal.Decimal) error {
+func (em *entryModel) AddEntryTax(id uint32, tax decimal.Decimal, appliedTax decimal.Decimal) error {
 	_, err := em.pool.Exec(context.Background(), `
-		INSERT INTO entry_tax (entry_id, weight) VALUES (@id, @tax)
-		`, pgx.NamedArgs{"id": id, "tax": tax})
+		INSERT INTO entry_tax (entry_id, weight, applied_tax) VALUES (@id, @tax, @applied_tax)
+		`, pgx.NamedArgs{"id": id, "tax": tax, "applied_tax": appliedTax})
 
 	if err != nil {
 

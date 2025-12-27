@@ -75,12 +75,14 @@ func AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public
 			} else {
 				discount := exceedingHumidty.Mul(discountModifier)
 				totalDiscount = totalDiscount.Add(rawNetWeight.Mul(discount).Div(base100))
+				ge.HumidityDiscountModifier = &discountModifier
 			}
 		}
 	}
 	ge.NetWeight = rawNetWeight.Sub(totalDiscount)
 
 	var storageTax decimal.Decimal
+	var storageTaxModifier decimal.Decimal
 	if ge.Origin != nil {
 		cm := crop_model.GetCropModel()
 		crop, err := cm.GetCropById(ge.Crop)
@@ -97,8 +99,9 @@ func AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public
 		personM := person_model.GetpersonModel()
 		personConfig, err := personM.GetPersonConfig(*ge.Origin)
 
+		storageTaxModifier = personConfig.GetProductEntryDiscount(product.Id)
 		weightAfterQualityDiscount := ge.NetWeight
-		storageTax = weightAfterQualityDiscount.Mul(personConfig.GetProductEntryDiscount(product.Id)).Div(base100)
+		storageTax = weightAfterQualityDiscount.Mul(storageTaxModifier).Div(base100)
 
 		ge.NetWeight = weightAfterQualityDiscount.Sub(storageTax)
 	}
@@ -112,7 +115,7 @@ func AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public
 	}
 
 	if ge.Origin != nil {
-		err := eModel.AddEntryTax(newEntry.Id, storageTax)
+		err := eModel.AddEntryTax(newEntry.Id, storageTax, storageTaxModifier)
 		if err != nil {
 
 		}
@@ -137,7 +140,6 @@ func GetEntry(id uint32) (*entity_public.Entry, *entity_public.Toast) {
 
 func GetEntryPdf(id uint32) (*entity_public.EntryPdf, *entity_public.Toast) {
 	eModel := entry_model.GetEntryModel()
-	pModel := person_model.GetpersonModel()
 
 	entryPdf, err := eModel.GetEntryPdf(id)
 	if err != nil {
@@ -159,9 +161,7 @@ func GetEntryPdf(id uint32) (*entity_public.EntryPdf, *entity_public.Toast) {
 		return nil, &toast
 	}
 
-	humidityDisc, err := pModel.GetHumidityDiscount(entry.Origin, entry.Farm)
-
-	discountedHumidity := DiscountHumidity(entry.Humidity, entry.GrossWeight.Sub(entry.Tare), &humidityDisc)
+	discountedHumidity := DiscountHumidity(entry.Humidity, entry.GrossWeight.Sub(entry.Tare), entry.HumidityDiscountModifier)
 	discountedDamage := DiscountDamage(entry.Damage, entry.GrossWeight.Sub(entry.Tare))
 	discountedImpurity := DiscountImpurity(entry.Impurity, entry.GrossWeight.Sub(entry.Tare))
 
