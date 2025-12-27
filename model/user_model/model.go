@@ -202,12 +202,23 @@ func (um *userModel) CanRemoveAdmin(userId uint32) (bool, error) {
 	return adminCount > 1, nil
 }
 
-func (um *userModel) GetUsersByFarm(farmId uint32) ([]entity_public.PendingUser, error) {
-	rows, err := um.pool.Query(context.Background(),
-		`SELECT u.id, u.name, u.email, u.cpf, u.role FROM app_user u
-		 LEFT JOIN inactive_user iu ON u.id = iu.user_id
-		 WHERE u.farm = @farmId AND iu.user_id IS NULL`,
-		pgx.NamedArgs{"farmId": farmId})
+func (um *userModel) GetUsersByFarm(farmId uint32, isAdmin bool) ([]entity_public.PendingUser, error) {
+	var rows pgx.Rows
+	var err error
+
+	if isAdmin == false {
+		rows, err = um.pool.Query(context.Background(),
+			`SELECT u.id, u.name, u.email, u.cpf, u.role, TRUE AS is_active FROM app_user u
+			LEFT JOIN inactive_user iu ON u.id = iu.user_id
+			WHERE u.farm = @farmId AND iu.user_id IS NULL`,
+			pgx.NamedArgs{"farmId": farmId})
+	} else {
+		rows, err = um.pool.Query(context.Background(),
+			`SELECT u.id, u.name, u.email, u.cpf, u.role, iu.user_id IS NULL AS is_active FROM app_user u
+			LEFT JOIN inactive_user iu ON u.id = iu.user_id
+			WHERE u.farm = @farmId`,
+			pgx.NamedArgs{"farmId": farmId})
+	}
 
 	if err != nil {
 		return nil, err
@@ -215,9 +226,17 @@ func (um *userModel) GetUsersByFarm(farmId uint32) ([]entity_public.PendingUser,
 
 	users, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (entity_public.PendingUser, error) {
 		var user entity_public.PendingUser
-		err := row.Scan(&user.Id, &user.Name, &user.Email, &user.Cpf, &user.Role)
+		err := row.Scan(&user.Id, &user.Name, &user.Email, &user.Cpf, &user.Role, &user.IsActive)
 		return user, err
 	})
 
 	return users, err
+}
+
+func (um *userModel) ActivateUser(userId uint32) error {
+	_, err := um.pool.Exec(context.Background(),
+		`DELETE FROM inactive_user WHERE user_id = @userId`,
+		pgx.NamedArgs{"userId": userId})
+
+	return err
 }

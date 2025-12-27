@@ -57,6 +57,7 @@ func UserRoutes(router *gin.Engine) {
 	router.GET("/users", getUsers)
 	router.POST("/user/:id/make-admin", makeAdmin)
 	router.POST("/user/:id/remove-admin", removeAdmin)
+	router.POST("/user/:id/activate", activateUser)
 	router.DELETE("/user/:id", removeUser)
 }
 
@@ -78,13 +79,13 @@ func getUsers(c *gin.Context) {
 	}
 
 	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
-	users, err := user_service.GetUsersByFarm(farmId)
+	isAdmin := user_service.IsAdmin(sessionCookie.Value)
+	users, err := user_service.GetUsersByFarm(farmId, isAdmin)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error-message", gin.H{"message": err.Error()})
 		return
 	}
 
-	isAdmin := user_service.IsAdmin(sessionCookie.Value)
 	c.HTML(http.StatusOK, "user-list", gin.H{"users": users, "isAdmin": isAdmin})
 }
 
@@ -186,17 +187,28 @@ func removeUser(c *gin.Context) {
 	}
 
 	um := user_model.GetUserModel()
-	canRemove, err := um.CanRemoveAdmin(uint32(userId))
+
+	isAdmin, err := um.IsAdmin(uint32(userId))
+
 	if err != nil {
-		toast := entity_public.GetErrorToast("Erro ao verificar usuário", "")
+		toast := entity_public.GetErrorToast("Erro ao verificar permissão do usuário", "")
 		c.Header("HX-Trigger", string(toast.ToJson()))
 		return
 	}
 
-	if !canRemove {
-		toast := entity_public.GetErrorToast("Não é possível remover o último administrador", "")
-		c.Header("HX-Trigger", string(toast.ToJson()))
-		return
+	if isAdmin == true {
+		canRemove, err := um.CanRemoveAdmin(uint32(userId))
+		if err != nil {
+			toast := entity_public.GetErrorToast("Erro ao verificar usuário", "")
+			c.Header("HX-Trigger", string(toast.ToJson()))
+			return
+		}
+
+		if !canRemove {
+			toast := entity_public.GetErrorToast("Não é possível remover o último administrador", "")
+			c.Header("HX-Trigger", string(toast.ToJson()))
+			return
+		}
 	}
 
 	err = user_service.RemoveUser(uint32(userId))
@@ -208,4 +220,54 @@ func removeUser(c *gin.Context) {
 
 	toast := entity_public.GetSuccessToast("Acesso do usuário removido", "")
 	c.Header("HX-Trigger", string(toast.ToJson()))
+}
+
+func activateUser(c *gin.Context) {
+	sessionCookie, cookieErr := c.Request.Cookie("session_id")
+	if cookieErr != nil {
+		c.HTML(http.StatusUnauthorized, "401", gin.H{})
+		return
+	}
+
+	verifyErr := user_service.VerifyToken(sessionCookie.Value)
+	if verifyErr != nil {
+		c.HTML(http.StatusUnauthorized, "401", gin.H{})
+		return
+	}
+
+	if !user_service.IsAdmin(sessionCookie.Value) {
+		c.String(http.StatusForbidden, "Acesso negado. Apenas administradores podem realizar esta ação.")
+		return
+	}
+
+	userIdStr := c.Param("id")
+	userId, parseErr := strconv.ParseUint(userIdStr, 10, 32)
+	if parseErr != nil {
+		c.String(http.StatusBadRequest, "ID de usuário inválido")
+		return
+	}
+
+	err := user_service.ActivateUser(uint32(userId))
+	if err != nil {
+		toast := entity_public.GetErrorToast("Erro ao ativar usuário", "")
+		c.Header("HX-Trigger", string(toast.ToJson()))
+		return
+	}
+
+	toast := entity_public.GetSuccessToast("Usuário ativado com sucesso", "")
+	c.Header("HX-Trigger", string(toast.ToJson()))
+
+	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
+	isAdmin := user_service.IsAdmin(sessionCookie.Value)
+	users, err := user_service.GetUsersByFarm(farmId, isAdmin)
+	if err != nil {
+		return
+	}
+
+	for _, user := range users {
+		if user.Id == uint32(userId) {
+			c.HTML(http.StatusOK, "user-list-item", gin.H{"user": user, "isAdmin": isAdmin})
+			return
+		}
+	}
 }

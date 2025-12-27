@@ -30,6 +30,7 @@
         {{ template "config-form" . }}
         <div class="my-8 border-b-2 border-gray-200"></div>
         <div hx-get="/user/pending" hx-trigger="load"></div>
+        <div hx-get="/users" hx-trigger="load"></div>
     </main>
     <script type="module">
         import {removeEmptyFields} from "/public/assets/js/form.js";

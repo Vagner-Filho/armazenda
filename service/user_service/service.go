@@ -165,7 +165,12 @@ func RemoveUser(userId uint32) error {
 	return um.RemoveUser(userId)
 }
 
-func GetUsersByFarm(farmId uint32) ([]entity_public.PendingUser, error) {
+func GetUsersByFarm(farmId uint32, isAdmin bool) ([]entity_public.PendingUser, error) {
 	um := user_model.GetUserModel()
-	return um.GetUsersByFarm(farmId)
+	return um.GetUsersByFarm(farmId, isAdmin)
+}
+
+func ActivateUser(userId uint32) error {
+	um := user_model.GetUserModel()
+	return um.ActivateUser(userId)
 }

@@ -27,9 +27,10 @@ type UserApproval struct {
 }
 
 type PendingUser struct {
-	Id    uint32 `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-	Cpf   string `json:"cpf"`
-	Role  string `json:"role"`
+	Id       uint32 `json:"id"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Cpf      string `json:"cpf"`
+	Role     string `json:"role"`
+	IsActive bool
 }
