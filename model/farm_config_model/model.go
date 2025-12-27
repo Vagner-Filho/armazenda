@@ -85,7 +85,7 @@ func (fcm *farmConfigModel) GetFarmConfig(farmID uint32) (*entity_public.Farm, e
 
 func (fcm *farmConfigModel) GetFarmByInscricaoEstadual(inscricaoEstadual string) (*entity_public.Farm, error) {
 	query := `
-		SELECT f.id, f.inscricao_estadual, fc.name, COALESCE(fc.humidity_discount, 1.15), fa.id, fa.street, fa.cep, fa.number, fac.complement, fa.neighborhood, fa.city, fa.state, fco.email, fco.phone_number
+		SELECT f.id, f.inscricao_estadual, fc.name, COALESCE(fc.humidity_discount, 1.15), fa.id, fa.street, fa.cep, fa.number, fac.complement, fa.neighborhood, fa.city, fa.state, fco.email, fco.phone_number, fc.storage_name
 		FROM farm f
 		LEFT JOIN farm_config fc ON f.id = fc.farm_id
 		LEFT JOIN farm_address fa ON fa.farm_id = f.id
@@ -104,4 +104,3 @@ func (fcm *farmConfigModel) GetFarmByInscricaoEstadual(inscricaoEstadual string)
 	}
 	return &result, nil
 }
-

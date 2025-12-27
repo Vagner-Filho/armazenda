@@ -40,15 +40,17 @@ type ArmazendaUserClaims struct {
 	Username string
 	Email    string
 	Farm     uint32
+	Role     string
 	jwt.RegisteredClaims
 }
 
-func createToken(username string, email string, farm uint32) (string, error) {
+func createToken(username string, email string, farm uint32, role string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		ArmazendaUserClaims{
 			Username: username,
 			Email:    email,
 			Farm:     farm,
+			Role:     role,
 			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 20)),
 			},
@@ -92,7 +94,7 @@ func Login(cpf string, passwd string) (credentials, *entity_public.Toast) {
 		return credentials{}, &toast
 	}
 
-	token, tokenErr := createToken(user.Name, user.Email, user.Farm)
+	token, tokenErr := createToken(user.Name, user.Email, user.Farm, user.Role)
 	if tokenErr != nil {
 		toast := entity_public.GetErrorToast("Desculpe, houve um erro interno :(", "")
 		return credentials{}, &toast
@@ -123,8 +125,47 @@ func Create(newUser entity_public.NewUser) entity_public.Toast {
 
 	created, err := um.CreateUser(newUser)
 	if !created || err != nil {
+		fmt.Printf("%v", err.Error())
 		return entity_public.GetErrorToast(err.Error(), "")
 	}
 
 	return entity_public.GetSuccessToast("Usuário criado", "")
+}
+
+func GetRoleFromToken(sessionId string) string {
+	allocatedClaims := &ArmazendaUserClaims{}
+	token, err := jwt.ParseWithClaims(sessionId, allocatedClaims, func(token *jwt.Token) (any, error) {
+		return secretKey, nil
+	})
+
+	if err != nil || token == nil || !token.Valid {
+		return ""
+	}
+
+	retrievedClaims := token.Claims.(*ArmazendaUserClaims)
+	return retrievedClaims.Role
+}
+
+func IsAdmin(sessionId string) bool {
+	return GetRoleFromToken(sessionId) == "admin"
+}
+
+func MakeAdmin(userId uint32) error {
+	um := user_model.GetUserModel()
+	return um.MakeAdmin(userId)
+}
+
+func RemoveAdmin(userId uint32) error {
+	um := user_model.GetUserModel()
+	return um.RemoveAdmin(userId)
+}
+
+func RemoveUser(userId uint32) error {
+	um := user_model.GetUserModel()
+	return um.RemoveUser(userId)
+}
+
+func GetUsersByFarm(farmId uint32) ([]entity_public.PendingUser, error) {
+	um := user_model.GetUserModel()
+	return um.GetUsersByFarm(farmId)
 }

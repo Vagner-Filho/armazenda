@@ -965,6 +965,7 @@ func initUser(c *pgx.Conn) {
 			inscricao_estadual TEXT NOT NULL,
 			farm INTEGER NOT NULL,
 			cpf VARCHAR(11) NOT NULL,
+			role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
 			FOREIGN KEY (farm) REFERENCES farm(id),
 			CONSTRAINT unique_user_in_farm UNIQUE (farm, cpf, email)
 		);
@@ -1400,6 +1401,7 @@ func InitDb(c *pgx.Conn) {
 	initFarmUpdateFunc(c)
 	initUser(c)
 	initUserApproval(c)
+	initInactiveUser(c)
 	initPerson(c)
 	initProduct(c)
 	initCrop(c)
@@ -1452,11 +1454,24 @@ func initUserApproval(c *pgx.Conn) {
 			inscricao_estadual TEXT NOT NULL,
 			farm_id INTEGER NOT NULL,
 			cpf VARCHAR(11) UNIQUE NOT NULL,
+			role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
 			status TEXT NOT NULL DEFAULT 'pending',
 			FOREIGN KEY (farm_id) REFERENCES farm(id)
 		);
 	`)
 	handleStmtExec(c, stmt, err, "init user approval table")
+}
+
+func initInactiveUser(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init inactive user stmt", `
+		CREATE TABLE IF NOT EXISTS inactive_user (
+			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			user_id INTEGER NOT NULL UNIQUE,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES app_user(id)
+		);
+	`)
+	handleStmtExec(c, stmt, err, "init inactive user table")
 }
 
 var dbPool *pgxpool.Pool

@@ -10,7 +10,7 @@
         Crie uma nova conta de usuário para acessar o sistema.
       </p>
     </header>
-    <form hx-post="/user" class="flex flex-col gap-4 mt-4">
+    <form hx-post="/user" hx-vals='{"role": "user"}' class="flex flex-col gap-4 mt-4">
       <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
         <legend class="fieldset-legend">
           Identificação

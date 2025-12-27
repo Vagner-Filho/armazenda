@@ -40,7 +40,9 @@ func GetUserModel() *userModel {
 
 func (um *userModel) AuthUser(cpf string, passwd string) (*entity_public.User, *model_error.ModelError) {
 	rows, queryErr := um.pool.Query(context.Background(),
-		`SELECT * FROM app_user WHERE cpf = @cpf`,
+		`SELECT u.id, u.email, u.name, u.passwd, u.inscricao_estadual, u.farm, u.cpf, u.role FROM app_user u
+		 LEFT JOIN inactive_user iu ON u.id = iu.user_id
+		 WHERE u.cpf = @cpf AND iu.user_id IS NULL`,
 		pgx.NamedArgs{"cpf": cpf})
 
 	if queryErr != nil {
@@ -52,6 +54,7 @@ func (um *userModel) AuthUser(cpf string, passwd string) (*entity_public.User, *
 		if errors.Is(pgx.ErrNoRows, collectErr) {
 			return nil, &model_error.ModelError{Message: "Cpf ou senha inválidos"}
 		}
+		return nil, &model_error.ModelError{Message: "Cpf ou senha inválidos"}
 	}
 
 	failed := bcrypt.CompareHashAndPassword([]byte(user.Passwd), []byte(passwd))
@@ -77,7 +80,19 @@ func (um *userModel) CreateUser(user entity_public.NewUser) (bool, error) {
 		return false, createFarmErr
 	}
 
-	_, err := um.pool.Exec(context.Background(), `INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm, cpf) VALUES (@email, @name, @passwd, @inscricao_estadual, @farm, @cpf)`, pgx.NamedArgs{"email": user.Email, "name": user.Name, "passwd": string(enc), "inscricao_estadual": user.InscricaoEstadual, "farm": farmId, "cpf": user.Cpf})
+	var userCount int
+	countErr := um.pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM app_user WHERE farm = @farmId`, pgx.NamedArgs{"farmId": farmId}).Scan(&userCount)
+
+	if countErr != nil {
+		return false, countErr
+	}
+
+	role := "user"
+	if userCount == 0 {
+		role = "admin"
+	}
+
+	_, err := um.pool.Exec(context.Background(), `INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm, cpf, role) VALUES (@email, @name, @passwd, @inscricao_estadual, @farm, @cpf, @role)`, pgx.NamedArgs{"email": user.Email, "name": user.Name, "passwd": string(enc), "inscricao_estadual": user.InscricaoEstadual, "farm": farmId, "cpf": user.Cpf, "role": role})
 
 	if err != nil {
 		return false, err
@@ -93,11 +108,116 @@ func (um *userModel) CreateUserApproval(user entity_public.NewUser, farmId uint3
 		return false, encErr
 	}
 
-	_, err := um.pool.Exec(context.Background(), `INSERT INTO user_approval (email, name, passwd, inscricao_estadual, farm_id, cpf) VALUES (@email, @name, @passwd, @inscricao_estadual, @farm_id, @cpf)`, pgx.NamedArgs{"email": user.Email, "name": user.Name, "passwd": string(enc), "inscricao_estadual": user.InscricaoEstadual, "farm_id": farmId, "cpf": user.Cpf})
+	_, err := um.pool.Exec(context.Background(), `INSERT INTO user_approval (email, name, passwd, inscricao_estadual, farm_id, cpf, role) VALUES (@email, @name, @passwd, @inscricao_estadual, @farm_id, @cpf, @role)`, pgx.NamedArgs{"email": user.Email, "name": user.Name, "passwd": string(enc), "inscricao_estadual": user.InscricaoEstadual, "farm_id": farmId, "cpf": user.Cpf, "role": "user"})
 
 	if err != nil {
 		return false, err
 	}
 
 	return true, nil
+}
+
+func (um *userModel) GetUserById(userId uint32) (*entity_public.User, error) {
+	rows, queryErr := um.pool.Query(context.Background(),
+		`SELECT u.id, u.email, u.name, u.passwd, u.inscricao_estadual, u.farm, u.cpf, u.role FROM app_user u
+		 LEFT JOIN inactive_user iu ON u.id = iu.user_id
+		 WHERE u.id = @userId AND iu.user_id IS NULL`,
+		pgx.NamedArgs{"userId": userId})
+
+	if queryErr != nil {
+		return nil, queryErr
+	}
+
+	user, collectErr := pgx.CollectExactlyOneRow(rows, pgx.RowToStructByPos[entity_public.User])
+	if collectErr != nil {
+		return nil, collectErr
+	}
+
+	return &user, nil
+}
+
+func (um *userModel) MakeAdmin(userId uint32) error {
+	_, err := um.pool.Exec(context.Background(),
+		`UPDATE app_user SET role = 'admin' WHERE id = @userId`,
+		pgx.NamedArgs{"userId": userId})
+
+	return err
+}
+
+func (um *userModel) RemoveAdmin(userId uint32) error {
+	_, err := um.pool.Exec(context.Background(),
+		`UPDATE app_user SET role = 'user' WHERE id = @userId`,
+		pgx.NamedArgs{"userId": userId})
+
+	return err
+}
+
+func (um *userModel) RemoveUser(userId uint32) error {
+	_, err := um.pool.Exec(context.Background(),
+		`INSERT INTO inactive_user (user_id) VALUES (@userId)`,
+		pgx.NamedArgs{"userId": userId})
+
+	return err
+}
+
+func (um *userModel) IsAdmin(userId uint32) (bool, error) {
+	var role string
+	err := um.pool.QueryRow(context.Background(),
+		`SELECT role FROM app_user WHERE id = @userId`,
+		pgx.NamedArgs{"userId": userId}).Scan(&role)
+
+	if err != nil {
+		return false, err
+	}
+
+	return role == "admin", nil
+}
+
+func (um *userModel) GetAdminCount(farmId uint32) (int, error) {
+	var count int
+	err := um.pool.QueryRow(context.Background(),
+		`SELECT COUNT(*) FROM app_user u
+		 LEFT JOIN inactive_user iu ON u.id = iu.user_id
+		 WHERE u.farm = @farmId AND u.role = 'admin' AND iu.user_id IS NULL`,
+		pgx.NamedArgs{"farmId": farmId}).Scan(&count)
+
+	return count, err
+}
+
+func (um *userModel) CanRemoveAdmin(userId uint32) (bool, error) {
+	user, err := um.GetUserById(userId)
+	if err != nil {
+		return false, err
+	}
+
+	if user.Role != "admin" {
+		return false, nil
+	}
+
+	adminCount, err := um.GetAdminCount(user.Farm)
+	if err != nil {
+		return false, err
+	}
+
+	return adminCount > 1, nil
+}
+
+func (um *userModel) GetUsersByFarm(farmId uint32) ([]entity_public.PendingUser, error) {
+	rows, err := um.pool.Query(context.Background(),
+		`SELECT u.id, u.name, u.email, u.cpf, u.role FROM app_user u
+		 LEFT JOIN inactive_user iu ON u.id = iu.user_id
+		 WHERE u.farm = @farmId AND iu.user_id IS NULL`,
+		pgx.NamedArgs{"farmId": farmId})
+
+	if err != nil {
+		return nil, err
+	}
+
+	users, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (entity_public.PendingUser, error) {
+		var user entity_public.PendingUser
+		err := row.Scan(&user.Id, &user.Name, &user.Email, &user.Cpf, &user.Role)
+		return user, err
+	})
+
+	return users, err
 }

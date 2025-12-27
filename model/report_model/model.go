@@ -185,4 +185,3 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 
 	return result, nil
 }
-

@@ -72,6 +72,33 @@ func authenticate(c *gin.Context) {
 	}
 	c.Next()
 }
+
+func adminOnlyMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		sessionCookie, cookieErr := c.Request.Cookie("session_id")
+		if cookieErr != nil {
+			c.HTML(http.StatusUnauthorized, "401", gin.H{})
+			c.Abort()
+			return
+		}
+
+		verifyErr := user_service.VerifyToken(sessionCookie.Value)
+		if verifyErr != nil {
+			c.HTML(http.StatusUnauthorized, "401", gin.H{})
+			c.Abort()
+			return
+		}
+
+		if !user_service.IsAdmin(sessionCookie.Value) {
+			c.String(http.StatusForbidden, "Acesso negado. Apenas administradores podem realizar esta ação.")
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	pool, connErr := armazenda_database.GetDbPool()

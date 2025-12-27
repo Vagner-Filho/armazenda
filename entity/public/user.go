@@ -8,6 +8,7 @@ type User struct {
 	InscricaoEstadual string `form:"inscricaoEstadual" binding:"required"`
 	Farm              uint32 `form:"farm" binding:"gte=0"`
 	Cpf               string `form:"cpf" binding:"len=11"`
+	Role              string `form:"role" binding:"oneof=admin user"`
 }
 
 type NewUser struct {
@@ -21,14 +22,8 @@ type SignInUser struct {
 }
 
 type UserApproval struct {
-	Id                uint32 `form:"id"`
-	Email             string `form:"email" binding:"required"`
-	Name              string `form:"name" binding:"required"`
-	Passwd            string `form:"passwd" binding:"required"`
-	InscricaoEstadual string `form:"inscricaoEstadual" binding:"required"`
-	FarmID            uint32 `form:"farm_id" binding:"gte=0"`
-	Cpf               string `form:"cpf" binding:"len=11"`
-	Status            string `form:"status" binding:"required"`
+	User
+	Status string `form:"status" binding:"required"`
 }
 
 type PendingUser struct {
@@ -36,5 +31,5 @@ type PendingUser struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 	Cpf   string `json:"cpf"`
+	Role  string `json:"role"`
 }
-

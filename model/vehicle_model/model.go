@@ -92,4 +92,3 @@ func (vm *vehicleModel) GetVehicle(vehicleId uint16) (entity_public.Vehicle, *mo
 		Name:  name,
 	}, nil
 }
-
