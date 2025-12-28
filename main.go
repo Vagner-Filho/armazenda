@@ -49,6 +49,21 @@ var templatesFS embed.FS
 //go:embed assets
 var assetsFS embed.FS
 
+func dict(values ...interface{}) (map[string]interface{}, error) {
+	if len(values)%2 != 0 {
+		return nil, fmt.Errorf("invalid dict call")
+	}
+	dict := make(map[string]interface{}, len(values)/2)
+	for i := 0; i < len(values); i += 2 {
+		key, ok := values[i].(string)
+		if !ok {
+			return nil, fmt.Errorf("dict keys must be strings")
+		}
+		dict[key] = values[i+1]
+	}
+	return dict, nil
+}
+
 func authenticate(c *gin.Context) {
 	path := c.FullPath()
 	if path == "/" || path == "/user" || path == "/login" || strings.Contains(path, "/public") || path == "/user/form" {
@@ -149,7 +164,7 @@ func main() {
 	router := gin.Default()
 	router.Use(authenticate)
 
-	html := template.Must(template.ParseFS(templatesFS, "templates/*.html", "templates/**/*.html"))
+	html := template.Must(template.New("").Funcs(template.FuncMap{"dict": dict}).ParseFS(templatesFS, "templates/*.html", "templates/**/*.html"))
 	router.SetHTMLTemplate(html)
 
 	router.StaticFS("/public", http.FS(assetsFS))

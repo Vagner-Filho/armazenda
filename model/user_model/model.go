@@ -144,12 +144,15 @@ func (um *userModel) MakeAdmin(userId uint32) error {
 	return err
 }
 
-func (um *userModel) RemoveAdmin(userId uint32) error {
-	_, err := um.pool.Exec(context.Background(),
-		`UPDATE app_user SET role = 'user' WHERE id = @userId`,
-		pgx.NamedArgs{"userId": userId})
-
-	return err
+func (um *userModel) RemoveAdmin(userId uint32) (*entity_public.User, error) {
+	var user entity_public.User
+	err := um.pool.QueryRow(context.Background(),
+		`UPDATE app_user SET role = 'user' WHERE id = @userId 
+         RETURNING id, email, name, passwd, inscricao_estadual, farm, cpf, role`,
+		pgx.NamedArgs{"userId": userId}).Scan(
+		&user.Id, &user.Email, &user.Name, &user.Passwd,
+		&user.InscricaoEstadual, &user.Farm, &user.Cpf, &user.Role)
+	return &user, err
 }
 
 func (um *userModel) RemoveUser(userId uint32) error {

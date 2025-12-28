@@ -138,11 +138,6 @@ func removeAdmin(c *gin.Context) {
 		return
 	}
 
-	if !user_service.IsAdmin(sessionCookie.Value) {
-		c.String(http.StatusForbidden, "Acesso negado. Apenas administradores podem realizar esta ação.")
-		return
-	}
-
 	userIdStr := c.Param("id")
 	userId, parseErr := strconv.ParseUint(userIdStr, 10, 32)
 	if parseErr != nil {
@@ -150,14 +145,19 @@ func removeAdmin(c *gin.Context) {
 		return
 	}
 
-	err := user_service.RemoveAdmin(uint32(userId))
-	if err != nil {
-		toast := entity_public.GetErrorToast("Erro ao remover administrador", "")
+	claims := user_service.GetClaimsFromToken(sessionCookie.Value)
+	if claims == nil {
+
+	}
+	usr, toast := user_service.RemoveAdmin(uint32(userId), claims.Id)
+	if toast.Type == entity_public.SuccessToast {
 		c.Header("HX-Trigger", string(toast.ToJson()))
+		c.HTML(http.StatusOK, "user-list-item", gin.H{
+			"isAdmin": true,
+			"user":    usr,
+		})
 		return
 	}
-
-	toast := entity_public.GetSuccessToast("Privilégios de administrador removidos", "")
 	c.Header("HX-Trigger", string(toast.ToJson()))
 }
 

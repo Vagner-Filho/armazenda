@@ -36,15 +36,30 @@ func GetFarmFromToken(sessionId string) uint32 {
 	return retrievedClaims.Farm
 }
 
+func GetClaimsFromToken(sessionId string) *ArmazendaUserClaims {
+	allocatedClaims := &ArmazendaUserClaims{}
+	token, err := jwt.ParseWithClaims(sessionId, allocatedClaims, func(token *jwt.Token) (any, error) {
+		return secretKey, nil
+	})
+
+	if err != nil || token == nil || !token.Valid {
+		return nil
+	}
+
+	retrievedClaims := token.Claims.(*ArmazendaUserClaims)
+	return retrievedClaims
+}
+
 type ArmazendaUserClaims struct {
 	Username string
 	Email    string
 	Farm     uint32
 	Role     string
 	jwt.RegisteredClaims
+	Id uint32
 }
 
-func createToken(username string, email string, farm uint32, role string) (string, error) {
+func createToken(username string, email string, farm uint32, role string, id uint32) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		ArmazendaUserClaims{
 			Username: username,
@@ -54,6 +69,7 @@ func createToken(username string, email string, farm uint32, role string) (strin
 			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 20)),
 			},
+			Id: id,
 		})
 
 	tokenString, err := token.SignedString(secretKey)
@@ -94,7 +110,7 @@ func Login(cpf string, passwd string) (credentials, *entity_public.Toast) {
 		return credentials{}, &toast
 	}
 
-	token, tokenErr := createToken(user.Name, user.Email, user.Farm, user.Role)
+	token, tokenErr := createToken(user.Name, user.Email, user.Farm, user.Role, user.Id)
 	if tokenErr != nil {
 		toast := entity_public.GetErrorToast("Desculpe, houve um erro interno :(", "")
 		return credentials{}, &toast
@@ -155,9 +171,32 @@ func MakeAdmin(userId uint32) error {
 	return um.MakeAdmin(userId)
 }
 
-func RemoveAdmin(userId uint32) error {
+func RemoveAdmin(userId uint32, adminId uint32) (*entity_public.User, entity_public.Toast) {
 	um := user_model.GetUserModel()
-	return um.RemoveAdmin(userId)
+	user, err := um.GetUserById(adminId)
+	if user.Role != "admin" {
+		return nil, entity_public.GetWarningToast("Somente o admin pode realizar esta ação", "consulte um admin")
+	}
+
+	if err != nil {
+		return nil, entity_public.GetErrorToast("Falha ao encontrar usuário", "")
+	}
+
+	adminCount, err := um.GetAdminCount(adminId)
+	if adminCount <= 1 {
+		return nil, entity_public.GetWarningToast("A fazenda precisa de no mínimo 1 admin", "torne outro usuário admin")
+	}
+
+	if err != nil {
+		return nil, entity_public.GetErrorToast("Falha ao consultar admins", "")
+	}
+
+	usr, err := um.RemoveAdmin(userId)
+	if err != nil {
+		return nil, entity_public.GetErrorToast("Falha ao remover privilégios de administrador", "")
+	}
+
+	return usr, entity_public.GetSuccessToast("Privilégios de administrador removidos", "")
 }
 
 func RemoveUser(userId uint32) error {

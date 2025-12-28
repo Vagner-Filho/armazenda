@@ -41,7 +41,7 @@ const iconMp = new Map([
 class ToastManager {
 	makeToast(message, hint, type) {
 		const container = document.createElement('div')
-		container.classList.add(...["max-w-xs", "bg-white", "border", "border-gray-200", "rounded-xl", "shadow-lg", "fixed"])
+		container.classList.add(...["max-w-sm", "bg-white", "border", "border-gray-200", "rounded-xl", "shadow-lg", "fixed"])
 
 		container.setAttribute("popover", "manual")
 		container.setAttribute("style", "inset: unset; top: 8px; right: 8px;")
@@ -52,7 +52,7 @@ class ToastManager {
 		container.setAttribute("aria-labelledby", "armazenda-toast")
 
 		const toastBody = document.createElement('div')
-		toastBody.classList.add(...["flex", "items-center", "p-4"])
+		toastBody.classList.add(...["flex", "items-center", "p-4", "flex-wrap", "gap-1"])
 
 		const iconContainer = document.createElement('div')
 		iconContainer.classList.add('shrink-0')
@@ -60,19 +60,23 @@ class ToastManager {
 		const literalIcon = iconMp.get(type) ?? infoIcon
 		iconContainer.innerHTML = literalIcon
 
-		toastBody.append(iconContainer)
-
-		const messageContainer = document.createElement('div')
-		messageContainer.classList.add('ms-3')
-
 		const messageParagraph = document.createElement('p')
-		messageParagraph.classList.add(...["text-sm", "text-gray-700"])
+		messageParagraph.classList.add(...["text-sm", "text-gray-700", "whitespace-nowrap"])
 		messageParagraph.setAttribute('id', 'armazenda-toast')
 		messageParagraph.textContent = message
 
-		messageContainer.append(messageParagraph)
+		const mainMessage = document.createElement('div')
+		mainMessage.classList.add("flex", "gap-2", "items-center", "w-full", "justify-start")
+		mainMessage.append(iconContainer)
+		mainMessage.append(messageParagraph)
 
-		toastBody.append(messageContainer)
+		toastBody.append(mainMessage)
+		if (hint) {
+			const hintEl = document.createElement('small')
+			hintEl.textContent = "dica: " + hint
+			hintEl.classList.add(...["text-xs", "text-gray-700", "pl-8"])
+			toastBody.append(hintEl)
+		}
 		container.append(toastBody)
 
 		return container
@@ -92,7 +96,6 @@ class ToastManager {
 
 		document.body.append(toast)
 		toast.togglePopover()
-
 		const t = setTimeout(() => {
 			const toRemove = this.toastQueue.shift()
 			if (toRemove) {
@@ -115,7 +118,7 @@ class ToastManager {
 const tm = new ToastManager()
 document.body.addEventListener("toast", (evt) => {
 	try {
-		const toast = tm.makeToast(decodeURIComponent(escape(evt.detail.Message)), evt.detail.Hint, evt.detail.Type)
+		const toast = tm.makeToast(decodeURIComponent(escape(evt.detail.Message)), decodeURIComponent(escape(evt.detail.Hint)), evt.detail.Type)
 		tm.showToast(toast)
 	} catch (e) {
 		if (e instanceof URIError) {
