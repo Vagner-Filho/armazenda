@@ -9,12 +9,12 @@
     <link href="/public/assets/static/css/output.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="/public/assets/favicon.ico">
     <title>Romaneio - Armazenda</title>
-    <script src="https://unpkg.com/htmx.org@2.0.0" integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
+    <script src="/public/assets/js/htmx.min.js"></script>
     <script type="module" src="/public/assets/js/toast.js" async></script>
     <script type="module" src="/public/assets/js/getEntryPdf.js" defer></script>
     <script type="module" src="/public/assets/js/getDeparturePdf.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" async></script>
+    <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
+    <script src="/public/assets/js/sweetalert2.min.js" async></script>
   </head>
   <body class="bg-sky-50">
     {{ template "navbar" }}
@@ -31,11 +31,11 @@
       <div class="max-w-md mx-auto mb-8">
         <div class="bg-gray-200 rounded-lg p-1 flex" id="type-toggler">
           <button type="button" id="show-entry-manifest" class="flex-1 py-2 px-4 rounded-lg flex items-center justify-center gap-2 bg-white text-gray-800 shadow transition-colors duration-300" hx-trigger="click" hx-get="/entry/list" hx-target="#content-container" onclick="handleToggle(this)">
-            <iconify-icon icon="mdi:arrow-bottom-left-thick" class="text-xl"></iconify-icon>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill="currentColor" d="m15.5 5.69l2.81 2.81l-6.37 6.39h4.95v3.42H5.69V7.11h3.43v4.95z"/></svg>
             <span class="font-semibold">Entrada</span>
           </button>
           <button type="button" id="show-departure-manifest" class="flex-1 py-2 px-4 rounded-lg flex items-center justify-center gap-2 text-gray-500 transition-colors duration-300" hx-trigger="click" hx-get="/departure/list" hx-target="#content-container" onclick="handleToggle(this)">
-            <iconify-icon icon="mdi:arrow-top-right-thick" class="text-xl"></iconify-icon>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill="currentColor" d="M8.5 18.31L5.69 15.5l6.37-6.38H7.11V5.69h11.2v11.2h-3.42v-4.95z"/></svg>
             <span class="font-semibold">Saída</span>
           </button>
         </div>

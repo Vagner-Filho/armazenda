@@ -193,7 +193,7 @@ export function applyDiscounts() {
 
 	const productType = Number(sessionStorage.getItem("product"));
 	const getEntryDiscount = productTypeDiscountHandler[productType]
-	const entryProductDiscount = getEntryDiscount(netWeightAfterQualityDiscount);
+	const entryProductDiscount = getEntryDiscount ? getEntryDiscount(netWeightAfterQualityDiscount) : 0;
 
 	const finalNetWeight = netWeightAfterQualityDiscount - entryProductDiscount;
 

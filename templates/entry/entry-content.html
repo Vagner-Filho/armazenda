@@ -3,8 +3,8 @@
 {{ template "no-entry" }}
 {{ end }}
 <div class="{{ if .NoContent }} hidden {{ end }} bg-white shadow-md rounded-b-lg p-4" id="entry-content">
-  <div class="flex justify-between items-end gap-2 mb-4">
-    {{ template "entry-filters" .Filters }}
+  {{ template "entry-filters" .Filters }}
+  <div class="flex justify-end items-end gap-2 mb-4">
     <button id="form" type="button" class="add-btn w-36 flex items-center gap-1 whitespace-nowrap" hx-get="/entry/form"
       hx-target="body" hx-swap="beforeend">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
