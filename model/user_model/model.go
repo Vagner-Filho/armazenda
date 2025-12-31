@@ -5,6 +5,7 @@ import (
 	model_error "armazenda/model/error"
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -242,4 +243,20 @@ func (um *userModel) ActivateUser(userId uint32) error {
 		pgx.NamedArgs{"userId": userId})
 
 	return err
+}
+
+func (um *userModel) ExistsAndIsActive(cpf string) (bool, error) {
+	var exists bool
+	err := um.pool.QueryRow(
+		context.Background(),
+		`SELECT EXISTS (SELECT 1 FROM app_user au LEFT JOIN inactive_user iu ON au.id = iu.user_id WHERE au.cpf = @cpf AND iu.id IS NULL)`,
+		pgx.NamedArgs{"cpf": cpf},
+	).Scan(&exists)
+
+	if err != nil {
+		fmt.Printf("%v", err.Error())
+		return false, err
+	}
+
+	return exists, nil
 }

@@ -130,12 +130,17 @@ func Create(newUser entity_public.NewUser) entity_public.Toast {
 	}
 
 	um := user_model.GetUserModel()
+	existsAndIsActive, err := um.ExistsAndIsActive(newUser.Cpf)
+	if existsAndIsActive == true {
+		return entity_public.GetWarningToast("CPF em uso em outro armazém", "Um adm precisa desativa-lo para cadastra-lo aqui")
+	}
 
 	if farm != nil {
 		created, err := um.CreateUserApproval(newUser, farm.Id)
 		if !created || err != nil {
 			return entity_public.GetErrorToast(err.Error(), "")
 		}
+
 		return entity_public.GetSuccessToast("Usuário enviado para aprovação", "")
 	}
 
