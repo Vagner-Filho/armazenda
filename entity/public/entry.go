@@ -12,7 +12,7 @@ type DisplayEntry struct {
 	Product     string
 	Field       string
 	Vehicle     string
-	NetWeight   float64
+	NetWeight   decimal.Decimal
 	ArrivalDate time.Time `time_format:"2006-01-02T15:04"`
 	Farm        uint32
 	Origin      string
