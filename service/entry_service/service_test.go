@@ -15,17 +15,27 @@ type addEntryTestCase struct {
 	setupMocks           func(*MockEntryModel, *MockPersonModel, *MockProductModel, *MockCropModel)
 	expectedToastType    entity_public.ToastType
 	expectedToastMessage string
+	expectedNetWeight    *float64
 	validateResult       func(*testing.T, entity_public.DisplayEntry, *MockEntryModel, *MockPersonModel, *MockProductModel, *MockCropModel)
+}
+
+func assertNetWeightEquals(t *testing.T, expected float64, actual float64) {
+	expectedDecimal := decimal.NewFromFloat(expected)
+	actualDecimal := decimal.NewFromFloat(actual)
+	if !actualDecimal.Equal(expectedDecimal) {
+		t.Errorf("Expected NetWeight %s, got %s", expectedDecimal.String(), actualDecimal.String())
+	}
 }
 
 func TestAddEntry(t *testing.T) {
 	testCases := []addEntryTestCase{
 		{
-			name:  "Success - Basic entry (no origin, no quality discounts)",
-			entry: entry_testdata.CreateBasicTestEntry(),
+			name:              "Success - Basic entry (no origin, no quality discounts)",
+			entry:             entry_testdata.CreateBasicTestEntry(),
+			expectedNetWeight: ptrFloat64(900.0),
 			setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel) {
 				em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-					return entry_testdata.CreateTestDisplayEntry(123), (*model_error.ModelError)(nil)
+					return entry_testdata.CreateTestDisplayEntryWithNetWeight(123, 900.0), (*model_error.ModelError)(nil)
 				}
 			},
 			expectedToastType:    entity_public.SuccessToast,
@@ -43,6 +53,7 @@ func TestAddEntry(t *testing.T) {
 				if result.Id != 123 {
 					t.Errorf("Expected ID 123, got %d", result.Id)
 				}
+				assertNetWeightEquals(t, 900.0, result.NetWeight)
 			},
 		},
 		{
@@ -53,9 +64,10 @@ func TestAddEntry(t *testing.T) {
 				entry.Damage = &damage
 				return entry
 			}(),
+			expectedNetWeight: ptrFloat64(882.0),
 			setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel) {
 				em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-					return entry_testdata.CreateTestDisplayEntry(456), (*model_error.ModelError)(nil)
+					return entry_testdata.CreateTestDisplayEntryWithNetWeight(456, 882.0), (*model_error.ModelError)(nil)
 				}
 			},
 			expectedToastType:    entity_public.SuccessToast,
@@ -67,6 +79,7 @@ func TestAddEntry(t *testing.T) {
 				if result.Id != 456 {
 					t.Errorf("Expected ID 456, got %d", result.Id)
 				}
+				assertNetWeightEquals(t, 882.0, result.NetWeight)
 			},
 		},
 		{
@@ -77,13 +90,20 @@ func TestAddEntry(t *testing.T) {
 				entry.Impurity = &impurity
 				return entry
 			}(),
+			expectedNetWeight: ptrFloat64(891.0),
 			setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel) {
 				em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-					return entry_testdata.CreateTestDisplayEntry(789), (*model_error.ModelError)(nil)
+					return entry_testdata.CreateTestDisplayEntryWithNetWeight(789, 891.0), (*model_error.ModelError)(nil)
 				}
 			},
 			expectedToastType:    entity_public.SuccessToast,
 			expectedToastMessage: "Entrada adicionada",
+			validateResult: func(t *testing.T, result entity_public.DisplayEntry, em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel) {
+				if !em.AddEntryCalled {
+					t.Error("Expected AddEntry to be called")
+				}
+				assertNetWeightEquals(t, 891.0, result.NetWeight)
+			},
 		},
 		{
 			name: "Success - Entry with humidity > 14% threshold",
@@ -93,13 +113,14 @@ func TestAddEntry(t *testing.T) {
 				entry.Humidity = &humidity
 				return entry
 			}(),
+			expectedNetWeight: ptrFloat64(879.3),
 			setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel) {
 				discountModifier := decimal.NewFromFloat(1.15)
 				pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32) (decimal.Decimal, *model_error.ModelError) {
 					return discountModifier, (*model_error.ModelError)(nil)
 				}
 				em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-					return entry_testdata.CreateTestDisplayEntry(321), (*model_error.ModelError)(nil)
+					return entry_testdata.CreateTestDisplayEntryWithNetWeight(321, 879.3), (*model_error.ModelError)(nil)
 				}
 			},
 			expectedToastType:    entity_public.SuccessToast,
@@ -108,6 +129,7 @@ func TestAddEntry(t *testing.T) {
 				if !pm.GetHumidityDiscountCalled {
 					t.Error("Expected GetHumidityDiscount to be called")
 				}
+				assertNetWeightEquals(t, 879.3, result.NetWeight)
 			},
 		},
 		{
@@ -118,6 +140,7 @@ func TestAddEntry(t *testing.T) {
 				entry.Origin = &origin
 				return entry
 			}(),
+			expectedNetWeight: ptrFloat64(851.13),
 			setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel) {
 				crop := entry_testdata.CreateTestCrop(1, 2, 1)
 				cm.GetCropByIdFunc = func(id uint8) (entity_public.Crop, error) {
@@ -135,7 +158,7 @@ func TestAddEntry(t *testing.T) {
 				}
 
 				em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-					return entry_testdata.CreateTestDisplayEntry(555), (*model_error.ModelError)(nil)
+					return entry_testdata.CreateTestDisplayEntryWithNetWeight(555, 851.13), (*model_error.ModelError)(nil)
 				}
 
 				em.AddEntryTaxFunc = func(id uint32, tax decimal.Decimal, appliedTax decimal.Decimal) error {
@@ -160,6 +183,7 @@ func TestAddEntry(t *testing.T) {
 				if em.AddEntryTaxArgs.Id != result.Id {
 					t.Errorf("Expected tax ID %d, got %d", result.Id, em.AddEntryTaxArgs.Id)
 				}
+				assertNetWeightEquals(t, 851.13, result.NetWeight)
 			},
 		},
 		{
@@ -243,13 +267,14 @@ func TestAddEntry(t *testing.T) {
 				entry.Humidity = &humidity
 				return entry
 			}(),
+			expectedNetWeight: ptrFloat64(822.4695),
 			setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel) {
 				discountModifier := decimal.NewFromFloat(1.15)
 				pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32) (decimal.Decimal, *model_error.ModelError) {
 					return discountModifier, (*model_error.ModelError)(nil)
 				}
 				em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-					return entry_testdata.CreateTestDisplayEntry(999), (*model_error.ModelError)(nil)
+					return entry_testdata.CreateTestDisplayEntryWithNetWeight(999, 822.4695), (*model_error.ModelError)(nil)
 				}
 			},
 			expectedToastType:    entity_public.SuccessToast,
@@ -258,6 +283,7 @@ func TestAddEntry(t *testing.T) {
 				if !pm.GetHumidityDiscountCalled {
 					t.Error("Expected GetHumidityDiscount to be called")
 				}
+				assertNetWeightEquals(t, 822.4695, result.NetWeight)
 			},
 		},
 	}
@@ -286,4 +312,8 @@ func TestAddEntry(t *testing.T) {
 			}
 		})
 	}
+}
+
+func ptrFloat64(f float64) *float64 {
+	return &f
 }

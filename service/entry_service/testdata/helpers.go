@@ -22,11 +22,16 @@ func CreateBasicTestEntry() entity_public.Entry {
 	}
 }
 
-// CreateTestDisplayEntry creates a display entry with specified ID
+// CreateTestDisplayEntry creates a display entry with specified ID (NetWeight defaults to 900.0)
 func CreateTestDisplayEntry(id uint32) entity_public.DisplayEntry {
+	return CreateTestDisplayEntryWithNetWeight(id, 900.0)
+}
+
+// CreateTestDisplayEntryWithNetWeight creates a display entry with specified ID and NetWeight
+func CreateTestDisplayEntryWithNetWeight(id uint32, netWeight float64) entity_public.DisplayEntry {
 	return entity_public.DisplayEntry{
 		Id:        id,
-		NetWeight: 900.0,
+		NetWeight: netWeight,
 	}
 }
 
