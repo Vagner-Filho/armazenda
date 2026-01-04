@@ -15,19 +15,19 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type entryModel struct {
+type EntryModel struct {
 	pool *pgxpool.Pool
 }
 
-var entryModelImpl *entryModel
+var entryModelImpl *EntryModel
 
-func InitEntryModel(pool *pgxpool.Pool) (*entryModel, error) {
+func InitEntryModel(pool *pgxpool.Pool) (*EntryModel, error) {
 	if pool == nil {
 		return nil, errors.New("pool cant be null")
 	}
 
 	if entryModelImpl == nil {
-		entryModelImpl = &entryModel{
+		entryModelImpl = &EntryModel{
 			pool: pool,
 		}
 	}
@@ -35,14 +35,14 @@ func InitEntryModel(pool *pgxpool.Pool) (*entryModel, error) {
 	return entryModelImpl, nil
 }
 
-func GetEntryModel() *entryModel {
+func GetEntryModel() *EntryModel {
 	if entryModelImpl == nil {
 		panic("entry model hasnt been initialized")
 	}
 	return entryModelImpl
 }
 
-func (em *entryModel) GetDisplayEntriesByFarm(farm uint32, page int) ([]entity_public.DisplayEntry, int, *model_error.ModelError) {
+func (em *EntryModel) GetDisplayEntriesByFarm(farm uint32, page int) ([]entity_public.DisplayEntry, int, *model_error.ModelError) {
 	pageSize := 10
 	offset := (page - 1) * pageSize
 
@@ -92,7 +92,7 @@ func (em *entryModel) GetDisplayEntriesByFarm(farm uint32, page int) ([]entity_p
 	return entries, totalEntries, nil
 }
 
-func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.DisplayEntryDraft, *model_error.ModelError) {
+func (em *EntryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.DisplayEntryDraft, *model_error.ModelError) {
 
 	rows, queryErr := em.pool.Query(context.Background(), `
 		SELECT ed.id, ed.name, f.name, c.name, v.plate, ed.tare, COALESCE(np.name, lp.fantasyname, lp.companyname, 'Própria') AS origin
@@ -123,7 +123,7 @@ func (em *entryModel) GetEntryDraftsByFarm(farm uint32) ([]entity_public.Display
 	return drafts, nil
 }
 
-func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft, *model_error.ModelError) {
+func (em *EntryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft, *model_error.ModelError) {
 	row, queryErr := em.pool.Query(context.Background(), `
 		SELECT * FROM add_get_entry_draft(@name, @field, @crop, @vehicle, @tare, @farm, @origin)
 		`, pgx.NamedArgs{
@@ -146,7 +146,7 @@ func (em *entryModel) AddEntryDraft(ge entity_public.EntryDraft) (entity_public.
 	}
 	return entry, nil
 }
-func (em *entryModel) GetEntryDraft(id uint32) (entity_public.EntryDraft, *model_error.ModelError) {
+func (em *EntryModel) GetEntryDraft(id uint32) (entity_public.EntryDraft, *model_error.ModelError) {
 	row, queryErr := em.pool.Query(context.Background(), `
 		SELECT ed.*, edo.person_id AS origin
 			FROM entry_draft ed
@@ -168,7 +168,7 @@ func (em *entryModel) GetEntryDraft(id uint32) (entity_public.EntryDraft, *model
 	return draft, nil
 }
 
-func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
+func (em *EntryModel) AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
 	row, queryErr := em.pool.Query(context.Background(), `
 		SELECT * FROM add_get_entry(@field, @crop, @grossWeight, @tare, @humidity, @vehicle, @netWeight, @arrivalDate, @farm, @damage, @impurity, @humidity_discount_modifier, @origin)
 		`, pgx.NamedArgs{
@@ -198,7 +198,7 @@ func (em *entryModel) AddEntry(ge entity_public.Entry) (entity_public.DisplayEnt
 	return entry, nil
 }
 
-func (em *entryModel) DeleteEntryDraft(id uint32) error {
+func (em *EntryModel) DeleteEntryDraft(id uint32) error {
 	_, err := em.pool.Exec(context.Background(), "DELETE FROM entry_draft WHERE id = @draftId", pgx.NamedArgs{"draftId": id})
 
 	if err != nil {
@@ -207,7 +207,7 @@ func (em *entryModel) DeleteEntryDraft(id uint32) error {
 	return nil
 }
 
-func (em *entryModel) DeleteEntry(id uint32) error {
+func (em *EntryModel) DeleteEntry(id uint32) error {
 	_, err := em.pool.Exec(context.Background(), "INSERT INTO inactive_entry (entry_id) VALUES (@entryId)", pgx.NamedArgs{"entryId": id})
 
 	if err != nil {
@@ -216,7 +216,7 @@ func (em *entryModel) DeleteEntry(id uint32) error {
 	return nil
 }
 
-func (em *entryModel) GetEntry(id uint32) (entity_public.Entry, *model_error.ModelError) {
+func (em *EntryModel) GetEntry(id uint32) (entity_public.Entry, *model_error.ModelError) {
 
 	rows, queryErr := em.pool.Query(context.Background(), "SELECT e.id, e.field, e.crop, e.vehicle, e.grossweight, e.tare, e.netweight, ea.humidity, ea.damage, ea.impurity, ea.humidity_discount_modifier, e.arrivaldate, e.farm, eo.person_id FROM entry e LEFT JOIN entry_analysis ea ON ea.entryid = e.id LEFT JOIN entry_origin eo ON eo.entry_id = e.id WHERE e.id = @id", pgx.NamedArgs{"id": id})
 	if queryErr != nil {
@@ -230,7 +230,7 @@ func (em *entryModel) GetEntry(id uint32) (entity_public.Entry, *model_error.Mod
 	return entry, nil
 }
 
-func (em *entryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_error.ModelError) {
+func (em *EntryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_error.ModelError) {
 
 	rows, queryErr := em.pool.Query(
 		context.Background(),
@@ -290,7 +290,7 @@ func (em *entryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_err
 	return entry, nil
 }
 
-func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
+func (em *EntryModel) PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
 	row, queryErr := em.pool.Query(
 		context.Background(),
 		`SELECT * FROM update_get_display_entry(@field, @crop, @grossWeight, @tare, @humidity, @id, @vehicle, @netWeight, @arrivalDate, @damage, @impurity, @humidity_discount_modifier, @origin)`,
@@ -321,7 +321,7 @@ func (em *entryModel) PutEntry(ge entity_public.Entry) (entity_public.DisplayEnt
 	return entry, nil
 }
 
-func (em *entryModel) PutEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft, *model_error.ModelError) {
+func (em *EntryModel) PutEntryDraft(ge entity_public.EntryDraft) (entity_public.DisplayEntryDraft, *model_error.ModelError) {
 	var tare *decimal.Decimal = ge.Tare
 
 	if ge.Tare.Equal(decimal.Zero) {
@@ -378,7 +378,7 @@ var availableEntryFilters = map[string]func(ef entity_public.EntryFilter) string
 	},
 }
 
-func (em *entryModel) FilterEntries(ef entity_public.EntryFilter, page int, farm uint32) ([]entity_public.DisplayEntry, int, error) {
+func (em *EntryModel) FilterEntries(ef entity_public.EntryFilter, page int, farm uint32) ([]entity_public.DisplayEntry, int, error) {
 	filters := ef.GetFilters(availableEntryFilters)
 	pageSize := 10
 	offset := (page - 1) * pageSize
@@ -440,7 +440,7 @@ func (em *entryModel) FilterEntries(ef entity_public.EntryFilter, page int, farm
 	return entries, totalEntries, nil
 }
 
-func (em *entryModel) AddEntryTax(id uint32, tax decimal.Decimal, appliedTax decimal.Decimal) error {
+func (em *EntryModel) AddEntryTax(id uint32, tax decimal.Decimal, appliedTax decimal.Decimal) error {
 	_, err := em.pool.Exec(context.Background(), `
 		INSERT INTO entry_tax (entry_id, weight, applied_tax) VALUES (@id, @tax, @applied_tax)
 		`, pgx.NamedArgs{"id": id, "tax": tax, "applied_tax": appliedTax})

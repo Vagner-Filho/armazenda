@@ -1,0 +1,87 @@
+package entry_service
+
+import (
+	entity_public "armazenda/entity/public"
+	model_error "armazenda/model/error"
+	"github.com/shopspring/decimal"
+)
+
+// MockEntryModel mocks EntryModelInterface for testing
+type MockEntryModel struct {
+	AddEntryFunc      func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError)
+	AddEntryTaxFunc   func(id uint32, tax decimal.Decimal, appliedTax decimal.Decimal) error
+	AddEntryCalled    bool
+	AddEntryTaxCalled bool
+	AddEntryTaxArgs   struct {
+		Id         uint32
+		Tax        decimal.Decimal
+		AppliedTax decimal.Decimal
+	}
+}
+
+func (m *MockEntryModel) AddEntry(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
+	m.AddEntryCalled = true
+	return m.AddEntryFunc(ge)
+}
+
+func (m *MockEntryModel) AddEntryTax(id uint32, tax decimal.Decimal, appliedTax decimal.Decimal) error {
+	m.AddEntryTaxCalled = true
+	m.AddEntryTaxArgs.Id = id
+	m.AddEntryTaxArgs.Tax = tax
+	m.AddEntryTaxArgs.AppliedTax = appliedTax
+	return m.AddEntryTaxFunc(id, tax, appliedTax)
+}
+
+// MockPersonModel mocks PersonModelInterface for testing
+type MockPersonModel struct {
+	GetHumidityDiscountFunc   func(person *uint32, farm uint32) (decimal.Decimal, *model_error.ModelError)
+	GetPersonConfigFunc       func(person uint32) (entity_public.PersonConfig, *model_error.ModelError)
+	GetHumidityDiscountCalled bool
+	GetPersonConfigCalled     bool
+	GetHumidityDiscountArgs   struct {
+		Person *uint32
+		Farm   uint32
+	}
+	GetPersonConfigArgs struct {
+		Person uint32
+	}
+}
+
+func (m *MockPersonModel) GetHumidityDiscount(person *uint32, farm uint32) (decimal.Decimal, *model_error.ModelError) {
+	m.GetHumidityDiscountCalled = true
+	m.GetHumidityDiscountArgs.Person = person
+	m.GetHumidityDiscountArgs.Farm = farm
+	return m.GetHumidityDiscountFunc(person, farm)
+}
+
+func (m *MockPersonModel) GetPersonConfig(person uint32) (entity_public.PersonConfig, *model_error.ModelError) {
+	m.GetPersonConfigCalled = true
+	m.GetPersonConfigArgs.Person = person
+	return m.GetPersonConfigFunc(person)
+}
+
+// MockProductModel mocks ProductModelInterface for testing
+type MockProductModel struct {
+	GetProductByIdFunc   func(id uint8) (entity_public.Product, error)
+	GetProductByIdCalled bool
+	GetProductByIdArgs   uint8
+}
+
+func (m *MockProductModel) GetProductById(id uint8) (entity_public.Product, error) {
+	m.GetProductByIdCalled = true
+	m.GetProductByIdArgs = id
+	return m.GetProductByIdFunc(id)
+}
+
+// MockCropModel mocks CropModelInterface for testing
+type MockCropModel struct {
+	GetCropByIdFunc   func(id uint8) (entity_public.Crop, error)
+	GetCropByIdCalled bool
+	GetCropByIdArgs   uint8
+}
+
+func (m *MockCropModel) GetCropById(id uint8) (entity_public.Crop, error) {
+	m.GetCropByIdCalled = true
+	m.GetCropByIdArgs = id
+	return m.GetCropByIdFunc(id)
+}

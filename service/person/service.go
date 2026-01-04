@@ -18,7 +18,7 @@ type PersonPageData struct {
 }
 
 func GetPeopleByFarm(farm uint32) ([]entity_public.PersonOption, *entity_public.Toast) {
-	bmodel := person_model.GetpersonModel()
+	bmodel := person_model.GetPersonModel()
 
 	people, err := bmodel.GetPeopleByFarm(farm)
 	if err != nil {
@@ -33,7 +33,7 @@ func GetPeopleByFarm(farm uint32) ([]entity_public.PersonOption, *entity_public.
 }
 
 func AddLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, *entity_public.Toast) {
-	bmodel := person_model.GetpersonModel()
+	bmodel := person_model.GetPersonModel()
 
 	exists, err := bmodel.CnpjExistsInFarm(bc.Cnpj, bc.Person.Farm)
 	if err != nil {
@@ -60,7 +60,7 @@ func AddLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, 
 }
 
 func AddNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *entity_public.Toast) {
-	bmodel := person_model.GetpersonModel()
+	bmodel := person_model.GetPersonModel()
 
 	exists, err := bmodel.CpfExistsInFarm(bp.Cpf, bp.Person.Farm)
 	if err != nil {
@@ -87,7 +87,7 @@ func AddNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDispl
 }
 
 func FilterPerson(filters entity_public.PersonFilter, farm uint32, page, limit int) (PersonPageData, *entity_public.Toast) {
-	bModel := person_model.GetpersonModel()
+	bModel := person_model.GetPersonModel()
 	people, total, err := bModel.FilterPerson(filters, farm, page, limit)
 	if err != nil {
 		if err.IsServerErr {
@@ -120,7 +120,7 @@ func FilterPerson(filters entity_public.PersonFilter, farm uint32, page, limit i
 }
 
 func GetNaturalPerson(id uint32) (entity_public.NaturalPerson, *entity_public.Toast) {
-	pmodel := person_model.GetpersonModel()
+	pmodel := person_model.GetPersonModel()
 
 	var person entity_public.NaturalPerson
 	person, err := pmodel.GetNaturalPersonById(id)
@@ -134,7 +134,7 @@ func GetNaturalPerson(id uint32) (entity_public.NaturalPerson, *entity_public.To
 }
 
 func GetLegalPerson(id uint32) (entity_public.LegalPerson, *entity_public.Toast) {
-	pmodel := person_model.GetpersonModel()
+	pmodel := person_model.GetPersonModel()
 
 	var person entity_public.LegalPerson
 	person, err := pmodel.GetLegalPersonById(id)
@@ -148,7 +148,7 @@ func GetLegalPerson(id uint32) (entity_public.LegalPerson, *entity_public.Toast)
 }
 
 func UpdateNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *entity_public.Toast) {
-	bmodel := person_model.GetpersonModel()
+	bmodel := person_model.GetPersonModel()
 
 	person, err := bmodel.UpdateNaturalPerson(bp)
 	if err != nil {
@@ -165,7 +165,7 @@ func UpdateNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDi
 }
 
 func UpdateLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, *entity_public.Toast) {
-	bmodel := person_model.GetpersonModel()
+	bmodel := person_model.GetPersonModel()
 
 	person, err := bmodel.UpdateLegalPerson(bc)
 	if err != nil {

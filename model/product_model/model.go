@@ -11,19 +11,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type productModel struct {
+type ProductModel struct {
 	pool *pgxpool.Pool
 }
 
-var productModelImpl *productModel
+var productModelImpl *ProductModel
 
-func InitProductModel(pool *pgxpool.Pool) (*productModel, error) {
+func InitProductModel(pool *pgxpool.Pool) (*ProductModel, error) {
 	if pool == nil {
 		return nil, errors.New("pool cant be null")
 	}
 
 	if productModelImpl == nil {
-		productModelImpl = &productModel{
+		productModelImpl = &ProductModel{
 			pool: pool,
 		}
 	}
@@ -31,14 +31,14 @@ func InitProductModel(pool *pgxpool.Pool) (*productModel, error) {
 	return productModelImpl, nil
 }
 
-func GetProductModel() *productModel {
+func GetProductModel() *ProductModel {
 	if productModelImpl == nil {
 		panic("\nproduct model hasnt been initialized\n")
 	}
 	return productModelImpl
 }
 
-func (pm *productModel) GetProducts() ([]entity_public.Product, error) {
+func (pm *ProductModel) GetProducts() ([]entity_public.Product, error) {
 	rows, err := pm.pool.Query(context.Background(), "SELECT * FROM product")
 	if err != nil {
 		return []entity_public.Product{}, &model_error.ModelError{Message: err.Error()}
@@ -53,7 +53,7 @@ func (pm *productModel) GetProducts() ([]entity_public.Product, error) {
 	return products, nil
 }
 
-func (pm *productModel) GetProductById(id uint8) (entity_public.Product, error) {
+func (pm *ProductModel) GetProductById(id uint8) (entity_public.Product, error) {
 	rows, err := pm.pool.Query(context.Background(), "SELECT * FROM product WHERE id = @id", pgx.NamedArgs{"id": id})
 	if err != nil {
 		return entity_public.Product{}, &model_error.ModelError{Message: err.Error()}

@@ -8,6 +8,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"armazenda/model/crop_model"
+	"armazenda/model/entry_model"
+	"armazenda/model/person_model"
+	"armazenda/model/product_model"
 	"github.com/gin-gonic/gin"
 )
 
@@ -99,7 +103,12 @@ func addEntry(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
 	newEntry.Farm = farm
-	entry, toast := entry_service.AddEntry(newEntry)
+
+	prod_m := product_model.GetProductModel()
+	pm := person_model.GetPersonModel()
+	cm := crop_model.GetCropModel()
+	em := entry_model.GetEntryModel()
+	entry, toast := entry_service.AddEntry(newEntry, em, pm, prod_m, cm)
 	c.Header("HX-Trigger", string(toast.ToJson()))
 
 	if toast.Type == entity_public.WarningToast {

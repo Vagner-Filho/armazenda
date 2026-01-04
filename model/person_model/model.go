@@ -16,19 +16,19 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type personModel struct {
+type PersonModel struct {
 	pool *pgxpool.Pool
 }
 
-var personModelImpl *personModel
+var personModelImpl *PersonModel
 
-func InitPersonModel(pool *pgxpool.Pool) (*personModel, error) {
+func InitPersonModel(pool *pgxpool.Pool) (*PersonModel, error) {
 	if pool == nil {
 		return nil, errors.New("pool cant be null")
 	}
 
 	if personModelImpl == nil {
-		personModelImpl = &personModel{
+		personModelImpl = &PersonModel{
 			pool: pool,
 		}
 	}
@@ -36,7 +36,7 @@ func InitPersonModel(pool *pgxpool.Pool) (*personModel, error) {
 	return personModelImpl, nil
 }
 
-func GetpersonModel() *personModel {
+func GetPersonModel() *PersonModel {
 	if personModelImpl == nil {
 		panic("\nperson model hasnt been initialized\n")
 	}
@@ -58,7 +58,7 @@ const basePersonQuery = `
 		WHERE p.id = @id
 	`
 
-func (pm *personModel) getBasePerson(id uint32) (basePerson, *model_error.ModelError) {
+func (pm *PersonModel) getBasePerson(id uint32) (basePerson, *model_error.ModelError) {
 	var base basePerson
 	row, queryErr := pm.pool.Query(context.Background(), basePersonQuery,
 		pgx.NamedArgs{"id": id})
@@ -77,7 +77,7 @@ func (pm *personModel) getBasePerson(id uint32) (basePerson, *model_error.ModelE
 	return base, nil
 }
 
-func (bm *personModel) AddLegalPerson(lp entity_public.LegalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
+func (bm *PersonModel) AddLegalPerson(lp entity_public.LegalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
 	ctx := context.Background()
 	tx, err := bm.pool.Begin(ctx)
 	if err != nil {
@@ -185,7 +185,7 @@ func (bm *personModel) AddLegalPerson(lp entity_public.LegalPerson) (entity_publ
 	}, nil
 }
 
-func (bm *personModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
+func (bm *PersonModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
 	ctx := context.Background()
 	tx, err := bm.pool.Begin(ctx)
 	if err != nil {
@@ -295,7 +295,7 @@ func handleInsertError(err error) (entity_public.PersonDisplay, *model_error.Mod
 	return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
 }
 
-func (bm *personModel) GetPeopleByFarm(farm uint32) ([]entity_public.PersonOption, *model_error.ModelError) {
+func (bm *PersonModel) GetPeopleByFarm(farm uint32) ([]entity_public.PersonOption, *model_error.ModelError) {
 	rows, queryErr := bm.pool.Query(context.Background(), `
 		SELECT result.id, result.name, COALESCE(result.humidity_discount, dpc.humidity_discount), COALESCE(result.entry_soy_discount, dpc.entry_soy_discount), COALESCE(result.entry_corn_discount, dpc.entry_corn_discount) FROM (
 			SELECT p.id, COALESCE(lp.fantasyname, lp.companyname) AS name, pc.humidity_discount as humidity_discount, pc.entry_soy_discount, pc.entry_corn_discount
@@ -348,7 +348,7 @@ var availablePersonFilters = map[string]func(pf entity_public.PersonFilter) stri
 	},
 }
 
-func (bm *personModel) FilterPerson(pf entity_public.PersonFilter, farm uint32, page, limit int) ([]entity_public.PersonDisplay, int, *model_error.ModelError) {
+func (bm *PersonModel) FilterPerson(pf entity_public.PersonFilter, farm uint32, page, limit int) ([]entity_public.PersonDisplay, int, *model_error.ModelError) {
 	countStmt := `SELECT COUNT(*) FROM person WHERE farm = @userFarm`
 
 	var total int
@@ -396,7 +396,7 @@ func (bm *personModel) FilterPerson(pf entity_public.PersonFilter, farm uint32, 
 	return people, total, nil
 }
 
-func (bm *personModel) CnpjExistsInFarm(cnpj string, farmId uint32) (bool, *model_error.ModelError) {
+func (bm *PersonModel) CnpjExistsInFarm(cnpj string, farmId uint32) (bool, *model_error.ModelError) {
 	var exists bool
 	err := bm.pool.QueryRow(context.Background(), `
 		SELECT true FROM legal_person lp
@@ -414,7 +414,7 @@ func (bm *personModel) CnpjExistsInFarm(cnpj string, farmId uint32) (bool, *mode
 	return exists, nil
 }
 
-func (bm *personModel) CpfExistsInFarm(cpf string, farmId uint32) (bool, *model_error.ModelError) {
+func (bm *PersonModel) CpfExistsInFarm(cpf string, farmId uint32) (bool, *model_error.ModelError) {
 	var exists bool
 	err := bm.pool.QueryRow(context.Background(), `
 		SELECT true FROM natural_person np
@@ -432,7 +432,7 @@ func (bm *personModel) CpfExistsInFarm(cpf string, farmId uint32) (bool, *model_
 	return exists, nil
 }
 
-func (bm *personModel) GetHumidityDiscount(person *uint32, farm uint32) (decimal.Decimal, *model_error.ModelError) {
+func (bm *PersonModel) GetHumidityDiscount(person *uint32, farm uint32) (decimal.Decimal, *model_error.ModelError) {
 	var discountModifier decimal.Decimal
 	var err error
 	if person != nil {
@@ -463,7 +463,7 @@ func (bm *personModel) GetHumidityDiscount(person *uint32, farm uint32) (decimal
 	return discountModifier, nil
 }
 
-func (pm *personModel) GetLegalPersonById(id uint32) (entity_public.LegalPerson, *model_error.ModelError) {
+func (pm *PersonModel) GetLegalPersonById(id uint32) (entity_public.LegalPerson, *model_error.ModelError) {
 	var legalPerson entity_public.LegalPerson
 
 	scanErr := pm.pool.QueryRow(context.Background(), `
@@ -490,7 +490,7 @@ func (pm *personModel) GetLegalPersonById(id uint32) (entity_public.LegalPerson,
 	return legalPerson, nil
 }
 
-func (pm *personModel) GetNaturalPersonById(id uint32) (entity_public.NaturalPerson, *model_error.ModelError) {
+func (pm *PersonModel) GetNaturalPersonById(id uint32) (entity_public.NaturalPerson, *model_error.ModelError) {
 	var naturalPerson entity_public.NaturalPerson
 
 	scanErr := pm.pool.QueryRow(context.Background(), `
@@ -517,7 +517,7 @@ func (pm *personModel) GetNaturalPersonById(id uint32) (entity_public.NaturalPer
 	return naturalPerson, nil
 }
 
-func (bm *personModel) UpdateNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
+func (bm *PersonModel) UpdateNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
 	row, queryErr := bm.pool.Query(context.Background(), `
 			SELECT * FROM update_get_natural_person(@name, @cpf, @ie, @id, @farm, @humidityDiscount, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone)
 		`,
@@ -563,7 +563,7 @@ func (bm *personModel) UpdateNaturalPerson(bp entity_public.NaturalPerson) (enti
 	return person, nil
 }
 
-func (bm *personModel) UpdateLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
+func (bm *PersonModel) UpdateLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
 	row, queryErr := bm.pool.Query(
 		context.Background(),
 		`SELECT * FROM update_get_legal_person(@companyName, @cnpj, @ie, @id, @fantasyName, @farm, @humidityDiscount, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone)`,
@@ -598,13 +598,13 @@ func (bm *personModel) UpdateLegalPerson(bc entity_public.LegalPerson) (entity_p
 	return person, nil
 }
 
-func (bm *personModel) getDefaultPersonConfig(ctx context.Context) (entity_public.PersonConfig, error) {
+func (bm *PersonModel) getDefaultPersonConfig(ctx context.Context) (entity_public.PersonConfig, error) {
 	var config entity_public.PersonConfig
 	err := bm.pool.QueryRow(ctx, "SELECT humidity_discount, entry_soy_discount, entry_corn_discount FROM default_person_config WHERE id = 1").Scan(&config.HumidityDiscount, &config.EntrySoyDiscount, &config.EntryCornDiscount)
 	return config, err
 }
 
-func (bm *personModel) GetPersonConfig(person uint32) (entity_public.PersonConfig, *model_error.ModelError) {
+func (bm *PersonModel) GetPersonConfig(person uint32) (entity_public.PersonConfig, *model_error.ModelError) {
 	rows, err := bm.pool.Query(context.Background(), `
 		SELECT COALESCE(pc.humidity_discount, dpc.humidity_discount), COALESCE(pc.entry_soy_discount, dpc.entry_soy_discount), COALESCE(pc.entry_corn_discount, dpc.entry_corn_discount)
 			FROM person_config pc

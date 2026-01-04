@@ -13,19 +13,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type cropModel struct {
+type CropModel struct {
 	pool *pgxpool.Pool
 }
 
-var cropModelImpl *cropModel
+var cropModelImpl *CropModel
 
-func InitCropModel(pool *pgxpool.Pool) (*cropModel, error) {
+func InitCropModel(pool *pgxpool.Pool) (*CropModel, error) {
 	if pool == nil {
 		return nil, errors.New("pool cant be null")
 	}
 
 	if cropModelImpl == nil {
-		cropModelImpl = &cropModel{
+		cropModelImpl = &CropModel{
 			pool: pool,
 		}
 	}
@@ -33,14 +33,14 @@ func InitCropModel(pool *pgxpool.Pool) (*cropModel, error) {
 	return cropModelImpl, nil
 }
 
-func GetCropModel() *cropModel {
+func GetCropModel() *CropModel {
 	if cropModelImpl == nil {
 		panic("\ncrop model hasnt been initialized\n")
 	}
 	return cropModelImpl
 }
 
-func (cm *cropModel) AddCrop(c entity_public.Crop) (entity_public.Crop, *model_error.ModelError) {
+func (cm *CropModel) AddCrop(c entity_public.Crop) (entity_public.Crop, *model_error.ModelError) {
 	var id uint8
 	var name string
 	var startDateAsTime time.Time
@@ -69,7 +69,7 @@ func (cm *cropModel) AddCrop(c entity_public.Crop) (entity_public.Crop, *model_e
 	}, nil
 }
 
-func (cm *cropModel) GetCropsByFarm(farm uint32) ([]entity_public.Crop, error) {
+func (cm *CropModel) GetCropsByFarm(farm uint32) ([]entity_public.Crop, error) {
 	rows, queryErr := cm.pool.Query(context.Background(), "SELECT * FROM crop c WHERE c.farm = @userFarm", pgx.NamedArgs{"userFarm": farm})
 	if queryErr != nil {
 		return []entity_public.Crop{}, queryErr
@@ -83,7 +83,7 @@ func (cm *cropModel) GetCropsByFarm(farm uint32) ([]entity_public.Crop, error) {
 	return crops, nil
 }
 
-func (cm *cropModel) GetCropById(id uint8) (entity_public.Crop, error) {
+func (cm *CropModel) GetCropById(id uint8) (entity_public.Crop, error) {
 	rows, err := cm.pool.Query(context.Background(), "SELECT * FROM crop WHERE id = @id", pgx.NamedArgs{"id": id})
 	if err != nil {
 		return entity_public.Crop{}, &model_error.ModelError{Message: err.Error()}
