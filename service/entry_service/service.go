@@ -45,7 +45,7 @@ func AddEntry(ge entity_public.Entry, em EntryModelInterface, pm PersonModelInte
 
 	rawNetWeight := ge.CargoWeight.GrossWeight.Sub(ge.Tare)
 	if rawNetWeight.LessThan(decimal.Zero) {
-		t := entity_public.GetWarningToast("O peso líquido não pode ser menor do que zero", "confira o peso bruto e a tara")
+		t := entity_public.GetWarningToast("O peso líquido não pode ser menor do que zero", "confira os dados")
 		return entity_public.DisplayEntry{}, t
 	}
 	if ge.Damage != nil {
