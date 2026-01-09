@@ -4,12 +4,139 @@ import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/farm_config_model"
 	"armazenda/model/user_model"
+	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
+
+var googleOauthConfig *oauth2.Config
+
+func init() {
+	googleOauthConfig = &oauth2.Config{
+		RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
+		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		Scopes: []string{
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile",
+		},
+		Endpoint: google.Endpoint,
+	}
+}
+
+func GetGoogleLoginURL() string {
+	return googleOauthConfig.AuthCodeURL("state")
+}
+
+type GoogleLoginResult struct {
+	Token     string
+	Username  string
+	IsNewUser bool
+	Email     string
+	Name      string
+}
+
+func LoginWithGoogle(code string) (GoogleLoginResult, *entity_public.Toast) {
+	token, err := googleOauthConfig.Exchange(context.Background(), code)
+	if err != nil {
+		toast := entity_public.GetErrorToast("Falha ao trocar código com Google", "")
+		return GoogleLoginResult{}, &toast
+	}
+
+	response, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
+	if err != nil {
+		toast := entity_public.GetErrorToast("Falha ao obter dados do usuário do Google", "")
+		return GoogleLoginResult{}, &toast
+	}
+	defer response.Body.Close()
+
+	contents, err := io.ReadAll(response.Body)
+	if err != nil {
+		toast := entity_public.GetErrorToast("Falha ao ler resposta do Google", "")
+		return GoogleLoginResult{}, &toast
+	}
+
+	var googleUser struct {
+		Email string `json:"email"`
+		Name  string `json:"name"`
+	}
+
+	if err := json.Unmarshal(contents, &googleUser); err != nil {
+		toast := entity_public.GetErrorToast("Falha ao processar dados do Google", "")
+		return GoogleLoginResult{}, &toast
+	}
+
+	um := user_model.GetUserModel()
+	user, err := um.GetUserByEmail(googleUser.Email)
+
+	if err != nil || user == nil {
+		return GoogleLoginResult{
+			IsNewUser: true,
+			Email:     googleUser.Email,
+			Name:      googleUser.Name,
+		}, nil
+	}
+
+	jwtToken, tokenErr := createToken(user.Name, user.Email, user.Farm, user.Role, user.Id)
+	if tokenErr != nil {
+		toast := entity_public.GetErrorToast("Desculpe, houve um erro interno :(", "")
+		return GoogleLoginResult{}, &toast
+	}
+
+	return GoogleLoginResult{
+		Token:    jwtToken,
+		Username: user.Name,
+	}, nil
+}
+
+type PreRegistrationClaims struct {
+	Email string
+	Name  string
+	jwt.RegisteredClaims
+}
+
+func CreatePreRegistrationToken(email, name string) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
+		PreRegistrationClaims{
+			Email: email,
+			Name:  name,
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)), // 30 mins to finish registration
+			},
+		})
+
+	tokenString, err := token.SignedString(secretKey)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
+func VerifyPreRegistrationToken(tokenString string) (*PreRegistrationClaims, error) {
+	claims := &PreRegistrationClaims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
+		return secretKey, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+
+	return claims, nil
+}
 
 func getSecret() []byte {
 	var tokenSecret = os.Getenv("TOKEN_SCRT")

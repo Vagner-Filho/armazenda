@@ -66,6 +66,25 @@ func (um *userModel) AuthUser(cpf string, passwd string) (*entity_public.User, *
 	return &user, nil
 }
 
+func (um *userModel) GetUserByEmail(email string) (*entity_public.User, error) {
+	rows, queryErr := um.pool.Query(context.Background(),
+		`SELECT u.id, u.email, u.name, u.passwd, u.inscricao_estadual, u.farm, u.cpf, u.role FROM app_user u
+		 LEFT JOIN inactive_user iu ON u.id = iu.user_id
+		 WHERE u.email = @email AND iu.user_id IS NULL`,
+		pgx.NamedArgs{"email": email})
+
+	if queryErr != nil {
+		return nil, queryErr
+	}
+
+	user, collectErr := pgx.CollectExactlyOneRow(rows, pgx.RowToStructByPos[entity_public.User])
+	if collectErr != nil {
+		return nil, collectErr
+	}
+
+	return &user, nil
+}
+
 func (um *userModel) CreateUser(user entity_public.NewUser) (bool, error) {
 	enc, encErr := bcrypt.GenerateFromPassword([]byte(user.Passwd), 10)
 

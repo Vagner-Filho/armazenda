@@ -66,7 +66,7 @@ func dict(values ...interface{}) (map[string]interface{}, error) {
 
 func authenticate(c *gin.Context) {
 	path := c.FullPath()
-	if path == "/" || path == "/user" || path == "/login" || strings.Contains(path, "/public") || path == "/user/form" {
+	if path == "/" || path == "/user" || path == "/login" || strings.Contains(path, "/public") || path == "/user/form" || path == "/auth/google/login" || path == "/auth/google/callback" {
 		c.Next()
 		return
 	}
