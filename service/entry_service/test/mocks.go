@@ -1,4 +1,4 @@
-package entry_service
+package entry_service_test
 
 import (
 	entity_public "armazenda/entity/public"
