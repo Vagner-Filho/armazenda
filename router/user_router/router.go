@@ -4,6 +4,7 @@ import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/user_model"
 	"armazenda/service/user_service"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -37,6 +38,11 @@ func UserRoutes(router *gin.Engine) {
 	router.GET("/auth/google/callback", googleCallback)
 	router.GET("/user/google-register", googleRegisterForm)
 	router.POST("/user/google-register", googleRegister)
+
+	router.GET("/auth/microsoft/login", microsoftLogin)
+	router.GET("/auth/microsoft/callback", microsoftCallback)
+	router.GET("/user/microsoft-register", microsoftRegisterForm)
+	router.POST("/user/microsoft-register", microsoftRegister)
 
 	router.POST("/user", func(c *gin.Context) {
 		var newUser entity_public.NewUser
@@ -324,10 +330,123 @@ func googleRegisterForm(c *gin.Context) {
 		return
 	}
 
-	c.HTML(http.StatusOK, "google-registration.html", gin.H{
-		"Email": claims.Email,
-		"Name":  claims.Name,
+	c.HTML(http.StatusOK, "oauth-registration.html", gin.H{
+		"Email":        claims.Email,
+		"Name":         claims.Name,
+		"ProviderName": "Google",
+		"PostUrl":      "/user/google-register",
 	})
+}
+
+func microsoftLogin(c *gin.Context) {
+	url := user_service.GetMicrosoftLoginURL()
+	c.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+func microsoftCallback(c *gin.Context) {
+	code := c.Query("code")
+	credentials, toast := user_service.LoginWithMicrosoft(code)
+
+	if toast != nil {
+		fmt.Printf("%v", toast.Message)
+		c.HTML(http.StatusOK, "login.html", gin.H{"error": toast.Message})
+		return
+	}
+
+	if len(credentials.Token) > 0 {
+		c.SetCookie("session_id", credentials.Token, 6000, "", "", true, true)
+		c.SetCookie("username", credentials.Username, 6000, "", "", true, false)
+		c.Redirect(http.StatusSeeOther, "/romaneio")
+		return
+	}
+
+	if credentials.IsNewUser {
+		preRegToken, err := user_service.CreatePreRegistrationToken(credentials.Email, credentials.Name)
+		if err != nil {
+			c.HTML(http.StatusOK, "login.html", gin.H{"error": "Erro ao iniciar cadastro"})
+			return
+		}
+
+		c.SetCookie("pre_reg_token", preRegToken, 1800, "", "", true, true)
+		c.Redirect(http.StatusSeeOther, "/user/microsoft-register")
+		return
+	}
+}
+
+func microsoftRegisterForm(c *gin.Context) {
+	cookie, err := c.Cookie("pre_reg_token")
+	if err != nil {
+		c.Redirect(http.StatusSeeOther, "/")
+		return
+	}
+
+	claims, err := user_service.VerifyPreRegistrationToken(cookie)
+	if err != nil {
+		c.Redirect(http.StatusSeeOther, "/")
+		return
+	}
+
+	c.HTML(http.StatusOK, "oauth-registration.html", gin.H{
+		"Email":        claims.Email,
+		"Name":         claims.Name,
+		"ProviderName": "Microsoft",
+		"PostUrl":      "/user/microsoft-register",
+	})
+}
+
+func microsoftRegister(c *gin.Context) {
+	cookie, err := c.Cookie("pre_reg_token")
+	if err != nil {
+		c.Status(http.StatusUnauthorized)
+		toast := entity_public.GetErrorToast("Sessão de cadastro expirada", "")
+		c.Header("HX-Trigger", string(toast.ToJson()))
+		return
+	}
+
+	claims, err := user_service.VerifyPreRegistrationToken(cookie)
+	if err != nil {
+		c.Status(http.StatusUnauthorized)
+		toast := entity_public.GetErrorToast("Sessão de cadastro inválida", "")
+		c.Header("HX-Trigger", string(toast.ToJson()))
+		return
+	}
+
+	var form struct {
+		Cpf               string `form:"cpf" binding:"len=11"`
+		InscricaoEstadual string `form:"inscricaoEstadual" binding:"required"`
+		Passwd            string `form:"passwd" binding:"required"`
+		PasswdConfirm     string `form:"passwdConfirm" binding:"required"`
+		Role              string `form:"role" binding:"oneof=admin user"`
+	}
+
+	err = c.Bind(&form)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		toast := entity_public.GetWarningToast("Preencha todos os campos", "")
+		c.Header("HX-Trigger", string(toast.ToJson()))
+		return
+	}
+
+	newUser := entity_public.NewUser{
+		User: entity_public.User{
+			Email:             claims.Email,
+			Name:              claims.Name,
+			Cpf:               form.Cpf,
+			InscricaoEstadual: form.InscricaoEstadual,
+			Passwd:            form.Passwd,
+			Role:              form.Role,
+		},
+		PasswdConfirm: form.PasswdConfirm,
+	}
+
+	toast := user_service.Create(newUser)
+
+	if toast.Type == 0 { // Success
+		c.SetCookie("pre_reg_token", "", -1, "", "", true, true)
+		c.Header("HX-Redirect", "/")
+	}
+
+	c.Header("HX-Trigger", string(toast.ToJson()))
 }
 
 func googleRegister(c *gin.Context) {

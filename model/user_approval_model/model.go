@@ -37,7 +37,7 @@ func GetUserApprovalModel() *userApprovalModel {
 }
 
 func (uam *userApprovalModel) GetPendingUsersByFarm(farmId uint32) ([]entity_public.PendingUser, error) {
-	rows, err := uam.pool.Query(context.Background(), `SELECT id, name, email, cpf, role FROM user_approval WHERE farm_id = @farm_id AND status = 'pending'`, pgx.NamedArgs{"farm_id": farmId})
+	rows, err := uam.pool.Query(context.Background(), `SELECT id, name, email, cpf, role, TRUE FROM user_approval WHERE farm_id = @farm_id AND status = 'pending'`, pgx.NamedArgs{"farm_id": farmId})
 	if err != nil {
 		return nil, err
 	}

@@ -13,12 +13,12 @@
     <main class="bg-white p-8 w-full max-w-lg rounded shadow-lg">
         <header class="text-center mb-6">
             <h1 class="text-2xl font-bold text-slate-700">Completar Cadastro</h1>
-            <p class="text-gray-600 mt-2">Finalize seu cadastro com Google informando os dados obrigatórios.</p>
+            <p class="text-gray-600 mt-2">Finalize seu cadastro com {{ .ProviderName }} informando os dados obrigatórios.</p>
         </header>
 
-        <form hx-post="/user/google-register" hx-vals='{"role": "user"}' hx-swap="none" class="flex flex-col gap-4">
+        <form hx-post="{{ .PostUrl }}" hx-vals='{"role": "user"}' hx-swap="none" class="flex flex-col gap-4">
             <fieldset class="flex flex-col gap-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <legend class="text-sm font-bold text-gray-500 uppercase tracking-wide px-2">Identificação Google</legend>
+                <legend class="text-sm font-bold text-gray-500 uppercase tracking-wide px-2">Identificação {{ .ProviderName }}</legend>
 
                 <div class="flex flex-col gap-1">
                     <label class="text-sm font-medium text-gray-700">Nome</label>
@@ -58,7 +58,7 @@
             </fieldset>
 
             <div class="flex items-center justify-between mt-4">
-                <a href="/login" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">Cancelar</a>
+                <a href="/" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">Cancelar</a>
                 <button type="submit" class="add-btn">Finalizar Cadastro</button>
             </div>
         </form>

@@ -15,9 +15,13 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2/microsoft"
 )
 
-var googleOauthConfig *oauth2.Config
+var (
+	googleOauthConfig    *oauth2.Config
+	microsoftOauthConfig *oauth2.Config
+)
 
 func init() {
 	googleOauthConfig = &oauth2.Config{
@@ -30,13 +34,30 @@ func init() {
 		},
 		Endpoint: google.Endpoint,
 	}
+
+	microsoftOauthConfig = &oauth2.Config{
+		RedirectURL:  os.Getenv("MICROSOFT_REDIRECT_URL"),
+		ClientID:     os.Getenv("MICROSOFT_CLIENT_ID"),
+		ClientSecret: os.Getenv("MICROSOFT_CLIENT_SECRET"),
+		Scopes: []string{
+			"user.read",
+			"openid",
+			"profile",
+			"email",
+		},
+		Endpoint: microsoft.AzureADEndpoint("common"),
+	}
 }
 
 func GetGoogleLoginURL() string {
 	return googleOauthConfig.AuthCodeURL("state")
 }
 
-type GoogleLoginResult struct {
+func GetMicrosoftLoginURL() string {
+	return microsoftOauthConfig.AuthCodeURL("state")
+}
+
+type OAuthLoginResult struct {
 	Token     string
 	Username  string
 	IsNewUser bool
@@ -44,24 +65,24 @@ type GoogleLoginResult struct {
 	Name      string
 }
 
-func LoginWithGoogle(code string) (GoogleLoginResult, *entity_public.Toast) {
+func LoginWithGoogle(code string) (OAuthLoginResult, *entity_public.Toast) {
 	token, err := googleOauthConfig.Exchange(context.Background(), code)
 	if err != nil {
 		toast := entity_public.GetErrorToast("Falha ao trocar código com Google", "")
-		return GoogleLoginResult{}, &toast
+		return OAuthLoginResult{}, &toast
 	}
 
 	response, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
 	if err != nil {
 		toast := entity_public.GetErrorToast("Falha ao obter dados do usuário do Google", "")
-		return GoogleLoginResult{}, &toast
+		return OAuthLoginResult{}, &toast
 	}
 	defer response.Body.Close()
 
 	contents, err := io.ReadAll(response.Body)
 	if err != nil {
 		toast := entity_public.GetErrorToast("Falha ao ler resposta do Google", "")
-		return GoogleLoginResult{}, &toast
+		return OAuthLoginResult{}, &toast
 	}
 
 	var googleUser struct {
@@ -71,14 +92,14 @@ func LoginWithGoogle(code string) (GoogleLoginResult, *entity_public.Toast) {
 
 	if err := json.Unmarshal(contents, &googleUser); err != nil {
 		toast := entity_public.GetErrorToast("Falha ao processar dados do Google", "")
-		return GoogleLoginResult{}, &toast
+		return OAuthLoginResult{}, &toast
 	}
 
 	um := user_model.GetUserModel()
 	user, err := um.GetUserByEmail(googleUser.Email)
 
 	if err != nil || user == nil {
-		return GoogleLoginResult{
+		return OAuthLoginResult{
 			IsNewUser: true,
 			Email:     googleUser.Email,
 			Name:      googleUser.Name,
@@ -88,10 +109,71 @@ func LoginWithGoogle(code string) (GoogleLoginResult, *entity_public.Toast) {
 	jwtToken, tokenErr := createToken(user.Name, user.Email, user.Farm, user.Role, user.Id)
 	if tokenErr != nil {
 		toast := entity_public.GetErrorToast("Desculpe, houve um erro interno :(", "")
-		return GoogleLoginResult{}, &toast
+		return OAuthLoginResult{}, &toast
 	}
 
-	return GoogleLoginResult{
+	return OAuthLoginResult{
+		Token:    jwtToken,
+		Username: user.Name,
+	}, nil
+}
+
+func LoginWithMicrosoft(code string) (OAuthLoginResult, *entity_public.Toast) {
+	token, err := microsoftOauthConfig.Exchange(context.Background(), code)
+	if err != nil {
+		fmt.Printf("%v", err.Error())
+		toast := entity_public.GetErrorToast("Falha ao trocar código com Microsoft", "")
+		return OAuthLoginResult{}, &toast
+	}
+
+	client := microsoftOauthConfig.Client(context.Background(), token)
+	response, err := client.Get("https://graph.microsoft.com/v1.0/me")
+	if err != nil {
+		toast := entity_public.GetErrorToast("Falha ao obter dados do usuário da Microsoft", "")
+		return OAuthLoginResult{}, &toast
+	}
+	defer response.Body.Close()
+
+	contents, err := io.ReadAll(response.Body)
+	if err != nil {
+		toast := entity_public.GetErrorToast("Falha ao ler resposta da Microsoft", "")
+		return OAuthLoginResult{}, &toast
+	}
+
+	var microsoftUser struct {
+		Mail              string `json:"mail"`
+		UserPrincipalName string `json:"userPrincipalName"`
+		DisplayName       string `json:"displayName"`
+	}
+
+	if err := json.Unmarshal(contents, &microsoftUser); err != nil {
+		toast := entity_public.GetErrorToast("Falha ao processar dados da Microsoft", "")
+		return OAuthLoginResult{}, &toast
+	}
+
+	email := microsoftUser.Mail
+	if email == "" {
+		email = microsoftUser.UserPrincipalName
+	}
+
+	um := user_model.GetUserModel()
+	user, err := um.GetUserByEmail(email)
+
+	if err != nil || user == nil {
+		return OAuthLoginResult{
+			IsNewUser: true,
+			Email:     email,
+			Name:      microsoftUser.DisplayName,
+		}, nil
+	}
+
+	jwtToken, tokenErr := createToken(user.Name, user.Email, user.Farm, user.Role, user.Id)
+	if tokenErr != nil {
+		toast := entity_public.GetErrorToast("Desculpe, houve um erro interno :(", "")
+		return OAuthLoginResult{}, &toast
+	}
+
+	return OAuthLoginResult{
 		Token:    jwtToken,
 		Username: user.Name,
 	}, nil
