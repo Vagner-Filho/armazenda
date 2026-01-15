@@ -1,6 +1,6 @@
 {{ define "user-form" }}
 <dialog id="new-user-dialog" class="rounded-md w-full max-w-lg bg-stone-100">
-  <div class="p-4 relative">
+  <div class="p-4 relative" id="user-form-content">
     {{ template "close-dialog-btn" "dialog#new-user-dialog" }}
     <header class="text-center mb-4">
       <h1 class="text-2xl font-bold text-slate-700">
@@ -10,7 +10,8 @@
         Crie uma nova conta de usuário para acessar o sistema.
       </p>
     </header>
-    <form hx-post="/user" hx-vals='{"role": "user"}' class="flex flex-col gap-4 mt-4">
+    <div>
+      <form hx-post="/user" hx-vals='{"role": "user"}' hx-target="#user-form-content" class="flex flex-col gap-4 mt-4">
       <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
         <legend class="fieldset-legend">
           Identificação
@@ -48,7 +49,8 @@
         <button type="button" class="cancel-btn" onclick="closeUserForm()">Cancelar</button>
         <button type="submit" class="add-btn">Cadastrar</button>
       </div>
-    </form>
+      </form>
+    </div>
   </div>
   <script type="module">
     const dialog = document.querySelector("dialog#new-user-dialog");

@@ -1,21 +1,31 @@
 @import "tailwindcss";
 
 .noto-serif-font {
-  font-family: "Noto Serif", serif;
-  font-optical-sizing: auto;
-  font-weight: 400;
-  font-style: normal;
-  font-variation-settings:
-    "wdth" 100;
+    font-family: "Noto Serif", serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+    font-variation-settings:
+        "wdth" 100;
 }
 
 .noto-sans-font {
-  font-family: "Noto Sans", sans-serif;
-  font-optical-sizing: auto;
-  font-weight: 400;
-  font-style: normal;
-  font-variation-settings:
-    "wdth" 100;
+    font-family: "Noto Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+    font-variation-settings:
+        "wdth" 100;
+}
+
+.main-bg {
+    width: 100vw;
+    height: 100vh;
+    /*overflow: hidden;*/
+    z-index: -1;
+    background: linear-gradient(180deg, #0ea5e9 0%, #64b5dc 40%, #30b60b 100%);
+    background-image: url(/public/assets/static/inside_bg.jpg);
+    background-size: cover;
 }
 
 @theme {
@@ -25,6 +35,10 @@
 
 @utility add-btn {
     @apply btn-shape text-green-500 hover:text-white hover:bg-green-500 focus:text-white focus:bg-green-500 ring ring-inset ring-green-500 transition-colors duration-300 ease-in-out
+}
+
+@utility glass-btn {
+    @apply btn-shape shadow-lg border bg-sky-50/15 border-sky-50/40 text-white/80 hover:text-white hover:bg-sky-50/30 focus:text-white focus:bg-sky-50/30 transition-all duration-300 ease-in-out backdrop-blur-xs
 }
 
 @utility icon-btn {
@@ -44,7 +58,7 @@
         @apply text-gray-500
     }
 
-    label > i {
+    label>i {
         @apply text-xs font-normal text-gray-500 normal-case
     }
 
@@ -60,10 +74,13 @@
     dialog {
         @apply backdrop:bg-black/50 m-auto
     }
+
     * {
         font-family: "Noto Sans";
     }
-    h1, h2 {
+
+    h1,
+    h2 {
         font-family: "Noto Serif";
     }
 }

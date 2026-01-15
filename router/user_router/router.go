@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -55,12 +56,23 @@ func UserRoutes(router *gin.Engine) {
 		}
 
 		toast := user_service.Create(newUser)
-		c.Header("HX-Trigger", string(toast.ToJson()))
 		switch toast.Type {
 		case 0:
-			c.Status(http.StatusCreated)
-			c.Header("HX-Redirect", "/")
+			var msg string
+			var title string
+			if strings.Contains(toast.Message, "criado") {
+				title = "Conta criada com sucesso!"
+				msg = "Seu usuário foi criado e você já pode entrar no sistema"
+			} else {
+				title = "Aguardando aprovação"
+				msg = "Seu usuário foi criado e agora precisa ser aprovado pelo administrador para entrar"
+			}
+			c.HTML(http.StatusOK, "user-success-modal", gin.H{
+				"Body":  msg,
+				"Title": title,
+			})
 		case 1:
+			c.Header("HX-Trigger", string(toast.ToJson()))
 			c.Status(http.StatusBadRequest)
 		}
 	})

@@ -1,7 +1,7 @@
 {{ block "entry-table" . }}
 <table class="w-full">
     <thead
-        class="text-xs sm:text-base whitespace-nowrap bg-gray-100 text-gray-600 uppercase hidden md:table-header-group">
+        class="text-xs sm:text-base whitespace-nowrap bg-sky-50/15 backdrop-blur-sm border-b border-sky-50/40 text-white/90 uppercase hidden md:table-header-group">
         <tr>
             <th class="py-3 px-4 text-left">
                 ROMANEIO
@@ -29,7 +29,7 @@
             </th>
         </tr>
     </thead>
-    <tbody id="entries-table-body" class="text-gray-700">
+    <tbody id="entries-table-body" class="text-white/80">
         {{ range .Entries }}
         {{ template "entry-list-item" . }}
         {{ end }}
@@ -38,15 +38,15 @@
 {{ if gt .TotalPages 1 }}
 <div class="flex justify-center items-center p-4">
     {{ if .HasPrev }}
-    <button hx-get="/entry/list?page={{ .PrevPage }}" hx-target="#content-container" hx-swap="innerHTML" class="px-2 lg:px-4 py-1 lg:py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors">Anterior</button>
+    <button hx-get="/entry/list?page={{ .PrevPage }}" hx-target="#content-container" hx-swap="innerHTML" class="px-2 lg:px-4 py-1 lg:py-2 bg-sky-50/20 hover:bg-sky-50/30 rounded-lg transition-colors">Anterior</button>
     {{ else }}
-    <button class="px-2 lg:px-4 py-1 lg:py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed" disabled>Anterior</button>
+    <button class="px-2 lg:px-4 py-1 lg:py-2 bg-sky-50/10 text-white/40 rounded-lg cursor-not-allowed" disabled>Anterior</button>
     {{ end }}
-    <span class="text-sm lg:text-base mx-2 lg:mx-4 text-gray-600">Página {{ .CurrentPage }} de {{ .TotalPages }}</span>
+    <span class="text-sm lg:text-base mx-2 lg:mx-4 text-white/90">Página {{ .CurrentPage }} de {{ .TotalPages }}</span>
     {{ if .HasNext }}
-    <button hx-get="/entry/list?page={{ .NextPage }}" hx-target="#content-container" hx-swap="innerHTML" class="px-2 lg:px-4 py-1 lg:py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors">Próxima</button>
+    <button hx-get="/entry/list?page={{ .NextPage }}" hx-target="#content-container" hx-swap="innerHTML" class="px-2 lg:px-4 py-1 lg:py-2 bg-sky-50/20 hover:bg-sky-50/30 rounded-lg transition-colors">Próxima</button>
     {{ else }}
-    <button class="px-2 lg:px-4 py-1 lg:py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed" disabled>Próxima</button>
+    <button class="px-2 lg:px-4 py-1 lg:py-2 bg-sky-50/10 text-white/40 rounded-lg cursor-not-allowed" disabled>Próxima</button>
     {{ end }}
 </div>
 {{ end }}

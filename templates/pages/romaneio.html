@@ -16,25 +16,25 @@
     <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
     <script src="/public/assets/js/sweetalert2.min.js" async></script>
   </head>
-  <body class="bg-sky-50">
+  <body class="main-bg">
     {{ template "navbar" }}
   {{ template "menu" "romaneio" }}
     <section class="mt-14 lg:mt-20 mb-4 lg:pl-12 px-2 max-w-screen-xl mx-auto">
       <header class="text-center mb-8">
-        <h1 class="text-xl lg:text-3xl font-bold text-slate-700">
+        <h1 class="text-xl lg:text-3xl font-bold text-white font-[Noto_Sans] drop-shadow-lg">
           Controle de Romaneios
         </h1>
-        <p class="text-sm text-gray-600 mt-2">
+        <p class="text-sm text-white/90 mt-2">
           Gerencie as entradas e saídas de cargas do seu armazém.
         </p>
       </header>
       <div class="max-w-md mx-auto mb-8">
-        <div class="bg-gray-200 rounded-lg p-1 flex" id="type-toggler">
-          <button type="button" id="show-entry-manifest" class="flex-1 py-2 px-4 rounded-lg flex items-center justify-center gap-2 bg-white text-gray-800 shadow transition-colors duration-300" hx-trigger="click" hx-get="/entry/list" hx-target="#content-container" onclick="handleToggle(this)">
+        <div class="bg-sky-50/5 backdrop-blur-sm border border-sky-50/40 rounded-xl p-1 flex" id="type-toggler">
+          <button type="button" id="show-entry-manifest" class="flex-1 py-2 px-4 rounded-lg flex items-center justify-center gap-2 bg-sky-50/20 text-white shadow-sm transition-colors duration-300" hx-trigger="click" hx-get="/entry/list" hx-target="#content-container" onclick="handleToggle(this)">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill="currentColor" d="m15.5 5.69l2.81 2.81l-6.37 6.39h4.95v3.42H5.69V7.11h3.43v4.95z"/></svg>
             <span class="font-semibold">Entrada</span>
           </button>
-          <button type="button" id="show-departure-manifest" class="flex-1 py-2 px-4 rounded-lg flex items-center justify-center gap-2 text-gray-500 transition-colors duration-300" hx-trigger="click" hx-get="/departure/list" hx-target="#content-container" onclick="handleToggle(this)">
+          <button type="button" id="show-departure-manifest" class="flex-1 py-2 px-4 rounded-lg flex items-center justify-center gap-2 text-white/70 hover:bg-sky-50/10 transition-colors duration-300" hx-trigger="click" hx-get="/departure/list" hx-target="#content-container" onclick="handleToggle(this)">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill="currentColor" d="M8.5 18.31L5.69 15.5l6.37-6.38H7.11V5.69h11.2v11.2h-3.42v-4.95z"/></svg>
             <span class="font-semibold">Saída</span>
           </button>
@@ -50,11 +50,11 @@
   function handleToggle(clickedButton) {
     const buttons = clickedButton.parentElement.querySelectorAll('button');
     buttons.forEach(button => {
-      button.classList.remove('bg-white', 'text-gray-800', 'shadow');
-      button.classList.add('text-gray-500');
+      button.classList.remove('bg-sky-50/20', 'text-white', 'shadow-sm');
+      button.classList.add('text-white/70');
     });
-    clickedButton.classList.add('bg-white', 'text-gray-800', 'shadow');
-    clickedButton.classList.remove('text-gray-500');
+    clickedButton.classList.add('bg-sky-50/20', 'text-white', 'shadow-sm');
+    clickedButton.classList.remove('text-white/70');
   }
   window.handleToggle = handleToggle
 </script>

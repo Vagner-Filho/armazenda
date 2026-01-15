@@ -1,7 +1,8 @@
 {{ block "menu" . }}
 <!-- Hamburger Button -->
 <button id="open-menu-btn" class="lg:hidden fixed top-2 left-2 z-30 text-green-700 print:hidden">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="3" y1="12" x2="21" y2="12"></line>
         <line x1="3" y1="6" x2="21" y2="6"></line>
         <line x1="3" y1="18" x2="21" y2="18"></line>
@@ -9,7 +10,9 @@
 </button>
 
 <!-- Menu -->
-<div id="menu" class="fixed top-0 left-0 h-dvh w-60 bg-sky-50 flex-col gap-2 px-4 py-2 text-lg text-green-700 shadow-lg transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-40 hidden lg:flex" role="menu">
+<div id="menu"
+    class="fixed top-0 left-0 h-dvh w-60 bg-sky-50/5 backdrop-blur-sm border-r border-sky-50/40 flex-col gap-2 px-4 py-2 text-lg shadow-lg transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-40 hidden lg:flex"
+    role="menu">
     <div class="flex items-center justify-between">
         <h2 class="text-green-900 font-bold inline-flex items-center gap-3 text-lg lg:text-xl">
             <img loading="lazy" src="/public/assets/favicon.ico" class="size-9 lg:size-12">
@@ -19,61 +22,83 @@
         </h2>
         <!-- Close Button -->
         <button id="close-menu-btn" class="lg:hidden p-2 text-green-700">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
         </button>
     </div>
 
-    <a href="/romaneio" class="inline-flex gap-3 mt-10{{ if eq . "romaneio" }} text-green-900 font-bold{{ end }}" title="Página de romaneio">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-            <path fill="currentColor"
-                d="M8.5 2a6.5 6.5 0 0 1 6.46 5.78L22 12v2l-2-1.2V22h-2V11.6l-3-1.8V22h-2V9H4v13H2V8.5A6.5 6.5 0 0 1 8.5 2m0 2C6.54 4 4.87 5.25 4.26 7h8.48c-.61-1.75-2.28-3-4.24-3M6 11h5v2H6zm0 4h5v2H6zm0 4h5v2H6z" />
-        </svg>
-        <div>
-            Romaneio
-        </div>
-    </a>
-    <a href="/pessoa" class="inline-flex gap-3{{ if eq . "pessoa" }} text-green-900 font-bold{{ end }}" title="Página de pessoa">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M17 19.5c0-1.657-2.239-3-5-3s-5 1.343-5 3m14-3c0-1.23-1.234-2.287-3-2.75M3 16.5c0-1.23 1.234-2.287 3-2.75m12-4.014a3 3 0 1 0-4-4.472M6 9.736a3 3 0 0 1 4-4.472m2 8.236a3 3 0 1 1 0-6a3 3 0 0 1 0 6" />
-        </svg>
-        <div>
-            Pessoa
-        </div>
-    </a>
-    <a href="/relatorio" class="inline-flex gap-3{{ if eq . "relatorio" }} text-green-900 font-bold{{ end }}" title="Página de relatório">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32">
-            <path fill="currentColor" d="M15 20h2v4h-2zm5-2h2v6h-2zm-10-4h2v10h-2z" />
-            <path fill="currentColor"
-                d="M25 5h-3V4a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v1H7a2 2 0 0 0-2 2v21a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2M12 4h8v4h-8Zm13 24H7V7h3v3h12V7h3Z" />
-        </svg>
-        <div>
-            Relatório
-        </div>
-    </a>
-    <a href="/analise" class="inline-flex gap-3{{ if eq . "analise" }} text-green-900 font-bold{{ end }}" title="Página de análise">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-	    <path fill="currentColor" d="M21.71 7.29a1 1 0 0 0-1.42 0L14 13.59l-4.29-4.3a1 1 0 0 0-1.42 0l-6 6a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L9 11.41l4.29 4.3a1 1 0 0 0 1.42 0l7-7a1 1 0 0 0 0-1.42" />
-        </svg>
-        <div>
-            Análise
-        </div>
-    </a>
-    <a href="/farm/config" class="inline-flex gap-3{{ if eq . "config" }} text-green-900 font-bold{{ end }}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32">
-            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-                <path
-                    d="M13.905 3.379A.5.5 0 0 1 14.39 3h3.22a.5.5 0 0 1 .485.379l.689 2.757a.52.52 0 0 0 .341.362q.575.19 1.115.443a.52.52 0 0 0 .449-.003l2.767-1.383a.5.5 0 0 1 .577.093l2.319 2.319a.5.5 0 0 1 .093.577l-1.383 2.767a.52.52 0 0 0-.003.449q.191.407.346.833c.053.148.17.265.319.315l2.934.978a.5.5 0 0 1 .342.474v3.28a.5.5 0 0 1-.342.474l-2.934.978a.52.52 0 0 0-.32.315a10 10 0 0 1-.345.833a.52.52 0 0 0 .003.449l1.383 2.767a.5.5 0 0 1-.093.577l-2.319 2.319a.5.5 0 0 1-.577.093l-2.767-1.383a.52.52 0 0 0-.449-.003q-.407.191-.833.346a.52.52 0 0 0-.315.319l-.978 2.934a.5.5 0 0 1-.474.342h-3.28a.5.5 0 0 1-.474-.342l-.978-2.934a.52.52 0 0 0-.315-.32a10 10 0 0 1-1.101-.475a.52.52 0 0 0-.498.014l-2.437 1.463a.5.5 0 0 1-.611-.075l-2.277-2.277a.5.5 0 0 1-.075-.61l1.463-2.438a.52.52 0 0 0 .014-.498a10 10 0 0 1-.573-1.383a.52.52 0 0 0-.362-.341l-2.757-.69A.5.5 0 0 1 3 17.61v-3.22a.5.5 0 0 1 .379-.485l2.757-.689a.52.52 0 0 0 .362-.341q.237-.718.573-1.383a.52.52 0 0 0-.014-.498L5.594 8.557a.5.5 0 0 1 .075-.611l2.277-2.277a.5.5 0 0 1 .61-.075l2.438 1.463c.152.091.34.094.498.014a10 10 0 0 1 1.382-.573a.52.52 0 0 0 .342-.362z" />
-                <path d="M21 16a5 5 0 1 1-10 0a5 5 0 0 1 10 0" />
-            </g>
-        </svg>
-        <div>
-           Configurações 
-        </div>
-    </a>
+    <ul
+        class="space-y-4 mt-10 *:bg-sky-50/15 *:border *:border-sky-50/40 *:rounded-xl *:w-full *:text-white/70 *:shadow *:focus-within:bg-sky-50/40 *:focus-within:text-white *:focus-within:shadow-lg *:hover:bg-sky-50/40 *:hover:text-white *:transition-all *:duration-300 *:ease-in-out">
+        <li>
+            <a href="/romaneio" class="size-full outline-0 py-3 pl-2 inline-flex items-center gap-3{{ if eq . " romaneio" }} text-green-900
+                font-bold{{ end }}" title="Página de romaneio">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                    <path fill="currentColor"
+                        d="M8.5 2a6.5 6.5 0 0 1 6.46 5.78L22 12v2l-2-1.2V22h-2V11.6l-3-1.8V22h-2V9H4v13H2V8.5A6.5 6.5 0 0 1 8.5 2m0 2C6.54 4 4.87 5.25 4.26 7h8.48c-.61-1.75-2.28-3-4.24-3M6 11h5v2H6zm0 4h5v2H6zm0 4h5v2H6z" />
+                </svg>
+                <div>
+                    Romaneio
+                </div>
+            </a>
+        </li>
+        <li>
+            <a href="/pessoa" class="size-full outline-0 py-3 pl-2 inline-flex items-center gap-3{{ if eq . " pessoa" }} text-green-900 font-bold{{
+                end }}" title="Página de pessoa">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                    <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                        stroke-width="1.5"
+                        d="M17 19.5c0-1.657-2.239-3-5-3s-5 1.343-5 3m14-3c0-1.23-1.234-2.287-3-2.75M3 16.5c0-1.23 1.234-2.287 3-2.75m12-4.014a3 3 0 1 0-4-4.472M6 9.736a3 3 0 0 1 4-4.472m2 8.236a3 3 0 1 1 0-6a3 3 0 0 1 0 6" />
+                </svg>
+                <div>
+                    Pessoa
+                </div>
+            </a>
+        </li>
+        <li>
+            <a href="/relatorio" class="size-full outline-0 py-3 pl-2 inline-flex items-center gap-3{{ if eq . " relatorio" }} text-green-900
+                font-bold{{ end }}" title="Página de relatório">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32">
+                    <path fill="currentColor" d="M15 20h2v4h-2zm5-2h2v6h-2zm-10-4h2v10h-2z" />
+                    <path fill="currentColor"
+                        d="M25 5h-3V4a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v1H7a2 2 0 0 0-2 2v21a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2M12 4h8v4h-8Zm13 24H7V7h3v3h12V7h3Z" />
+                </svg>
+                <div>
+                    Relatório
+                </div>
+            </a>
+        </li>
+        <li>
+            <a href="/analise" class="size-full outline-0 py-3 pl-2 inline-flex items-center gap-3{{ if eq . " analise" }} text-green-900 font-bold{{
+                end }}" title="Página de análise">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                    <path fill="currentColor"
+                        d="M21.71 7.29a1 1 0 0 0-1.42 0L14 13.59l-4.29-4.3a1 1 0 0 0-1.42 0l-6 6a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L9 11.41l4.29 4.3a1 1 0 0 0 1.42 0l7-7a1 1 0 0 0 0-1.42" />
+                </svg>
+                <div>
+                    Análise
+                </div>
+            </a>
+        </li>
+        <li>
+            <a href="/farm/config" class="size-full outline-0 py-3 pl-2 inline-flex items-center gap-3{{ if eq . " config" }} text-green-900
+                font-bold{{ end }}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32">
+                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                        stroke-width="2">
+                        <path
+                            d="M13.905 3.379A.5.5 0 0 1 14.39 3h3.22a.5.5 0 0 1 .485.379l.689 2.757a.52.52 0 0 0 .341.362q.575.19 1.115.443a.52.52 0 0 0 .449-.003l2.767-1.383a.5.5 0 0 1 .577.093l2.319 2.319a.5.5 0 0 1 .093.577l-1.383 2.767a.52.52 0 0 0-.003.449q.191.407.346.833c.053.148.17.265.319.315l2.934.978a.5.5 0 0 1 .342.474v3.28a.5.5 0 0 1-.342.474l-2.934.978a.52.52 0 0 0-.32.315a10 10 0 0 1-.345.833a.52.52 0 0 0 .003.449l1.383 2.767a.5.5 0 0 1-.093.577l-2.319 2.319a.5.5 0 0 1-.577.093l-2.767-1.383a.52.52 0 0 0-.449-.003q-.407.191-.833.346a.52.52 0 0 0-.315.319l-.978 2.934a.5.5 0 0 1-.474.342h-3.28a.5.5 0 0 1-.474-.342l-.978-2.934a.52.52 0 0 0-.315-.32a10 10 0 0 1-1.101-.475a.52.52 0 0 0-.498.014l-2.437 1.463a.5.5 0 0 1-.611-.075l-2.277-2.277a.5.5 0 0 1-.075-.61l1.463-2.438a.52.52 0 0 0 .014-.498a10 10 0 0 1-.573-1.383a.52.52 0 0 0-.362-.341l-2.757-.69A.5.5 0 0 1 3 17.61v-3.22a.5.5 0 0 1 .379-.485l2.757-.689a.52.52 0 0 0 .362-.341q.237-.718.573-1.383a.52.52 0 0 0-.014-.498L5.594 8.557a.5.5 0 0 1 .075-.611l2.277-2.277a.5.5 0 0 1 .61-.075l2.438 1.463c.152.091.34.094.498.014a10 10 0 0 1 1.382-.573a.52.52 0 0 0 .342-.362z" />
+                        <path d="M21 16a5 5 0 1 1-10 0a5 5 0 0 1 10 0" />
+                    </g>
+                </svg>
+                <div>
+                    Configurações
+                </div>
+            </a>
+        </li>
+    </ul>
 </div>
 
 <!-- Overlay -->
@@ -103,7 +128,7 @@
                 menu.classList.add('hidden');
                 menu.classList.remove('flex');
                 menu.removeEventListener('transitionend', handler);
-            }, { once: true });
+            }, {once: true});
         }
 
         if (openBtn) {

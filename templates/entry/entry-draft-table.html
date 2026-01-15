@@ -1,7 +1,7 @@
 {{ block "entry-draft-table" . }}
 <table class="w-full">
     <thead
-        class="text-xs sm:text-base whitespace-nowrap bg-gray-100 text-gray-600 uppercase hidden md:table-header-group">
+        class="text-xs sm:text-base whitespace-nowrap bg-sky-50/15 backdrop-blur-sm border-b border-sky-50/40 text-white/90 uppercase hidden md:table-header-group">
         <tr>
             <th class="py-3 px-4 text-left">
                 Nome
@@ -26,7 +26,7 @@
             </th>
         </tr>
     </thead>
-    <tbody id="entries-draft-table-body" class="text-gray-700">
+    <tbody id="entries-draft-table-body" class="text-white/80">
         {{ range . }}
         {{ template "entry-draft-list-item" . }}
         {{ end }}
