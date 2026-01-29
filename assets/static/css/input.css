@@ -24,7 +24,7 @@
     /*overflow: hidden;*/
     z-index: -1;
     background: linear-gradient(180deg, #0ea5e9 0%, #64b5dc 40%, #30b60b 100%);
-    background-image: url(/public/assets/static/inside_bg.jpg);
+    background-image: url(/public/assets/static/inside_bg_3.jpg);
     background-size: cover;
 }
 

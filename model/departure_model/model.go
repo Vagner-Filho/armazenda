@@ -98,12 +98,15 @@ func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter, pag
 		return []entity_public.DisplayDeparture{}, 0, nil
 	}
 
-	query := `SELECT d.id, p.name, v.plate, d.departureDate, d.netWeight 
+	query := `SELECT d.id, p.name, v.plate, d.departureDate, d.netWeight, COALESCE(np.name, lp.fantasyName, lp.companyName, 'Própria')
 			FROM departure d
 			JOIN crop c ON d.crop = c.id
 			JOIN product p ON c.product = p.id
 			LEFT JOIN inactive_departure id ON id.departure_id = d.id
 			LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
+			LEFT JOIN departure_origin do ON do.departure_id = d.id
+			LEFT JOIN natural_person np ON np.personId = do.person_id
+			LEFT JOIN legal_person lp ON lp.personId = do.person_id
 			JOIN vehicle v ON v.id = d.id
 			WHERE ` + whereCondition + `
 			AND d.farm = @farm

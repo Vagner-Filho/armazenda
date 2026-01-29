@@ -6,11 +6,11 @@
         </label>
     </legend>
     <select name="person" id="person-filter" class="w-full text-sm peer">
-        <option value="" selected>
+        <option value="0" selected>
             Nenhuma
         </option>
         {{ range .People }}
-        <option value="{{ .Id }}">
+        <option {{ if eq .Id nil }} value="" {{ else }} value="{{ .Id }}" {{ end }}>
             {{ .Name }}
         </option>
         {{ else }}

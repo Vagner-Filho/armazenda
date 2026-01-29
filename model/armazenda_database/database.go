@@ -932,7 +932,7 @@ func initUpdateEntry(c *pgx.Conn) {
 				ELSE
 					UPDATE entry_origin SET person_id = origin_id WHERE entry_id = e_id;
 				END IF;
-			ELSE
+			ELSIF origin_id IS NOT NULL THEN
 				INSERT INTO entry_origin (entry_id, person_id) VALUES (e_id, origin_id);
 			END IF;
 

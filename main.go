@@ -88,6 +88,14 @@ func authenticate(c *gin.Context) {
 	c.Next()
 }
 
+func setPublicAssetsHeaders(c *gin.Context) {
+	path := c.FullPath()
+	if strings.Contains(path, "/public") && strings.Contains(path, "filepath") {
+		c.Header("Cache-Control", "public, max-age=31536000")
+		return
+	}
+}
+
 func adminOnlyMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		sessionCookie, cookieErr := c.Request.Cookie("session_id")
@@ -109,7 +117,6 @@ func adminOnlyMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
 		c.Next()
 	}
 }
@@ -162,7 +169,7 @@ func main() {
 	}
 
 	router := gin.Default()
-	router.Use(authenticate)
+	router.Use(authenticate, setPublicAssetsHeaders)
 
 	html := template.Must(template.New("").Funcs(template.FuncMap{"dict": dict}).ParseFS(templatesFS, "templates/*.html", "templates/**/*.html"))
 	router.SetHTMLTemplate(html)
