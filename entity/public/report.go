@@ -14,7 +14,7 @@ type ReportFilter struct {
 	NetWeightMax float64   `form:"netWeightMax"`
 	StartDate    time.Time `form:"startDate" time_format:"2006-01-02T15:04"`
 	EndDate      time.Time `form:"endDate" time_format:"2006-01-02T15:04"`
-	PersonId     uint32    `form:"person"`
+	PersonId     string    `form:"person"`
 }
 
 type reportFilterCollection map[string]func(rf ReportFilter) string

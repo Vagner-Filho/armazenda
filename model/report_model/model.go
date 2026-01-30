@@ -59,7 +59,10 @@ var availableReportFilters = map[string]func(ef entity_public.ReportFilter) stri
 		return "r.netweight <= " + strconv.FormatFloat(ef.NetWeightMax, 'f', -1, 64)
 	},
 	"PersonId": func(ef entity_public.ReportFilter) string {
-		return "r.personid = " + strconv.FormatInt(int64(ef.PersonId), 10)
+		if ef.PersonId == "NULL" {
+			return "r.personid IS NULL"
+		}
+		return fmt.Sprintf("r.personid = '%s'", ef.PersonId)
 	},
 }
 

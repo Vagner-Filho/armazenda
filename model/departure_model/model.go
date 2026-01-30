@@ -104,9 +104,9 @@ func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter, pag
 			JOIN product p ON c.product = p.id
 			LEFT JOIN inactive_departure id ON id.departure_id = d.id
 			LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
-			LEFT JOIN departure_origin do ON do.departure_id = d.id
-			LEFT JOIN natural_person np ON np.personId = do.person_id
-			LEFT JOIN legal_person lp ON lp.personId = do.person_id
+			LEFT JOIN departure_origin dor ON dor.departure_id = d.id
+			LEFT JOIN natural_person np ON np.personId = dor.person_id
+			LEFT JOIN legal_person lp ON lp.personId = dor.person_id
 			JOIN vehicle v ON v.id = d.id
 			WHERE ` + whereCondition + `
 			AND d.farm = @farm
