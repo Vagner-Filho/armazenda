@@ -21,23 +21,23 @@
         <form id="entry-form" class="flex flex-col gap-4" {{ if .Entry.Id }} hx-put="/entry/{{ .Entry.Id }}"
             hx-target="#entry-{{ .Entry.Id }}" hx-swap="outerHTML" {{ else }} hx-post="/entry"
             hx-target="#entries-table-body" hx-swap="afterbegin" {{ end }} hx-indicator="#btns-container">
-            <fieldset class="flex flex-col gap-2 p-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 shadow">
+            <fieldset class="flex flex-col gap-2 p-2 bg-black/5 rounded-lg border border-white/20 shadow">
                 <legend class="fieldset-legend">
                     Identificação
                 </legend>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
                     {{ template "crop-selector" . }}
                     {{ template "field-selector" . }}
-                    <div class="flex flex-col-reverse w-full relative">
-                        {{ template "origin-selector" . }}
+                    <div class="flex flex-col w-full relative">
                         <label for="origin-selector" class="label-peer">
                             Origem
                         </label>
+                        {{ template "origin-selector" . }}
                     </div>
                 </div>
             </fieldset>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-<fieldset class="flex flex-col gap-2 p-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 shadow">
+                <fieldset class="flex flex-col gap-2 p-2 bg-white/10 rounded-lg border border-white/20 shadow">
                 <legend class="fieldset-legend">
                     Recebimento
                     </legend>
@@ -59,7 +59,7 @@
                             <i class="text-xs font-normal text-gray-500 normal-case">Peso do transporte</i>
                         </label>
                     </div>
-                    <div class="flex flex-col">
+                    <!--<div class="flex flex-col">
                         <label for="netWeight" class="label-peer">
                             Peso Líquido
                             <i class="text-xs font-normal text-gray-500 normal-case">(preenchimento automático) Peso
@@ -68,7 +68,7 @@
                         <input type="text" name="netWeight" id="netWeight" class="cursor-not-allowed glass-input" {{ if ne
                             .Entry.NetWeight 0.0 }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0"
                             data-raw="0" required disabled>
-                    </div>
+                    </div>-->
                     <div class="flex flex-col">
                         <label for="entryTax" class="label-peer">
                             Taxa de Serviço
@@ -84,7 +84,7 @@
                         </label>
                     </div>
                 </fieldset>
-<fieldset class="flex flex-col gap-2 p-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 shadow">
+                <fieldset class="flex flex-col gap-2 p-2 bg-white/10 rounded-lg border border-white/20 shadow">
                 <legend class="fieldset-legend">
                     Análise
                     </legend>
@@ -123,6 +123,29 @@
                     </div>
                 </fieldset>
             </div>
+            <fieldset class="flex gap-2 p-2 bg-black/5 rounded-lg border border-white/20 shadow justify-between">
+                <legend class="fieldset-legend">
+                    Peso <i class="text-xs font-normal text-gray-200 normal-case px-2">(preenchimento automático)</i>
+                </legend>
+                <div class="flex flex-col w-full">
+                    <label for="netWeightRaw" class="label-peer">
+                        Peso Líquido
+                        <i class="text-xs font-normal text-gray-500 normal-case">Peso Bruto - Tara</i>
+                    </label>
+                    <input type="text" name="netWeightRaw" id="netWeightRaw" class="cursor-not-allowed glass-input" {{ if ne
+                        .Entry.NetWeight 0.0 }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0"
+                        data-raw="0" required disabled>
+                </div>
+                <div class="flex flex-col w-full">
+                    <label for="netWeight" class="label-peer">
+                        Peso Líquido Final
+                        <i class="text-xs font-normal text-gray-500 normal-case">Peso Líquido - Descontos</i>
+                    </label>
+                    <input type="text" name="netWeight" id="netWeight" class="cursor-not-allowed glass-input" {{ if ne
+                        .Entry.NetWeight 0.0 }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0"
+                        data-raw="0" required disabled>
+                </div>
+            </fieldset>
             <div class="flex items-center gap-2 justify-around mt-2 w-52 mx-auto" id="btns-container">
                 <button class="glass-btn" type="button" onclick="closeEntryFormDialog()">Cancelar</button>
                 <button class="glass-btn glass-btn-primary" type="submit">
@@ -187,7 +210,8 @@
             let tareValue = Number(tareInput ? tareInput.value : 0)
 
             const netWeightInput = dialogEl.querySelector('input#netWeight')
-            if (netWeightInput) {
+            const rawNetWeightInput = dialogEl.querySelector('input#netWeightRaw')
+            if (netWeightInput && rawNetWeightInput) {
                 if (netWeightInput.value !== "") {
                     netWeightInput.dataset.raw = grossWeightValue - tareValue
                     applyDiscounts()
@@ -197,6 +221,7 @@
                     grossWeightValue = Number(e.target.value) ?? 0
 
                     netWeightInput.value = grossWeightValue - tareValue
+                    rawNetWeightInput.value = grossWeightValue - tareValue
                     netWeightInput.dataset.raw = grossWeightValue - tareValue
                     applyDiscounts()
                 })
@@ -204,6 +229,7 @@
                     tareValue = Number(e.target.value) ?? 0
 
                     netWeightInput.value = grossWeightValue - tareValue
+                    rawNetWeightInput.value = grossWeightValue - tareValue
                     netWeightInput.dataset.raw = grossWeightValue - tareValue
                     applyDiscounts()
                 })

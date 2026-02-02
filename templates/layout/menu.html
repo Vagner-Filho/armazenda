@@ -11,7 +11,7 @@
 
 <!-- Menu -->
 <div id="menu"
-    class="fixed top-0 left-0 h-dvh w-60 bg-sky-50/5 backdrop-blur-sm border-r border-sky-50/40 flex-col gap-2 px-4 py-2 text-lg shadow-lg transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-40 hidden lg:flex"
+    class="fixed top-0 left-0 h-dvh w-60 glass-panel flex-col gap-2 px-4 py-2 text-lg transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-40 hidden lg:flex"
     role="menu">
     <div class="flex items-center justify-between">
         <h2 class="text-green-900 font-bold inline-flex items-center gap-3 text-lg lg:text-xl">
@@ -31,10 +31,9 @@
     </div>
 
     <ul
-        class="space-y-4 mt-10 *:bg-sky-50/15 *:border *:border-sky-50/40 *:rounded-xl *:w-full *:text-white/70 *:shadow *:focus-within:bg-sky-50/40 *:focus-within:text-white *:focus-within:shadow-lg *:hover:bg-sky-50/40 *:hover:text-white *:transition-all *:duration-300 *:ease-in-out">
+        class="space-y-4 mt-10">
         <li>
-            <a href="/romaneio" class="size-full outline-0 py-3 pl-2 inline-flex items-center gap-3{{ if eq . " romaneio" }} text-green-900
-                font-bold{{ end }}" title="Página de romaneio">
+            <a href="/romaneio" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all{{ if eq . "romaneio" }} bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500{{ end }}" title="Página de romaneio">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                     <path fill="currentColor"
                         d="M8.5 2a6.5 6.5 0 0 1 6.46 5.78L22 12v2l-2-1.2V22h-2V11.6l-3-1.8V22h-2V9H4v13H2V8.5A6.5 6.5 0 0 1 8.5 2m0 2C6.54 4 4.87 5.25 4.26 7h8.48c-.61-1.75-2.28-3-4.24-3M6 11h5v2H6zm0 4h5v2H6zm0 4h5v2H6z" />
@@ -45,8 +44,7 @@
             </a>
         </li>
         <li>
-            <a href="/pessoa" class="size-full outline-0 py-3 pl-2 inline-flex items-center gap-3{{ if eq . " pessoa" }} text-green-900 font-bold{{
-                end }}" title="Página de pessoa">
+            <a href="/pessoa" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all{{ if eq . "pessoa" }} bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500{{ end }}" title="Página de pessoa">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                     <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
                         stroke-width="1.5"
@@ -58,8 +56,7 @@
             </a>
         </li>
         <li>
-            <a href="/relatorio" class="size-full outline-0 py-3 pl-2 inline-flex items-center gap-3{{ if eq . " relatorio" }} text-green-900
-                font-bold{{ end }}" title="Página de relatório">
+            <a href="/relatorio" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all{{ if eq . "relatorio" }} bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500{{ end }}" title="Página de relatório">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32">
                     <path fill="currentColor" d="M15 20h2v4h-2zm5-2h2v6h-2zm-10-4h2v10h-2z" />
                     <path fill="currentColor"
@@ -71,8 +68,7 @@
             </a>
         </li>
         <li>
-            <a href="/analise" class="size-full outline-0 py-3 pl-2 inline-flex items-center gap-3{{ if eq . " analise" }} text-green-900 font-bold{{
-                end }}" title="Página de análise">
+            <a href="/analise" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all{{ if eq . "analise" }} bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500{{ end }}" title="Página de análise">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                     <path fill="currentColor"
                         d="M21.71 7.29a1 1 0 0 0-1.42 0L14 13.59l-4.29-4.3a1 1 0 0 0-1.42 0l-6 6a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L9 11.41l4.29 4.3a1 1 0 0 0 1.42 0l7-7a1 1 0 0 0 0-1.42" />
@@ -83,8 +79,7 @@
             </a>
         </li>
         <li>
-            <a href="/farm/config" class="size-full outline-0 py-3 pl-2 inline-flex items-center gap-3{{ if eq . " config" }} text-green-900
-                font-bold{{ end }}">
+            <a href="/farm/config" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all{{ if eq . "config" }} bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500{{ end }}" title="Configurações">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32">
                     <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
                         stroke-width="2">

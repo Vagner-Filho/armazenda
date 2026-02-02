@@ -1,9 +1,9 @@
 {{ block "entry-list-item" . }}
-<tr class="text-sm sm:text-base border-b border-sky-50/30 hover:bg-sky-50/10 whitespace-nowrap" id="entry-{{ .Id }}">
+<tr class="text-sm border-b border-sky-50/30 hover:bg-sky-50/10 whitespace-nowrap" id="entry-{{ .Id }}">
   <td class="py-3 px-4 text-left" data-label="Romaneio">
     {{ .Id }}
   </td>
-  <td class="py-3 px-4 text-left" data-label="Produto">
+  <td class="py-3 px-4 text-left {{ if eq .Product "Milho" }}text-yellow-300{{ else }}text-emerald-300{{ end }}" data-label="Produto">
     {{ .Product }}
   </td>
   <td class="py-3 px-4 text-left truncate max-w-64" data-label="Origem" title="{{ .Origin }}">
@@ -12,10 +12,10 @@
   <td class="py-3 px-4 text-left" data-label="Talhão">
     {{ .Field }}
   </td>
-  <td class="py-3 px-4 text-left" data-label="Placa">
+  <td class="py-3 px-4 text-left font-mono" data-label="Placa">
     {{ .Vehicle }}
   </td>
-  <td class="py-3 px-4 text-left" data-label="Peso Líquido" id="netWeight">
+  <td class="py-3 px-4 text-left font-bold" data-label="Peso Líquido" id="netWeight">
     {{ .NetWeight }}
   </td>
   <td id="arrivalDate" class="py-3 px-4 text-left" data-label="Data de Recebimento">

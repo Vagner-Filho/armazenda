@@ -181,6 +181,7 @@ export function applyDiscounts() {
 	const totalDiscount = humidityDiscount + damageDiscount + impurityDiscount;
 
 	const netWeightInput = document.querySelector('input#netWeight');
+	const rawNetWeightInput = document.querySelector('input#netWeightRaw');
 	if (!netWeightInput || !netWeightInput.dataset.raw) {
 		return;
 	}
@@ -199,7 +200,9 @@ export function applyDiscounts() {
 
 	if (finalNetWeight < 0) {
 		netWeightInput.value = '0';
+		rawNetWeightInput.value = '0';
 	} else {
+		rawNetWeightInput.value = formatWeight(rawNetWeight.toFixed(2));
 		netWeightInput.value = formatWeight(finalNetWeight.toFixed(2));
 	}
 

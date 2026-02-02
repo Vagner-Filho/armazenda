@@ -2,10 +2,10 @@
 {{ if .NoContent }}
 {{ template "no-entry" }}
 {{ end }}
-<div class="{{ if .NoContent }} hidden {{ end }} bg-sky-50/5 backdrop-blur-sm border border-sky-50/40 rounded-xl shadow-center shadow-lg p-4" id="entry-content">
-  {{ template "entry-filters" .Filters }}
-  <div class="flex justify-end items-end gap-2 mb-4">
-    <button id="form" type="button" class="glass-btn w-36 flex items-center gap-1 whitespace-nowrap" hx-get="/entry/form"
+<div class="{{ if .NoContent }} hidden {{ end }} glass-panel rounded-xl shadow-center p-4" id="entry-content">
+  <div class="flex justify-between items-center gap-2 has-open:flex-col mb-2">
+    {{ template "entry-filters" .Filters }}
+    <button id="form" type="button" class="primary-glass-btn w-36 flex items-center gap-1 whitespace-nowrap peer-open:ml-auto" hx-get="/entry/form"
       hx-target="body" hx-swap="beforeend">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
         <path fill="currentColor"
@@ -18,11 +18,11 @@
     {{ template "entry-table" . }}
   </main>
 </div>
-<h2 class="text-xl lg:text-2xl font-bold text-white/95 text-center mt-8">Rascunhos</h2>
-<p class="text-center text-sm text-white/60 mt-2">
-  Acelere o lançamento de entradas a partir de um rascunho
-</p>
-<div class="mt-2 bg-sky-50/5 backdrop-blur-sm border border-sky-50/40 rounded-xl overflow-hidden p-4">
+<div class="mt-2 glass-panel rounded-xl overflow-hidden p-4">
+  <h2 class="text-xl lg:text-2xl font-bold text-white/95 text-center mt-8">Rascunhos</h2>
+  <p class="text-center text-sm text-white/60 mt-2">
+    Acelere o lançamento de entradas a partir de um rascunho
+  </p>
   <div class="flex justify-end items-center mb-4">
     <button id="form" type="button"
       class="btn-shape text-white/60 hover:text-white hover:bg-slate-500 focus:text-white focus:bg-slate-500 ring ring-inset ring-slate-500 transition-colors duration-300 ease-in-out flex items-center gap-1"
