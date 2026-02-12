@@ -91,7 +91,7 @@ func authenticate(c *gin.Context) {
 func setPublicAssetsHeaders(c *gin.Context) {
 	path := c.FullPath()
 	if strings.Contains(path, "/public") && strings.Contains(path, "filepath") {
-		c.Header("Cache-Control", "public, max-age=31536000")
+		c.Header("Cache-Control", "public, max-age=28800")
 		return
 	}
 }

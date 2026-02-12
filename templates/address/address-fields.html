@@ -1,51 +1,51 @@
 {{ block "address-fields" . }}
-<fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow group" name="address">
-  <legend class="fieldset-legend">
+<fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl group" name="address">
+  <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
     Endereço e Contato
   </legend>
   <div class="flex flex-col-reverse">
-    <input type="number" name="cep" id="cep-input" class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse" required {{ with .Cep }} value="{{ . }}" {{ end }}>
-    <label for="cep-input" class="label-peer">CEP</label>
+    <input type="number" name="cep" id="cep-input" class="peer bg-white/10 border-white/20 text-white placeholder-white/50 group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse" required {{ with .Cep }} value="{{ . }}" {{ end }}>
+    <label for="cep-input" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">CEP</label>
   </div>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
     <div class="flex flex-col-reverse">
-      <input type="text" name="state" id="state-input" class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse" required maxlength="2" minlength="2" {{ with .State }} value="{{ . }}" {{ end }}>
-      <label for="state-input" class="label-peer">
+      <input type="text" name="state" id="state-input" class="peer bg-white/10 border-white/20 text-white placeholder-white/50 group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse" required maxlength="2" minlength="2" {{ with .State }} value="{{ . }}" {{ end }}>
+      <label for="state-input" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
         Estado
-        <i>Unidade Federativa</i>
+        <i class="text-xs font-normal text-white/60 normal-case">Unidade Federativa</i>
       </label>
     </div>
     <div class="flex flex-col-reverse">
-      <input type="text" name="city" id="city-input" class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse" required {{ with .City }} value="{{ . }}" {{ end }}>
-      <label for="city-input" class="label-peer">Cidade</label>
+      <input type="text" name="city" id="city-input" class="peer bg-white/10 border-white/20 text-white placeholder-white/50 group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse" required {{ with .City }} value="{{ . }}" {{ end }}>
+      <label for="city-input" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Cidade</label>
     </div>
   </div>
   <div class="flex flex-col-reverse">
-    <input type="text" name="neighborhood" id="neighborhood-input" class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse" required {{ with .Neighborhood }} value="{{ . }}" {{ end }}>
-    <label for="neighborhood-input" class="label-peer">Bairro</label>
+    <input type="text" name="neighborhood" id="neighborhood-input" class="peer bg-white/10 border-white/20 text-white placeholder-white/50 group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse" required {{ with .Neighborhood }} value="{{ . }}" {{ end }}>
+    <label for="neighborhood-input" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Bairro</label>
   </div>
   <div class="flex flex-col-reverse">
-    <input type="text" name="street" id="street-input" class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse" required {{ with .Street }} value="{{ . }}" {{ end }}>
-    <label for="street-input" class="label-peer">Rua</label>
+    <input type="text" name="street" id="street-input" class="peer bg-white/10 border-white/20 text-white placeholder-white/50 group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse" required {{ with .Street }} value="{{ . }}" {{ end }}>
+    <label for="street-input" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Rua</label>
   </div>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
     <div class="flex flex-col-reverse">
-      <input type="number" name="number" id="number-input" class="peer" {{ with .Number }} value="{{ . }}" {{ end }}>
-      <label for="number-input" class="label-peer">Número (opcional)</label>
+      <input type="number" name="number" id="number-input" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ with .Number }} value="{{ . }}" {{ end }}>
+      <label for="number-input" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Número (opcional)</label>
     </div>
     <div class="flex flex-col-reverse">
-      <input type="text" name="complement" id="complement-input" class="peer" {{ with .Complement }} value="{{ . }}" {{ end }}>
-      <label for="complement-input" class="label-peer">Complemento (opcional)</label>
+      <input type="text" name="complement" id="complement-input" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ with .Complement }} value="{{ . }}" {{ end }}>
+      <label for="complement-input" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Complemento (opcional)</label>
     </div>
   </div>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
     <div class="flex flex-col-reverse">
-      <input type="email" name="email" id="email-input" class="peer" {{ with .Email }} value="{{ . }}" {{ end }}>
-      <label for="email-input" class="label-peer">E-mail (opcional)</label>
+      <input type="email" name="email" id="email-input" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ with .Email }} value="{{ . }}" {{ end }}>
+      <label for="email-input" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">E-mail (opcional)</label>
     </div>
     <div class="flex flex-col-reverse">
-      <input type="number" name="phoneNumber" id="phoneNumber-input" class="peer" {{ with .PhoneNumber }} value="{{ . }}" {{ end }}>
-      <label for="phoneNumber-input" class="label-peer">Celular (opcional)</label>
+      <input type="number" name="phoneNumber" id="phoneNumber-input" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ with .PhoneNumber }} value="{{ . }}" {{ end }}>
+      <label for="phoneNumber-input" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Celular (opcional)</label>
     </div>
   </div>
 </fieldset>

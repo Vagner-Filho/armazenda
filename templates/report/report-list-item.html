@@ -1,35 +1,35 @@
 {{ block "report-list-item" . }}
-<tr class="text-sm sm:text-base border-b border-gray-200 hover:bg-gray-50"
+<tr class="text-sm sm:text-base border-b border-white/10 hover:bg-white/5 text-white/90"
   id="operation-{{ .OperationType }}-{{ .Romaneio }}">
-  <td class="py-3 px-4 text-left">
+  <td class="py-3 px-4 text-left" data-label="ROMANEIO">
     {{ .Romaneio }}
   </td>
-  <td class="py-3 px-4 text-left">
+  <td class="py-3 px-4 text-left" data-label="OPERAÇÃO">
     {{ if eq .OperationType 0 }}
     <div title="Entrada" class="flex items-center gap-2">
-      <iconify-icon icon="mdi:arrow-bottom-left-thick" class="text-xl text-blue-500"></iconify-icon>
-      <span class="font-semibold text-blue-500">Entrada</span>
+      <iconify-icon icon="mdi:arrow-bottom-left-thick" class="text-xl text-blue-400"></iconify-icon>
+      <span class="font-semibold text-blue-400">Entrada</span>
     </div>
     {{ else }}
     <div title="Saída" class="flex items-center gap-2">
-      <iconify-icon icon="mdi:arrow-top-right-thick" class="text-xl text-amber-500"></iconify-icon>
-      <span class="font-semibold text-amber-500">Saída</span>
+      <iconify-icon icon="mdi:arrow-top-right-thick" class="text-xl text-amber-400"></iconify-icon>
+      <span class="font-semibold text-amber-400">Saída</span>
     </div>
     {{ end }}
   </td>
-  <td class="py-3 px-4 text-left truncate max-w-64">
+  <td class="py-3 px-4 text-left truncate max-w-64" data-label="PESSOA">
     {{ .Person }}
   </td>
-  <td class="py-3 px-4 text-left">
+  <td class="py-3 px-4 text-left" data-label="PRODUTO">
     {{ .Product }}
   </td>
-  <td class="py-3 px-4 text-left">
+  <td class="py-3 px-4 text-left" data-label="VEÍCULO">
     {{ .Vehicle }}
   </td>
-  <td class="py-3 px-4 text-left">
+  <td class="py-3 px-4 text-left" data-label="PESO LÍQUIDO">
     {{ .NetWeight }}
   </td>
-  <td id="operationDate" class="py-3 px-4 text-left">
+  <td id="operationDate" class="py-3 px-4 text-left" data-label="DATA">
     ...
   </td>
   <script type="module">

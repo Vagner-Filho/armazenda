@@ -1,5 +1,5 @@
 {{ block "recipient-selector" $ }}
-<select name="recipient" id="recipient-selector" class="w-full peer">
+<select name="recipient" id="recipient-selector" class="w-full bg-white/10 border border-white/20 text-white rounded-md px-2 peer">
   {{ range $.People }}
   <option
     {{ if eq .Id nil }} value="" {{ else }} value="{{ .Id }}" {{ end }} data-humidity="{{ .HumidityDiscount }}" data-entry-soy-discount="{{ .EntrySoyDiscount }}" data-entry-corn-discount="{{ .EntryCornDiscount }}"

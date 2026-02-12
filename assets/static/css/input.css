@@ -120,3 +120,49 @@
 @utility fieldset-legend {
     @apply text-base lg:text-lg font-semibold text-slate-700 border-b border-slate-200 pb-2
 }
+
+/* Responsive table - transforms to cards on mobile */
+.responsive-table {
+    width: 100%;
+}
+
+@media screen and (max-width: 600px) {
+    .responsive-table {
+        border: 0;
+    }
+
+    .responsive-table thead {
+        border: none;
+        clip: rect(0 0 0 0);
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+    }
+
+    .responsive-table tr {
+        border-bottom: 3px solid rgba(255,255,255,0.2);
+        display: block;
+        margin-bottom: .625em;
+    }
+
+    .responsive-table td {
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        display: block;
+        font-size: .8em;
+        text-align: right;
+    }
+
+    .responsive-table td::before {
+        content: attr(data-label);
+        float: left;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .responsive-table td:last-child {
+        border-bottom: 0;
+    }
+}
