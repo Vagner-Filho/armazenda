@@ -1,11 +1,11 @@
 {{ define "top-supplier-card.html" }}
-<div class="bg-white p-4 rounded-lg shadow-md" data-stat-type="{{ .Type }}">
-  <h3 class="text-sm font-medium text-gray-500">{{ .Title }}</h3>
+<div class="glass-panel rounded-xl p-4" data-stat-type="{{ .Type }}">
+  <h3 class="text-sm font-medium text-white/80">{{ .Title }}</h3>
   {{ if .IsWeight }}
-  <p class="text-2xl font-semibold text-gray-800 mt-1 weight-value">{{ .Value }}</p>
+  <p class="text-2xl font-semibold text-white mt-1 weight-value">{{ .Value }}</p>
   {{ else }}
-  <p class="text-2xl font-semibold text-gray-800 mt-1">{{ .Value }}</p>
+  <p class="text-2xl font-semibold text-white mt-1">{{ .Value }}</p>
   {{ end }}
-  <p class="text-xs text-gray-600 mt-1">{{ .PersonName }}</p>
+  <p class="text-xs text-white/70 mt-1">{{ .PersonName }}</p>
 </div>
 {{ end }}

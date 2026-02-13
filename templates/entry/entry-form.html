@@ -1,16 +1,16 @@
 {{ block "entry-form" . }}
-<dialog id="addEntryDialog" class="glass-card rounded-md w-full max-w-5xl">
+<dialog id="addEntryDialog" class="glass-panel rounded-xl w-full max-w-5xl">
     <div class="p-4 relative">
         {{ template "close-dialog-btn" "dialog#addEntryDialog" }}
         <header class="text-center mb-4">
-            <h1 class="text-xl lg:text-2xl font-bold text-white drop-shadow-lg">
+            <h1 class="text-xl lg:text-3xl font-bold text-white/95 font-[Noto_Sans]">
                 {{ if .Entry.Id }}
                 Editando Entrada
                 {{ else }}
                 Nova Entrada
                 {{ end }}
             </h1>
-            <p class="text-sm lg:text-base text-white/80 mt-2">
+            <p class="text-sm text-white/90 mt-2">
                 {{ if .Entry.Id }}
                 Atualize os detalhes deste registro de entrada.
                 {{ else }}
@@ -21,42 +21,37 @@
         <form id="entry-form" class="flex flex-col gap-4" {{ if .Entry.Id }} hx-put="/entry/{{ .Entry.Id }}"
             hx-target="#entry-{{ .Entry.Id }}" hx-swap="outerHTML" {{ else }} hx-post="/entry"
             hx-target="#entries-table-body" hx-swap="afterbegin" {{ end }} hx-indicator="#btns-container">
-            <fieldset class="flex flex-col gap-2 p-2 bg-black/5 rounded-lg border border-white/20 shadow">
-                <legend class="fieldset-legend">
+            <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl">
+                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
                     Identificação
                 </legend>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
                     {{ template "crop-selector" . }}
                     {{ template "field-selector" . }}
-                    <div class="flex flex-col w-full relative">
-                        <label for="origin-selector" class="label-peer">
-                            Origem
-                        </label>
-                        {{ template "origin-selector" . }}
-                    </div>
+                    {{ template "origin-selector" . }}
                 </div>
             </fieldset>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <fieldset class="flex flex-col gap-2 p-2 bg-white/10 rounded-lg border border-white/20 shadow">
-                <legend class="fieldset-legend">
-                    Recebimento
+                <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl">
+                    <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+                        Recebimento
                     </legend>
                     {{ template "vehicle-selector" . }}
                     <div class="flex flex-col-reverse">
-                        <input type="number" name="grossWeight" id="grossWeight" class="peer glass-input" {{ if ne
+                        <input type="number" name="grossWeight" id="grossWeight" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ if ne
                             .Entry.GrossWeight 0.0 }} value="{{ .Entry.GrossWeight }}" {{ end }} required>
-                        <label for="grossWeight" class="label-peer">
+                        <label for="grossWeight" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             Peso Bruto (KG)
-                            <i class="text-xs font-normal text-gray-500 normal-case">Peso total da carga incluindo o
+                            <i class="text-xs font-normal text-white/60 normal-case">Peso total da carga incluindo o
                                 transporte</i>
                         </label>
                     </div>
                     <div class="flex flex-col-reverse">
-                        <input type="number" name="tare" id="tare" class="peer glass-input" {{ if ne .Entry.Tare 0.0 }}
+                        <input type="number" name="tare" id="tare" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ if ne .Entry.Tare 0.0 }}
                             value="{{ .Entry.Tare }}" {{ end }} required>
-                        <label for="tare" class="label-peer">
+                        <label for="tare" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             Tara (KG)
-                            <i class="text-xs font-normal text-gray-500 normal-case">Peso do transporte</i>
+                            <i class="text-xs font-normal text-white/60 normal-case">Peso do transporte</i>
                         </label>
                     </div>
                     <!--<div class="flex flex-col">
@@ -70,86 +65,86 @@
                             data-raw="0" required disabled>
                     </div>-->
                     <div class="flex flex-col">
-                        <label for="entryTax" class="label-peer">
+                        <label for="entryTax" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             Taxa de Serviço
-                            <i class="text-xs font-normal text-gray-500 normal-case">Obtido após descontos de qualidade</i>
+                            <i class="text-xs font-normal text-white/60 normal-case">Obtido após descontos de qualidade</i>
                         </label>
-                        <input type="text" name="entryTax" id="entryTax" class="cursor-not-allowed glass-input" readonly min="0" required disabled>
+                        <input type="text" name="entryTax" id="entryTax" class="cursor-not-allowed bg-white/10 border-white/20 text-white placeholder-white/50" readonly min="0" required disabled>
                     </div>
                     <div class="flex flex-col-reverse">
-                        <input type="datetime-local" name="arrivalDate" id="arrival-date" class="peer glass-input"
+                        <input type="datetime-local" name="arrivalDate" id="arrival-date" class="peer bg-white/10 border-white/20 text-white placeholder-white/50"
                             value="{{ .Entry.ArrivalDate }}" required>
-                        <label for="arrival-date" class="label-peer">
+                        <label for="arrival-date" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             Data de Recebimento
                         </label>
                     </div>
                 </fieldset>
-                <fieldset class="flex flex-col gap-2 p-2 bg-white/10 rounded-lg border border-white/20 shadow">
-                <legend class="fieldset-legend">
-                    Análise
+                <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl">
+                    <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+                        Análise
                     </legend>
                     <div class="flex flex-col-reverse relative">
                         <div role="status" class="absolute bottom-3 right-8 text-sm text-[#caff89] h-fit"
                             aria-label="Desconto de Umidade"></div>
-                        <input type="number" step="0.01" min="0" max="100" name="humidity" id="humidity" class="peer glass-input"
+                        <input type="number" step="0.01" min="0" max="100" name="humidity" id="humidity" class="peer bg-white/10 border-white/20 text-white placeholder-white/50"
                             value="{{ .Entry.Humidity }}">
-                        <label for="humidity" class="label-peer">
+                        <label for="humidity" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             % Umidade (opcional)
-                            <i class="text-xs font-normal text-gray-500 normal-case">Desconta do Peso Líquido a partir
+                            <i class="text-xs font-normal text-white/60 normal-case">Desconta do Peso Líquido a partir
                                 de 14%</i>
                         </label>
                     </div>
                     <div class="flex flex-col-reverse relative">
                         <div role="status" class="absolute bottom-3 right-8 text-sm text-[#caff89] h-fit"
                             aria-label="Desconto de Avaria"></div>
-                        <input type="number" step="0.01" min="0" max="100" name="damage" id="damage" class="peer glass-input"
+                        <input type="number" step="0.01" min="0" max="100" name="damage" id="damage" class="peer bg-white/10 border-white/20 text-white placeholder-white/50"
                             value="{{ .Entry.Damage }}">
-                        <label for="damage" class="label-peer">
+                        <label for="damage" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             % Avariado (opcional)
-                            <i class="text-xs font-normal text-gray-500 normal-case">Desconta do Peso Líquido a partir
+                            <i class="text-xs font-normal text-white/60 normal-case">Desconta do Peso Líquido a partir
                                 de 8%</i>
                         </label>
                     </div>
                     <div class="flex flex-col-reverse relative">
                         <div role="status" class="absolute bottom-3 right-8 text-sm text-[#caff89] h-fit"
                             aria-label="Desconto de Impureza"></div>
-                        <input type="number" step="0.01" min="0" max="100" name="impurity" id="impurity" class="peer glass-input"
+                        <input type="number" step="0.01" min="0" max="100" name="impurity" id="impurity" class="peer bg-white/10 border-white/20 text-white placeholder-white/50"
                             value="{{ .Entry.Impurity }}">
-                        <label for="impurity" class="label-peer">
+                        <label for="impurity" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             % Impureza (opcional)
-                            <i class="text-xs font-normal text-gray-500 normal-case">Desconta do Peso Líquido a partir
+                            <i class="text-xs font-normal text-white/60 normal-case">Desconta do Peso Líquido a partir
                                 de 1%</i>
                         </label>
                     </div>
                 </fieldset>
             </div>
-            <fieldset class="flex gap-2 p-2 bg-black/5 rounded-lg border border-white/20 shadow justify-between">
-                <legend class="fieldset-legend">
-                    Peso <i class="text-xs font-normal text-gray-200 normal-case px-2">(preenchimento automático)</i>
+            <fieldset class="flex gap-2 p-4 glass-panel rounded-xl justify-between">
+                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+                    Peso <i class="text-xs font-normal text-white/60 normal-case px-2">(preenchimento automático)</i>
                 </legend>
                 <div class="flex flex-col w-full">
-                    <label for="netWeightRaw" class="label-peer">
+                    <label for="netWeightRaw" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                         Peso Líquido
-                        <i class="text-xs font-normal text-gray-500 normal-case">Peso Bruto - Tara</i>
+                        <i class="text-xs font-normal text-white/60 normal-case">Peso Bruto - Tara</i>
                     </label>
-                    <input type="text" name="netWeightRaw" id="netWeightRaw" class="cursor-not-allowed glass-input" {{ if ne
+                    <input type="text" name="netWeightRaw" id="netWeightRaw" class="cursor-not-allowed bg-white/10 border-white/20 text-white placeholder-white/50" {{ if ne
                         .Entry.NetWeight 0.0 }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0"
                         data-raw="0" required disabled>
                 </div>
                 <div class="flex flex-col w-full">
-                    <label for="netWeight" class="label-peer">
+                    <label for="netWeight" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                         Peso Líquido Final
-                        <i class="text-xs font-normal text-gray-500 normal-case">Peso Líquido - Descontos</i>
+                        <i class="text-xs font-normal text-white/60 normal-case">Peso Líquido - Descontos</i>
                     </label>
-                    <input type="text" name="netWeight" id="netWeight" class="cursor-not-allowed glass-input" {{ if ne
+                    <input type="text" name="netWeight" id="netWeight" class="cursor-not-allowed bg-white/10 border-white/20 text-white placeholder-white/50" {{ if ne
                         .Entry.NetWeight 0.0 }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0"
                         data-raw="0" required disabled>
                 </div>
             </fieldset>
-            <div class="flex items-center gap-2 justify-around mt-2 w-52 mx-auto" id="btns-container">
-                <button class="glass-btn" type="button" onclick="closeEntryFormDialog()">Cancelar</button>
-                <button class="glass-btn glass-btn-primary" type="submit">
-                    {{ if .Entry.Id }} Editar {{ else }} Adicionar {{ end }}
+            <div class="flex items-center gap-2 justify-around mt-4 w-52 mx-auto" id="btns-container">
+                <button class="cancel-btn" type="button" onclick="closeEntryFormDialog()">Cancelar</button>
+                <button class="primary-glass-btn" type="submit">
+                    {{ if .Entry.Id }} Salvar {{ else }} Adicionar {{ end }}
                 </button>
                 <img class="htmx-indicator" src="/public/assets/static/spinner.svg" alt="...">
             </div>
@@ -298,104 +293,6 @@
         .htmx-request .htmx-indicator {
             display: block
         }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-            border-radius: 24px;
-        }
-
-        .glass-input {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
-        }
-
-        .glass-input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .glass-input:focus {
-            background: rgba(255, 255, 255, 0.18);
-            border-color: rgba(255, 255, 255, 0.5);
-            outline: none;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.15), inset 0 0 20px rgba(255, 255, 255, 0.05);
-        }
-
-        .glass-input:-webkit-autofill,
-        .glass-input:-webkit-autofill:hover,
-        .glass-input:-webkit-autofill:focus,
-        .glass-input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 30px rgba(255, 255, 255, 0.1) inset !important;
-            -webkit-text-fill-color: white !important;
-            transition: background-color 5000s ease-in-out 0s;
-        }
-
-        .glass-btn {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(8px);
-            padding: 8px 16px;
-            border-radius: 12px;
-            font-weight: 600;
-        }
-
-        .glass-btn:hover {
-            background: rgba(255, 255, 255, 0.25);
-            border-color: rgba(255, 255, 255, 0.6);
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-
-        .glass-btn-primary {
-            background: rgba(22, 163, 74, 0.5);
-            border-color: rgba(255, 255, 255, 0.3);
-            color: #ffffff;
-        }
-
-        .glass-btn-primary:hover {
-            background: rgba(22, 163, 74, 0.7);
-            border-color: #ffffff;
-            box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
-        }
-
-        #entry-form {
-.fieldset-legend {
-            color: white;
-            font-weight: 600;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-        }
-
-        .label-peer {
-            color: rgba(255, 255, 255, .85);
-            font-weight: 500;
-        }
-
-        .label-peer > i {
-            color: rgba(255, 255, 255, .7);
-        }
-
-        select.glass-input {
-            color: white;
-        }
-
-        select.glass-input option {
-            background: rgba(30, 58, 138, 0.9);
-            color: white;
-        }
-        }
-
-        
     </style>
 </dialog>
 {{ end }}

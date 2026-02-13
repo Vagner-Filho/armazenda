@@ -1,32 +1,54 @@
 {{ block "vehicle-form" . }}
-<dialog id="vehicleFormDialog" class="rounded-md w-72 sm:w-96">
-    <div class="p-2 relative">
+<dialog id="vehicleFormDialog" class="glass-panel rounded-xl w-72 sm:w-96">
+    <div class="p-4 relative">
         {{ template "close-dialog-btn" "dialog#vehicleFormDialog" }}
-        <h3 class="text-center px-2 font-semibold">
-            NOVO VEÍCULO
-        </h3>
-        <form class="flex flex-col" hx-post="/vehicle" hx-target="#vehicle-selector" hx-swap="beforeend">
-            <label for="plate" class="px-2">
-                Placa
-            </label>
-            <input type="text" name="plate" id="vehicle-plate" required>
-            <label for="name" class="px-2">
-                Nome (opcional)
-            </label>
-            <input type="text" name="name" id="vehicle-name">
-            <div class="flex items-center justify-center gap-2 mt-3">
-                <button type="button" class="cancel-btn w-1/3" onclick="closeVehicleForm()">
-                    CANCELAR
+        <header class="text-center mb-4">
+            <h1 class="text-xl lg:text-2xl font-bold text-white/95 font-[Noto_Sans]">
+                Novo Veículo
+            </h1>
+            <p class="text-sm text-white/90 mt-2">
+                Preencha os campos abaixo para cadastrar um novo veículo.
+            </p>
+        </header>
+        <form class="flex flex-col gap-4" hx-post="/vehicle" hx-target="#vehicle-selector" hx-swap="beforeend">
+            <div class="flex flex-col-reverse">
+                <input type="text" name="plate" id="vehicle-plate" 
+                    class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required autofocus>
+                <label for="vehicle-plate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Placa
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <input type="text" name="name" id="vehicle-name" 
+                    class="peer bg-white/10 border-white/20 text-white placeholder-white/50">
+                <label for="vehicle-name" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Nome (opcional)
+                </label>
+            </div>
+            <div class="flex items-center justify-around mt-4 w-52 mx-auto">
+                <button type="button" class="cancel-btn" onclick="closeVehicleForm()">
+                    Cancelar
                 </button>
-                <button class="add-btn w-1/3">
-                    ADICIONAR
+                <button class="primary-glass-btn" type="submit">
+                    Adicionar
                 </button>
             </div>
         </form>
     </div>
     <script type="module">
-        import { vehicleDialogSetup } from "/public/assets/js/vehicleDialog.js"
-        vehicleDialogSetup()
+        const dialogEl = document.querySelector("#vehicleFormDialog")
+        if (dialogEl) {
+            dialogEl.showModal()
+
+            function closeVehicleForm() {
+                dialogEl.close()
+                dialogEl.remove()
+                window.closeVehicleForm = undefined
+            }
+
+            dialogEl.addEventListener('close', closeVehicleForm)
+            window.closeVehicleForm = closeVehicleForm
+        }
     </script>
 </dialog>
 {{ end }}

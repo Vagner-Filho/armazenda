@@ -1,90 +1,127 @@
 {{ block "config-form" . }}
-<form hx-put="/farm/config" hx-swap="outerHTML" class="space-y-8">
+<form hx-put="/farm/config" hx-swap="outerHTML" class="space-y-6">
     {{ with .Farm }}
     <input type="hidden" name="id" value="{{ .Id }}">
-    <fieldset class="bg-white rounded-lg shadow p-6">
-        <legend class="fieldset-legend">Dados da Fazenda</legend>
+    <fieldset class="glass-panel rounded-xl p-6">
+        <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+            Dados da Fazenda
+        </legend>
         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="flex flex-col-reverse">
-                <input type="text" name="name" id="name" value="{{ if .Name }}{{ .Name }}{{ end }}" class="peer"
-                    required>
-                <label for="name" class="label-peer">Nome da Fazenda</label>
+                <input type="text" name="name" id="name" value="{{ if .Name }}{{ .Name }}{{ end }}" 
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40" required>
+                <label for="name" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Nome da Fazenda
+                </label>
             </div>
             <div class="flex flex-col-reverse">
-                <input type="text" name="storageName" id="storageName" value="{{ if .StorageName }}{{ .StorageName }}{{ end }}" class="peer"
-                    required>
-                <label for="storageName" class="label-peer">Nome do Armazém</label>
+                <input type="text" name="storageName" id="storageName" value="{{ if .StorageName }}{{ .StorageName }}{{ end }}" 
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40" required>
+                <label for="storageName" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Nome do Armazém
+                </label>
             </div>
             <div class="flex flex-col-reverse">
                 <input type="text" name="inscricaoEstadual" id="inscricaoEstadual" value="{{ .InscricaoEstadual }}"
-                    class="peer" required>
-                <label for="inscricaoEstadual" class="label-peer">Inscrição Estadual</label>
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40" required>
+                <label for="inscricaoEstadual" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Inscrição Estadual
+                </label>
             </div>
             <div class="flex flex-col-reverse">
                 <input type="number" step="0.01" name="humidityDiscount" id="humidityDiscount"
-                    value="{{ .HumidityDiscount }}" class="peer" required>
-                <label for="humidityDiscount" class="label-peer">Desconto de Umidade (%)</label>
+                    value="{{ .HumidityDiscount }}" 
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40" required>
+                <label for="humidityDiscount" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Desconto de Umidade (%)
+                </label>
             </div>
         </div>
     </fieldset>
-    <fieldset class="bg-white rounded-lg shadow p-6">
-        <legend class="fieldset-legend">Endereço</legend>
+    <fieldset class="glass-panel rounded-xl p-6">
+        <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+            Endereço
+        </legend>
         <div class="mt-4 grid grid-cols-1 md:grid-cols-6 gap-6">
             <div class="flex flex-col-reverse md:col-span-2">
-                <input type="text" name="cep" id="cep" value="{{ if .Cep }}{{ .Cep }}{{ end }}" class="peer">
-                <label for="cep" class="label-peer">CEP</label>
+                <input type="text" name="cep" id="cep" value="{{ if .Cep }}{{ .Cep }}{{ end }}" 
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                <label for="cep" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    CEP
+                </label>
             </div>
             <div class="flex flex-col-reverse md:col-span-4">
                 <input type="text" name="street" id="street" value="{{ if .Street }}{{ .Street }}{{ end }}"
-                    class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse">
-                <label for="street" class="label-peer">Rua</label>
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 group-[.cep-data-loading]:animate-pulse">
+                <label for="street" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Rua
+                </label>
             </div>
             <div class="flex flex-col-reverse md:col-span-2">
                 <input type="text" name="number" id="number" value="{{ if .Number }}{{ .Number }}{{ end }}"
-                    class="peer">
-                <label for="number" class="label-peer">Número</label>
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                <label for="number" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Número
+                </label>
             </div>
             <div class="flex flex-col-reverse md:col-span-4">
                 <input type="text" name="complement" id="complement"
-                    value="{{ if .Complement }}{{ .Complement }}{{ end }}" class="peer">
-                <label for="complement" class="label-peer">Complemento</label>
+                    value="{{ if .Complement }}{{ .Complement }}{{ end }}" 
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                <label for="complement" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Complemento
+                </label>
             </div>
             <div class="flex flex-col-reverse md:col-span-3">
                 <input type="text" name="neighborhood" id="neighborhood"
                     value="{{ if .Neighborhood }}{{ .Neighborhood }}{{ end }}"
-                    class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse">
-                <label for="neighborhood" class="label-peer">Bairro</label>
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 group-[.cep-data-loading]:animate-pulse">
+                <label for="neighborhood" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Bairro
+                </label>
             </div>
             <div class="flex flex-col-reverse md:col-span-2">
                 <input type="text" name="city" id="city" value="{{ if .City }}{{ .City }}{{ end }}"
-                    class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse">
-                <label for="city" class="label-peer">Cidade</label>
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 group-[.cep-data-loading]:animate-pulse">
+                <label for="city" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Cidade
+                </label>
             </div>
             <div class="flex flex-col-reverse md:col-span-1">
                 <input type="text" name="state" id="state" value="{{ if .State }}{{ .State }}{{ end }}"
-                    class="peer group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse">
-                <label for="state" class="label-peer">Estado</label>
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 group-[.cep-data-loading]:animate-pulse">
+                <label for="state" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Estado
+                </label>
             </div>
         </div>
     </fieldset>
-    <fieldset class="bg-white rounded-lg shadow p-6">
-        <legend class="fieldset-legend">Contato</legend>
+    <fieldset class="glass-panel rounded-xl p-6">
+        <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+            Contato
+        </legend>
         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="flex flex-col-reverse">
-                <input type="email" name="email" id="email" value="{{ if .Email }}{{ .Email }}{{ end }}" class="peer">
-                <label for="email" class="label-peer">Email</label>
+                <input type="email" name="email" id="email" value="{{ if .Email }}{{ .Email }}{{ end }}" 
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                <label for="email" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Email
+                </label>
             </div>
             <div class="flex flex-col-reverse">
                 <input type="tel" name="phoneNumber" id="phoneNumber"
-                    value="{{ if .PhoneNumber }}{{ .PhoneNumber }}{{ end }}" class="peer">
-                <label for="phoneNumber" class="label-peer">Telefone</label>
+                    value="{{ if .PhoneNumber }}{{ .PhoneNumber }}{{ end }}" 
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                <label for="phoneNumber" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Telefone
+                </label>
             </div>
         </div>
     </fieldset>
     {{ end }}
     <div class="mt-6 flex justify-end">
-        <button type="submit"
-            class="add-btn rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white shadow-md transition-colors duration-200 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
+        <button type="submit" class="primary-glass-btn flex items-center gap-1">
+            <iconify-icon icon="mdi:content-save" width="20" height="20"></iconify-icon>
             Salvar Alterações
         </button>
     </div>

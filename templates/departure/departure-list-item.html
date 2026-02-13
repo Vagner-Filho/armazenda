@@ -1,35 +1,20 @@
 {{ block "departure-list-item" . }}
-<tr class="text-sm sm:text-base border-b border-gray-200 hover:bg-gray-50 whitespace-nowrap"
-  id="departure-{{ .Id }}">
-  <td class="py-3 px-4 text-left" data-label="Romaneio">
-    {{ .Id }}
-  </td>
-  <td class="py-3 px-4 text-left" data-label="Produto">
-    {{ .Product }}
-  </td>
-  <td class="py-3 px-4 text-left truncate max-w-64" data-label="Origem">
-    {{ .Origin }}
-  </td>
-  <td class="py-3 px-4 text-left" data-label="Placa">
-    {{ .VehiclePlate }}
-  </td>
-  <td class="py-3 px-4 text-left" data-label="Peso">
-    {{ .NetWeight }}
-  </td>
-  <td id="departureDate" class="py-3 px-4 text-left" data-label="Data de Saída">
-    {{ .DepartureDate }}
-  </td>
+<tr class="text-sm sm:text-base border-b border-white/10 hover:bg-white/5 whitespace-nowrap" id="departure-{{ .Id }}">
+  <td class="py-3 px-4 text-left" data-label="Romaneio">{{ .Id }}</td>
+  <td class="py-3 px-4 text-left" data-label="Produto">{{ .Product }}</td>
+  <td class="py-3 px-4 text-left truncate max-w-64" data-label="Origem">{{ .Origin }}</td>
+  <td class="py-3 px-4 text-left" data-label="Placa">{{ .VehiclePlate }}</td>
+  <td class="py-3 px-4 text-left" data-label="Peso">{{ .NetWeight }}</td>
+  <td id="departureDate" class="py-3 px-4 text-left" data-label="Data de Saída">{{ .DepartureDate }}</td>
   <td class="py-3 px-4 text-left" data-label="Ações">
     <div class="flex items-center justify-end lg:justify-start gap-2">
       <button type="button" id="{{ .Id }}" onclick="getDeparturePdf(this)" title="PDF de Saída" class="icon-btn">
         <iconify-icon icon="mdi:file-pdf-box" class="text-xl"></iconify-icon>
       </button>
-      <button type="button" hx-get="/departure/form/{{ .Id }}" hx-target="body" hx-swap="beforeend"
-        title="Editar Saída" class="icon-btn">
+      <button type="button" hx-get="/departure/form/{{ .Id }}" hx-target="body" hx-swap="beforeend" title="Editar Saída" class="icon-btn">
         <iconify-icon icon="mdi:pencil" class="text-xl"></iconify-icon>
       </button>
-      <button type="button" hx-trigger="confirmed" hx-delete="/departure/{{ .Id }}" hx-target="#departure-{{ .Id }}"
-        title="Excluir Saída" hx-swap="delete" class="icon-btn" onClick="Swal.fire({title: 'Excluir', text: 'Deseja excluir o romaneio de saída {{ .Id }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
+      <button type="button" hx-trigger="confirmed" hx-delete="/departure/{{ .Id }}" hx-target="#departure-{{ .Id }}" title="Excluir Saída" hx-swap="delete" class="icon-btn" onClick="Swal.fire({title: 'Excluir', text: 'Deseja excluir o romaneio de saída {{ .Id }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
                     if (result.isConfirmed) {
                         htmx.trigger(this, 'confirmed');  
                     } 

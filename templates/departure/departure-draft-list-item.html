@@ -1,32 +1,19 @@
 {{ block "departure-draft-list-item" . }}
-<tr class="text-sm sm:text-base border-b border-gray-200 hover:bg-gray-50 whitespace-nowrap" id="departure-draft-{{ .Id }}">
-  <td class="py-3 px-4 text-left" data-label="Nome">
-    {{ .Name }}
-  </td>
-  <td class="py-3 px-4 text-left" data-label="Destino">
-    {{ .Person }}
-  </td>
-  <td class="py-3 px-4 text-left" data-label="Safra">
-    {{ .Crop }}
-  </td>
-  <td class="py-3 px-4 text-left" data-label="Placa">
-    {{ .Vehicle }}
-  </td>
-  <td class="py-3 px-4 text-left" data-label="Tara">
-    {{ if eq .Tare nil }}N/A{{ else }}{{ .Tare }}{{ end }}
-  </td>
+<tr class="text-sm sm:text-base border-b border-white/10 hover:bg-white/5 whitespace-nowrap" id="departure-draft-{{ .Id }}">
+  <td class="py-3 px-4 text-left" data-label="Nome">{{ .Name }}</td>
+  <td class="py-3 px-4 text-left" data-label="Destino">{{ .Person }}</td>
+  <td class="py-3 px-4 text-left" data-label="Safra">{{ .Crop }}</td>
+  <td class="py-3 px-4 text-left" data-label="Placa">{{ .Vehicle }}</td>
+  <td class="py-3 px-4 text-left" data-label="Tara">{{ if eq .Tare nil }}N/A{{ else }}{{ .Tare }}{{ end }}</td>
   <td class="py-3 px-4 text-left" data-label="Ações">
     <div class="flex items-center justify-end lg:justify-start gap-2">
-      <button type="button" hx-get="/departure/form/draft/{{ .Id }}" hx-target="body" hx-swap="beforeend" title="Gerar Saída a partir do Rascunho"
-        class="icon-btn">
+      <button type="button" hx-get="/departure/form/draft/{{ .Id }}" hx-target="body" hx-swap="beforeend" title="Gerar Saída a partir do Rascunho" class="icon-btn">
         <iconify-icon icon="mdi:file-document-plus-outline" class="text-xl"></iconify-icon>
       </button>
-      <button type="button" hx-get="/departure/draft/form/{{ .Id }}" hx-target="body" hx-swap="beforeend" title="Editar Rascunho"
-        class="icon-btn">
+      <button type="button" hx-get="/departure/draft/form/{{ .Id }}" hx-target="body" hx-swap="beforeend" title="Editar Rascunho" class="icon-btn">
         <iconify-icon icon="mdi:pencil" class="text-xl"></iconify-icon>
       </button>
-      <button type="button" hx-trigger="confirmed" hx-delete="/departure/draft/{{ .Id }}" hx-target="#departure-draft-{{ .Id }}"
-        hx-swap="delete" title="Excluir Rascunho" class="icon-btn" onClick="Swal.fire({title: 'Excluir', text:'Deseja excluir o rascunho {{ .Name }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
+      <button type="button" hx-trigger="confirmed" hx-delete="/departure/draft/{{ .Id }}" hx-target="#departure-draft-{{ .Id }}" hx-swap="delete" title="Excluir Rascunho" class="icon-btn" onClick="Swal.fire({title: 'Excluir', text:'Deseja excluir o rascunho {{ .Name }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
                     if (result.isConfirmed) {
                         htmx.trigger(this, 'confirmed');
                     }

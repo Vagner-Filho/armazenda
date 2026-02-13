@@ -1,9 +1,9 @@
 {{ block "crop-selector" $ }}
 <div class="flex flex-col w-full relative pr-[30px]">
-  <label for="crop-selector" class="label-peer">
+  <label for="crop-selector" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear text-xs lg:text-sm font-medium uppercase tracking-wider">
     Safra
   </label>
-  <select name="crop" id="crop-selector" class="w-full glass-input" required>
+  <select name="crop" id="crop-selector" class="w-full bg-white/10 border-white/20 text-white peer" required>
     {{ range $.Crops }}
             {{ if eq .Id $.SelectedCrop }}
                 <option value="{{ .Id }}" selected data-product-id="{{ .Product }}">
@@ -20,7 +20,7 @@
     </option>
     {{ end }}
   </select>
-  <button class="absolute right-0 bottom-2 stroke-green-500 rounded-full text-transparent text-[24px] h-6 leading-6 focus:text-green-500 hover:text-green-500 transition-colors duration-300 ease-linear !outline-0" type="button" hx-get="/crop/form" hx-target="body" hx-swap="beforeend">
+  <button class="icon-btn absolute right-0 bottom-2 text-[24px]" type="button" hx-get="/crop/form" hx-target="body" hx-swap="beforeend">
     <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
   </button>
 </div>
