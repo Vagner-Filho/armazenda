@@ -16,7 +16,8 @@ type Departure struct {
 	Farm      uint32  `form:"farm" binding:"gte=0"`
 	Recipient *uint32 `form:"recipient"`
 	Analysis
-	Origin *uint32 `form:"origin,omitempty"`
+	Origin     *uint32   `form:"origin,omitempty"`
+	ModifiedAt time.Time `json:"modifiedAt"`
 }
 
 func (d Departure) ToDTO() DepartureDTO {

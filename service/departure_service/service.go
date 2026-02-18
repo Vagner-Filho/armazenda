@@ -1,6 +1,8 @@
 package departure_service
 
 import (
+	"time"
+
 	entity_public "armazenda/entity/public"
 	"armazenda/model/departure_model"
 )
@@ -193,4 +195,85 @@ func DeleteDepartureDraft(id uint32) *entity_public.Toast {
 
 	toast := entity_public.GetSuccessToast("Rascunho de saída deletado", "")
 	return &toast
+}
+
+// SyncDeparture represents a departure for synchronization
+type SyncDeparture struct {
+	Id            uint32    `json:"id"`
+	DepartureDate time.Time `json:"departureDate"`
+	Vehicle       uint16    `json:"vehicle"`
+	Crop          uint8     `json:"crop"`
+	GrossWeight   float64   `json:"grossWeight"`
+	Tare          float64   `json:"tare"`
+	NetWeight     float64   `json:"netWeight"`
+	Humidity      *float64  `json:"humidity,omitempty"`
+	Damage        *float64  `json:"damage,omitempty"`
+	Impurity      *float64  `json:"impurity,omitempty"`
+	Farm          uint32    `json:"farm"`
+	Recipient     *uint32   `json:"recipient,omitempty"`
+	Origin        *uint32   `json:"origin,omitempty"`
+	ModifiedAt    time.Time `json:"modifiedAt"`
+	Deleted       bool      `json:"deleted,omitempty"`
+}
+
+// GetDeparturesForSync retrieves departures modified since a specific time
+func GetDeparturesForSync(since time.Time, farm uint32) ([]SyncDeparture, error) {
+	dModel := departure_model.GetDepartureModel()
+	departures, err := dModel.GetDeparturesModifiedSince(since, farm)
+	if err != nil {
+		return nil, err
+	}
+
+	syncDepartures := make([]SyncDeparture, len(departures))
+	for i, dep := range departures {
+		syncDepartures[i] = convertToSyncDeparture(dep)
+	}
+
+	return syncDepartures, nil
+}
+
+// GetModifiedDepartureCount returns the count of departures modified since a specific time
+func GetModifiedDepartureCount(since time.Time, farm uint32) (int, error) {
+	dModel := departure_model.GetDepartureModel()
+	return dModel.GetModifiedCount(since, farm)
+}
+
+func convertToSyncDeparture(dep entity_public.Departure) SyncDeparture {
+	syncDep := SyncDeparture{
+		Id:            dep.Id,
+		DepartureDate: dep.DepartureDate,
+		Vehicle:       dep.Vehicle,
+		Crop:          dep.Crop,
+		GrossWeight:   0,
+		Tare:          0,
+		NetWeight:     0,
+		Farm:          dep.Farm,
+		Recipient:     dep.Recipient,
+		Origin:        dep.Origin,
+		ModifiedAt:    dep.ModifiedAt,
+	}
+
+	// Convert CargoWeight
+	gw, _ := dep.CargoWeight.GrossWeight.Float64()
+	syncDep.GrossWeight = gw
+	t, _ := dep.CargoWeight.Tare.Float64()
+	syncDep.Tare = t
+	nw, _ := dep.CargoWeight.NetWeight.Float64()
+	syncDep.NetWeight = nw
+
+	// Convert Analysis
+	if dep.Analysis.Humidity != nil {
+		h, _ := dep.Analysis.Humidity.Float64()
+		syncDep.Humidity = &h
+	}
+	if dep.Analysis.Damage != nil {
+		d, _ := dep.Analysis.Damage.Float64()
+		syncDep.Damage = &d
+	}
+	if dep.Analysis.Impurity != nil {
+		i, _ := dep.Analysis.Impurity.Float64()
+		syncDep.Impurity = &i
+	}
+
+	return syncDep
 }

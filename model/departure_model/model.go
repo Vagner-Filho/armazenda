@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/shopspring/decimal"
 )
 
 type departureModel struct {
@@ -437,4 +439,78 @@ func (dm *departureModel) DeleteDepartureDraft(id uint32) *model_error.ModelErro
 	}
 
 	return nil
+}
+
+// GetDeparturesModifiedSince retrieves departures modified after the given timestamp
+func (dm *departureModel) GetDeparturesModifiedSince(since time.Time, farm uint32) ([]entity_public.Departure, error) {
+	query := `
+		SELECT d.id, d.departuredate, d.vehicle, d.crop, d.grossweight, d.tare, d.netweight,
+		       da.humidity, da.damage, da.impurity,
+		       d.farm, dr.person_id as recipient, dor.person_id as origin, d.modified_at
+		FROM departure d
+		LEFT JOIN departure_analysis da ON da.departure_id = d.id
+		LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
+		LEFT JOIN departure_origin dor ON dor.departure_id = d.id
+		WHERE d.farm = @farm AND d.modified_at > @since
+		ORDER BY d.modified_at ASC
+	`
+
+	rows, err := dm.pool.Query(context.Background(), query, pgx.NamedArgs{"farm": farm, "since": since})
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var departures []entity_public.Departure
+	for rows.Next() {
+		var dep entity_public.Departure
+		var humidity, damage, impurity *float64
+		var recipient, origin *uint32
+		var modifiedAt time.Time
+
+		err := rows.Scan(
+			&dep.Id, &dep.DepartureDate, &dep.Vehicle, &dep.Crop,
+			&dep.CargoWeight.GrossWeight, &dep.CargoWeight.Tare, &dep.CargoWeight.NetWeight,
+			&humidity, &damage, &impurity,
+			&dep.Farm, &recipient, &origin, &modifiedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		dep.Recipient = recipient
+		dep.Origin = origin
+		dep.ModifiedAt = modifiedAt
+
+		// Convert float64 pointers to decimal.Decimal pointers
+		if humidity != nil {
+			h := decimal.NewFromFloat(*humidity)
+			dep.Analysis.Humidity = &h
+		}
+		if damage != nil {
+			d := decimal.NewFromFloat(*damage)
+			dep.Analysis.Damage = &d
+		}
+		if impurity != nil {
+			i := decimal.NewFromFloat(*impurity)
+			dep.Analysis.Impurity = &i
+		}
+
+		departures = append(departures, dep)
+	}
+
+	return departures, nil
+}
+
+// GetModifiedCount returns the count of departures modified since the given timestamp
+func (dm *departureModel) GetModifiedCount(since time.Time, farm uint32) (int, error) {
+	query := `SELECT COUNT(*) FROM departure WHERE farm = @farm AND modified_at > @since`
+
+	var count int
+	err := dm.pool.QueryRow(context.Background(), query, pgx.NamedArgs{"farm": farm, "since": since}).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

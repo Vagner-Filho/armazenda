@@ -31,6 +31,7 @@ type Entry struct {
 	ArrivalDate time.Time `form:"arrivalDate" binding:"required" time_format:"2006-01-02T15:04"`
 	Farm        uint32    `form:"farm" binding:"gte=0"`
 	Origin      *uint32   `form:"origin,omitempty"`
+	ModifiedAt  time.Time `json:"modifiedAt"`
 }
 
 func (e Entry) ToDTO() EntryDTO {

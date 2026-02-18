@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -450,4 +451,80 @@ func (em *EntryModel) AddEntryTax(id uint32, tax decimal.Decimal, appliedTax dec
 	}
 
 	return nil
+}
+
+// GetEntriesModifiedSince retrieves entries modified after the given timestamp
+func (em *EntryModel) GetEntriesModifiedSince(since time.Time, farm uint32) ([]entity_public.Entry, error) {
+	query := `
+		SELECT e.id, e.field, e.crop, e.vehicle, e.grossweight, e.tare, e.netweight,
+		       ea.humidity, ea.damage, ea.impurity, ea.humidity_discount_modifier,
+		       e.arrivaldate, e.farm, eo.person_id as origin, e.modified_at
+		FROM entry e
+		LEFT JOIN entry_analysis ea ON ea.entryid = e.id
+		LEFT JOIN entry_origin eo ON eo.entry_id = e.id
+		WHERE e.farm = @farm AND e.modified_at > @since
+		ORDER BY e.modified_at ASC
+	`
+
+	rows, err := em.pool.Query(context.Background(), query, pgx.NamedArgs{"farm": farm, "since": since})
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var entries []entity_public.Entry
+	for rows.Next() {
+		var entry entity_public.Entry
+		var humidity, damage, impurity, humidityModifier *float64
+		var origin *uint32
+		var modifiedAt time.Time
+
+		err := rows.Scan(
+			&entry.Id, &entry.Field, &entry.Crop, &entry.Vehicle,
+			&entry.CargoWeight.GrossWeight, &entry.CargoWeight.Tare, &entry.CargoWeight.NetWeight,
+			&humidity, &damage, &impurity, &humidityModifier,
+			&entry.ArrivalDate, &entry.Farm, &origin, &modifiedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		entry.Origin = origin
+		entry.ModifiedAt = modifiedAt
+
+		// Convert float64 pointers to decimal.Decimal pointers
+		if humidity != nil {
+			h := decimal.NewFromFloat(*humidity)
+			entry.Analysis.Humidity = &h
+		}
+		if damage != nil {
+			d := decimal.NewFromFloat(*damage)
+			entry.Analysis.Damage = &d
+		}
+		if impurity != nil {
+			i := decimal.NewFromFloat(*impurity)
+			entry.Analysis.Impurity = &i
+		}
+		if humidityModifier != nil {
+			hm := decimal.NewFromFloat(*humidityModifier)
+			entry.HumidityDiscountModifier = &hm
+		}
+
+		entries = append(entries, entry)
+	}
+
+	return entries, nil
+}
+
+// GetModifiedCount returns the count of entries modified since the given timestamp
+func (em *EntryModel) GetModifiedCount(since time.Time, farm uint32) (int, error) {
+	query := `SELECT COUNT(*) FROM entry WHERE farm = @farm AND modified_at > @since`
+
+	var count int
+	err := em.pool.QueryRow(context.Background(), query, pgx.NamedArgs{"farm": farm, "since": since}).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

@@ -42,9 +42,10 @@ func (pc PersonConfig) GetProductEntryDiscount(product uint8) decimal.Decimal {
 }
 
 type Person struct {
-	Ie   string
-	Id   uint32
-	Farm uint32 `form:"farm" binding:"gte=0"`
+	Ie         string
+	Id         uint32
+	Farm       uint32    `form:"farm" binding:"gte=0"`
+	ModifiedAt time.Time `json:"modifiedAt"`
 	PersonConfig
 }
 

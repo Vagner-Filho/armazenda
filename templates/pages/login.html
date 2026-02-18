@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a5f">
     <link rel="icon" type="image/x-icon" href="/public/assets/favicon.ico">
+    <link rel="manifest" href="/public/assets/manifest.json">
     <link href="/public/assets/static/css/output.css" rel="stylesheet">
     <title>Login - Armazenda</title>
     <script src="/public/assets/js/htmx.min.js"></script>
@@ -54,6 +56,14 @@
       </div>
     </main>
   </body>
+  <script type="module">
+    // Register service worker for PWA support
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/public/assets/sw.js')
+        .then(reg => console.log('SW registered'))
+        .catch(err => console.log('SW registration failed'));
+    }
+  </script>
   <script>
     document.querySelectorAll('input').forEach(input => {
     input.addEventListener('focus', function () {

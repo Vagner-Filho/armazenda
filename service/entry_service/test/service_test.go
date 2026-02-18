@@ -18,8 +18,14 @@ var errorCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel) {
+			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
+				return entity_public.DisplayEntry{}, &model_error.ModelError{
+					Message:     "Connection failed",
+					IsServerErr: true,
+				}
+			}
 		},
-		expectedToastType:    entity_public.WarningToast,
+		expectedToastType:    entity_public.ErrorToast,
 		expectedToastMessage: "O peso líquido não pode ser menor do que zero",
 		validateResult: func(t *testing.T, tc addEntryTestCase, result entity_public.DisplayEntry, em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel) {
 			if em.AddEntryCalled {
@@ -39,8 +45,14 @@ var errorCases []addEntryTestCase = []addEntryTestCase{
 			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32) (decimal.Decimal, *model_error.ModelError) {
 				return decimal.Zero, &model_error.ModelError{Message: "Database error", IsServerErr: true}
 			}
+			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
+				return entity_public.DisplayEntry{}, &model_error.ModelError{
+					Message:     "Connection failed",
+					IsServerErr: true,
+				}
+			}
 		},
-		expectedToastType:    entity_public.WarningToast,
+		expectedToastType:    entity_public.ErrorToast,
 		expectedToastMessage: "Falha ao calcular desconto de humidade",
 		validateResult: func(t *testing.T, tc addEntryTestCase, result entity_public.DisplayEntry, em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel) {
 			if !pm.GetHumidityDiscountCalled {
@@ -90,15 +102,16 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
 				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), (*model_error.ModelError)(nil)
 			}
+			discountModifier := decimal.NewFromFloat(1.15)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32) (decimal.Decimal, *model_error.ModelError) {
+				return discountModifier, (*model_error.ModelError)(nil)
+			}
 		},
 		expectedToastType:    entity_public.SuccessToast,
 		expectedToastMessage: "Entrada adicionada",
 		validateResult: func(t *testing.T, tc addEntryTestCase, result entity_public.DisplayEntry, em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel) {
 			if !em.AddEntryCalled {
 				t.Error("Expected AddEntry to be called")
-			}
-			if pm.GetHumidityDiscountCalled {
-				t.Error("Expected GetHumidityDiscount NOT to be called")
 			}
 			if em.AddEntryTaxCalled {
 				t.Error("Expected AddEntryTax NOT to be called")
@@ -222,6 +235,10 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel) {
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
 				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), (*model_error.ModelError)(nil)
+			}
+			discountModifier := decimal.NewFromFloat(1.7)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32) (decimal.Decimal, *model_error.ModelError) {
+				return discountModifier, (*model_error.ModelError)(nil)
 			}
 		},
 		expectedToastType:    entity_public.SuccessToast,

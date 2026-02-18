@@ -1,6 +1,8 @@
 package person_service
 
 import (
+	"time"
+
 	entity_public "armazenda/entity/public"
 	"armazenda/model/person_model"
 	"math"
@@ -179,4 +181,63 @@ func UpdateLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDispla
 
 	toast := entity_public.GetSuccessToast("Pessoa atualizada!", "")
 	return person, &toast
+}
+
+// SyncPerson represents a person for synchronization
+type SyncPerson struct {
+	Id                uint32  `json:"id"`
+	Type              uint8   `json:"type"`
+	Name              string  `json:"name"`
+	Document          string  `json:"document"`
+	IE                string  `json:"ie"`
+	Farm              uint32  `json:"farm"`
+	HumidityDiscount  float64 `json:"humidityDiscount"`
+	EntrySoyDiscount  float64 `json:"entrySoyDiscount"`
+	EntryCornDiscount float64 `json:"entryCornDiscount"`
+	ModifiedAt        int64   `json:"modifiedAt"`
+	Deleted           bool    `json:"deleted,omitempty"`
+}
+
+// GetPeopleForSync retrieves people modified since a specific time
+func GetPeopleForSync(since time.Time, farm uint32) ([]SyncPerson, error) {
+	pmodel := person_model.GetPersonModel()
+	people, err := pmodel.GetPeopleModifiedSince(since, farm)
+	if err != nil {
+		return nil, err
+	}
+
+	syncPeople := make([]SyncPerson, len(people))
+	for i, person := range people {
+		syncPeople[i] = convertToSyncPerson(person)
+	}
+
+	return syncPeople, nil
+}
+
+// GetModifiedPersonCount returns the count of people modified since a specific time
+func GetModifiedPersonCount(since time.Time, farm uint32) (int, error) {
+	pmodel := person_model.GetPersonModel()
+	return pmodel.GetModifiedCount(since, farm)
+}
+
+func convertToSyncPerson(person entity_public.Person) SyncPerson {
+	syncPerson := SyncPerson{
+		Id:                person.Id,
+		IE:                person.Ie,
+		Farm:              person.Farm,
+		HumidityDiscount:  0,
+		EntrySoyDiscount:  0,
+		EntryCornDiscount: 0,
+		ModifiedAt:        person.ModifiedAt.Unix(),
+	}
+
+	// Convert PersonConfig
+	hd, _ := person.PersonConfig.HumidityDiscount.Float64()
+	syncPerson.HumidityDiscount = hd
+	esd, _ := person.PersonConfig.EntrySoyDiscount.Float64()
+	syncPerson.EntrySoyDiscount = esd
+	ecd, _ := person.PersonConfig.EntryCornDiscount.Float64()
+	syncPerson.EntryCornDiscount = ecd
+
+	return syncPerson
 }

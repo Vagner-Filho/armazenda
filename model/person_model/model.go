@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
@@ -626,4 +627,62 @@ func (bm *PersonModel) GetPersonConfig(person uint32) (entity_public.PersonConfi
 		return entity_public.PersonConfig{}, &model_error.ModelError{Message: err.Error()}
 	}
 	return personConfig, nil
+}
+
+// GetPeopleModifiedSince retrieves people modified after the given timestamp
+func (bm *PersonModel) GetPeopleModifiedSince(since time.Time, farm uint32) ([]entity_public.Person, error) {
+	query := `
+		SELECT p.id, p.ie, p.farm, p.modified_at,
+		       COALESCE(pc.humidity_discount, dpc.humidity_discount) as humidity_discount,
+		       COALESCE(pc.entry_soy_discount, dpc.entry_soy_discount) as entry_soy_discount,
+		       COALESCE(pc.entry_corn_discount, dpc.entry_corn_discount) as entry_corn_discount
+		FROM person p
+		LEFT JOIN person_config pc ON pc.person_id = p.id
+		LEFT JOIN default_person_config dpc ON dpc.id = 1
+		WHERE p.farm = @farm AND p.modified_at > @since
+		ORDER BY p.modified_at ASC
+	`
+
+	rows, err := bm.pool.Query(context.Background(), query, pgx.NamedArgs{"farm": farm, "since": since})
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var people []entity_public.Person
+	for rows.Next() {
+		var person entity_public.Person
+		var modifiedAt time.Time
+		var humidityDiscount, entrySoyDiscount, entryCornDiscount float64
+
+		err := rows.Scan(
+			&person.Id, &person.Ie, &person.Farm, &modifiedAt,
+			&humidityDiscount, &entrySoyDiscount, &entryCornDiscount,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		person.ModifiedAt = modifiedAt
+		person.PersonConfig.HumidityDiscount = decimal.NewFromFloat(humidityDiscount)
+		person.PersonConfig.EntrySoyDiscount = decimal.NewFromFloat(entrySoyDiscount)
+		person.PersonConfig.EntryCornDiscount = decimal.NewFromFloat(entryCornDiscount)
+
+		people = append(people, person)
+	}
+
+	return people, nil
+}
+
+// GetModifiedCount returns the count of people modified since the given timestamp
+func (bm *PersonModel) GetModifiedCount(since time.Time, farm uint32) (int, error) {
+	query := `SELECT COUNT(*) FROM person WHERE farm = @farm AND modified_at > @since`
+
+	var count int
+	err := bm.pool.QueryRow(context.Background(), query, pgx.NamedArgs{"farm": farm, "since": since}).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

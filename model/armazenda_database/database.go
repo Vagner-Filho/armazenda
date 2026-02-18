@@ -264,6 +264,7 @@ func initEntry(c *pgx.Conn) {
 		netWeight NUMERIC(10, 3) NOT NULL,
 		arrivalDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 		farm INTEGER NOT NULL,
+		modified_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (vehicle) REFERENCES vehicle(id),
 		FOREIGN KEY (field) REFERENCES field(id),
 		FOREIGN KEY (crop) REFERENCES crop(id),
@@ -355,6 +356,7 @@ func initDeparture(c *pgx.Conn) {
 		tare NUMERIC(10, 3) NOT NULL,
 		netWeight NUMERIC(10, 3) NOT NULL,
 		farm INTEGER NOT NULL,
+		modified_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (vehicle) REFERENCES vehicle(id),
 		FOREIGN KEY (crop) REFERENCES crop(id),
 		FOREIGN KEY (farm) REFERENCES farm(id)
@@ -382,6 +384,7 @@ func initPerson(c *pgx.Conn) {
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		ie TEXT,
 		farm INTEGER NOT NULL,
+		modified_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (farm) REFERENCES farm(id),
 		CONSTRAINT unique_person_in_farm UNIQUE (farm, ie)
 	);
@@ -1392,6 +1395,39 @@ func initEntryDraftOrigin(c *pgx.Conn) {
 	handleStmtExec(c, stmt, err, "create entry draft origin")
 }
 
+func initModifiedAtTriggers(c *pgx.Conn) {
+	// Create the trigger function
+	_, err := c.Exec(context.Background(), `
+		CREATE OR REPLACE FUNCTION update_modified_at()
+		RETURNS TRIGGER AS $$
+		BEGIN
+			NEW.modified_at = CURRENT_TIMESTAMP;
+			RETURN NEW;
+		END;
+		$$ LANGUAGE plpgsql;
+	`)
+	if err != nil {
+		fmt.Printf("\n error creating update_modified_at function: %v\n", err.Error())
+		return
+	}
+
+	// Create triggers for each table
+	tables := []string{"entry", "departure", "person"}
+	for _, table := range tables {
+		triggerName := fmt.Sprintf("%s_modified_at_trigger", table)
+		_, err := c.Exec(context.Background(), fmt.Sprintf(`
+			DROP TRIGGER IF EXISTS %s ON %s;
+			CREATE TRIGGER %s
+				BEFORE UPDATE ON %s
+				FOR EACH ROW
+				EXECUTE FUNCTION update_modified_at();
+		`, triggerName, table, triggerName, table))
+		if err != nil {
+			fmt.Printf("\n error creating trigger for %s: %v\n", table, err.Error())
+		}
+	}
+}
+
 func InitDb(c *pgx.Conn) {
 	initFarm(c)
 	initFarmConfig(c)
@@ -1441,6 +1477,7 @@ func InitDb(c *pgx.Conn) {
 	initUpdateEntryDraft(c)
 	initAddGetDepartureDraft(c)
 	initDepartureAnalysis(c)
+	initModifiedAtTriggers(c)
 }
 
 func initUserApproval(c *pgx.Conn) {

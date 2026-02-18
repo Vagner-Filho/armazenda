@@ -308,6 +308,7 @@ func VerifyToken(tokenString string) error {
 type credentials struct {
 	Token    string
 	Username string
+	Farm     uint32
 }
 
 func Login(cpf string, passwd string) (credentials, *entity_public.Toast) {
@@ -324,7 +325,7 @@ func Login(cpf string, passwd string) (credentials, *entity_public.Toast) {
 		toast := entity_public.GetErrorToast("Desculpe, houve um erro interno :(", "")
 		return credentials{}, &toast
 	}
-	return credentials{Token: token, Username: user.Name}, nil
+	return credentials{Token: token, Username: user.Name, Farm: user.Farm}, nil
 }
 
 func Create(newUser entity_public.NewUser) entity_public.Toast {

@@ -5,11 +5,13 @@
     <h3 id="username" class="text-white text-lg">...</h3>
   </div>
   <script type="module">
-    const username = document.cookie.slice(document.cookie.indexOf('username=') + 9)
+    cookieStore.get('username')
+      .then((username) => {
         const usernameEl = document.querySelector('nav h3')
         if (usernameEl && username) {
-            usernameEl.textContent = username.replaceAll('+', ' ')
+          usernameEl.textContent = username.value
         }
+      })
   </script>
 </nav>
 {{ end }}
