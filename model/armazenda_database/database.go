@@ -120,7 +120,7 @@ func initPreEntry(c *pgx.Conn) {
 			field SMALLINT,
 			crop SMALLINT,
 			vehicle INTEGER,
-			tare NUMERIC(10, 3),
+			tare NUMERIC(12, 6),
 			farm INTEGER NOT NULL,
 			FOREIGN KEY (vehicle) REFERENCES vehicle(id),
 			FOREIGN KEY (field) REFERENCES field(id),
@@ -139,7 +139,7 @@ func initAddGetEntryDraft(c *pgx.Conn) {
 			in_field SMALLINT,
 			in_crop SMALLINT,
 			in_vehicle INTEGER,
-			in_tare NUMERIC(10, 3),
+			in_tare NUMERIC(12, 6),
 			in_farm INTEGER,
 			in_origin INTEGER,
 			OUT out_id INTEGER,
@@ -147,7 +147,7 @@ func initAddGetEntryDraft(c *pgx.Conn) {
 			OUT out_field_name TEXT,
 			OUT out_crop_name TEXT,
 			OUT out_vehicle_plate TEXT,
-			OUT out_tare NUMERIC(10, 3),
+			OUT out_tare NUMERIC(12, 6),
 			OUT out_origin TEXT
 		)
 		LANGUAGE plpgsql AS $$
@@ -188,14 +188,14 @@ func initUpdateEntryDraft(c *pgx.Conn) {
 			IN in_field SMALLINT,
 			IN in_crop SMALLINT,
 			IN in_vehicle INTEGER,
-			IN in_tare NUMERIC(10, 3),
+			IN in_tare NUMERIC(12, 6),
 			IN in_farm INTEGER,
 			IN in_origin INTEGER,
 			OUT out_name TEXT,
 			OUT out_field_name TEXT,
 			OUT out_crop_name TEXT,
 			OUT out_vehicle_plate TEXT,
-			OUT out_tare NUMERIC(10, 3),
+			OUT out_tare NUMERIC(12, 6),
 			OUT out_origin TEXT
 		)
 		LANGUAGE plpgsql AS $$
@@ -259,9 +259,9 @@ func initEntry(c *pgx.Conn) {
 		field SMALLINT NOT NULL,
 		crop SMALLINT NOT NULL,
 		vehicle INTEGER NOT NULL,
-		grossWeight NUMERIC(10, 3) NOT NULL,
-		tare NUMERIC(10, 3) NOT NULL,
-		netWeight NUMERIC(10, 3) NOT NULL,
+		grossWeight NUMERIC(12, 6) NOT NULL,
+		tare NUMERIC(12, 6) NOT NULL,
+		netWeight NUMERIC(12, 6) NOT NULL,
 		arrivalDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 		farm INTEGER NOT NULL,
 		modified_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -280,7 +280,7 @@ func initEntryTax(c *pgx.Conn) {
 	CREATE TABLE IF NOT EXISTS entry_tax (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		entry_id INTEGER UNIQUE NOT NULL,
-		weight NUMERIC(10, 3) NOT NULL,
+		weight NUMERIC(12, 6) NOT NULL,
 		applied_tax NUMERIC(5, 2) NOT NULL,
 		FOREIGN KEY (entry_id) REFERENCES entry(id)
 	);
@@ -352,9 +352,9 @@ func initDeparture(c *pgx.Conn) {
 		departureDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 		vehicle INTEGER NOT NULL,
 		crop SMALLINT NOT NULL,
-		grossWeight NUMERIC(10, 3) NOT NULL,
-		tare NUMERIC(10, 3) NOT NULL,
-		netWeight NUMERIC(10, 3) NOT NULL,
+		grossWeight NUMERIC(12, 6) NOT NULL,
+		tare NUMERIC(12, 6) NOT NULL,
+		netWeight NUMERIC(12, 6) NOT NULL,
 		farm INTEGER NOT NULL,
 		modified_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (vehicle) REFERENCES vehicle(id),
@@ -824,8 +824,8 @@ func initAddEntry(c *pgx.Conn) {
 		CREATE OR REPLACE FUNCTION add_get_entry(
 			IN field SMALLINT,
 			IN crop SMALLINT,
-			IN grossWeight NUMERIC(10, 3),
-			IN tare NUMERIC(10, 3),
+			IN grossWeight NUMERIC(12, 6),
+			IN tare NUMERIC(12, 6),
 		 	IN humidity NUMERIC(5, 2),
 	
 			OUT entryId INTEGER,
@@ -834,7 +834,7 @@ func initAddEntry(c *pgx.Conn) {
 
 			IN in_vehicle INTEGER,
 			OUT out_vehicle TEXT,
-			INOUT netWeight NUMERIC(10, 3),
+			INOUT netWeight NUMERIC(12, 6),
 			INOUT arrivalDate TIMESTAMP WITHOUT TIME ZONE,
 			INOUT farm INTEGER,
 			IN damage NUMERIC(5, 2),
@@ -1211,7 +1211,7 @@ func initDepartureDraft(c *pgx.Conn) {
 			name TEXT NOT NULL,
 			crop SMALLINT,
 			vehicle INTEGER,
-			tare NUMERIC(10, 3),
+			tare NUMERIC(12, 6),
 			farm INTEGER NOT NULL,
 			FOREIGN KEY (vehicle) REFERENCES vehicle(id),
 			FOREIGN KEY (crop) REFERENCES crop(id),
@@ -1253,7 +1253,7 @@ func initAddGetDepartureDraft(c *pgx.Conn) {
 			in_recipient INTEGER,
 			in_crop SMALLINT,
 			in_vehicle INTEGER,
-			in_tare NUMERIC(10, 3),
+			in_tare NUMERIC(12, 6),
 			in_farm INTEGER,
 			in_origin INTEGER,
 			OUT out_id INTEGER,
@@ -1261,7 +1261,7 @@ func initAddGetDepartureDraft(c *pgx.Conn) {
 			OUT out_origin_name TEXT,
 			OUT out_crop_name TEXT,
 			OUT out_vehicle_plate TEXT,
-			OUT out_tare NUMERIC(10, 3)
+			OUT out_tare NUMERIC(12, 6)
 		)
 		LANGUAGE plpgsql AS $$
 		BEGIN
@@ -1305,14 +1305,14 @@ func initUpdateDepartureDraft(c *pgx.Conn) {
 			IN in_recipient INTEGER,
 			IN in_crop SMALLINT,
 			IN in_vehicle INTEGER,
-			IN in_tare NUMERIC(10, 3),
+			IN in_tare NUMERIC(12, 6),
 			IN in_farm INTEGER,
 			IN in_origin INTEGER,
 			OUT out_name TEXT,
 			OUT out_origin_name TEXT,
 			OUT out_crop_name TEXT,
 			OUT out_vehicle_plate TEXT,
-			OUT out_tare NUMERIC(10, 3)
+			OUT out_tare NUMERIC(12, 6)
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE origin_exists BOOLEAN;

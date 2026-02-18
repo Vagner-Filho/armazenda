@@ -2,6 +2,10 @@ package calculator_test
 
 import (
 	"armazenda/pkg/calculator"
+	"encoding/csv"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/shopspring/decimal"
@@ -431,6 +435,118 @@ func TestCalculateDeparture(t *testing.T) {
 				t.Errorf("NetWeight = %v, want %v", result.NetWeight, tt.expectedNetWeight)
 			}
 		})
+	}
+}
+
+// parseDecimal parses a string to decimal.Decimal, returning nil for empty strings
+func parseDecimal(s string) *decimal.Decimal {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	// Remove percentage sign if present
+	s = strings.TrimSuffix(s, "%")
+	d, err := decimal.NewFromString(s)
+	if err != nil {
+		return nil
+	}
+	return &d
+}
+
+// parseRequiredDecimal parses a string that must contain a valid decimal
+func parseRequiredDecimal(s string) decimal.Decimal {
+	s = strings.TrimSpace(s)
+	s = strings.TrimSuffix(s, "%")
+	d, _ := decimal.NewFromString(s)
+	return d
+}
+
+// TestCalculateEntryFromCSV reads test cases from CSV and validates calculator
+func TestCalculateEntryFromCSV(t *testing.T) {
+	// Find the CSV file path
+	csvPath := filepath.Join("test", "entry_calc_tests.csv")
+
+	// If not found relative to current dir, try to find it
+	if _, err := os.Stat(csvPath); os.IsNotExist(err) {
+		// Try from package directory
+		csvPath = filepath.Join("pkg", "calculator", "test", "entry_calc_tests.csv")
+	}
+
+	file, err := os.Open(csvPath)
+	if err != nil {
+		t.Fatalf("Failed to open CSV file: %v", err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		t.Fatalf("Failed to read CSV: %v", err)
+	}
+
+	if len(records) < 2 {
+		t.Fatal("CSV file has no data rows")
+	}
+
+	// Skip header row (index 0)
+	for i, record := range records[1:] {
+		rowNum := i + 2 // CSV row number (1-indexed, plus header)
+
+		// Skip empty rows
+		if len(record) == 0 || (len(record) == 1 && strings.TrimSpace(record[0]) == "") {
+			continue
+		}
+
+		// Ensure we have enough columns
+		if len(record) < 10 {
+			t.Errorf("Row %d: insufficient columns (got %d, expected 10)", rowNum, len(record))
+			continue
+		}
+
+		// Parse inputs
+		grossWeight := parseRequiredDecimal(record[0])       // Bruto
+		tare := parseRequiredDecimal(record[1])              // Tara
+		humidity := parseDecimal(record[3])                  // Umidade
+		humidityModifier := parseDecimal(record[4])          // Desconto Umidade
+		damage := parseDecimal(record[5])                    // Avaria
+		impurity := parseDecimal(record[6])                  // Impureza
+		storageTaxModifier := parseDecimal(record[8])        // Taxa de Serviço
+		expectedNetWeight := parseRequiredDecimal(record[9]) // Entrada Final
+
+		// Create input
+		input := calculator.EntryCalculationInput{
+			GrossWeight:        grossWeight,
+			Tare:               tare,
+			Humidity:           humidity,
+			HumidityModifier:   humidityModifier,
+			Damage:             damage,
+			Impurity:           impurity,
+			StorageTaxModifier: storageTaxModifier,
+		}
+
+		// Calculate
+		result := calculator.CalculateEntry(input)
+
+		// Validate
+		if !result.IsValid {
+			t.Errorf("Row %d: calculation returned invalid result with error: %s", rowNum, result.ErrorMessage)
+			continue
+		}
+
+		if !result.NetWeight.Equal(expectedNetWeight) {
+			t.Errorf("Row %d: expected NetWeight=%s, got %s (input: gross=%s, tare=%s, humidity=%v, mod=%v, damage=%v, impurity=%v, tax=%v)",
+				rowNum,
+				expectedNetWeight.String(),
+				result.NetWeight.String(),
+				grossWeight.String(),
+				tare.String(),
+				humidity,
+				humidityModifier,
+				damage,
+				impurity,
+				storageTaxModifier,
+			)
+		}
 	}
 }
 
