@@ -59,12 +59,9 @@ module.exports = defineConfig({
     },
   ],
 
-  /* Run local dev server before starting the tests */
-  webServer: {
-    command: process.env.WEB_SERVER_CMD ||
-      'cd .. && DB_HOST=localhost DB_PORT=5433 DB_USER=test DB_PASS=test DB_NAME=armazenda_test go run .',
-    url: process.env.BASE_URL || 'http://localhost:8100',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000, // Wait up to 2 minutes for the server
-  },
+  /*
+  * Note: webServer is intentionally removed.
+  * The Go application is started in global-setup.js after PostgreSQL is ready,
+  * ensuring the database schema is created before seeding test data.
+  */
 });
