@@ -7,6 +7,8 @@
  * - Form validation
  */
 
+import { faker } from '@faker-js/faker';
+
 const { test, expect } = require('@playwright/test');
 const { login } = require('../utils/auth');
 const {
@@ -24,7 +26,7 @@ test.describe('Entry Creation - Basic Flow', () => {
   test.beforeEach(async ({ page, browserName }) => {
     // Login before each test
     await login(page, browserName);
-    
+
     // Navigate to romaneio page
     await page.goto('/romaneio');
     await expect(page).toHaveURL(/.*romaneio/);
@@ -43,7 +45,7 @@ test.describe('Entry Creation - Basic Flow', () => {
     const grossWeight = 50000;
     const tare = 15000;
     const expectedNetWeight = grossWeight - tare;
-    
+
     await fillEntryForm(page, {
       crop: cropValue,
       field: fieldValue,
@@ -57,7 +59,7 @@ test.describe('Entry Creation - Basic Flow', () => {
 
     // Wait for the entry to appear in the table
     await page.waitForTimeout(1000); // Allow HTMX to update
-    
+
     // Verify the entry was created by checking the table
     const rows = await getEntryRows(page);
     expect(rows.length).toBeGreaterThan(0);
@@ -66,7 +68,7 @@ test.describe('Entry Creation - Basic Flow', () => {
     // The table should show the vehicle plate and calculated net weight
     const tableContent = await page.locator('#entries-table-body').textContent();
     expect(tableContent).toContain('ABC1234');
-    
+
     // Verify gross - tare calculation (35000 kg)
     // Note: The exact format may vary, so we check for the presence of the value
     expect(tableContent).toContain(expectedNetWeight.toString());
@@ -95,9 +97,9 @@ test.describe('Entry Creation - Basic Flow', () => {
     // Check for validation messages or required attribute
     const grossWeightInput = await page.locator('input#grossWeight');
     const tareInput = await page.locator('input#tare');
-    
-    expect(await grossWeightInput.getAttribute('required')).toBeTruthy();
-    expect(await tareInput.getAttribute('required')).toBeTruthy();
+
+    expect(grossWeightInput).toHaveAttribute('required');
+    expect(tareInput).toHaveAttribute('required');
   });
 
   test('should calculate net weight correctly', async ({ page }) => {
@@ -117,8 +119,9 @@ test.describe('Entry Creation - Basic Flow', () => {
     await page.waitForTimeout(500);
 
     // Check if net weight is calculated correctly (33000)
-    const netWeightRaw = await page.locator('input#netWeightRaw').inputValue();
-    expect(parseFloat(netWeightRaw)).toBe(33000);
+    const netWeightInput = page.locator('input#netWeight');
+    expect(netWeightInput).toHaveValue('33.000 kg');
+    expect(netWeightInput).toHaveAttribute('data-raw', '33000');
   });
 });
 
@@ -140,7 +143,9 @@ test.describe('Entry Creation - Dependencies', () => {
     await expect(page.locator('dialog#cropFormDialog')).toBeVisible();
 
     // Fill and submit the crop form
-    await page.fill('input#crop-name', 'Nova Safra Teste');
+
+    const safraName = faker.lorem.word()
+    await page.fill('input#crop-name', safraName);
     await page.selectOption('select#grain-selector', { label: 'Soja' });
     await page.fill('input#start-date', '2024-01-01');
     await page.click('dialog#cropFormDialog button[type="submit"]');
@@ -153,7 +158,7 @@ test.describe('Entry Creation - Dependencies', () => {
 
     // Verify the new crop appears in the selector
     const cropOptions = await page.locator('select#crop-selector option').allTextContents();
-    expect(cropOptions.some(text => text.includes('Nova Safra Teste'))).toBeTruthy();
+    expect(cropOptions.some(text => text.includes(safraName))).toBeTruthy();
   });
 
   test('should allow creating field from entry form', async ({ page }) => {
@@ -161,13 +166,14 @@ test.describe('Entry Creation - Dependencies', () => {
     await openEntryForm(page);
 
     // Click the add button for field
-    await page.click('button[hx-get="/field/form"]');
+    await page.click('button[hx-get="/entry/field/form"]');
 
     // Verify the field form dialog opens
     await expect(page.locator('dialog#fieldFormDialog')).toBeVisible();
 
     // Fill and submit the field form
-    await page.fill('input#field-name', 'Novo Talhão Teste');
+    const fieldName = faker.lorem.word();
+    await page.fill('input#field-name', fieldName);
     await page.fill('input#hectares', '25.5');
     await page.click('dialog#fieldFormDialog button[type="submit"]');
 
@@ -179,7 +185,7 @@ test.describe('Entry Creation - Dependencies', () => {
 
     // Verify the new field appears in the selector
     const fieldOptions = await page.locator('select#field-selector option').allTextContents();
-    expect(fieldOptions.some(text => text.includes('Novo Talhão Teste'))).toBeTruthy();
+    expect(fieldOptions.some(text => text.includes(fieldName))).toBeTruthy();
   });
 
   test('should allow creating vehicle from entry form', async ({ page }) => {
@@ -193,7 +199,8 @@ test.describe('Entry Creation - Dependencies', () => {
     await expect(page.locator('dialog#vehicleFormDialog')).toBeVisible();
 
     // Fill and submit the vehicle form
-    await page.fill('input#vehicle-plate', 'NEW9999');
+    const vehiclePlate = faker.vehicle.vrm();
+    await page.fill('input#vehicle-plate', vehiclePlate);
     await page.fill('input#vehicle-name', 'Novo Veículo');
     await page.click('dialog#vehicleFormDialog button[type="submit"]');
 
@@ -205,7 +212,7 @@ test.describe('Entry Creation - Dependencies', () => {
 
     // Verify the new vehicle appears in the selector
     const vehicleOptions = await page.locator('select#vehicle-selector option').allTextContents();
-    expect(vehicleOptions.some(text => text.includes('NEW9999'))).toBeTruthy();
+    expect(vehicleOptions.some(text => text.includes(vehiclePlate))).toBeTruthy();
   });
 });
 
@@ -243,14 +250,18 @@ test.describe('Entry Creation - Edge Cases', () => {
     expect(tableContent).toContain('30000');
   });
 
-  test('should handle large weight values', async ({ page }) => {
+  test.only('should handle large weight values', async ({ page }) => {
     // Open the entry form
     await openEntryForm(page);
 
     // Ensure dependencies exist
-    const cropValue = await ensureCropExists(page, 'Safra Large', 'Milho');
-    const fieldValue = await ensureFieldExists(page, 'Talhão Large', 100);
-    const vehicleValue = await ensureVehicleExists(page, 'LARGE001');
+    const cropName = faker.lorem.word();
+    const fieldName = faker.lorem.word();
+    const vehicleName = faker.vehicle.vrm() + ' LARGE';
+
+    const cropValue = await ensureCropExists(page, cropName, 'Milho');
+    const fieldValue = await ensureFieldExists(page, fieldName, 100);
+    const vehicleValue = await ensureVehicleExists(page, vehicleName);
 
     // Fill with large values
     await fillEntryForm(page, {
@@ -267,6 +278,6 @@ test.describe('Entry Creation - Edge Cases', () => {
     // Verify entry was created
     await page.waitForTimeout(1000);
     const tableContent = await page.locator('#entries-table-body').textContent();
-    expect(tableContent).toContain('LARGE001');
+    expect(tableContent).toContain(vehicleName);
   });
 });

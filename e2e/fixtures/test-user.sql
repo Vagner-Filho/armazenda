@@ -35,3 +35,19 @@ SELECT
   'admin'
 FROM farm WHERE inscricao_estadual = '123456789'
 ON CONFLICT (farm, cpf, email) DO NOTHING;
+
+INSERT INTO crop (name, product, startDate, farm)
+  SELECT
+    'Milho Default',
+    1,
+    '2026-02-19',
+    id
+  FROM farm WHERE inscricao_estadual = '123456789';
+
+INSERT INTO crop (name, product, startDate, farm)
+  SELECT
+    'Soja Default',
+    2,
+    '2026-02-19',
+    id
+  FROM farm WHERE inscricao_estadual = '123456789';

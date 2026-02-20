@@ -43,19 +43,8 @@
         </form>
     </div>
     <script type="module">
-        const dialogEl = document.querySelector("#cropFormDialog")
-        if (dialogEl) {
-            dialogEl.showModal()
-
-            function closeCropForm() {
-                dialogEl.close()
-                dialogEl.remove()
-                window.closeCropForm = undefined
-            }
-
-            dialogEl.addEventListener('close', closeCropForm)
-            window.closeCropForm = closeCropForm
-        }
+        import { cropDialogSetup } from "/public/assets/js/cropDialog.js"
+        cropDialogSetup()
     </script>
 </dialog>
 {{ end }}

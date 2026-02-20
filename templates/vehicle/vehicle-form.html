@@ -36,19 +36,8 @@
         </form>
     </div>
     <script type="module">
-        const dialogEl = document.querySelector("#vehicleFormDialog")
-        if (dialogEl) {
-            dialogEl.showModal()
-
-            function closeVehicleForm() {
-                dialogEl.close()
-                dialogEl.remove()
-                window.closeVehicleForm = undefined
-            }
-
-            dialogEl.addEventListener('close', closeVehicleForm)
-            window.closeVehicleForm = closeVehicleForm
-        }
+        import { vehicleDialogSetup } from "/public/assets/js/vehicleDialog.js"
+        vehicleDialogSetup()
     </script>
 </dialog>
 {{ end }}

@@ -9,18 +9,18 @@ const { expect } = require('@playwright/test');
  * Check if a select element has any valid options (excluding placeholder/error options)
  * @param {import('@playwright/test').Page} page - Playwright page object
  * @param {string} selector - The select element selector
- * @returns {Promise<boolean>}
+ * @returns {Promise<[boolean, string[]]>}
  */
 async function hasValidOptions(page, selector) {
   const options = await page.locator(`${selector} option`).allTextContents();
   // Filter out placeholder options like "Nenhuma safra encontrada" or "-1"
-  const validOptions = options.filter(text => 
-    text && 
-    !text.includes('Nenhum') && 
+  const validOptions = options.filter(text =>
+    text &&
+    !text.includes('Nenhum') &&
     !text.includes('Nenhuma') &&
     text !== '-1'
   );
-  return validOptions.length > 0;
+  return [validOptions.length > 0, options];
 }
 
 /**
@@ -74,11 +74,6 @@ async function createCrop(page, name, product = 'Milho', startDate = null) {
     page.click('dialog#cropFormDialog button[type="submit"]')
   ]);
 
-  // Manually close the dialog (the form doesn't auto-close like entry form)
-  await page.evaluate(() => {
-    if (window.closeCropForm) window.closeCropForm();
-  });
-
   // Wait for the dialog to close
   await expect(page.locator('dialog#cropFormDialog')).not.toBeVisible();
 
@@ -113,11 +108,6 @@ async function createField(page, name, hectares = 10) {
     page.waitForResponse(response => response.url().includes('/field') && response.request().method() === 'POST'),
     page.click('dialog#fieldFormDialog button[type="submit"]')
   ]);
-
-  // Manually close the dialog (the form doesn't auto-close like entry form)
-  await page.evaluate(() => {
-    if (window.closeFieldForm) window.closeFieldForm();
-  });
 
   // Wait for the dialog to close
   await expect(page.locator('dialog#fieldFormDialog')).not.toBeVisible();
@@ -156,11 +146,6 @@ async function createVehicle(page, plate, name = null) {
     page.click('dialog#vehicleFormDialog button[type="submit"]')
   ]);
 
-  // Manually close the dialog (the form doesn't auto-close like entry form)
-  await page.evaluate(() => {
-    if (window.closeVehicleForm) window.closeVehicleForm();
-  });
-
   // Wait for the dialog to close
   await expect(page.locator('dialog#vehicleFormDialog')).not.toBeVisible();
 
@@ -177,7 +162,7 @@ async function openEntryForm(page) {
   // Try "Nova Entrada" button first (when entries exist)
   const novaEntradaBtn = page.locator('button:has-text("Nova Entrada")');
   const começarBtn = page.locator('button:has-text("Começar agora")');
-  
+
   if (await novaEntradaBtn.isVisible().catch(() => false)) {
     await novaEntradaBtn.click();
   } else if (await começarBtn.isVisible().catch(() => false)) {
@@ -185,7 +170,7 @@ async function openEntryForm(page) {
   } else {
     throw new Error('Neither "Nova Entrada" nor "Começar agora" button found');
   }
-  
+
   // Wait for the entry form dialog to appear
   await expect(page.locator('dialog#addEntryDialog')).toBeVisible();
 }
@@ -198,9 +183,9 @@ async function openEntryForm(page) {
  * @returns {Promise<string>} The selected crop value
  */
 async function ensureCropExists(page, name = 'Safra Teste', product = 'Milho') {
-  const hasCrops = await hasValidOptions(page, 'select#crop-selector');
+  const [hasCrops, cropOptions] = await hasValidOptions(page, 'select#crop-selector');
 
-  if (!hasCrops) {
+  if (!hasCrops || !cropOptions.includes(name)) {
     await createCrop(page, name, product);
   }
 
@@ -219,9 +204,9 @@ async function ensureCropExists(page, name = 'Safra Teste', product = 'Milho') {
  * @returns {Promise<string>} The selected field value
  */
 async function ensureFieldExists(page, name = 'Talhão Teste', hectares = 10) {
-  const hasFields = await hasValidOptions(page, 'select#field-selector');
+  const [hasFields, fieldOptions] = await hasValidOptions(page, 'select#field-selector');
 
-  if (!hasFields) {
+  if (!hasFields || !fieldOptions.includes(name)) {
     await createField(page, name, hectares);
   }
 
@@ -240,9 +225,9 @@ async function ensureFieldExists(page, name = 'Talhão Teste', hectares = 10) {
  * @returns {Promise<string>} The selected vehicle value
  */
 async function ensureVehicleExists(page, plate = 'TEST1234', name = null) {
-  const hasVehicles = await hasValidOptions(page, 'select#vehicle-selector');
+  const [hasVehicles, vehicleOptions] = await hasValidOptions(page, 'select#vehicle-selector');
 
-  if (!hasVehicles) {
+  if (!hasVehicles || !vehicleOptions.includes(name)) {
     await createVehicle(page, plate, name);
   }
 
@@ -327,19 +312,19 @@ async function getEntryRows(page) {
  */
 async function entryExistsInTable(page, expectedData) {
   const rows = await getEntryRows(page);
-  
+
   for (const row of rows) {
     const rowText = await row.textContent();
-    
+
     // Check if all expected data is present in the row
     let matches = true;
     if (expectedData.field && !rowText.includes(expectedData.field)) matches = false;
     if (expectedData.vehicle && !rowText.includes(expectedData.vehicle)) matches = false;
     if (expectedData.netWeight && !rowText.includes(expectedData.netWeight.toString())) matches = false;
-    
+
     if (matches) return true;
   }
-  
+
   return false;
 }
 
