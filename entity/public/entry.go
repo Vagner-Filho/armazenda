@@ -19,18 +19,18 @@ type DisplayEntry struct {
 }
 
 type Entry struct {
-	Id      uint32 `form:"id"`
-	Field   uint16 `form:"field" binding:"required"`
-	Crop    uint8  `form:"crop" binding:"required"`
-	Vehicle uint16 `form:"vehiclePlate"`
+	Id      uint32 `form:"id" json:"id"`
+	Field   uint16 `form:"field" binding:"required" json:"field"`
+	Crop    uint8  `form:"crop" binding:"required" json:"crop"`
+	Vehicle uint16 `form:"vehiclePlate" json:"vehiclePlate"`
 	/*GrossWeight float64   `form:"grossWeight" binding:"required"`
 	Tare        float64   `form:"tare" binding:"required"`
 	NetWeight   float64   `form:"netWeight" binding:"gte=0"`*/
 	CargoWeight
 	Analysis
-	ArrivalDate time.Time `form:"arrivalDate" binding:"required" time_format:"2006-01-02T15:04"`
-	Farm        uint32    `form:"farm" binding:"gte=0"`
-	Origin      *uint32   `form:"origin,omitempty"`
+	ArrivalDate time.Time `form:"arrivalDate" binding:"required" time_format:"2006-01-02T15:04" json:"arrivalDate"`
+	Farm        uint32    `form:"farm" binding:"gte=0" json:"farm"`
+	Origin      *uint32   `form:"origin,omitempty" json:"origin,omitempty"`
 	ModifiedAt  time.Time `json:"modifiedAt"`
 }
 
@@ -50,17 +50,17 @@ func (e Entry) ToDTO() EntryDTO {
 }
 
 type EntryDTO struct {
-	Id      uint32 `form:"id"`
-	Field   uint16 `form:"field" binding:"required"`
-	Crop    uint8  `form:"crop" binding:"required"`
-	Vehicle uint16 `form:"vehiclePlate"`
+	Id      uint32 `form:"id" json:"id"`
+	Field   uint16 `form:"field" binding:"required" json:"field"`
+	Crop    uint8  `form:"crop" binding:"required" json:"crop"`
+	Vehicle uint16 `form:"vehiclePlate" json:"vehiclePlate"`
 	/*GrossWeight float64   `form:"grossWeight" binding:"required"`
 	Tare        float64   `form:"tare" binding:"required"`
 	NetWeight   float64   `form:"netWeight" binding:"gte=0"`*/
 	CargoWeightDTO
 	AnalysisDTO
-	ArrivalDate time.Time `form:"arrivalDate" binding:"required" time_format:"2006-01-02T15:04"`
-	Farm        uint32    `form:"farm" binding:"gte=0"`
+	ArrivalDate time.Time `form:"arrivalDate" binding:"required" time_format:"2006-01-02T15:04" json:"arrivalDate"`
+	Farm        uint32    `form:"farm" binding:"gte=0" json:"farm"`
 }
 
 func (dto EntryDTO) ToEntity() Entry {
@@ -79,21 +79,21 @@ func (dto EntryDTO) ToEntity() Entry {
 }
 
 type EntryFilter struct {
-	Id             uint32    `form:"id"`
-	Product        uint8     `form:"product"`
-	Field          uint16    `form:"field"`
-	Crop           uint8     `form:"crop" binding:"gte=0"`
-	Vehicle        string    `form:"vehiclePlate"`
-	GrossWeightMin float64   `form:"grossWeightMin"`
-	GrossWeightMax float64   `form:"grossWeightMax"`
-	TareMin        float64   `form:"tareMin"`
-	TareMax        float64   `form:"tareMax"`
-	NetWeightMin   float64   `form:"netWeightMin"`
-	NetWeightMax   float64   `form:"netWeightMax"`
-	HumidityMin    string    `form:"humidityMin"`
-	HumidityMax    string    `form:"humidityMax"`
-	ArrivalDateMin time.Time `form:"arrivalDateMin" time_format:"2006-01-02T15:04"`
-	ArrivalDateMax time.Time `form:"arrivalDateMax" time_format:"2006-01-02T15:04"`
+	Id             uint32    `form:"id" json:"id"`
+	Product        uint8     `form:"product" json:"product"`
+	Field          uint16    `form:"field" json:"field"`
+	Crop           uint8     `form:"crop" binding:"gte=0" json:"crop"`
+	Vehicle        string    `form:"vehiclePlate" json:"vehiclePlate"`
+	GrossWeightMin float64   `form:"grossWeightMin" json:"grossWeightMin"`
+	GrossWeightMax float64   `form:"grossWeightMax" json:"grossWeightMax"`
+	TareMin        float64   `form:"tareMin" json:"tareMin"`
+	TareMax        float64   `form:"tareMax" json:"tareMax"`
+	NetWeightMin   float64   `form:"netWeightMin" json:"netWeightMin"`
+	NetWeightMax   float64   `form:"netWeightMax" json:"netWeightMax"`
+	HumidityMin    string    `form:"humidityMin" json:"humidityMin"`
+	HumidityMax    string    `form:"humidityMax" json:"humidityMax"`
+	ArrivalDateMin time.Time `form:"arrivalDateMin" time_format:"2006-01-02T15:04" json:"arrivalDateMin"`
+	ArrivalDateMax time.Time `form:"arrivalDateMax" time_format:"2006-01-02T15:04" json:"arrivalDateMax"`
 }
 
 type filterCollection map[string]func(ef EntryFilter) string

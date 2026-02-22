@@ -94,11 +94,11 @@ self.addEventListener('activate', (event) => {
  */
 function isApiRequest(url) {
   return url.pathname.startsWith('/entry') ||
-         url.pathname.startsWith('/departure') ||
-         url.pathname.startsWith('/person') ||
-         url.pathname.startsWith('/crop') ||
-         url.pathname.startsWith('/field') ||
-         url.pathname.startsWith('/vehicle');
+    url.pathname.startsWith('/departure') ||
+    url.pathname.startsWith('/person') ||
+    url.pathname.startsWith('/crop') ||
+    url.pathname.startsWith('/field') ||
+    url.pathname.startsWith('/vehicle');
 }
 
 /**
@@ -108,9 +108,9 @@ function isApiRequest(url) {
  */
 function isMutatingRequest(request) {
   return request.method === 'POST' ||
-         request.method === 'PUT' ||
-         request.method === 'PATCH' ||
-         request.method === 'DELETE';
+    request.method === 'PUT' ||
+    request.method === 'PATCH' ||
+    request.method === 'DELETE';
 }
 
 /**
@@ -147,7 +147,7 @@ self.addEventListener('fetch', (event) => {
 async function handleGetRequest(request, url) {
   // Try cache first
   const cachedResponse = await caches.match(request);
-  
+
   if (cachedResponse) {
     // Return cached response and update cache in background
     fetch(request)
@@ -161,25 +161,25 @@ async function handleGetRequest(request, url) {
       .catch(() => {
         // Network failed, already serving from cache
       });
-    
+
     return cachedResponse;
   }
 
   // Not in cache, fetch from network
   try {
     const networkResponse = await fetch(request);
-    
+
     if (networkResponse.ok) {
       // Cache the response
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, networkResponse.clone());
     }
-    
+
     return networkResponse;
   } catch (error) {
     // Network failed, not in cache
     console.error('[Service Worker] Network request failed:', error);
-    
+
     // For HTML templates, return offline page
     if (request.headers.get('accept')?.includes('text/html')) {
       return new Response(
@@ -194,7 +194,7 @@ async function handleGetRequest(request, url) {
         }
       );
     }
-    
+
     throw error;
   }
 }
@@ -209,20 +209,20 @@ async function handleMutatingRequest(request) {
   // Try network first
   try {
     const networkResponse = await fetch(request);
-    
+
     if (networkResponse.ok) {
       // Success - notify clients to sync
       notifyClients({ type: 'SYNC_COMPLETE', url: request.url });
       return networkResponse;
     }
-    
+
     throw new Error(`Server returned ${networkResponse.status}`);
   } catch (error) {
     // Network failed - queue for sync
     console.log('[Service Worker] Network failed, queuing for sync:', request.url);
-    
+
     const queueItem = await queueForSync(request);
-    
+
     // Return a synthetic success response
     // The client will handle the actual sync later
     return new Response(
@@ -250,7 +250,7 @@ async function handleMutatingRequest(request) {
 async function queueForSync(request) {
   const queue = await getSyncQueue();
   const id = Date.now().toString(36) + Math.random().toString(36).substr(2);
-  
+
   const queueItem = {
     id,
     url: request.url,
@@ -259,19 +259,19 @@ async function queueForSync(request) {
     timestamp: Date.now(),
     retries: 0
   };
-  
+
   // Clone and store the body if it's a POST/PUT
   if (request.method === 'POST' || request.method === 'PUT' || request.method === 'PATCH') {
     const body = await request.clone().text();
     queueItem.body = body;
   }
-  
+
   queue.push(queueItem);
   await saveSyncQueue(queue);
-  
+
   // Notify clients
   notifyClients({ type: 'SYNC_QUEUED', item: queueItem });
-  
+
   return queueItem;
 }
 
@@ -289,7 +289,7 @@ async function getSyncQueue() {
         resolve(event.data.queue || []);
       }
     };
-    
+
     // Timeout fallback
     setTimeout(() => {
       channel.close();
@@ -313,7 +313,7 @@ async function saveSyncQueue(queue) {
         resolve();
       }
     };
-    
+
     setTimeout(() => {
       channel.close();
       resolve();
@@ -342,7 +342,7 @@ self.addEventListener('message', (event) => {
   if (event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-  
+
   if (event.data.type === 'CACHE_TEMPLATES') {
     cacheTemplates();
   }
@@ -354,7 +354,7 @@ self.addEventListener('message', (event) => {
  */
 async function cacheTemplates() {
   const cache = await caches.open(CACHE_NAME);
-  
+
   for (const template of HTML_TEMPLATES) {
     try {
       const response = await fetch(template);
@@ -385,13 +385,13 @@ self.addEventListener('sync', (event) => {
  */
 async function syncPendingChanges() {
   const queue = await getSyncQueue();
-  
+
   if (queue.length === 0) return;
-  
+
   console.log('[Service Worker] Syncing', queue.length, 'pending changes');
-  
+
   const failed = [];
-  
+
   for (const item of queue) {
     try {
       const response = await fetch(item.url, {
@@ -402,16 +402,16 @@ async function syncPendingChanges() {
         }, {}),
         body: item.body
       });
-      
+
       if (!response.ok) {
         throw new Error(`Server returned ${response.status}`);
       }
-      
+
       console.log('[Service Worker] Synced:', item.id);
     } catch (error) {
       console.error('[Service Worker] Failed to sync:', item.id, error);
       item.retries++;
-      
+
       if (item.retries < 3) {
         failed.push(item);
       } else {
@@ -424,10 +424,10 @@ async function syncPendingChanges() {
       }
     }
   }
-  
+
   // Save remaining items
   await saveSyncQueue(failed);
-  
+
   // Notify clients of sync completion
   notifyClients({
     type: 'SYNC_COMPLETE',

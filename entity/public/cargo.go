@@ -3,9 +3,9 @@ package entity_public
 import "github.com/shopspring/decimal"
 
 type CargoWeight struct {
-	GrossWeight decimal.Decimal `form:"grossWeight" binding:"required,gte=0"`
-	Tare        decimal.Decimal `form:"tare" binding:"required,gte=0"`
-	NetWeight   decimal.Decimal `form:"netWeight" binding:"required,gte=0"`
+	GrossWeight decimal.Decimal `form:"grossWeight" binding:"required,gte=0" json:"grossWeight"`
+	Tare        decimal.Decimal `form:"tare" binding:"required,gte=0" json:"tare"`
+	NetWeight   decimal.Decimal `form:"netWeight" binding:"required,gte=0" json:"netWeight"`
 }
 
 func (cw CargoWeight) ToDTO() CargoWeightDTO {
@@ -20,9 +20,9 @@ func (cw CargoWeight) ToDTO() CargoWeightDTO {
 }
 
 type CargoWeightDTO struct {
-	GrossWeight float64 `form:"grossWeight" binding:"required,gte=0"`
-	Tare        float64 `form:"tare" binding:"required,gte=0"`
-	NetWeight   float64 `form:"netWeight" binding:"required,gte=0"`
+	GrossWeight float64 `form:"grossWeight" binding:"required,gte=0" json:"grossWeight"`
+	Tare        float64 `form:"tare" binding:"required,gte=0" json:"tare"`
+	NetWeight   float64 `form:"netWeight" binding:"required,gte=0" json:"netWeight"`
 }
 
 func (cw CargoWeightDTO) ToEntity() CargoWeight {

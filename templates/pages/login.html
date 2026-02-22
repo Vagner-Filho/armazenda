@@ -56,14 +56,6 @@
       </div>
     </main>
   </body>
-  <script type="module">
-    // Register service worker for PWA support
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/public/assets/sw.js')
-        .then(reg => console.log('SW registered'))
-        .catch(err => console.log('SW registration failed'));
-    }
-  </script>
   <script>
     document.querySelectorAll('input').forEach(input => {
     input.addEventListener('focus', function () {

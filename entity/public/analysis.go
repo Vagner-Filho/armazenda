@@ -9,10 +9,10 @@ import (
 )
 
 type Analysis struct {
-	Humidity                 *decimal.Decimal `form:"humidity"`
-	Damage                   *decimal.Decimal `form:"damage"`
-	Impurity                 *decimal.Decimal `form:"impurity,omitempty"`
-	HumidityDiscountModifier *decimal.Decimal `f̀orm:"humidityDiscountModifier,omitempty"`
+	Humidity                 *decimal.Decimal `form:"humidity" json:"humidity,omitempty"`
+	Damage                   *decimal.Decimal `form:"damage" json:"damage,omitempty"`
+	Impurity                 *decimal.Decimal `form:"impurity,omitempty" json:"impurity,omitempty"`
+	HumidityDiscountModifier *decimal.Decimal `form:"humidityDiscountModifier,omitempty" json:"humidityDiscountModifier,omitempty"`
 }
 
 func (a *Analysis) ToDTO() AnalysisDTO {
@@ -34,9 +34,9 @@ func (a *Analysis) ToDTO() AnalysisDTO {
 }
 
 type AnalysisDTO struct {
-	Humidity *string `form:"humidity"`
-	Damage   *string `form:"damage"`
-	Impurity *string `form:"impurity,omitempty"`
+	Humidity *string `form:"humidity" json:"humidity,omitempty"`
+	Damage   *string `form:"damage" json:"damage,omitempty"`
+	Impurity *string `form:"impurity,omitempty" json:"impurity,omitempty"`
 }
 
 func (a *AnalysisDTO) ToEntity() (Analysis, error) {

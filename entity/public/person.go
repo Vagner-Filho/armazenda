@@ -8,26 +8,26 @@ import (
 )
 
 type LegalPerson struct {
-	Id          uint32  `form:"id"`
-	CompanyName string  `form:"companyName" binding:"required"`
-	FantasyName *string `form:"fantasyName,omitempty"`
-	Cnpj        string  `form:"cnpj" binding:"required"`
+	Id          uint32  `form:"id" json:"id"`
+	CompanyName string  `form:"companyName" binding:"required" json:"companyName"`
+	FantasyName *string `form:"fantasyName,omitempty" json:"fantasyName,omitempty"`
+	Cnpj        string  `form:"cnpj" binding:"required" json:"cnpj"`
 	Address
 	Person Person
 }
 
 type NaturalPerson struct {
-	Id   uint32 `form:"id"`
-	Name string `form:"name" binding:"required"`
-	Cpf  string `form:"cpf" binding:"required"`
+	Id   uint32 `form:"id" json:"id"`
+	Name string `form:"name" binding:"required" json:"name"`
+	Cpf  string `form:"cpf" binding:"required" json:"cpf"`
 	Address
 	Person Person
 }
 
 type PersonConfig struct {
-	HumidityDiscount  decimal.Decimal `form:"humidityDiscount"`
-	EntrySoyDiscount  decimal.Decimal `form:"entrySoyDiscount"`
-	EntryCornDiscount decimal.Decimal `form:"entryCornDiscount"`
+	HumidityDiscount  decimal.Decimal `form:"humidityDiscount" json:"humidityDiscount"`
+	EntrySoyDiscount  decimal.Decimal `form:"entrySoyDiscount" json:"entrySoyDiscount"`
+	EntryCornDiscount decimal.Decimal `form:"entryCornDiscount" json:"entryCornDiscount"`
 }
 
 func (pc PersonConfig) GetProductEntryDiscount(product uint8) decimal.Decimal {
@@ -43,8 +43,8 @@ func (pc PersonConfig) GetProductEntryDiscount(product uint8) decimal.Decimal {
 
 type Person struct {
 	Ie         string
-	Id         uint32
-	Farm       uint32    `form:"farm" binding:"gte=0"`
+	Id         uint32    `json:"id"`
+	Farm       uint32    `form:"farm" binding:"gte=0" json:"farm"`
 	ModifiedAt time.Time `json:"modifiedAt"`
 	PersonConfig
 }
@@ -64,21 +64,21 @@ type PersonDisplay struct {
 }
 
 type PersonFilter struct {
-	Id             uint32    `form:"id"`
-	Product        uint8     `form:"product"`
-	Field          uint16    `form:"field"`
-	Crop           uint8     `form:"crop" binding:"gte=0"`
-	Vehicle        string    `form:"vehiclePlate"`
-	GrossWeightMin float64   `form:"grossWeightMin"`
-	GrossWeightMax float64   `form:"grossWeightMax"`
-	TareMin        float64   `form:"tareMin"`
-	TareMax        float64   `form:"tareMax"`
-	NetWeightMin   float64   `form:"netWeightMin"`
-	NetWeightMax   float64   `form:"netWeightMax"`
-	HumidityMin    string    `form:"humidityMin"`
-	HumidityMax    string    `form:"humidityMax"`
-	StartDate      time.Time `form:"startDate" time_format:"2006-01-02T15:04"`
-	EndDateMax     time.Time `form:"endDate" time_format:"2006-01-02T15:04"`
+	Id             uint32    `form:"id" json:"id"`
+	Product        uint8     `form:"product" json:"product"`
+	Field          uint16    `form:"field" json:"field"`
+	Crop           uint8     `form:"crop" binding:"gte=0" json:"crop"`
+	Vehicle        string    `form:"vehiclePlate" json:"vehiclePlate"`
+	GrossWeightMin float64   `form:"grossWeightMin" json:"grossWeightMin"`
+	GrossWeightMax float64   `form:"grossWeightMax" json:"grossWeightMax"`
+	TareMin        float64   `form:"tareMin" json:"tareMin"`
+	TareMax        float64   `form:"tareMax" json:"tareMax"`
+	NetWeightMin   float64   `form:"netWeightMin" json:"netWeightMin"`
+	NetWeightMax   float64   `form:"netWeightMax" json:"netWeightMax"`
+	HumidityMin    string    `form:"humidityMin" json:"humidityMin"`
+	HumidityMax    string    `form:"humidityMax" json:"humidityMax"`
+	StartDate      time.Time `form:"startDate" time_format:"2006-01-02T15:04" json:"startDate"`
+	EndDateMax     time.Time `form:"endDate" time_format:"2006-01-02T15:04" json:"endDate"`
 }
 
 type personFilterCollection map[string]func(ef PersonFilter) string

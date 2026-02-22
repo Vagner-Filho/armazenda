@@ -40,7 +40,7 @@ class SyncEngine {
         this.handleServiceWorkerMessage(event.data);
       });
     }
-    
+
     // If online, sync on init
     if (navigator.onLine) {
       this.sync();
@@ -145,7 +145,7 @@ class SyncEngine {
     } catch (error) {
       console.error('[Sync] Sync failed:', error);
       this.notify({ type: 'SYNC_ERROR', error: error.message });
-      
+
       // Retry after delay
       setTimeout(() => this.sync(), this.retryDelay);
     } finally {
@@ -160,7 +160,7 @@ class SyncEngine {
    */
   async uploadPendingChanges() {
     const pendingChanges = await db.getPendingChanges();
-    
+
     if (pendingChanges.length === 0) {
       return;
     }
@@ -175,10 +175,10 @@ class SyncEngine {
         await db.removePendingChange(change.id);
       } catch (error) {
         console.error(`[Sync] Failed to upload change ${change.id}:`, error);
-        
+
         // Increment retry count
         change.retries++;
-        
+
         if (change.retries >= 3) {
           // Max retries reached, remove from queue and notify
           await db.removePendingChange(change.id);
@@ -217,31 +217,31 @@ class SyncEngine {
         method = operation === 'CREATE' ? 'POST' : (operation === 'UPDATE' ? 'PUT' : 'DELETE');
         if (operation !== 'DELETE') body = data;
         break;
-      
+
       case 'entryDraft':
         url = operation === 'CREATE' ? '/entry/draft' : `/entry/draft/${data.id}`;
         method = operation === 'CREATE' ? 'POST' : (operation === 'UPDATE' ? 'PUT' : 'DELETE');
         if (operation !== 'DELETE') body = data;
         break;
-      
+
       case 'departure':
         url = operation === 'CREATE' ? '/departure' : `/departure/${data.id}`;
         method = operation === 'CREATE' ? 'POST' : (operation === 'UPDATE' ? 'PUT' : 'DELETE');
         if (operation !== 'DELETE') body = data;
         break;
-      
+
       case 'departureDraft':
         url = operation === 'CREATE' ? '/departure/draft' : `/departure/draft/${data.id}`;
         method = operation === 'CREATE' ? 'POST' : (operation === 'UPDATE' ? 'PUT' : 'DELETE');
         if (operation !== 'DELETE') body = data;
         break;
-      
+
       case 'person':
         url = operation === 'CREATE' ? '/person' : `/person/${data.id}`;
         method = operation === 'CREATE' ? 'POST' : (operation === 'UPDATE' ? 'PUT' : 'DELETE');
         if (operation !== 'DELETE') body = data;
         break;
-      
+
       default:
         throw new Error(`Unknown entity: ${entity}`);
     }
@@ -266,12 +266,58 @@ class SyncEngine {
       throw new Error(`Server returned ${response.status}: ${errorText}`);
     }
 
+    // Handle Entry CREATE response - update DOM with server ID
+    if (operation === 'CREATE' && entity === 'entry' && data.id.toString().startsWith('offline_')) {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const serverResponse = await response.json();
+        const serverId = serverResponse.id;
+
+        // Update DOM: replace temp ID with server ID
+        const row = document.querySelector(`tr[id="entry-${data.id}"]`);
+        if (row) {
+          row.id = `entry-${serverId}`;
+          row.removeAttribute('data-offline-pending');
+          row.classList.remove('bg-yellow-500/5');
+
+          // Update ID cell
+          const idCell = row.querySelector('td:first-child');
+          if (idCell) idCell.textContent = serverId;
+
+          // Remove pending badge
+          const badge = row.querySelector('.pending-badge');
+          if (badge) badge.remove();
+
+          // Update action buttons with new ID
+          const buttons = row.querySelectorAll('button');
+          buttons.forEach(btn => {
+            const hxGet = btn.getAttribute('hx-get');
+            const hxDelete = btn.getAttribute('hx-delete');
+            if (hxGet) btn.setAttribute('hx-get', hxGet.replace(data.id, serverId));
+            if (hxDelete) {
+              btn.setAttribute('hx-delete', hxDelete.replace(data.id, serverId));
+              btn.setAttribute('hx-target', `#entry-${serverId}`);
+            }
+          });
+        }
+
+        // Notify user
+        this.notify({
+          type: 'SYNC_ENTRY_COMPLETE',
+          tempId: data.id,
+          serverId: serverId
+        });
+
+        return serverResponse;
+      }
+    }
+
     // Parse response
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
       return response.json();
     }
-    
+
     return response.text();
   }
 
@@ -291,16 +337,16 @@ class SyncEngine {
     try {
       // Download entries
       await this.downloadEntries(lastSync, farmId);
-      
+
       // Download departures
       await this.downloadDepartures(lastSync, farmId);
-      
+
       // Download people
       await this.downloadPeople(lastSync, farmId);
 
       // Update last sync timestamp
       await db.setSyncMetadata('lastSync', new Date().toISOString());
-      
+
     } catch (error) {
       console.error('[Sync] Download failed:', error);
       throw error;
@@ -324,7 +370,7 @@ class SyncEngine {
       }
 
       const entries = await response.json();
-      
+
       if (entries.length > 0) {
         await db.bulkSaveEntries(entries);
         console.log(`[Sync] Downloaded ${entries.length} entries`);
@@ -352,7 +398,7 @@ class SyncEngine {
       }
 
       const departures = await response.json();
-      
+
       if (departures.length > 0) {
         await db.bulkSaveDepartures(departures);
         console.log(`[Sync] Downloaded ${departures.length} departures`);
@@ -379,7 +425,7 @@ class SyncEngine {
       }
 
       const people = await response.json();
-      
+
       if (people.length > 0) {
         await db.bulkSavePeople(people);
         console.log(`[Sync] Downloaded ${people.length} people`);
@@ -427,15 +473,15 @@ class SyncEngine {
    */
   async initialLoad(farmId) {
     await db.setSyncMetadata('farmId', farmId);
-    
+
     // Clear existing data
     await db.clear(STORES.ENTRIES);
     await db.clear(STORES.DEPARTURES);
     await db.clear(STORES.PEOPLE);
-    
+
     // Download all data
     await this.downloadUpdates();
-    
+
     console.log('[Sync] Initial load complete');
   }
 
@@ -446,7 +492,7 @@ class SyncEngine {
   async getSyncStatus() {
     const lastSync = await db.getSyncMetadata('lastSync');
     const pendingChanges = await db.getPendingChanges();
-    
+
     return {
       lastSync,
       pendingCount: pendingChanges.length,

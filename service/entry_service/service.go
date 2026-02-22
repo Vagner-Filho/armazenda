@@ -80,8 +80,8 @@ func AddEntry(ge entity_public.Entry, em EntryModelInterface, pm PersonModelInte
 		return entity_public.DisplayEntry{}, entity_public.GetErrorToast(result.ErrorMessage, "")
 	}
 
+	ge.NetWeight = result.NetWeight
 	newEntry, addErr := em.AddEntry(ge)
-	newEntry.NetWeight = result.NetWeight
 
 	if addErr != nil {
 		if addErr.IsServerErr == true {

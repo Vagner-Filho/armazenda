@@ -8,15 +8,15 @@ import (
 )
 
 type Departure struct {
-	Id            uint32    `form:"id"`
-	DepartureDate time.Time `form:"departureDate" binding:"required" time_format:"2006-01-02T15:04"`
-	Vehicle       uint16    `form:"vehiclePlate" binding:"required"`
-	Crop          uint8     `form:"crop" binding:"required"`
+	Id            uint32    `form:"id" json:"id"`
+	DepartureDate time.Time `form:"departureDate" binding:"required" time_format:"2006-01-02T15:04" json:"departureDate"`
+	Vehicle       uint16    `form:"vehiclePlate" binding:"required" json:"vehiclePlate"`
+	Crop          uint8     `form:"crop" binding:"required" json:"crop"`
 	CargoWeight
-	Farm      uint32  `form:"farm" binding:"gte=0"`
-	Recipient *uint32 `form:"recipient"`
+	Farm      uint32  `form:"farm" binding:"gte=0" json:"farm"`
+	Recipient *uint32 `form:"recipient" json:"recipient"`
 	Analysis
-	Origin     *uint32   `form:"origin,omitempty"`
+	Origin     *uint32   `form:"origin,omitempty" json:"origin,omitempty"`
 	ModifiedAt time.Time `json:"modifiedAt"`
 }
 
@@ -74,13 +74,13 @@ type DisplayDeparture struct {
 }
 
 type DepartureFilter struct {
-	DepartureDateMin time.Time `form:"departureDateMin" time_format:"2006-01-02T15:04"`
-	DepartureDateMax time.Time `form:"departureDateMax" time_format:"2006-01-02T15:04"`
-	Product          uint8     `form:"product"`
-	VehiclePlate     string    `form:"vehiclePlate"`
-	NetWeightMin     float64   `form:"netWeightMin"`
-	NetWeightMax     float64   `form:"netWeightMax"`
-	Person           string    `form:"person"`
+	DepartureDateMin time.Time `form:"departureDateMin" time_format:"2006-01-02T15:04" json:"departureDateMin"`
+	DepartureDateMax time.Time `form:"departureDateMax" time_format:"2006-01-02T15:04" json:"departureDateMax"`
+	Product          uint8     `form:"product" json:"product"`
+	VehiclePlate     string    `form:"vehiclePlate" json:"vehiclePlate"`
+	NetWeightMin     float64   `form:"netWeightMin" json:"netWeightMin"`
+	NetWeightMax     float64   `form:"netWeightMax" json:"netWeightMax"`
+	Person           string    `form:"person" json:"person"`
 }
 
 type departureFilterCollection map[string]func(df DepartureFilter) string

@@ -3,22 +3,22 @@ package entity_public
 import "github.com/shopspring/decimal"
 
 type EntryDraft struct {
-	Id      uint32           `form:"id"`
-	Name    string           `form:"name" binding:"required"`
-	Field   uint16           `form:"field" binding:"required"`
-	Crop    uint8            `form:"crop" binding:"required"`
-	Vehicle uint16           `form:"vehiclePlate"`
-	Tare    *decimal.Decimal `form:"tare,omitempty"`
-	Farm    uint32           `form:"farm" binding:"gte=0"`
-	Origin  *uint32          `form:"origin,omitempty"`
+	Id      uint32           `form:"id" json:"id"`
+	Name    string           `form:"name" binding:"required" json:"name"`
+	Field   uint16           `form:"field" binding:"required" json:"field"`
+	Crop    uint8            `form:"crop" binding:"required" json:"crop"`
+	Vehicle uint16           `form:"vehiclePlate" json:"vehiclePlate"`
+	Tare    *decimal.Decimal `form:"tare,omitempty" json:"tare,omitempty"`
+	Farm    uint32           `form:"farm" binding:"gte=0" json:"farm"`
+	Origin  *uint32          `form:"origin,omitempty" json:"origin,omitempty"`
 }
 
 type DisplayEntryDraft struct {
-	Id      uint32           `form:"id"`
-	Name    string           `form:"name"`
-	Field   string           `form:"field"`
-	Crop    string           `form:"crop"`
-	Vehicle string           `form:"vehiclePlate"`
-	Tare    *decimal.Decimal `form:"tare"`
-	Origin  string           `form:"origin"`
+	Id      uint32           `form:"id" json:"id"`
+	Name    string           `form:"name" json:"name"`
+	Field   string           `form:"field" json:"field"`
+	Crop    string           `form:"crop" json:"crop"`
+	Vehicle string           `form:"vehiclePlate" json:"vehiclePlate"`
+	Tare    *decimal.Decimal `form:"tare" json:"tare"`
+	Origin  string           `form:"origin" json:"origin"`
 }
