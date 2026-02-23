@@ -1,0 +1,369 @@
+package template_router
+
+import (
+	entity_public "armazenda/entity/public"
+	"armazenda/model/crop_model"
+	"armazenda/model/field_model"
+	"armazenda/model/person_model"
+	"armazenda/model/vehicle_model"
+	"armazenda/service/user_service"
+	"bytes"
+	"fmt"
+	"html/template"
+	"io/fs"
+	"net/http"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
+
+// TemplateFS holds the embedded templates filesystem
+var templateFS fs.FS
+var htmlTemplate *template.Template
+
+// InitTemplateRouter initializes the template router with the filesystem and compiled templates
+func InitTemplateRouter(fs fs.FS, tmpl *template.Template) {
+	templateFS = fs
+	htmlTemplate = tmpl
+}
+
+// serveTemplate serves a template with optional pre-rendering for offline use
+func serveTemplate(c *gin.Context) {
+	name := c.Param("name")
+
+	// Security: prevent directory traversal
+	if strings.Contains(name, "..") || strings.Contains(name, "/") || strings.Contains(name, "\\") {
+		c.String(http.StatusBadRequest, "Invalid template name")
+		return
+	}
+
+	// Check if this is a form template that needs pre-rendering
+	if isPreRenderTemplate(name) {
+		html, err := servePreRenderedTemplate(c, name)
+		if err != nil {
+			c.String(http.StatusInternalServerError, fmt.Sprintf("Failed to render template: %v", err))
+			return
+		}
+		setCacheHeaders(c)
+		c.String(http.StatusOK, html)
+		return
+	}
+
+	// For list items and other templates, serve raw Go template
+	content, err := findTemplate(name)
+	if err != nil {
+		c.String(http.StatusNotFound, fmt.Sprintf("Template not found: %s", name))
+		return
+	}
+
+	setCacheHeaders(c)
+	c.String(http.StatusOK, string(content))
+}
+
+// isPreRenderTemplate returns true if the template should be pre-rendered with reference data
+func isPreRenderTemplate(name string) bool {
+	preRenderTemplates := map[string]bool{
+		"entry-form":           true,
+		"entry-draft-form":     true,
+		"departure-form":       true,
+		"departure-draft-form": true,
+		"person-form":          true,
+	}
+	return preRenderTemplates[name]
+}
+
+// servePreRenderedTemplate renders a template with reference data and transforms it for client-side use
+func servePreRenderedTemplate(c *gin.Context, name string) (string, error) {
+	// Get farm from session
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+
+	// Prepare data for template rendering
+	data, err := prepareTemplateData(name, farm)
+	if err != nil {
+		return "", fmt.Errorf("failed to prepare data: %w", err)
+	}
+
+	// Execute template with data
+	var buf bytes.Buffer
+	if err := htmlTemplate.ExecuteTemplate(&buf, name, data); err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	// Transform the rendered HTML for client-side placeholder replacement
+	html := transformTemplateForClient(buf.String(), name)
+
+	return html, nil
+}
+
+// prepareTemplateData prepares the data structure needed for template rendering
+func prepareTemplateData(name string, farm uint32) (map[string]interface{}, error) {
+	data := make(map[string]interface{})
+
+	switch name {
+	case "entry-form", "entry-draft-form":
+		// Fetch reference data
+		fields, fieldsErr := field_model.GetFieldModel().GetFieldsByFarm(farm)
+		if fieldsErr != nil {
+			return nil, fieldsErr
+		}
+		data["Fields"] = fields
+
+		crops, cropsErr := crop_model.GetCropModel().GetCropsByFarm(farm)
+		if cropsErr != nil {
+			return nil, cropsErr
+		}
+		data["Crops"] = crops
+
+		vehicleModel, vmErr := vehicle_model.GetVehicleModel()
+		if vmErr != nil {
+			return nil, vmErr
+		}
+		vehicles, vehiclesErr := vehicleModel.GetVehiclesByFarm(farm)
+		if vehiclesErr != nil {
+			return nil, vehiclesErr
+		}
+		data["Vehicles"] = vehicles
+
+		people, peopleErr := person_model.GetPersonModel().GetPeopleByFarm(farm)
+		if peopleErr != nil {
+			return nil, peopleErr
+		}
+		data["People"] = people
+
+		// Empty entry for new form
+		data["Entry"] = entity_public.Entry{}
+		data["IsOffline"] = false
+
+	case "departure-form", "departure-draft-form":
+		// Fetch reference data
+		crops, cropsErr := crop_model.GetCropModel().GetCropsByFarm(farm)
+		if cropsErr != nil {
+			return nil, cropsErr
+		}
+		data["Crops"] = crops
+
+		vehicleModel, vmErr := vehicle_model.GetVehicleModel()
+		if vmErr != nil {
+			return nil, vmErr
+		}
+		vehicles, vehiclesErr := vehicleModel.GetVehiclesByFarm(farm)
+		if vehiclesErr != nil {
+			return nil, vehiclesErr
+		}
+		data["Vehicles"] = vehicles
+
+		people, peopleErr := person_model.GetPersonModel().GetPeopleByFarm(farm)
+		if peopleErr != nil {
+			return nil, peopleErr
+		}
+		data["People"] = people
+
+		// Empty departure for new form
+		data["Departure"] = entity_public.Departure{}
+		data["IsOffline"] = false
+
+	case "person-form":
+		// Person form doesn't need reference data
+		data["IsOffline"] = false
+	}
+
+	return data, nil
+}
+
+// transformTemplateForClient transforms rendered HTML to use placeholders for client-side editing
+func transformTemplateForClient(html string, templateName string) string {
+	result := html
+
+	// Transform entry-specific fields
+	if strings.Contains(templateName, "entry") {
+		result = transformEntryForm(result)
+	} else if strings.Contains(templateName, "departure") {
+		result = transformDepartureForm(result)
+	}
+
+	// Transform common patterns for all templates
+	result = transformCommonPatterns(result)
+
+	return result
+}
+
+// transformEntryForm transforms entry form HTML
+func transformEntryForm(html string) string {
+	result := html
+
+	// Replace Entry.Id with placeholder for conditional rendering
+	// Find the h1 element with conditional content
+	h1Pattern := regexp.MustCompile(`(?s)(<h1[^>]*>)(.+?)(</h1>)`)
+	result = h1Pattern.ReplaceAllStringFunc(result, func(match string) string {
+		// Check if it contains both "Editando" and "Nova"
+		if strings.Contains(match, "Editando") && strings.Contains(match, "Nova") {
+			// Replace with conditional markup
+			return `<h1 data-show-if="Entry.Id">Editando Entrada</h1><h1 data-hide-if="Entry.Id">Nova Entrada</h1>`
+		}
+		return match
+	})
+
+	// Replace specific input values with placeholders
+	result = replaceInputValueByName(result, "grossWeight", "Entry.GrossWeight")
+	result = replaceInputValueByName(result, "tare", "Entry.Tare")
+	result = replaceInputValueByName(result, "humidity", "Entry.Humidity")
+	result = replaceInputValueByName(result, "damage", "Entry.Damage")
+	result = replaceInputValueByName(result, "impurity", "Entry.Impurity")
+	result = replaceInputValueByName(result, "arrivalDate", "Entry.ArrivalDate")
+	result = replaceInputValueByName(result, "netWeightRaw", "Entry.NetWeight")
+	result = replaceInputValueByName(result, "netWeight", "Entry.NetWeight")
+
+	// Entry.Id in hx-put attribute
+	result = regexp.MustCompile(`hx-put="/entry/[^"]*"`).ReplaceAllString(result, `hx-put="/entry/{Entry.Id}"`)
+	result = regexp.MustCompile(`hx-target="#entry-[^"]*"`).ReplaceAllString(result, `hx-target="#entry-{Entry.Id}"`)
+
+	return result
+}
+
+// transformDepartureForm transforms departure form HTML
+func transformDepartureForm(html string) string {
+	result := html
+
+	// Replace h1 conditional
+	h1Pattern := regexp.MustCompile(`(?s)(<h1[^>]*>)(.+?)(</h1>)`)
+	result = h1Pattern.ReplaceAllStringFunc(result, func(match string) string {
+		if strings.Contains(match, "Editando") && strings.Contains(match, "Nova") {
+			return `<h1 data-show-if="Departure.Id">Editando Saída</h1><h1 data-hide-if="Departure.Id">Nova Saída</h1>`
+		}
+		return match
+	})
+
+	// Replace input values using targeted string replacement
+	result = replaceInputValueByName(result, "grossWeight", "Departure.GrossWeight")
+	result = replaceInputValueByName(result, "tare", "Departure.Tare")
+	result = replaceInputValueByName(result, "humidity", "Departure.Humidity")
+	result = replaceInputValueByName(result, "damage", "Departure.Damage")
+	result = replaceInputValueByName(result, "impurity", "Departure.Impurity")
+	result = replaceInputValueByName(result, "departureDate", "Departure.DepartureDate")
+	result = replaceInputValueByName(result, "netWeight", "Departure.NetWeight")
+
+	result = regexp.MustCompile(`hx-put="/departure/[^"]*"`).ReplaceAllString(result, `hx-put="/departure/{Departure.Id}"`)
+
+	return result
+}
+
+// replaceInputValueByName finds an input element by name attribute and replaces its value attribute
+func replaceInputValueByName(html, inputName, placeholder string) string {
+	// Find name="inputName"
+	nameIdx := strings.Index(html, `name="`+inputName+`"`)
+	if nameIdx == -1 {
+		return html
+	}
+
+	// Find the closing > for this input (search forward from name position)
+	tagEnd := strings.Index(html[nameIdx:], ">")
+	if tagEnd == -1 {
+		return html
+	}
+	tagEnd += nameIdx
+
+	// Within this tag, find value="..." (may have content or be empty)
+	tagContent := html[nameIdx:tagEnd]
+	valueIdx := strings.Index(tagContent, `value="`)
+	if valueIdx == -1 {
+		return html
+	}
+	valueStart := nameIdx + valueIdx + 7 // after value="
+	valueEnd := strings.Index(tagContent[valueIdx+7:], `"`)
+	if valueEnd == -1 {
+		return html
+	}
+	valueEnd += nameIdx
+
+	// Replace the value content (between quotes)
+	return html[:valueStart] + "{" + placeholder + "}" + html[valueEnd+1:]
+}
+
+// transformCommonPatterns transforms patterns common to all templates
+func transformCommonPatterns(html string) string {
+	result := html
+
+	// Replace button text conditionals
+	buttonPattern := regexp.MustCompile(`(?s)<button[^>]*type="submit"[^>]*>(.+?)</button>`)
+	result = buttonPattern.ReplaceAllStringFunc(result, func(match string) string {
+		if strings.Contains(match, "Salvar") && strings.Contains(match, "Adicionar") {
+			// Keep the button with both options, client will show/hide
+			return `<button class="primary-glass-btn" type="submit"><span data-show-if="Entry.Id">Salvar</span><span data-hide-if="Entry.Id">Adicionar</span></button>`
+		}
+		return match
+	})
+
+	// Remove script tags that reference server-side functions
+	// These will be handled by client-side JS
+	scriptPattern := regexp.MustCompile(`(?s)<script[^>]*>.*?</script>`)
+	result = scriptPattern.ReplaceAllString(result, "")
+
+	return result
+}
+
+// setCacheHeaders sets 24-hour cache headers
+func setCacheHeaders(c *gin.Context) {
+	c.Header("Cache-Control", "public, max-age=86400")
+	c.Header("Expires", time.Now().Add(24*time.Hour).Format(http.TimeFormat))
+	c.Header("Content-Type", "text/html; charset=utf-8")
+}
+
+// findTemplate searches for a template file by name in the templates directory
+func findTemplate(name string) ([]byte, error) {
+	// Try direct path first
+	path := fmt.Sprintf("templates/%s.html", name)
+	content, err := fs.ReadFile(templateFS, path)
+	if err == nil {
+		return content, nil
+	}
+
+	// Walk through templates directory to find the file
+	return walkTemplates(name)
+}
+
+// walkTemplates walks through the templates directory to find a template by name
+func walkTemplates(name string) ([]byte, error) {
+	var result []byte
+
+	err := fs.WalkDir(templateFS, "templates", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		// Check if this is the file we're looking for
+		base := filepath.Base(path)
+		expected := fmt.Sprintf("%s.html", name)
+		if base == expected {
+			content, readErr := fs.ReadFile(templateFS, path)
+			if readErr == nil {
+				result = content
+				return fs.SkipAll // Stop walking once found
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil && err != fs.SkipAll {
+		return nil, err
+	}
+
+	if result == nil {
+		return nil, fmt.Errorf("template not found: %s", name)
+	}
+
+	return result, nil
+}
+
+// UseTemplateRoutes sets up template routes
+func UseTemplateRoutes(router *gin.Engine) {
+	router.GET("/api/templates/:name", serveTemplate)
+}

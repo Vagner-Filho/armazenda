@@ -215,31 +215,34 @@ class SyncEngine {
       case 'entry':
         url = operation === 'CREATE' ? '/entry' : `/entry/${data.id}`;
         method = operation === 'CREATE' ? 'POST' : (operation === 'UPDATE' ? 'PUT' : 'DELETE');
-        if (operation !== 'DELETE') body = data;
+        if (operation !== 'DELETE') body = structuredClone(data);
+        if (operation === 'CREATE') {
+          delete body.id;
+        }
         break;
 
       case 'entryDraft':
         url = operation === 'CREATE' ? '/entry/draft' : `/entry/draft/${data.id}`;
         method = operation === 'CREATE' ? 'POST' : (operation === 'UPDATE' ? 'PUT' : 'DELETE');
-        if (operation !== 'DELETE') body = data;
+        if (operation !== 'DELETE') body = structuredClone(data);
         break;
 
       case 'departure':
         url = operation === 'CREATE' ? '/departure' : `/departure/${data.id}`;
         method = operation === 'CREATE' ? 'POST' : (operation === 'UPDATE' ? 'PUT' : 'DELETE');
-        if (operation !== 'DELETE') body = data;
+        if (operation !== 'DELETE') body = structuredClone(data);
         break;
 
       case 'departureDraft':
         url = operation === 'CREATE' ? '/departure/draft' : `/departure/draft/${data.id}`;
         method = operation === 'CREATE' ? 'POST' : (operation === 'UPDATE' ? 'PUT' : 'DELETE');
-        if (operation !== 'DELETE') body = data;
+        if (operation !== 'DELETE') body = structuredClone(data);
         break;
 
       case 'person':
         url = operation === 'CREATE' ? '/person' : `/person/${data.id}`;
         method = operation === 'CREATE' ? 'POST' : (operation === 'UPDATE' ? 'PUT' : 'DELETE');
-        if (operation !== 'DELETE') body = data;
+        if (operation !== 'DELETE') body = structuredClone(data);
         break;
 
       default:

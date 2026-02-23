@@ -5,6 +5,7 @@ import (
 	"armazenda/service/entry_service"
 	"armazenda/service/user_service"
 	entry_view "armazenda/view/entry"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -12,6 +13,7 @@ import (
 	"armazenda/model/entry_model"
 	"armazenda/model/person_model"
 	"armazenda/model/product_model"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -95,6 +97,7 @@ func addEntry(c *gin.Context) {
 	var newEntry entity_public.Entry
 	err := c.Bind(&newEntry)
 	if err != nil {
+		fmt.Print(err.Error())
 		toast := entity_public.GetWarningToast(err.Error(), "")
 		c.Header("HX-Trigger", string(toast.ToJson()))
 		return

@@ -9,6 +9,7 @@ import { db, STORES } from './db/database.js';
 import { syncEngine } from './db/syncEngine.js';
 import { wasmCalculator } from './wasmCalculator.js';
 import { templateRenderer } from './templateRenderer.js';
+import { formatDateToInput } from './date.js';
 
 /**
  * Main coordinator for all offline functionality
@@ -627,47 +628,31 @@ class OfflineManager {
   }
 
   /**
-   * Render Entry list item HTML
+   * Render Entry list item HTML using cached template
+   * Maps offline data to match server template expectations
    */
-  renderEntryListItem(data) {
-    const isPending = data.id.toString().startsWith('offline_');
-    const pendingBadge = isPending
-      ? '<span class="ml-2 px-2 py-0.5 text-xs bg-yellow-500/30 text-yellow-200 rounded-full">Pendente</span>'
-      : '';
+  async renderEntryListItem(data) {
+    // Map data to match template expectations (.Id, .Product, .Origin, etc.)
+    const templateData = {
+      Id: data.id,
+      Product: data.product,
+      Origin: data.originName || data.origin,
+      Field: data.fieldName || data.field,
+      Vehicle: data.vehiclePlate || data.vehicle,
+      NetWeight: data.netWeight,
+      ArrivalDate: data.arrivalDate,
+      // Add offline indicator styling
+      IsOffline: data.id.toString().startsWith('offline_')
+    };
 
-    const productClass = data.product === 'Milho' ? 'text-yellow-300' : 'text-emerald-300';
-    const netWeight = parseFloat(data.netWeight).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-    const arrivalDate = new Date(data.arrivalDate).toLocaleString('pt-BR');
-
-    return `
-      <tr class="text-sm border-b border-sky-50/30 hover:bg-sky-50/10 whitespace-nowrap bg-yellow-500/5"
-          id="entry-${data.id}"
-          ${isPending ? 'data-offline-pending="true"' : ''}>
-        <td class="py-3 px-4 text-left">${data.id}</td>
-        <td class="py-3 px-4 text-left ${productClass}">${data.product}</td>
-        <td class="py-3 px-4 text-left truncate max-w-64" title="${data.originName}">${data.originName}</td>
-        <td class="py-3 px-4 text-left">${data.fieldName}</td>
-        <td class="py-3 px-4 text-left font-mono">${data.vehiclePlate}</td>
-        <td class="py-3 px-4 text-left font-bold">${netWeight} kg</td>
-        <td class="py-3 px-4 text-left">${arrivalDate}</td>
-        <td class="py-3 px-4 text-left">
-          <div class="flex items-center gap-2">
-            ${pendingBadge}
-            <button type="button" class="icon-btn" onclick="getEntryPdf(this)" data-id="${data.id}">
-              <iconify-icon icon="mdi:file-pdf-box" class="text-xl"></iconify-icon>
-            </button>
-            <button type="button" hx-get="/entry/form/${data.id}" hx-target="body" hx-swap="beforeend"
-                    title="Editar" class="icon-btn">
-              <iconify-icon icon="mdi:pencil" class="text-xl"></iconify-icon>
-            </button>
-            <button type="button" hx-delete="/entry/${data.id}" hx-target="#entry-${data.id}"
-                    hx-swap="delete" title="Excluir" class="icon-btn">
-              <iconify-icon icon="mdi:trash-can" class="text-xl"></iconify-icon>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
+    try {
+      const html = await templateRenderer.render('entry-list-item', templateData);
+      return html;
+    } catch (error) {
+      console.error('[Offline] Failed to render entry-list-item template:', error);
+      // Fallback: return empty string if template rendering fails
+      return '';
+    }
   }
 
   /**
@@ -698,25 +683,33 @@ class OfflineManager {
     };
 
     // Data for API/backend (matches Go Entry struct)
+    const now = new Date();
+    const nowOffsetted = new Date(now.setMinutes(now.getMinutes() - now.getTimezoneOffset()));
+    const arrivalDateOffsetted = parameters.arrivalDate ? new Date(new Date(parameters.arrivalDate).setMinutes(new Date(parameters.arrivalDate).getMinutes() - now.getTimezoneOffset())) : nowOffsetted;
+
     const apiData = {
+      id: tempId,
       field: Number(parameters.field),
       crop: Number(parameters.crop),
-      vehiclePlate: Number(parameters.vehicle),
+      vehiclePlate: Number(parameters.vehiclePlate),
       origin: parameters.origin ? Number(parameters.origin) : undefined,
-      grossWeight: parameters.grossWeight,
-      tare: parameters.tare,
+      grossWeight: Number(parameters.grossWeight),
+      tare: Number(parameters.tare),
       humidity: parameters.humidity,
       damage: parameters.damage,
       impurity: parameters.impurity,
-      arrivalDate: parameters.arrivalDate || new Date().toISOString()
+      arrivalDate: arrivalDateOffsetted.toISOString(),
+      modifiedAt: nowOffsetted.toISOString()
     };
 
     // Queue the change
     await syncEngine.queueCreate('entry', apiData);
 
-    // Render optimistic list item
-    const html = this.renderEntryListItem(displayData);
-    target.insertAdjacentHTML('afterbegin', html);
+    // Render optimistic list item using cached template
+    const html = await this.renderEntryListItem(displayData);
+    if (html) {
+      target.insertAdjacentHTML('afterbegin', html);
+    }
 
     // Cleanup
     this.closeFormDialog(formElement);
@@ -779,9 +772,11 @@ class OfflineManager {
     change.data = apiData;
     await db.put('pendingChanges', change);
 
-    // Update DOM with display data
-    const html = this.renderEntryListItem(displayData);
-    target.outerHTML = html;
+    // Update DOM with display data using cached template
+    const html = await this.renderEntryListItem(displayData);
+    if (html) {
+      target.outerHTML = html;
+    }
 
     this.closeFormDialog(formElement);
     this.showToast('Entrada atualizada localmente', 'success');

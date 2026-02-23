@@ -1,22 +1,20 @@
 /**
  * Offline Template Renderer
- * Renders Go HTML templates client-side using cached templates and IndexedDB data
+ * Renders pre-processed templates with simple placeholder replacement
  * @module templateRenderer
  */
 
 import { db } from './db/database.js';
 
 /**
- * Renders Go HTML templates using cached templates and data
- * Supports basic Go template syntax including variables, ranges, conditionals, and includes
+ * Renders HTML templates using cached templates and data
+ * Supports simple {Placeholder} syntax and data attributes for conditionals
  * @class
  */
 class TemplateRenderer {
   constructor() {
     /** @type {Map<string, string>} In-memory template cache */
     this.templates = new Map();
-    /** @type {Map<string, Function>} Compiled template cache (reserved for future use) */
-    this.compiledTemplates = new Map();
   }
 
   /**
@@ -67,6 +65,8 @@ class TemplateRenderer {
 
   /**
    * Render a template with data
+   * Replaces {FieldName} placeholders with values from data object
+   * Handles data-show-if and data-hide-if attributes for conditionals
    * @param {string} templateName - Name of the template to render
    * @param {Object} data - Data object to use for rendering
    * @returns {Promise<string>} Rendered HTML string
@@ -84,45 +84,45 @@ class TemplateRenderer {
 
   /**
    * Render a template string with data
-   * Supports Go template syntax: {{ .Field }}, {{ range }}, {{ if }}, {{ template }}
-   * @param {string} template - Template string
+   * @param {string} template - Template string with {Placeholder} syntax
    * @param {Object} data - Data object
-   * @returns {Promise<string>} Rendered HTML
+   * @returns {string} Rendered HTML
    */
-  async renderTemplateString(template, data) {
-    let result = template;
+  renderTemplateString(template, data) {
+    let html = template;
 
-    // Handle {{ .Field }} - simple field access
-    result = result.replace(/\{\{\s*\.([\w]+)\s*\}\}/g, (match, field) => {
-      const value = this.getFieldValue(data, field);
-      return value !== undefined ? this.escapeHtml(value) : '';
+    // Replace {FieldName} placeholders with data values
+    // Matches {FieldName} or {Object.FieldName}
+    html = html.replace(/\{(\w+(?:\.\w+)*)\}/g, (match, fieldPath) => {
+      const value = this.getFieldValue(data, fieldPath);
+      return value !== undefined && value !== null ? this.escapeHtml(value) : '';
     });
 
-    // Handle {{ .Field.Nested }} - nested field access
-    result = result.replace(/\{\{\s*\.([\w.]+)\s*\}\}/g, (match, path) => {
-      const value = this.getFieldValue(data, path);
-      return value !== undefined ? this.escapeHtml(value) : '';
+    // Parse HTML to handle data attributes
+    const container = document.createElement('div');
+    container.innerHTML = html;
+
+    // Handle data-show-if attributes
+    container.querySelectorAll('[data-show-if]').forEach(el => {
+      const fieldPath = el.dataset.showIf;
+      const value = this.getFieldValue(data, fieldPath);
+      el.style.display = this.isTruthy(value) ? '' : 'none';
     });
 
-    // Handle {{ range .Items }} ... {{ end }}
-    result = this.renderRangeLoops(result, data);
+    // Handle data-hide-if attributes
+    container.querySelectorAll('[data-hide-if]').forEach(el => {
+      const fieldPath = el.dataset.hideIf;
+      const value = this.getFieldValue(data, fieldPath);
+      el.style.display = this.isTruthy(value) ? 'none' : '';
+    });
 
-    // Handle {{ if .Condition }} ... {{ else }} ... {{ end }}
-    result = this.renderConditionals(result, data);
-
-    // Handle {{ template "name" . }}
-    result = await this.renderTemplateCalls(result, data);
-
-    // Handle built-in functions
-    result = this.renderBuiltins(result, data);
-
-    return result;
+    return container.innerHTML;
   }
 
   /**
    * Get a field value from data object using dot notation
    * @param {Object} data - Data object
-   * @param {string} path - Field path (e.g., "user.name")
+   * @param {string} path - Field path (e.g., "Entry.Id" or "Id")
    * @returns {*} The field value or undefined
    */
   getFieldValue(data, path) {
@@ -140,96 +140,7 @@ class TemplateRenderer {
   }
 
   /**
-   * Render Go template range loops
-   * @param {string} template - Template string
-   * @param {Object} data - Data object containing arrays to iterate
-   * @returns {string} Template with rendered loops
-   */
-  renderRangeLoops(template, data) {
-    const rangeRegex = /\{\{\s*range\s+\.(\w+)\s*\}\}([\s\S]*?)\{\{\s*end\s*\}\}/g;
-
-    return template.replace(rangeRegex, (match, arrayName, innerTemplate) => {
-      const array = data[arrayName];
-
-      if (!Array.isArray(array) || array.length === 0) {
-        return '';
-      }
-
-      return array.map((item, index) => {
-        // Create context with . as current item and $ as root data
-        const context = {
-          ...item,
-          '$': data,
-          '@index': index
-        };
-        return this.renderTemplateStringSync(innerTemplate, context);
-      }).join('');
-    });
-  }
-
-  /**
-   * Synchronous version of renderTemplateString for use within loops
-   * Does not support nested template calls
-   * @param {string} template - Template string
-   * @param {Object} data - Data object
-   * @returns {string} Rendered HTML
-   * @private
-   */
-  renderTemplateStringSync(template, data) {
-    let result = template;
-
-    // Handle field access
-    result = result.replace(/\{\{\s*\.([\w.]+)\s*\}\}/g, (match, path) => {
-      const value = this.getFieldValue(data, path);
-      return value !== undefined ? this.escapeHtml(value) : '';
-    });
-
-    // Handle conditionals (simplified)
-    result = this.renderConditionals(result, data);
-
-    return result;
-  }
-
-  /**
-   * Render Go template conditionals
-   * @param {string} template - Template string
-   * @param {Object} data - Data object
-   * @returns {string} Template with rendered conditionals
-   */
-  renderConditionals(template, data) {
-    // {{ if .Condition }} ... {{ end }}
-    const ifRegex = /\{\{\s*if\s+\.(\w+)\s*\}\}([\s\S]*?)\{\{\s*end\s*\}\}/g;
-
-    template = template.replace(ifRegex, (match, condition, innerContent) => {
-      const value = this.getFieldValue(data, condition);
-      const isTruthy = this.isTruthy(value);
-
-      // Check for else
-      const elseMatch = innerContent.match(/^(.*?)\{\{\s*else\s*\}\}([\s\S]*)$/);
-
-      if (elseMatch) {
-        const ifContent = elseMatch[1];
-        const elseContent = elseMatch[2];
-        return isTruthy ? ifContent : elseContent;
-      }
-
-      return isTruthy ? innerContent : '';
-    });
-
-    // {{ if not .Condition }} ... {{ end }}
-    const ifNotRegex = /\{\{\s*if\s+not\s+\.(\w+)\s*\}\}([\s\S]*?)\{\{\s*end\s*\}\}/g;
-
-    template = template.replace(ifNotRegex, (match, condition, innerContent) => {
-      const value = this.getFieldValue(data, condition);
-      const isFalsy = !this.isTruthy(value);
-      return isFalsy ? innerContent : '';
-    });
-
-    return template;
-  }
-
-  /**
-   * Check if a value is truthy (Go template semantics)
+   * Check if a value is truthy
    * @param {*} value - Value to check
    * @returns {boolean} True if value is truthy
    */
@@ -241,71 +152,6 @@ class TemplateRenderer {
     if (Array.isArray(value)) return value.length > 0;
     if (typeof value === 'object') return Object.keys(value).length > 0;
     return true;
-  }
-
-  /**
-   * Render Go template calls ({{ template "name" . }})
-   * @param {string} template - Template string
-   * @param {Object} data - Data object
-   * @returns {Promise<string>} Template with rendered sub-templates
-   */
-  async renderTemplateCalls(template, data) {
-    const templateCallRegex = /\{\{\s*template\s+"(\w+)"\s*(\.)?\s*\}\}/g;
-
-    let result = template;
-    const calls = [];
-
-    let match;
-    while ((match = templateCallRegex.exec(template)) !== null) {
-      calls.push({
-        fullMatch: match[0],
-        templateName: match[1],
-        useContext: !!match[2]
-      });
-    }
-
-    for (const call of calls) {
-      try {
-        const subTemplate = await this.getTemplate(call.templateName);
-        if (subTemplate) {
-          const subData = call.useContext ? data : {};
-          const rendered = await this.renderTemplateString(subTemplate, subData);
-          result = result.replace(call.fullMatch, rendered);
-        }
-      } catch (error) {
-        console.warn(`[Template] Failed to render sub-template ${call.templateName}:`, error);
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * Render built-in Go template functions
-   * @param {string} template - Template string
-   * @param {Object} data - Data object
-   * @returns {string} Template with rendered functions
-   */
-  renderBuiltins(template, data) {
-    // len function
-    template = template.replace(/\{\{\s*len\s+\.(\w+)\s*\}\}/g, (match, field) => {
-      const value = this.getFieldValue(data, field);
-      if (Array.isArray(value)) {
-        return value.length;
-      }
-      if (typeof value === 'string') {
-        return value.length;
-      }
-      return 0;
-    });
-
-    // gt (greater than)
-    template = template.replace(/\{\{\s*gt\s+\.(\w+)\s+(\d+)\s*\}\}/g, (match, field, num) => {
-      const value = this.getFieldValue(data, field);
-      return value > parseInt(num) ? 'true' : 'false';
-    });
-
-    return template;
   }
 
   /**
@@ -333,16 +179,16 @@ class TemplateRenderer {
    */
   async preCacheCommonTemplates() {
     const templates = [
-      { name: 'entry-content', url: '/entry/list' },
-      { name: 'entry-form', url: '/entry/form' },
-      { name: 'entry-list-item', url: '/entry/form' },
-      { name: 'entry-draft-form', url: '/entry/draft/form' },
-      { name: 'entry-draft-list-item', url: '/entry/draft/list' },
-      { name: 'departure-content', url: '/departure/list' },
-      { name: 'departure-form', url: '/departure/form' },
-      { name: 'departure-list-item', url: '/departure/form' },
-      { name: 'person-form', url: '/person/form' },
-      { name: 'person-list-item', url: '/pessoa' }
+      { name: 'entry-form', url: '/api/templates/entry-form' },
+      { name: 'entry-list-item', url: '/api/templates/entry-list-item' },
+      { name: 'entry-draft-form', url: '/api/templates/entry-draft-form' },
+      { name: 'entry-draft-list-item', url: '/api/templates/entry-draft-list-item' },
+      { name: 'departure-form', url: '/api/templates/departure-form' },
+      { name: 'departure-list-item', url: '/api/templates/departure-list-item' },
+      { name: 'departure-draft-form', url: '/api/templates/departure-draft-form' },
+      { name: 'departure-draft-list-item', url: '/api/templates/departure-draft-list-item' },
+      { name: 'person-form', url: '/api/templates/person-form' },
+      { name: 'person-list-item', url: '/api/templates/person-list-item' }
     ];
 
     for (const { name, url } of templates) {

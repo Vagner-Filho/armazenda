@@ -38,8 +38,8 @@
                     </legend>
                     {{ template "vehicle-selector" . }}
                     <div class="flex flex-col-reverse">
-                        <input type="number" name="grossWeight" id="grossWeight" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ if ne
-                            .Entry.GrossWeight 0.0 }} value="{{ .Entry.GrossWeight }}" {{ end }} required>
+                        <input type="number" name="grossWeight" id="grossWeight" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ if decIsNotZero
+                            .Entry.GrossWeight }} value="{{ .Entry.GrossWeight }}" {{ end }} required>
                         <label for="grossWeight" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             Peso Bruto (KG)
                             <i class="text-xs font-normal text-white/60 normal-case">Peso total da carga incluindo o
@@ -47,7 +47,7 @@
                         </label>
                     </div>
                     <div class="flex flex-col-reverse">
-                        <input type="number" name="tare" id="tare" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ if ne .Entry.Tare 0.0 }}
+                        <input type="number" name="tare" id="tare" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ if decIsNotZero .Entry.Tare }}
                             value="{{ .Entry.Tare }}" {{ end }} required>
                         <label for="tare" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             Tara (KG)
@@ -60,8 +60,8 @@
                             <i class="text-xs font-normal text-gray-500 normal-case">(preenchimento automático) Peso
                                 Bruto - Tara</i>
                         </label>
-                        <input type="text" name="netWeight" id="netWeight" class="cursor-not-allowed glass-input" {{ if ne
-                            .Entry.NetWeight 0.0 }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0"
+                        <input type="text" name="netWeight" id="netWeight" class="cursor-not-allowed glass-input" {{ if decIsNotZero
+                            .Entry.NetWeight }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0"
                             data-raw="0" required disabled>
                     </div>-->
                     <div class="flex flex-col">
@@ -86,8 +86,7 @@
                     <div class="flex flex-col-reverse relative">
                         <div role="status" class="absolute bottom-3 right-8 text-sm text-[#caff89] h-fit"
                             aria-label="Desconto de Umidade"></div>
-                        <input type="number" step="0.01" min="0" max="100" name="humidity" id="humidity" class="peer bg-white/10 border-white/20 text-white placeholder-white/50"
-                            value="{{ .Entry.Humidity }}">
+                        <input type="number" step="0.01" min="0" max="100" name="humidity" id="humidity" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" value="{{ .Entry.Humidity }}">
                         <label for="humidity" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             % Umidade (opcional)
                             <i class="text-xs font-normal text-white/60 normal-case">Desconta do Peso Líquido a partir
@@ -127,8 +126,8 @@
                         Peso Líquido
                         <i class="text-xs font-normal text-white/60 normal-case">Peso Bruto - Tara</i>
                     </label>
-                    <input type="text" name="netWeightRaw" id="netWeightRaw" class="cursor-not-allowed bg-white/10 border-white/20 text-white placeholder-white/50" {{ if ne
-                        .Entry.NetWeight 0.0 }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0"
+                    <input type="text" name="netWeightRaw" id="netWeightRaw" class="cursor-not-allowed bg-white/10 border-white/20 text-white placeholder-white/50" {{ if decIsNotZero
+                        .Entry.NetWeight }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0"
                         data-raw="0" required disabled>
                 </div>
                 <div class="flex flex-col w-full">
@@ -136,8 +135,8 @@
                         Peso Líquido Final
                         <i class="text-xs font-normal text-white/60 normal-case">Peso Líquido - Descontos</i>
                     </label>
-                    <input type="text" name="netWeight" id="netWeight" class="cursor-not-allowed bg-white/10 border-white/20 text-white placeholder-white/50" {{ if ne
-                        .Entry.NetWeight 0.0 }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0"
+                    <input type="text" name="netWeight" id="netWeight" class="cursor-not-allowed bg-white/10 border-white/20 text-white placeholder-white/50" {{ if decIsNotZero
+                        .Entry.NetWeight }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0"
                         data-raw="0" required disabled>
                 </div>
             </fieldset>

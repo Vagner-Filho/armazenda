@@ -25,6 +25,7 @@ import (
 	"armazenda/router/report_router"
 	"armazenda/router/stats_router"
 	"armazenda/router/sync_router"
+	"armazenda/router/template_router"
 	"armazenda/router/user_approval_router"
 	"armazenda/router/user_router"
 	"armazenda/router/vehicle_router"
@@ -172,8 +173,34 @@ func main() {
 	router := gin.Default()
 	router.Use(authenticate, setPublicAssetsHeaders)
 
-	html := template.Must(template.New("").Funcs(template.FuncMap{"dict": dict}).ParseFS(templatesFS, "templates/*.html", "templates/**/*.html"))
+	funcMap := template.FuncMap{
+		"dict": dict,
+		"decIsZero": func(v interface{}) bool {
+			switch d := v.(type) {
+			case decimal.Decimal:
+				return d.IsZero()
+			case float64:
+				return d == 0
+			default:
+				return false
+			}
+		},
+		"decIsNotZero": func(v interface{}) bool {
+			switch d := v.(type) {
+			case decimal.Decimal:
+				return !d.IsZero()
+			case float64:
+				return d != 0
+			default:
+				return false
+			}
+		},
+	}
+	html := template.Must(template.New("").Funcs(funcMap).ParseFS(templatesFS, "templates/*.html", "templates/**/*.html"))
 	router.SetHTMLTemplate(html)
+
+	// Initialize template router for serving pre-rendered templates
+	template_router.InitTemplateRouter(templatesFS, html)
 
 	router.StaticFS("/public", http.FS(assetsFS))
 
@@ -193,6 +220,7 @@ func main() {
 	user_approval_router.UserApprovalRoutes(router)
 	stats_router.UseStatsRoutes(router)
 	sync_router.UseSyncRoutes(router)
+	template_router.UseTemplateRoutes(router)
 
 	port := os.Getenv("PORT")
 	if port == "" {
