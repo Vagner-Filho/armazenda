@@ -219,7 +219,7 @@ func (em *EntryModel) DeleteEntry(id uint32) error {
 
 func (em *EntryModel) GetEntry(id uint32) (entity_public.Entry, *model_error.ModelError) {
 
-	rows, queryErr := em.pool.Query(context.Background(), "SELECT e.id, e.field, e.crop, e.vehicle, e.grossweight, e.tare, e.netweight, ea.humidity, ea.damage, ea.impurity, ea.humidity_discount_modifier, e.arrivaldate, e.farm, eo.person_id FROM entry e LEFT JOIN entry_analysis ea ON ea.entryid = e.id LEFT JOIN entry_origin eo ON eo.entry_id = e.id WHERE e.id = @id", pgx.NamedArgs{"id": id})
+	rows, queryErr := em.pool.Query(context.Background(), "SELECT e.id, e.field, e.crop, e.vehicle, e.grossweight, e.tare, e.netweight, ea.humidity, ea.damage, ea.impurity, ea.humidity_discount_modifier, e.arrivaldate, e.farm, eo.person_id, e.modified_at FROM entry e LEFT JOIN entry_analysis ea ON ea.entryid = e.id LEFT JOIN entry_origin eo ON eo.entry_id = e.id WHERE e.id = @id", pgx.NamedArgs{"id": id})
 	if queryErr != nil {
 		return entity_public.Entry{}, &model_error.ModelError{Message: queryErr.Error()}
 	}

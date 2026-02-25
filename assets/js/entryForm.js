@@ -28,7 +28,7 @@ export function setupEntryForm(payload) {
         tareInput.addEventListener('input', applyDiscounts)
     }
 
-    const dateVal = formatDateToInput(payload.arrivalDate)
+    const dateVal = formatDateToInput(payload && typeof payload === "object" ? payload.arrivalDate : null)
 
     const dialogEl = document.querySelector("#addEntryDialog")
     if (dialogEl) {

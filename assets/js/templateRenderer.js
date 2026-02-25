@@ -91,12 +91,22 @@ class TemplateRenderer {
   renderTemplateString(template, data) {
     let html = template;
 
+    // Removes enclosing template syntax
+    if (html.startsWith("{{")) {
+      html = html.substring(html.indexOf("<"), html.lastIndexOf(">") + 1);
+    }
+
     // Replace {FieldName} placeholders with data values
     // Matches {FieldName} or {Object.FieldName}
-    html = html.replace(/\{(\w+(?:\.\w+)*)\}/g, (match, fieldPath) => {
+    // Uses negative lookbehind to skip ES6 import statements (e.g., import {setupEntryForm})
+    html = html.replace(/(?<!import )\{(\w+(?:\.\w+)*)\}/g, (match, fieldPath) => {
       const value = this.getFieldValue(data, fieldPath);
       return value !== undefined && value !== null ? this.escapeHtml(value) : '';
     });
+
+    if (html.startsWith('<tr')) {
+      return html;
+    }
 
     // Parse HTML to handle data attributes
     const container = document.createElement('div');

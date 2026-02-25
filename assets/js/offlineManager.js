@@ -707,8 +707,13 @@ class OfflineManager {
 
     // Render optimistic list item using cached template
     const html = await this.renderEntryListItem(displayData);
-    if (html) {
-      target.insertAdjacentHTML('afterbegin', html);
+    if (html && window.htmx) {
+      //target.insertAdjacentHTML('afterbegin', html);
+      await window.htmx.swap(target, html, {
+        swapStyle: 'afterbegin',
+        swapDelay: 0,
+        settleDelay: 20
+      });
     }
 
     // Cleanup

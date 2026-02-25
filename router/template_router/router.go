@@ -71,12 +71,20 @@ func isPreRenderTemplate(name string) bool {
 		"departure-form":       true,
 		"departure-draft-form": true,
 		"person-form":          true,
+		"entry-list-item":      true,
+		"departure-list-item":  true,
+		"person-list-item":     true,
 	}
 	return preRenderTemplates[name]
 }
 
 // servePreRenderedTemplate renders a template with reference data and transforms it for client-side use
 func servePreRenderedTemplate(c *gin.Context, name string) (string, error) {
+	// Check if this is a list item template that needs raw template transformation
+	if strings.Contains(name, "list-item") {
+		return serveListItemTemplate(name)
+	}
+
 	// Get farm from session
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
@@ -97,6 +105,54 @@ func servePreRenderedTemplate(c *gin.Context, name string) (string, error) {
 	html := transformTemplateForClient(buf.String(), name)
 
 	return html, nil
+}
+
+// serveListItemTemplate reads raw template and transforms Go template syntax to client placeholders
+func serveListItemTemplate(name string) (string, error) {
+	// Read the raw template content
+	content, err := findTemplate(name)
+	if err != nil {
+		return "", fmt.Errorf("failed to find template: %w", err)
+	}
+
+	// Transform Go template syntax {{ .Field }} to client placeholders {Field}
+	html := transformListItemTemplate(string(content))
+
+	return html, nil
+}
+
+// transformListItemTemplate converts Go template syntax to client-side placeholders
+func transformListItemTemplate(template string) string {
+	result := template
+
+	// Convert {{ .Id }} and {{ .Id}} (with/without space) to {Id}
+	result = regexp.MustCompile(`\{\{\s*\.Id\s*\}\}`).ReplaceAllString(result, "{Id}")
+	// Convert {{ .Product }} to {Product}
+	result = regexp.MustCompile(`\{\{\s*\.Product\s*\}\}`).ReplaceAllString(result, "{Product}")
+	// Convert {{ .Origin }} to {Origin}
+	result = regexp.MustCompile(`\{\{\s*\.Origin\s*\}\}`).ReplaceAllString(result, "{Origin}")
+	// Convert {{ .Field }} to {Field}
+	result = regexp.MustCompile(`\{\{\s*\.Field\s*\}\}`).ReplaceAllString(result, "{Field}")
+	// Convert {{ .Vehicle }} to {Vehicle}
+	result = regexp.MustCompile(`\{\{\s*\.Vehicle\s*\}\}`).ReplaceAllString(result, "{Vehicle}")
+	// Convert {{ .NetWeight }} to {NetWeight}
+	result = regexp.MustCompile(`\{\{\s*\.NetWeight\s*\}\}`).ReplaceAllString(result, "{NetWeight}")
+	// Convert {{ .ArrivalDate }} to {ArrivalDate}
+	result = regexp.MustCompile(`\{\{\s*\.ArrivalDate\s*\}\}`).ReplaceAllString(result, "{ArrivalDate}")
+	// Convert {{ .DepartureDate }} to {DepartureDate}
+	result = regexp.MustCompile(`\{\{\s*\.DepartureDate\s*\}\}`).ReplaceAllString(result, "{DepartureDate}")
+	// Convert {{ .GrossWeight }} to {GrossWeight}
+	result = regexp.MustCompile(`\{\{\s*\.GrossWeight\s*\}\}`).ReplaceAllString(result, "{GrossWeight}")
+	// Convert {{ .Tare }} to {Tare}
+	result = regexp.MustCompile(`\{\{\s*\.Tare\s*\}\}`).ReplaceAllString(result, "{Tare}")
+	// Convert {{ .Humidity }} to {Humidity}
+	result = regexp.MustCompile(`\{\{\s*\.Humidity\s*\}\}`).ReplaceAllString(result, "{Humidity}")
+	// Convert {{ .Damage }} to {Damage}
+	result = regexp.MustCompile(`\{\{\s*\.Damage\s*\}\}`).ReplaceAllString(result, "{Damage}")
+	// Convert {{ .Impurity }} to {Impurity}
+	result = regexp.MustCompile(`\{\{\s*\.Impurity\s*\}\}`).ReplaceAllString(result, "{Impurity}")
+
+	return result
 }
 
 // prepareTemplateData prepares the data structure needed for template rendering
@@ -259,28 +315,39 @@ func replaceInputValueByName(html, inputName, placeholder string) string {
 		return html
 	}
 
-	// Find the closing > for this input (search forward from name position)
+	// Find opening < of this tag (search backward from nameIdx)
+	tagStart := strings.LastIndex(html[:nameIdx], "<")
+	if tagStart == -1 {
+		return html
+	}
+
+	// Find closing > of this tag (search forward from nameIdx)
 	tagEnd := strings.Index(html[nameIdx:], ">")
 	if tagEnd == -1 {
 		return html
 	}
 	tagEnd += nameIdx
 
-	// Within this tag, find value="..." (may have content or be empty)
-	tagContent := html[nameIdx:tagEnd]
-	valueIdx := strings.Index(tagContent, `value="`)
-	if valueIdx == -1 {
+	// Now search for value=" within the full tag range
+	tagContent := html[tagStart:tagEnd]
+	valueStart := strings.Index(tagContent, `value="`)
+	if valueStart == -1 {
 		return html
 	}
-	valueStart := nameIdx + valueIdx + 7 // after value="
-	valueEnd := strings.Index(tagContent[valueIdx+7:], `"`)
-	if valueEnd == -1 {
+
+	// Calculate absolute positions in original html
+	// valueOpenPos: position right after value="
+	valueOpenPos := tagStart + valueStart + 7
+	// Find closing quote after value="
+	closingQuotePos := strings.Index(html[valueOpenPos:], `"`)
+	if closingQuotePos == -1 {
 		return html
 	}
-	valueEnd += nameIdx
+	// valueClosePos: absolute position of the closing quote
+	valueClosePos := valueOpenPos + closingQuotePos
 
 	// Replace the value content (between quotes)
-	return html[:valueStart] + "{" + placeholder + "}" + html[valueEnd+1:]
+	return html[:valueOpenPos] + "{" + placeholder + "}" + html[valueClosePos:]
 }
 
 // transformCommonPatterns transforms patterns common to all templates
@@ -297,10 +364,9 @@ func transformCommonPatterns(html string) string {
 		return match
 	})
 
-	// Remove script tags that reference server-side functions
-	// These will be handled by client-side JS
-	scriptPattern := regexp.MustCompile(`(?s)<script[^>]*>.*?</script>`)
-	result = scriptPattern.ReplaceAllString(result, "")
+	// Transform script tags that call setupEntryForm with server-side data
+	// Replace the argument with a placeholder for client-side replacement
+	result = regexp.MustCompile(`setupEntryForm\([^)]*\)`).ReplaceAllString(result, `setupEntryForm({Entry.ArrivalDate})`)
 
 	return result
 }
