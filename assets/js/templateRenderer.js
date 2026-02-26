@@ -104,6 +104,35 @@ class TemplateRenderer {
       return value !== undefined && value !== null ? this.escapeHtml(value) : '';
     });
 
+    const templateIdentifierIdx = html.indexOf("{{");
+    if (templateIdentifierIdx > -1) {
+      const assertionEnd = html.indexOf(templateIdentifierIdx, "}}");
+      let templateEnd = html.indexOf(templateIdentifierIdx, "{{ end }}");
+      templateEnd = html.indexOf(templateIdentifierIdx, "{{end}}");
+
+      if (templateEnd > -1) {
+        const funcs = {
+          if: (assertion, param1, param2) => assertion(param1, param2),
+          eq: (a, b) => a == b
+        }
+      }
+
+      if (assertionEnd > -1 && templateEnd > -1) {
+        const tokens = html.substring(templateIdentifierIdx, assertionEnd).split(' ').filter(token => !['', '{{', '}}'].includes(token.trim()));
+        const [templateFunctionName, assertionName, param1, param2] = tokens[0];
+        if (funcs[templateFunctionName] && funcs[assertionName]) {
+          const templateFunction = funcs[templateFunctionName];
+          const assertion = funcs[assertionName];
+
+          if (templateFunction(assertion, param1, param2)) {
+            // TODO: insert true condition value to html templase
+          } else {
+            // TODO: check if template has else, if it does, insert else value to html template
+          }
+        }
+      }
+    }
+
     if (html.startsWith('<tr')) {
       return html;
     }

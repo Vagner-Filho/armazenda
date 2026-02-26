@@ -9,7 +9,8 @@ import { db, STORES } from './db/database.js';
 import { syncEngine } from './db/syncEngine.js';
 import { wasmCalculator } from './wasmCalculator.js';
 import { templateRenderer } from './templateRenderer.js';
-import { formatDateToInput } from './date.js';
+import { formatDateToDisplay, formatDateToInput } from './date.js';
+import { formatWeight } from './weight.js';
 
 /**
  * Main coordinator for all offline functionality
@@ -635,12 +636,12 @@ class OfflineManager {
     // Map data to match template expectations (.Id, .Product, .Origin, etc.)
     const templateData = {
       Id: data.id,
-      Product: data.product,
+      Product: data.product === 1 ? "Milho" : "Soja",
       Origin: data.originName || data.origin,
       Field: data.fieldName || data.field,
       Vehicle: data.vehiclePlate || data.vehicle,
-      NetWeight: data.netWeight,
-      ArrivalDate: data.arrivalDate,
+      NetWeight: formatWeight(data.netWeight),
+      ArrivalDate: formatDateToDisplay(data.arrivalDate),
       // Add offline indicator styling
       IsOffline: data.id.toString().startsWith('offline_')
     };
