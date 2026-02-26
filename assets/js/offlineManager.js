@@ -636,7 +636,7 @@ class OfflineManager {
     // Map data to match template expectations (.Id, .Product, .Origin, etc.)
     const templateData = {
       Id: data.id,
-      Product: data.product === 1 ? "Milho" : "Soja",
+      Product: data.product == 1 ? "Milho" : "Soja",
       Origin: data.originName || data.origin,
       Field: data.fieldName || data.field,
       Vehicle: data.vehiclePlate || data.vehicle,

@@ -106,26 +106,30 @@ class TemplateRenderer {
 
     const templateIdentifierIdx = html.indexOf("{{");
     if (templateIdentifierIdx > -1) {
-      const assertionEnd = html.indexOf(templateIdentifierIdx, "}}");
-      let templateEnd = html.indexOf(templateIdentifierIdx, "{{ end }}");
-      templateEnd = html.indexOf(templateIdentifierIdx, "{{end}}");
+      const assertionEnd = html.indexOf("}}", templateIdentifierIdx);
+      let templateEnd = html.indexOf("{{ end }}", templateIdentifierIdx);
+      if (templateEnd === -1) {
+        templateEnd = html.indexOf("{{end}}", templateIdentifierIdx);
+      }
 
-      if (templateEnd > -1) {
+      if (assertionEnd > -1 && templateEnd > -1) {
         const funcs = {
           if: (assertion, param1, param2) => assertion(param1, param2),
           eq: (a, b) => a == b
         }
-      }
-
-      if (assertionEnd > -1 && templateEnd > -1) {
         const tokens = html.substring(templateIdentifierIdx, assertionEnd).split(' ').filter(token => !['', '{{', '}}'].includes(token.trim()));
-        const [templateFunctionName, assertionName, param1, param2] = tokens[0];
+        const [templateFunctionName, assertionName, param1Token, param2Token] = tokens;
         if (funcs[templateFunctionName] && funcs[assertionName]) {
           const templateFunction = funcs[templateFunctionName];
           const assertion = funcs[assertionName];
 
+          const param1Parsed = param1Token.replace('.', '');
+          const param1 = param1Parsed in data ? data[param1Parsed] : param1Parsed;
+          const param2 = param2Token.replace('.', '') in data ? data[param2Token] : param2Token;
           if (templateFunction(assertion, param1, param2)) {
             // TODO: insert true condition value to html templase
+            const nextTemplateStart = html.substring(assertionEnd, "{{")
+            html = html.substring(0, templateIdentifierIdx) + html.substring(assertionEnd + 2, nextTemplateStart) + html.substring(templateEnd)
           } else {
             // TODO: check if template has else, if it does, insert else value to html template
           }
