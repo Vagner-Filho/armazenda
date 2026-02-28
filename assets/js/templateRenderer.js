@@ -115,7 +115,17 @@ class TemplateRenderer {
       if (assertionEnd > -1 && templateEnd > -1) {
         const funcs = {
           if: (assertion, param1, param2) => assertion(param1, param2),
-          eq: (a, b) => a == b
+          eq: (a, b) => {
+            if (typeof a !== typeof b) {
+              return a == b;
+            }
+            const asserters = {
+              string: (a, b) => a.match(b) || b.match(a),
+              number: (a, b) => a === b,
+            }
+
+            return asserters[typeof a](a, b)
+          }
         }
         const tokens = html.substring(templateIdentifierIdx, assertionEnd).split(' ').filter(token => !['', '{{', '}}'].includes(token.trim()));
         const [templateFunctionName, assertionName, param1Token, param2Token] = tokens;
@@ -128,10 +138,19 @@ class TemplateRenderer {
           const param2 = param2Token.replace('.', '') in data ? data[param2Token] : param2Token;
           if (templateFunction(assertion, param1, param2)) {
             // TODO: insert true condition value to html templase
-            const nextTemplateStart = html.substring(assertionEnd, "{{")
-            html = html.substring(0, templateIdentifierIdx) + html.substring(assertionEnd + 2, nextTemplateStart) + html.substring(templateEnd)
+            const nextTemplateStart = html.indexOf("{{", assertionEnd);
+            const assertionValue = html.substring(assertionEnd + 2, nextTemplateStart);
+            html = html.substring(0, templateIdentifierIdx) + assertionValue + html.substring(templateEnd);
           } else {
             // TODO: check if template has else, if it does, insert else value to html template
+            let elseMarker = html.substring(templateIdentifierIdx, templateEnd).indexOf("{{ else }}");
+            if (elseMarker === -1) {
+              elseMarker = html.substring(templateIdentifierIdx, templateEnd).indexOf("{{else}}");
+            }
+            if (elseMarker > -1) {
+              const assertionValue = html.substring(elseMarker, templateEnd);
+              html = html.substring(0, templateIdentifierIdx) + assertionValue + html.substring(templateEnd);
+            }
           }
         }
       }
