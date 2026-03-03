@@ -505,7 +505,13 @@ class OfflineManager {
     return path === '/entry/form' ||
       path.startsWith('/entry/form/') ||
       path === '/departure/form' ||
-      path.startsWith('/departure/form/');
+      path.startsWith('/departure/form/') ||
+      path === '/crop/form' ||
+      path.startsWith('/crop/form/') ||
+      path === '/vehicle/form' ||
+      path.startsWith('/vehicle/form/') ||
+      path === '/entry/field/form' ||
+      path.startsWith('/entry/field/form/');
   }
 
   /**
@@ -542,6 +548,12 @@ class OfflineManager {
         templateName = 'entry-form';
       } else if (path.startsWith('/departure/form')) {
         templateName = 'departure-form';
+      } else if (path.startsWith('/crop/form')) {
+        templateName = 'crop-form';
+      } else if (path.startsWith('/vehicle/form')) {
+        templateName = 'vehicle-form';
+      } else if (path.startsWith('/entry/field/form')) {
+        templateName = 'field-form';
       } else {
         throw new Error(`Unknown form path: ${path}`);
       }
@@ -614,7 +626,7 @@ class OfflineManager {
   calculateNetWeight(params) {
     const gross = parseFloat(params.grossWeight) || 0;
     const tare = parseFloat(params.tare) || 0;
-    return (gross - tare).toFixed(2);
+    return gross - tare;
   }
 
   /**
@@ -640,8 +652,8 @@ class OfflineManager {
       Origin: data.originName || data.origin,
       Field: data.fieldName || data.field,
       Vehicle: data.vehiclePlate || data.vehicle,
-      NetWeight: formatWeight(data.netWeight),
-      ArrivalDate: formatDateToDisplay(data.arrivalDate),
+      NetWeight: data.netWeight,
+      ArrivalDate: data.arrivalDate,
       // Add offline indicator styling
       IsOffline: data.id.toString().startsWith('offline_')
     };
@@ -675,7 +687,7 @@ class OfflineManager {
       humidity: parameters.humidity,
       damage: parameters.damage,
       impurity: parameters.impurity,
-      arrivalDate: parameters.arrivalDate || new Date().toISOString(),
+      arrivalDate: new Date(parameters.arrivalDate).getTime() || new Date().getTime(),
       farm: this.farmId,
       product: sessionStorage.getItem('product') || '',
       originName: this.getSelectText('origin-selector'),

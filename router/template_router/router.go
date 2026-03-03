@@ -5,6 +5,7 @@ import (
 	"armazenda/model/crop_model"
 	"armazenda/model/field_model"
 	"armazenda/model/person_model"
+	"armazenda/model/product_model"
 	"armazenda/model/vehicle_model"
 	"armazenda/service/user_service"
 	"bytes"
@@ -74,6 +75,9 @@ func isPreRenderTemplate(name string) bool {
 		"entry-list-item":      true,
 		"departure-list-item":  true,
 		"person-list-item":     true,
+		"crop-form":            true,
+		"vehicle-form":         true,
+		"field-form":           true,
 	}
 	return preRenderTemplates[name]
 }
@@ -224,6 +228,15 @@ func prepareTemplateData(name string, farm uint32) (map[string]interface{}, erro
 
 	case "person-form":
 		// Person form doesn't need reference data
+		data["IsOffline"] = false
+
+	case "crop-form":
+		products, err := product_model.GetProductModel().GetProducts()
+		if err != nil {
+			data["Products"] = []entity_public.Product{}
+		} else {
+			data["Products"] = products
+		}
 		data["IsOffline"] = false
 	}
 

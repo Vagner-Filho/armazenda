@@ -140,7 +140,7 @@ class TemplateRenderer {
             // TODO: insert true condition value to html templase
             const nextTemplateStart = html.indexOf("{{", assertionEnd);
             const assertionValue = html.substring(assertionEnd + 2, nextTemplateStart);
-            html = html.substring(0, templateIdentifierIdx) + assertionValue + html.substring(templateEnd);
+            html = html.substring(0, templateIdentifierIdx) + assertionValue + html.substring(html.indexOf("}}", templateEnd) + 2);
           } else {
             // TODO: check if template has else, if it does, insert else value to html template
             let elseMarker = html.substring(templateIdentifierIdx, templateEnd).indexOf("{{ else }}");
@@ -149,7 +149,7 @@ class TemplateRenderer {
             }
             if (elseMarker > -1) {
               const assertionValue = html.substring(elseMarker, templateEnd);
-              html = html.substring(0, templateIdentifierIdx) + assertionValue + html.substring(templateEnd);
+              html = html.substring(0, templateIdentifierIdx) + assertionValue + html.substring(html.indexOf("}}", templateEnd) + 2);
             }
           }
         }
@@ -250,7 +250,10 @@ class TemplateRenderer {
       { name: 'departure-draft-form', url: '/api/templates/departure-draft-form' },
       { name: 'departure-draft-list-item', url: '/api/templates/departure-draft-list-item' },
       { name: 'person-form', url: '/api/templates/person-form' },
-      { name: 'person-list-item', url: '/api/templates/person-list-item' }
+      { name: 'person-list-item', url: '/api/templates/person-list-item' },
+      { name: 'crop-form', url: '/api/templates/crop-form' },
+      { name: 'vehicle-form', url: '/api/templates/vehicle-form' },
+      { name: 'field-form', url: '/api/templates/field-form' }
     ];
 
     for (const { name, url } of templates) {
