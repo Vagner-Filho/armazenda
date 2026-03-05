@@ -27,6 +27,7 @@ GOOS=js GOARCH=wasm go build -o ./assets/wasm/calculator.wasm ./pkg/calculator/w
 
 ## Testing Commands
 
+### Go Tests (Backend)
 ```bash
 # Run all tests
 go test ./...
@@ -42,6 +43,46 @@ go test -run ^TestCalculateEntry ./pkg/calculator/
 
 # Run tests with verbose output
 go test -v ./pkg/calculator/
+```
+
+### Unit Tests (JavaScript)
+```bash
+# Run unit tests (Bun test runner)
+cd test
+bun test
+
+# Run with watch mode
+bun run test:watch
+
+# Run from project root
+cd test && bun test unit/
+```
+
+### E2E Tests (Playwright)
+```bash
+# Run all E2E tests
+cd test/e2e
+bun run test
+
+# Run with UI mode
+bun run test:ui
+
+# Run headed (see browser)
+bun run test:headed
+
+# Run in debug mode
+bun run test:debug
+
+# Database management
+bun run db:start    # Start test database
+bun run db:seed     # Seed test data
+bun run db:stop     # Stop test database
+```
+
+### Run All Tests
+```bash
+cd test
+bun run test:all    # Runs both unit and E2E tests
 ```
 
 ## Code Style Guidelines

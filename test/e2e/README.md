@@ -14,7 +14,7 @@ End-to-end tests using Playwright for the Armazenda grain warehouse management s
 ### Installation
 
 ```bash
-cd e2e
+cd test/e2e
 pnpm install
 ```
 
@@ -119,7 +119,7 @@ See `playwright.config.js` for browser configurations and test settings.
 ## Project Structure
 
 ```
-e2e/
+test/e2e/
 ├── docker-compose.test.yml    # Test database definition
 ├── global-setup.js            # Start DB, seed data
 ├── global-teardown.js         # Stop DB

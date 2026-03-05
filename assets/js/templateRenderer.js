@@ -104,8 +104,63 @@ class TemplateRenderer {
       return value !== undefined && value !== null ? this.escapeHtml(value) : '';
     });
 
-    const templateIdentifierIdx = html.indexOf("{{");
-    if (templateIdentifierIdx > -1) {
+    // Process template functions recursively
+    html = this._parseTemplateFunctions(html, data);
+
+    if (html.startsWith('<tr')) {
+      return html;
+    }
+
+    // Parse HTML to handle data attributes
+    const container = document.createElement('div');
+    container.innerHTML = html;
+
+    // Handle data-show-if attributes
+    container.querySelectorAll('[data-show-if]').forEach(el => {
+      const fieldPath = el.dataset.showIf;
+      const value = this.getFieldValue(data, fieldPath);
+      el.style.display = this.isTruthy(value) ? '' : 'none';
+    });
+
+    // Handle data-hide-if attributes
+    container.querySelectorAll('[data-hide-if]').forEach(el => {
+      const fieldPath = el.dataset.hideIf;
+      const value = this.getFieldValue(data, fieldPath);
+      el.style.display = this.isTruthy(value) ? 'none' : '';
+    });
+
+    return container.innerHTML;
+  }
+
+  /**
+   * Parse and execute template functions (if, eq, etc.) recursively
+   * @param {string} html - Template HTML with {{...}} syntax
+   * @param {Object} data - Data object for value lookups
+   * @param {Object} [customFuncs] - Optional custom template functions to extend or override defaults
+   * @returns {string} Processed HTML with template functions evaluated
+   * @private
+   */
+  _parseTemplateFunctions(html, data, customFuncs = {}) {
+    const defaultFuncs = {
+      if: (assertion, param1, param2) => assertion(param1, param2),
+      eq: (a, b) => {
+        if (typeof a !== typeof b) {
+          return a == b;
+        }
+        const asserters = {
+          string: (a, b) => a.match(b) || b.match(a),
+          number: (a, b) => a === b,
+        }
+
+        return asserters[typeof a](a, b)
+      }
+    };
+
+    // Merge default functions with custom ones (custom takes precedence)
+    const funcs = { ...defaultFuncs, ...customFuncs };
+
+    let templateIdentifierIdx = html.indexOf("{{");
+    while (templateIdentifierIdx > -1) {
       const assertionEnd = html.indexOf("}}", templateIdentifierIdx);
       let templateEnd = html.indexOf("{{ end }}", templateIdentifierIdx);
       if (templateEnd === -1) {
@@ -113,20 +168,6 @@ class TemplateRenderer {
       }
 
       if (assertionEnd > -1 && templateEnd > -1) {
-        const funcs = {
-          if: (assertion, param1, param2) => assertion(param1, param2),
-          eq: (a, b) => {
-            if (typeof a !== typeof b) {
-              return a == b;
-            }
-            const asserters = {
-              string: (a, b) => a.match(b) || b.match(a),
-              number: (a, b) => a === b,
-            }
-
-            return asserters[typeof a](a, b)
-          }
-        }
         const tokens = html.substring(templateIdentifierIdx, assertionEnd).split(' ').filter(token => !['', '{{', '}}'].includes(token.trim()));
         const [templateFunctionName, assertionName, param1Token, param2Token] = tokens;
         if (funcs[templateFunctionName] && funcs[assertionName]) {
@@ -155,31 +196,12 @@ class TemplateRenderer {
           }
         }
       }
+      
+      // Look for the next template function
+      templateIdentifierIdx = html.indexOf("{{");
     }
 
-    if (html.startsWith('<tr')) {
-      return html;
-    }
-
-    // Parse HTML to handle data attributes
-    const container = document.createElement('div');
-    container.innerHTML = html;
-
-    // Handle data-show-if attributes
-    container.querySelectorAll('[data-show-if]').forEach(el => {
-      const fieldPath = el.dataset.showIf;
-      const value = this.getFieldValue(data, fieldPath);
-      el.style.display = this.isTruthy(value) ? '' : 'none';
-    });
-
-    // Handle data-hide-if attributes
-    container.querySelectorAll('[data-hide-if]').forEach(el => {
-      const fieldPath = el.dataset.hideIf;
-      const value = this.getFieldValue(data, fieldPath);
-      el.style.display = this.isTruthy(value) ? 'none' : '';
-    });
-
-    return container.innerHTML;
+    return html;
   }
 
   /**
@@ -272,3 +294,6 @@ class TemplateRenderer {
 
 /** @type {TemplateRenderer} Singleton template renderer instance */
 export const templateRenderer = new TemplateRenderer();
+
+// Also export the class for testing
+export { TemplateRenderer };
