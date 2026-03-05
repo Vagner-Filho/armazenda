@@ -167,20 +167,80 @@ class SyncEngine {
 
     console.log(`[Sync] Uploading ${pendingChanges.length} pending changes`);
 
+    // PASS 1: Upload reference entities (fields, crops, vehicles) and build ID mapping
+    const referenceEntities = ['field', 'crop', 'vehicle'];
+    const referenceChanges = pendingChanges.filter(c => referenceEntities.includes(c.entity));
+    const idMapping = new Map(); // tempId -> serverId
+    const failedReferences = [];
+
+    for (const change of referenceChanges) {
+      try {
+        const serverResponse = await this.uploadChange(change);
+        await db.removePendingChange(change.id);
+
+        // Store the ID mapping when server returns new ID for offline-created entities
+        if (change.data.id?.toString().startsWith('offline_')) {
+          let serverId = null;
+
+          // Handle different response formats
+          if (serverResponse && serverResponse.id) {
+            serverId = serverResponse.id;
+          } else if (typeof serverResponse === 'object' && serverResponse.serverId) {
+            serverId = serverResponse.serverId;
+          }
+
+          if (serverId) {
+            idMapping.set(change.data.id.toString(), serverId.toString());
+            console.log(`[Sync] ID mapping: ${change.data.id} -> ${serverId} (${change.entity})`);
+          }
+        }
+      } catch (error) {
+        console.error(`[Sync] Failed to upload reference ${change.entity} ${change.data.id}:`, error);
+        change.retries++;
+        if (change.retries >= 3) {
+          await db.removePendingChange(change.id);
+          this.notify({
+            type: 'SYNC_ITEM_FAILED',
+            change: change,
+            error: error.message
+          });
+        } else {
+          failedReferences.push(change);
+        }
+      }
+    }
+
+    // PASS 2: Update entries/departures in pendingChanges with new server IDs
+    const dependentEntities = ['entry', 'entryDraft', 'departure', 'departureDraft'];
+    const dependentChanges = pendingChanges.filter(c => dependentEntities.includes(c.entity));
+
+    if (idMapping.size > 0 && dependentChanges.length > 0) {
+      console.log(`[Sync] Updating ${dependentChanges.length} dependent changes with ID mappings`);
+
+      for (const change of dependentChanges) {
+        debugger
+        const updatedData = this.replaceTempIds(change.data, idMapping);
+
+        // Only update if IDs were actually replaced
+        if (JSON.stringify(updatedData) !== JSON.stringify(change.data)) {
+          change.data = updatedData;
+          await db.put('pendingChanges', change);
+          console.log(`[Sync] Updated ${change.entity} ${change.data.id} with server IDs`);
+        }
+      }
+    }
+
+    // PASS 3: Upload dependent entities (entries and departures) with corrected IDs
     const failed = [];
 
-    for (const change of pendingChanges) {
+    for (const change of dependentChanges) {
       try {
         await this.uploadChange(change);
         await db.removePendingChange(change.id);
       } catch (error) {
-        console.error(`[Sync] Failed to upload change ${change.id}:`, error);
-
-        // Increment retry count
+        console.error(`[Sync] Failed to upload dependent ${change.entity} ${change.data.id}:`, error);
         change.retries++;
-
         if (change.retries >= 3) {
-          // Max retries reached, remove from queue and notify
           await db.removePendingChange(change.id);
           this.notify({
             type: 'SYNC_ITEM_FAILED',
@@ -193,9 +253,52 @@ class SyncEngine {
       }
     }
 
-    if (failed.length > 0) {
-      throw new Error(`${failed.length} changes failed to sync`);
+    // Re-add failed reference changes back to the queue
+    for (const change of failedReferences) {
+      if (change.retries < 3) {
+        await db.put('pendingChanges', change);
+      }
     }
+
+    if (failed.length > 0 || failedReferences.length > 0) {
+      throw new Error(`${failed.length + failedReferences.length} changes failed to sync`);
+    }
+  }
+
+  /**
+   * Replace temporary IDs with server IDs in entity data
+   * @param {Object} data - Entity data
+   * @param {Map} idMapping - Map of tempId -> serverId
+   * @returns {Object} Updated data with server IDs
+   */
+  replaceTempIds(data, idMapping) {
+    if (!data || idMapping.size === 0) {
+      return data;
+    }
+
+    const updated = { ...data };
+
+    // Map field ID
+    if (data.field && idMapping.has(data.field.toString())) {
+      updated.field = Number(idMapping.get(data.field.toString()));
+    }
+
+    // Map crop ID
+    if (data.crop && idMapping.has(data.crop.toString())) {
+      updated.crop = Number(idMapping.get(data.crop.toString()));
+    }
+
+    // Map vehicle ID (used in some contexts)
+    if (data.vehicle && idMapping.has(data.vehicle.toString())) {
+      updated.vehicle = Number(idMapping.get(data.vehicle.toString()));
+    }
+
+    // Map vehiclePlate for entries (this stores vehicle ID in entry data)
+    if (data.vehiclePlate && idMapping.has(data.vehiclePlate.toString())) {
+      updated.vehiclePlate = Number(idMapping.get(data.vehiclePlate.toString()));
+    }
+
+    return updated;
   }
 
   /**
@@ -243,6 +346,30 @@ class SyncEngine {
         url = operation === 'CREATE' ? '/person' : `/person/${data.id}`;
         method = operation === 'CREATE' ? 'POST' : (operation === 'UPDATE' ? 'PUT' : 'DELETE');
         if (operation !== 'DELETE') body = structuredClone(data);
+        break;
+
+      case 'crop':
+        url = '/crop';
+        method = 'POST';
+        body = {
+          name: data.name,
+          product: data.product,
+          startDate: data.startDate
+        };
+        break;
+
+      case 'vehicle':
+        url = '/vehicle';
+        method = 'POST';
+        body = structuredClone(data);
+        delete body.id;
+        break;
+
+      case 'field':
+        url = '/field';
+        method = 'POST';
+        body = structuredClone(data);
+        delete body.id;
         break;
 
       default:
@@ -312,6 +439,189 @@ class SyncEngine {
         });
 
         return serverResponse;
+      }
+    }
+
+    // Handle Crop CREATE response - server returns HTML option element
+    if (operation === 'CREATE' && entity === 'crop' && data.id.toString().startsWith('offline_')) {
+      const htmlResponse = await response.text();
+
+      // Parse the HTML to extract the server ID
+      const tempId = data.id;
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlResponse, 'text/html');
+      const newOption = doc.querySelector('option');
+
+      if (newOption) {
+        const serverId = newOption.getAttribute('value');
+        const serverName = newOption.textContent.trim();
+        const serverProductId = newOption.dataset.productId;
+
+        // Update DOM: find and replace the offline option
+        const cropSelector = document.getElementById('crop-selector');
+        if (cropSelector) {
+          const offlineOption = cropSelector.querySelector(`option[value="${tempId}"]`);
+          if (offlineOption) {
+            // Update the option with server data
+            offlineOption.value = serverId;
+            offlineOption.textContent = serverName;
+            offlineOption.dataset.productId = serverProductId;
+            offlineOption.removeAttribute('data-offline-pending');
+            offlineOption.style.fontStyle = '';
+          }
+        }
+
+        // Update IndexedDB: replace temp crop with server crop
+        try {
+          const tempCrop = await db.get(STORES.CROPS, tempId);
+          if (tempCrop) {
+            await db.delete(STORES.CROPS, tempId);
+            await db.put(STORES.CROPS, {
+              id: Number(serverId),
+              name: serverName,
+              product: Number(serverProductId),
+              startDate: tempCrop.startDate,
+              farm: tempCrop.farm,
+              synced: true,
+              modifiedAt: new Date().toISOString()
+            });
+          }
+        } catch (dbError) {
+          console.error('[Sync] Failed to update crop in IndexedDB:', dbError);
+        }
+
+        // Notify user
+        this.notify({
+          type: 'SYNC_CROP_COMPLETE',
+          tempId: tempId,
+          serverId: serverId,
+          name: serverName
+        });
+
+        return { id: serverId, name: serverName, product: serverProductId };
+      }
+    }
+
+    // Handle Vehicle CREATE response - server returns HTML option element
+    if (operation === 'CREATE' && entity === 'vehicle' && data.id.toString().startsWith('offline_')) {
+      const htmlResponse = await response.text();
+
+      // Parse the HTML to extract the server ID
+      const tempId = data.id;
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlResponse, 'text/html');
+      const newOption = doc.querySelector('option');
+
+      if (newOption) {
+        const serverId = newOption.getAttribute('value');
+        const displayText = newOption.textContent.trim();
+
+        // Parse display text to extract plate and name
+        let serverPlate = displayText;
+        let serverName = '';
+        if (displayText.includes('|')) {
+          const parts = displayText.split('|').map(p => p.trim());
+          serverPlate = parts[0];
+          serverName = parts[1];
+        }
+
+        // Update DOM: find and replace the offline option
+        const vehicleSelector = document.getElementById('vehicle-selector');
+        if (vehicleSelector) {
+          const offlineOption = vehicleSelector.querySelector(`option[value="${tempId}"]`);
+          if (offlineOption) {
+            // Update the option with server data
+            offlineOption.value = serverId;
+            offlineOption.textContent = displayText;
+            offlineOption.removeAttribute('data-offline-pending');
+            offlineOption.style.fontStyle = '';
+          }
+        }
+
+        // Update IndexedDB: replace temp vehicle with server vehicle
+        try {
+          const tempVehicle = await db.get(STORES.VEHICLES, tempId);
+          if (tempVehicle) {
+            await db.delete(STORES.VEHICLES, tempId);
+            await db.put(STORES.VEHICLES, {
+              id: Number(serverId),
+              plate: serverPlate,
+              name: serverName,
+              farm: tempVehicle.farm,
+              synced: true,
+              modifiedAt: new Date().toISOString()
+            });
+          }
+        } catch (dbError) {
+          console.error('[Sync] Failed to update vehicle in IndexedDB:', dbError);
+        }
+
+        // Notify user
+        this.notify({
+          type: 'SYNC_VEHICLE_COMPLETE',
+          tempId: tempId,
+          serverId: serverId,
+          plate: serverPlate
+        });
+
+        return { id: serverId, plate: serverPlate, name: serverName };
+      }
+    }
+
+    // Handle Field CREATE response - server returns HTML option element
+    if (operation === 'CREATE' && entity === 'field' && data.id.toString().startsWith('offline_')) {
+      const htmlResponse = await response.text();
+
+      // Parse the HTML to extract the server ID
+      const tempId = data.id;
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlResponse, 'text/html');
+      const newOption = doc.querySelector('option');
+
+      if (newOption) {
+        const serverId = newOption.getAttribute('value');
+        const serverName = newOption.textContent.trim();
+
+        // Update DOM: find and replace the offline option
+        const fieldSelector = document.getElementById('field-selector');
+        if (fieldSelector) {
+          const offlineOption = fieldSelector.querySelector(`option[value="${tempId}"]`);
+          if (offlineOption) {
+            // Update the option with server data
+            offlineOption.value = serverId;
+            offlineOption.textContent = serverName;
+            offlineOption.removeAttribute('data-offline-pending');
+            offlineOption.style.fontStyle = '';
+          }
+        }
+
+        // Update IndexedDB: replace temp field with server field
+        try {
+          const tempField = await db.get(STORES.FIELDS, tempId);
+          if (tempField) {
+            await db.delete(STORES.FIELDS, tempId);
+            await db.put(STORES.FIELDS, {
+              id: Number(serverId),
+              name: serverName,
+              hectares: tempField.hectares,
+              farm: tempField.farm,
+              synced: true,
+              modifiedAt: new Date().toISOString()
+            });
+          }
+        } catch (dbError) {
+          console.error('[Sync] Failed to update field in IndexedDB:', dbError);
+        }
+
+        // Notify user
+        this.notify({
+          type: 'SYNC_FIELD_COMPLETE',
+          tempId: tempId,
+          serverId: serverId,
+          name: serverName
+        });
+
+        return { id: serverId, name: serverName };
       }
     }
 

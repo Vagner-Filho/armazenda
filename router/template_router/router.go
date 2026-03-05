@@ -76,16 +76,19 @@ func isPreRenderTemplate(name string) bool {
 		"departure-list-item":  true,
 		"person-list-item":     true,
 		"crop-form":            true,
+		"crop-option":          true,
 		"vehicle-form":         true,
+		"vehicle-option":       true,
 		"field-form":           true,
+		"field-option":         true,
 	}
 	return preRenderTemplates[name]
 }
 
 // servePreRenderedTemplate renders a template with reference data and transforms it for client-side use
 func servePreRenderedTemplate(c *gin.Context, name string) (string, error) {
-	// Check if this is a list item template that needs raw template transformation
-	if strings.Contains(name, "list-item") {
+	// Check if this is a list item or option template that needs raw template transformation
+	if strings.Contains(name, "list-item") || strings.Contains(name, "option") {
 		return serveListItemTemplate(name)
 	}
 
@@ -131,6 +134,8 @@ func transformListItemTemplate(template string) string {
 
 	// Convert {{ .Id }} and {{ .Id}} (with/without space) to {Id}
 	result = regexp.MustCompile(`\{\{\s*\.Id\s*\}\}`).ReplaceAllString(result, "{Id}")
+	// Convert {{ .Name }} to {Name} (for crop-option, vehicle-option, field-option)
+	result = regexp.MustCompile(`\{\{\s*\.Name\s*\}\}`).ReplaceAllString(result, "{Name}")
 	// Convert {{ .Product }} to {Product}
 	result = regexp.MustCompile(`\{\{\s*\.Product\s*\}\}`).ReplaceAllString(result, "{Product}")
 	// Convert {{ .Origin }} to {Origin}

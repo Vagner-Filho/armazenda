@@ -167,6 +167,15 @@ class OfflineManager {
       case 'SYNC_ITEM_FAILED':
         this.showToast('Algumas alterações não puderam ser sincronizadas', 'warning');
         break;
+      case 'SYNC_CROP_COMPLETE':
+        this.showToast(`Safra "${event.name}" sincronizada com sucesso`, 'success');
+        break;
+      case 'SYNC_VEHICLE_COMPLETE':
+        this.showToast(`Veículo "${event.plate}" sincronizado com sucesso`, 'success');
+        break;
+      case 'SYNC_FIELD_COMPLETE':
+        this.showToast(`Talhão "${event.name}" sincronizado com sucesso`, 'success');
+        break;
       case 'OFFLINE':
         this.showToast('Você está offline. As alterações serão sincronizadas quando a conexão for restabelecida.', 'info');
         break;
@@ -372,7 +381,7 @@ class OfflineManager {
   /**
    * Get entity type from URL
    * @param {string} url - Request URL
-   * @returns {string|null} Entity type ('entry', 'departure', 'person', etc.)
+   * @returns {string|null} Entity type ('entry', 'departure', 'person', 'crop', etc.)
    */
   getEntityFromUrl(url) {
     if (url.includes('/entry/draft')) return 'entryDraft';
@@ -380,6 +389,9 @@ class OfflineManager {
     if (url.includes('/departure/draft')) return 'departureDraft';
     if (url.includes('/departure')) return 'departure';
     if (url.includes('/person')) return 'person';
+    if (url.includes('/crop')) return 'crop';
+    if (url.includes('/vehicle')) return 'vehicle';
+    if (url.includes('/entry/field') || url.includes('/field')) return 'field';
     return null;
   }
 
@@ -478,7 +490,25 @@ class OfflineManager {
       }
 
       // Only handle Entry mutating requests (not drafts)
-      if (!this.isEntryMutatingRequest(method, path)) return;
+      if (!this.isEntryMutatingRequest(method, path)) {
+        // Check for other entity mutations (crop, vehicle, field, person)
+        if (this.isCropMutatingRequest(method, path)) {
+          event.preventDefault();
+          await this.handleOfflineCropCreate(parameters, target, elt);
+          return;
+        }
+        if (this.isVehicleMutatingRequest(method, path)) {
+          event.preventDefault();
+          await this.handleOfflineVehicleCreate(parameters, target, elt);
+          return;
+        }
+        if (this.isFieldMutatingRequest(method, path)) {
+          event.preventDefault();
+          await this.handleOfflineFieldCreate(parameters, target, elt);
+          return;
+        }
+        return;
+      }
 
       event.preventDefault();
 
@@ -605,6 +635,27 @@ class OfflineManager {
   }
 
   /**
+   * Check if request is a Crop mutating request
+   */
+  isCropMutatingRequest(method, path) {
+    return method === 'POST' && path === '/crop';
+  }
+
+  /**
+   * Check if request is a Vehicle mutating request
+   */
+  isVehicleMutatingRequest(method, path) {
+    return method === 'POST' && path === '/vehicle';
+  }
+
+  /**
+   * Check if request is a Field mutating request
+   */
+  isFieldMutatingRequest(method, path) {
+    return method === 'POST' && path === '/field';
+  }
+
+  /**
    * Extract ID from URL path
    */
   extractIdFromPath(path) {
@@ -638,6 +689,21 @@ class OfflineManager {
       dialog.close();
       dialog.remove();
     }
+  }
+
+  /**
+   * Safely convert ID to appropriate type
+   * Offline temp IDs remain as strings, server IDs are converted to numbers
+   * @param {string|number} value - ID value
+   * @returns {string|number|undefined} Properly typed ID
+   */
+  parseId(value) {
+    if (!value) return undefined;
+    const str = value.toString();
+    if (str.startsWith('offline_')) {
+      return str; // Keep temp IDs as strings
+    }
+    return Number(str); // Convert server IDs to numbers
   }
 
   /**
@@ -677,9 +743,9 @@ class OfflineManager {
     // Data for UI rendering (display fields + calculated values)
     const displayData = {
       id: tempId,
-      field: Number(parameters.field),
-      crop: Number(parameters.crop),
-      vehicle: parameters.vehicle,
+      field: this.parseId(parameters.field),
+      crop: this.parseId(parameters.crop),
+      vehicle: this.parseId(parameters.vehiclePlate),
       origin: Number(parameters.origin),
       grossWeight: parameters.grossWeight,
       tare: parameters.tare,
@@ -702,9 +768,9 @@ class OfflineManager {
 
     const apiData = {
       id: tempId,
-      field: Number(parameters.field),
-      crop: Number(parameters.crop),
-      vehiclePlate: Number(parameters.vehiclePlate),
+      field: this.parseId(parameters.field),
+      crop: this.parseId(parameters.crop),
+      vehiclePlate: this.parseId(parameters.vehiclePlate),
       origin: parameters.origin ? Number(parameters.origin) : undefined,
       grossWeight: Number(parameters.grossWeight),
       tare: Number(parameters.tare),
@@ -774,9 +840,9 @@ class OfflineManager {
 
     // Data for API/backend (matches Go Entry struct)
     const apiData = {
-      field: Number(parameters.field),
-      crop: Number(parameters.crop),
-      vehiclePlate: Number(parameters.vehicle),
+      field: this.parseId(parameters.field),
+      crop: this.parseId(parameters.crop),
+      vehiclePlate: this.parseId(parameters.vehiclePlate),
       origin: parameters.origin ? Number(parameters.origin) : undefined,
       grossWeight: parameters.grossWeight,
       tare: parameters.tare,
@@ -827,6 +893,237 @@ class OfflineManager {
       this.updateOfflineIndicator();
       this.showToast('Entrada removida', 'success');
     }
+  }
+
+  /**
+   * Handle offline Crop creation
+   */
+  async handleOfflineCropCreate(parameters, target, formElement) {
+    const tempId = `offline_${Date.now()}`;
+
+    // Prepare API data for syncing
+    const apiData = {
+      id: tempId,
+      name: parameters.name,
+      product: Number(parameters.product),
+      startDate: parameters.startDate,
+      farm: this.farmId
+    };
+
+    // Queue the change
+    await syncEngine.queueCreate('crop', apiData);
+
+    // Also save to crops store for immediate availability
+    await db.put(STORES.CROPS, {
+      ...apiData,
+      synced: false,
+      modifiedAt: new Date().toISOString()
+    });
+
+    // Get the grain/product name for display
+    const grainSelector = document.getElementById('grain-selector');
+    const productName = grainSelector?.selectedOptions[0]?.text || '';
+
+    // Prepare template data for the option element
+    const templateData = {
+      Id: tempId,
+      Name: parameters.name,
+      Product: parameters.product,
+      IsOffline: true
+    };
+
+    // Render the crop-option template
+    try {
+      const html = await templateRenderer.render('crop-option', templateData);
+      
+      // Find the crop-selector select element
+      const cropSelector = document.getElementById('crop-selector');
+      if (cropSelector) {
+        // Remove "Nenhuma safra encontrada" option if present
+        const noCropsOption = cropSelector.querySelector('option[value="-1"]');
+        if (noCropsOption) {
+          noCropsOption.remove();
+        }
+
+        // Insert the new option
+        cropSelector.insertAdjacentHTML('beforeend', html);
+        
+        // Get the newly inserted option and select it
+        const newOption = cropSelector.lastElementChild;
+        if (newOption) {
+          newOption.selected = true;
+          // Set product attribute for discount calculations
+          newOption.dataset.productId = parameters.product;
+          // Trigger change event to update product
+          cropSelector.dispatchEvent(new Event('change'));
+        }
+
+        // Mark as offline-pending for styling
+        if (newOption) {
+          newOption.dataset.offlinePending = 'true';
+          newOption.style.fontStyle = 'italic';
+          newOption.textContent = parameters.name + ' (pendente)';
+        }
+      }
+    } catch (error) {
+      console.error('[Offline] Failed to render crop option:', error);
+    }
+
+    // Cleanup
+    this.closeFormDialog(formElement);
+    this.showToast('Safra salva localmente', 'success');
+    this.syncStatus.pendingCount++;
+    this.updateOfflineIndicator();
+  }
+
+  /**
+   * Handle offline Vehicle creation
+   */
+  async handleOfflineVehicleCreate(parameters, target, formElement) {
+    const tempId = `offline_${Date.now()}`;
+
+    // Prepare API data for syncing
+    const apiData = {
+      id: tempId,
+      plate: parameters.plate,
+      name: parameters.name || '',
+      farm: this.farmId
+    };
+
+    // Queue the change
+    await syncEngine.queueCreate('vehicle', apiData);
+
+    // Also save to vehicles store for immediate availability
+    await db.put(STORES.VEHICLES, {
+      ...apiData,
+      synced: false,
+      modifiedAt: new Date().toISOString()
+    });
+
+    // Prepare template data for the option element
+    const templateData = {
+      Id: tempId,
+      Plate: parameters.plate,
+      Name: parameters.name || '',
+      IsOffline: true
+    };
+
+    // Render the vehicle-option template
+    try {
+      const html = await templateRenderer.render('vehicle-option', templateData);
+      
+      // Find the vehicle-selector select element
+      const vehicleSelector = document.getElementById('vehicle-selector');
+      if (vehicleSelector) {
+        // Remove "Nenhum veículo encontrado" option if present
+        const noVehicleOption = vehicleSelector.querySelector('option[value="-1"]');
+        if (noVehicleOption) {
+          noVehicleOption.remove();
+        }
+
+        // Insert the new option
+        vehicleSelector.insertAdjacentHTML('beforeend', html);
+        
+        // Get the newly inserted option and select it
+        const newOption = vehicleSelector.lastElementChild;
+        if (newOption) {
+          newOption.selected = true;
+          // Trigger change event
+          vehicleSelector.dispatchEvent(new Event('change'));
+        }
+
+        // Mark as offline-pending for styling
+        if (newOption) {
+          newOption.dataset.offlinePending = 'true';
+          newOption.style.fontStyle = 'italic';
+          const displayText = parameters.name 
+            ? `${parameters.plate} | ${parameters.name} (pendente)` 
+            : `${parameters.plate} (pendente)`;
+          newOption.textContent = displayText;
+        }
+      }
+    } catch (error) {
+      console.error('[Offline] Failed to render vehicle option:', error);
+    }
+
+    // Cleanup
+    this.closeFormDialog(formElement);
+    this.showToast('Veículo salvo localmente', 'success');
+    this.syncStatus.pendingCount++;
+    this.updateOfflineIndicator();
+  }
+
+  /**
+   * Handle offline Field creation
+   */
+  async handleOfflineFieldCreate(parameters, target, formElement) {
+    const tempId = `offline_${Date.now()}`;
+
+    // Prepare API data for syncing
+    const apiData = {
+      id: tempId,
+      name: parameters.name,
+      hectares: parameters.hectares,
+      farm: this.farmId
+    };
+
+    // Queue the change
+    await syncEngine.queueCreate('field', apiData);
+
+    // Also save to fields store for immediate availability
+    await db.put(STORES.FIELDS, {
+      ...apiData,
+      synced: false,
+      modifiedAt: new Date().toISOString()
+    });
+
+    // Prepare template data for the option element
+    const templateData = {
+      Id: tempId,
+      Name: parameters.name,
+      IsOffline: true
+    };
+
+    // Render the field-option template
+    try {
+      const html = await templateRenderer.render('field-option', templateData);
+      
+      // Find the field-selector select element
+      const fieldSelector = document.getElementById('field-selector');
+      if (fieldSelector) {
+        // Remove "Nenhum talhão encontrado" option if present
+        const noFieldOption = fieldSelector.querySelector('option[value="-1"]');
+        if (noFieldOption) {
+          noFieldOption.remove();
+        }
+
+        // Insert the new option
+        fieldSelector.insertAdjacentHTML('beforeend', html);
+        
+        // Get the newly inserted option and select it
+        const newOption = fieldSelector.lastElementChild;
+        if (newOption) {
+          newOption.selected = true;
+          // Trigger change event
+          fieldSelector.dispatchEvent(new Event('change'));
+        }
+
+        // Mark as offline-pending for styling
+        if (newOption) {
+          newOption.dataset.offlinePending = 'true';
+          newOption.style.fontStyle = 'italic';
+          newOption.textContent = parameters.name + ' (pendente)';
+        }
+      }
+    } catch (error) {
+      console.error('[Offline] Failed to render field option:', error);
+    }
+
+    // Cleanup
+    this.closeFormDialog(formElement);
+    this.showToast('Talhão salvo localmente', 'success');
+    this.syncStatus.pendingCount++;
+    this.updateOfflineIndicator();
   }
 
   /**

@@ -252,8 +252,11 @@ class TemplateRenderer {
       { name: 'person-form', url: '/api/templates/person-form' },
       { name: 'person-list-item', url: '/api/templates/person-list-item' },
       { name: 'crop-form', url: '/api/templates/crop-form' },
+      { name: 'crop-option', url: '/api/templates/crop-option' },
       { name: 'vehicle-form', url: '/api/templates/vehicle-form' },
-      { name: 'field-form', url: '/api/templates/field-form' }
+      { name: 'vehicle-option', url: '/api/templates/vehicle-option' },
+      { name: 'field-form', url: '/api/templates/field-form' },
+      { name: 'field-option', url: '/api/templates/field-option' }
     ];
 
     for (const { name, url } of templates) {
