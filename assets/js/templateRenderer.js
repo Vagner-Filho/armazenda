@@ -143,12 +143,13 @@ class TemplateRenderer {
             html = html.substring(0, templateIdentifierIdx) + assertionValue + html.substring(html.indexOf("}}", templateEnd) + 2);
           } else {
             // TODO: check if template has else, if it does, insert else value to html template
-            let elseMarker = html.substring(templateIdentifierIdx, templateEnd).indexOf("{{ else }}");
+            const template = html.substring(templateIdentifierIdx, templateEnd)
+            let elseMarker = template.indexOf("{{ else }}");
             if (elseMarker === -1) {
-              elseMarker = html.substring(templateIdentifierIdx, templateEnd).indexOf("{{else}}");
+              elseMarker = template.indexOf("{{else}}");
             }
             if (elseMarker > -1) {
-              const assertionValue = html.substring(elseMarker, templateEnd);
+              const assertionValue = template.substring(template.indexOf("}}", elseMarker) + 2, templateEnd);
               html = html.substring(0, templateIdentifierIdx) + assertionValue + html.substring(html.indexOf("}}", templateEnd) + 2);
             }
           }
