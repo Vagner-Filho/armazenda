@@ -74,7 +74,7 @@ async function globalSetup() {
   console.log('\n🚀 Starting Go application...');
 
   const goApp = spawn('go', ['run', '.'], {
-    cwd: path.join(__dirname, '..'),
+    cwd: path.join(__dirname, '../..'),
     env: {
       ...process.env,
       DB_HOST: DB_CONFIG.host,

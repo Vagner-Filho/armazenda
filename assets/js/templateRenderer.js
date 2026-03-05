@@ -194,7 +194,17 @@ class TemplateRenderer {
               html = html.substring(0, templateIdentifierIdx) + assertionValue + html.substring(html.indexOf("}}", templateEnd) + 2);
             }
           }
+        } else {
+          // Skip over unrecognized template syntax (e.g., {{ .Id }} placeholders)
+          // Advance past the current {{ to avoid infinite loop
+          templateIdentifierIdx = html.indexOf("{{", templateIdentifierIdx + 2);
+          continue;
         }
+      } else {
+        // No valid template structure found (missing {{ end }} or }})
+        // Skip past this {{ to avoid infinite loop
+        templateIdentifierIdx = html.indexOf("{{", templateIdentifierIdx + 2);
+        continue;
       }
       
       // Look for the next template function
