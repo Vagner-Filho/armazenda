@@ -79,7 +79,6 @@ func CreateTestProduct(id uint8, name string) entity_public.Product {
 // CreateTestPersonConfig creates a test person config
 func CreateTestPersonConfig() entity_public.PersonConfig {
 	return entity_public.PersonConfig{
-		HumidityDiscount:  decimal.NewFromFloat(1.15),
 		EntrySoyDiscount:  decimal.NewFromFloat(3.5),
 		EntryCornDiscount: decimal.NewFromFloat(5.5),
 	}

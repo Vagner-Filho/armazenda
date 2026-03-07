@@ -8,6 +8,7 @@ import (
 	model_error "armazenda/model/error"
 	"armazenda/model/farm_config_model"
 	"armazenda/model/field_model"
+	"armazenda/model/humidity_progression_model"
 	"armazenda/model/person_model"
 	"armazenda/model/product_model"
 	"armazenda/model/report_model"
@@ -21,6 +22,7 @@ import (
 	"armazenda/router/entry_router"
 	"armazenda/router/farm_config_router"
 	"armazenda/router/field_router"
+	"armazenda/router/humidity_progression_router"
 	"armazenda/router/person_router"
 	"armazenda/router/report_router"
 	"armazenda/router/stats_router"
@@ -155,6 +157,7 @@ func main() {
 	departure_model.InitDepartureModel(pool)
 	product_model.InitProductModel(pool)
 	person_model.InitPersonModel(pool)
+	humidity_progression_model.InitHumidityProgressionModel(pool)
 	report_model.InitReportModel(pool)
 	farm_config_model.InitFarmConfigModel(pool)
 	user_approval_model.InitUserApprovalModel(pool)
@@ -220,6 +223,7 @@ func main() {
 	user_approval_router.UserApprovalRoutes(router)
 	stats_router.UseStatsRoutes(router)
 	sync_router.UseSyncRoutes(router)
+	humidity_progression_router.UseHumidityProgressionRouter(router)
 	template_router.UseTemplateRoutes(router)
 
 	port := os.Getenv("PORT")

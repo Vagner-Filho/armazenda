@@ -400,10 +400,11 @@ func initPersonConfig(c *pgx.Conn) {
 		person_id INTEGER UNIQUE NOT NULL,
 		ie TEXT NOT NULL,
 		farm INTEGER NOT NULL,
-		humidity_discount NUMERIC(5, 2),
+		humidity_progression_id INTEGER,
 		entry_soy_discount NUMERIC (5, 2),
 		entry_corn_discount NUMERIC (5, 2),
-		FOREIGN KEY (farm) REFERENCES farm(id)
+		FOREIGN KEY (farm) REFERENCES farm(id),
+		FOREIGN KEY (humidity_progression_id) REFERENCES humidity_progression(id)
 	);
 	`)
 
@@ -414,9 +415,10 @@ func initDefaultPersonConfig(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init default_person_config table", `
 	CREATE TABLE IF NOT EXISTS default_person_config (
 		id INTEGER PRIMARY KEY DEFAULT 1,
-		humidity_discount NUMERIC(5, 2) NOT NULL DEFAULT 1.7,
+		humidity_progression_id INTEGER,
 		entry_soy_discount NUMERIC (5, 2) NOT NULL DEFAULT 3.5,
 		entry_corn_discount NUMERIC (5, 2) NOT NULL DEFAULT 5.5,
+		FOREIGN KEY (humidity_progression_id) REFERENCES humidity_progression(id),
 		CONSTRAINT single_row CHECK (id = 1)
 	);
 	`)
@@ -428,7 +430,8 @@ func initDefaultPersonConfig(c *pgx.Conn) {
 		err = c.QueryRow(context.Background(), "SELECT COUNT(*) FROM default_person_config").Scan(&count)
 		if err == nil && count == 0 {
 			_, insertErr := c.Exec(context.Background(),
-				"INSERT INTO default_person_config (id, humidity_discount, entry_soy_discount, entry_corn_discount) VALUES (1, 1.7, 3.5, 5.5)")
+				`INSERT INTO default_person_config (id, humidity_progression_id, entry_soy_discount, entry_corn_discount) 
+				 SELECT 1, id, 3.5, 5.5 FROM humidity_progression WHERE is_system_default = TRUE`)
 			if insertErr != nil {
 				fmt.Printf("error inserting default person config: %v\n", insertErr.Error())
 			}
@@ -618,7 +621,7 @@ func initAddLegalPerson(c *pgx.Conn) {
 			IN fantasyName TEXT,
 			IN farm INTEGER,
 			OUT personId INTEGER,
-			IN humidityDiscount NUMERIC(6, 3) DEFAULT NULL,
+			IN humidityProgressionId INTEGER DEFAULT NULL,
 			IN street TEXT DEFAULT NULL,
 			IN cep CHARACTER(8) DEFAULT NULL,
 			IN number INTEGER DEFAULT NULL,
@@ -639,8 +642,8 @@ func initAddLegalPerson(c *pgx.Conn) {
 			personId := person_id;
 			person_type := 1;
 			
-			IF humidityDiscount IS NOT NULL THEN
-				INSERT INTO person_config (person_id, ie, farm, humidity_discount) VALUES (person_id, ie, farm, humidityDiscount);
+			IF humidityProgressionId IS NOT NULL THEN
+				INSERT INTO person_config (person_id, ie, farm, humidity_progression_id) VALUES (person_id, ie, farm, humidityProgressionId);
 			END IF;
 
 			IF street IS NOT NULL AND cep IS NOT NULL AND neighborhood IS NOT NULL AND city IS NOT NULL AND state IS NOT NULL THEN
@@ -673,7 +676,7 @@ func initUpdateNaturalPerson(c *pgx.Conn) {
 			INOUT ie TEXT,
 			INOUT p_id INTEGER,
 			IN farm INTEGER,
-			IN humidityDiscount NUMERIC(6, 3) DEFAULT NULL,
+			IN humidityProgressionId INTEGER DEFAULT NULL,
 			IN street TEXT DEFAULT NULL,
 			IN cep CHARACTER(8) DEFAULT NULL,
 			IN number INTEGER DEFAULT NULL,
@@ -696,12 +699,12 @@ func initUpdateNaturalPerson(c *pgx.Conn) {
 
 			person_type := 0;
 
-			IF humidityDiscount IS NOT NULL THEN
+			IF humidityProgressionId IS NOT NULL THEN
 				SELECT EXISTS (SELECT 1 FROM person_config pc WHERE pc.person_id = p_id) INTO config_exists;
 				IF config_exists THEN
-					UPDATE person_config SET humidity_discount = humidityDiscount WHERE person_id = p_id;
+					UPDATE person_config SET humidity_progression_id = humidityProgressionId WHERE person_id = p_id;
 				ELSE
-					INSERT INTO person_config (person_id, ie, farm, humidity_discount) VALUES (p_id, update_get_natural_person.ie, farm, humidityDiscount);
+					INSERT INTO person_config (person_id, ie, farm, humidity_progression_id) VALUES (p_id, update_get_natural_person.ie, farm, humidityProgressionId);
 				END IF;
 			END IF;
 
@@ -751,7 +754,7 @@ func initUpdateLegalPerson(c *pgx.Conn) {
 			INOUT p_id INTEGER,
 			IN p_fantasyName TEXT,
 			IN farm INTEGER,
-			IN humidityDiscount NUMERIC(6, 3) DEFAULT NULL,
+			IN humidityProgressionId INTEGER DEFAULT NULL,
 			IN street TEXT DEFAULT NULL,
 			IN cep CHARACTER(8) DEFAULT NULL,
 			IN number INTEGER DEFAULT NULL,
@@ -774,12 +777,12 @@ func initUpdateLegalPerson(c *pgx.Conn) {
 
 			person_type := 1;
 
-			IF humidityDiscount IS NOT NULL THEN
+			IF humidityProgressionId IS NOT NULL THEN
 				SELECT EXISTS (SELECT 1 FROM person_config pc WHERE pc.person_id = p_id) INTO config_exists;
 				IF config_exists THEN
-					UPDATE person_config SET humidity_discount = humidityDiscount WHERE person_id = p_id;
+					UPDATE person_config SET humidity_progression_id = humidityProgressionId WHERE person_id = p_id;
 				ELSE
-					INSERT INTO person_config (person_id, ie, farm, humidity_discount) VALUES (p_id, update_get_legal_person.ie, farm, humidityDiscount);
+					INSERT INTO person_config (person_id, ie, farm, humidity_progression_id) VALUES (p_id, update_get_legal_person.ie, farm, humidityProgressionId);
 				END IF;
 			END IF;
 
@@ -792,7 +795,7 @@ func initUpdateLegalPerson(c *pgx.Conn) {
 				END IF;
 
 				IF complement IS NOT NULL AND addressId IS NOT NULL THEN
-					SELECT EXISTS (SELECT 1 FROM address_complement ac WHERE ac.address_id = addressId) INTO address_complement_exists;
+					SELECT EXISTS (SELECT 1 FROM address_address_complement ac WHERE ac.address_id = addressId) INTO address_complement_exists;
 					IF address_complement_exists THEN
 						UPDATE address_complement SET complement = update_get_legal_person.complement WHERE address_id = addressId;
 					ELSE
@@ -992,9 +995,10 @@ func initFarmConfig(c *pgx.Conn) {
 			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 			farm_id INTEGER NOT NULL UNIQUE,
 			name TEXT NOT NULL,
-			humidity_discount NUMERIC(6, 3) DEFAULT 1.15,
+			humidity_progression_id INTEGER,
 			storage_name TEXT NOT NULL,
-			FOREIGN KEY (farm_id) REFERENCES farm(id)
+			FOREIGN KEY (farm_id) REFERENCES farm(id),
+			FOREIGN KEY (humidity_progression_id) REFERENCES humidity_progression(id)
 		);
 	`)
 
@@ -1063,7 +1067,7 @@ func initFarmUpdateFunc(c *pgx.Conn) {
 			INOUT f_email TEXT,
 			INOUT f_phone_number TEXT,
 			INOUT f_storage_name TEXT,
-			INOUT f_humidity_discount NUMERIC(6, 3) DEFAULT 1.15
+			INOUT f_humidity_progression_id INTEGER
 		)
 		LANGUAGE plpgsql AS $$
 		DECLARE var_farm_address_id INTEGER;
@@ -1078,9 +1082,9 @@ func initFarmUpdateFunc(c *pgx.Conn) {
 				SELECT EXISTS (SELECT 1 FROM farm_config fc WHERE fc.farm_id = f_id) INTO config_exists;
 
 				IF config_exists THEN
-					UPDATE farm_config SET name = f_name, humidity_discount = f_humidity_discount, storage_name = f_storage_name WHERE farm_id = f_id;
+					UPDATE farm_config SET name = f_name, humidity_progression_id = f_humidity_progression_id, storage_name = f_storage_name WHERE farm_id = f_id;
 				ELSE
-					INSERT INTO farm_config (farm_id, name, humidity_discount, storage_name) VALUES (f_id, f_name, f_humidity_discount, f_storage_name);
+					INSERT INTO farm_config (farm_id, name, humidity_progression_id, storage_name) VALUES (f_id, f_name, f_humidity_progression_id, f_storage_name);
 				END IF;
 			END IF;
 
@@ -1395,6 +1399,67 @@ func initEntryDraftOrigin(c *pgx.Conn) {
 	handleStmtExec(c, stmt, err, "create entry draft origin")
 }
 
+func initHumidityProgression(c *pgx.Conn) {
+	stmt, err := c.Prepare(context.Background(), "init humidity progression table", `
+		CREATE TABLE IF NOT EXISTS humidity_progression (
+			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			name TEXT NOT NULL,
+			farm_id INTEGER,
+			is_system_default BOOLEAN DEFAULT FALSE,
+			created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (farm_id) REFERENCES farm(id),
+			CONSTRAINT single_system_default CHECK (
+				(is_system_default = TRUE AND farm_id IS NULL) OR 
+				(is_system_default = FALSE)
+			)
+		);
+	`)
+	handleStmtExec(c, stmt, err, "create humidity_progression")
+
+	stmt, err = c.Prepare(context.Background(), "init humidity progression tier table", `
+		CREATE TABLE IF NOT EXISTS humidity_progression_tier (
+			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			progression_id INTEGER NOT NULL,
+			threshold_humidity NUMERIC(5, 2) NOT NULL,
+			discount_value NUMERIC(5, 2) NOT NULL,
+			FOREIGN KEY (progression_id) REFERENCES humidity_progression(id) ON DELETE CASCADE,
+			UNIQUE(progression_id, threshold_humidity)
+		);
+	`)
+	handleStmtExec(c, stmt, err, "create humidity_progression_tier")
+}
+
+func initDefaultHumidityProgression(c *pgx.Conn) {
+	var count int
+	err := c.QueryRow(context.Background(),
+		"SELECT COUNT(*) FROM humidity_progression WHERE is_system_default = TRUE").Scan(&count)
+
+	if err == nil && count == 0 {
+		_, insertErr := c.Exec(context.Background(), `
+			INSERT INTO humidity_progression (name, farm_id, is_system_default) 
+			VALUES ('System Default', NULL, TRUE)
+		`)
+		if insertErr != nil {
+			fmt.Printf("error inserting system default humidity progression: %v\n", insertErr.Error())
+			return
+		}
+
+		_, insertErr = c.Exec(context.Background(), `
+			INSERT INTO humidity_progression_tier (progression_id, threshold_humidity, discount_value) 
+			SELECT id, 14, 1.7 FROM humidity_progression WHERE is_system_default = TRUE;
+			INSERT INTO humidity_progression_tier (progression_id, threshold_humidity, discount_value) 
+			SELECT id, 16, 1.8 FROM humidity_progression WHERE is_system_default = TRUE;
+			INSERT INTO humidity_progression_tier (progression_id, threshold_humidity, discount_value) 
+			SELECT id, 18, 2.0 FROM humidity_progression WHERE is_system_default = TRUE;
+			INSERT INTO humidity_progression_tier (progression_id, threshold_humidity, discount_value) 
+			SELECT id, 20, 2.2 FROM humidity_progression WHERE is_system_default = TRUE;
+		`)
+		if insertErr != nil {
+			fmt.Printf("error inserting default humidity progression tiers: %v\n", insertErr.Error())
+		}
+	}
+}
+
 func initModifiedAtTriggers(c *pgx.Conn) {
 	// Create the trigger function
 	_, err := c.Exec(context.Background(), `
@@ -1438,6 +1503,7 @@ func InitDb(c *pgx.Conn) {
 	initUser(c)
 	initUserApproval(c)
 	initInactiveUser(c)
+	initHumidityProgression(c)
 	initPerson(c)
 	initProduct(c)
 	initCrop(c)
@@ -1477,6 +1543,7 @@ func InitDb(c *pgx.Conn) {
 	initUpdateEntryDraft(c)
 	initAddGetDepartureDraft(c)
 	initDepartureAnalysis(c)
+	initDefaultHumidityProgression(c)
 	initModifiedAtTriggers(c)
 }
 

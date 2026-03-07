@@ -25,9 +25,9 @@ type NaturalPerson struct {
 }
 
 type PersonConfig struct {
-	HumidityDiscount  decimal.Decimal `form:"humidityDiscount" json:"humidityDiscount"`
-	EntrySoyDiscount  decimal.Decimal `form:"entrySoyDiscount" json:"entrySoyDiscount"`
-	EntryCornDiscount decimal.Decimal `form:"entryCornDiscount" json:"entryCornDiscount"`
+	HumidityProgressionId *uint32         `form:"humidityProgressionId" json:"humidityProgressionId"`
+	EntrySoyDiscount      decimal.Decimal `form:"entrySoyDiscount" json:"entrySoyDiscount"`
+	EntryCornDiscount     decimal.Decimal `form:"entryCornDiscount" json:"entryCornDiscount"`
 }
 
 func (pc PersonConfig) GetProductEntryDiscount(product uint8) decimal.Decimal {

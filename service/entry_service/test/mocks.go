@@ -35,24 +35,26 @@ func (m *MockEntryModel) AddEntryTax(id uint32, tax decimal.Decimal, appliedTax 
 
 // MockPersonModel mocks PersonModelInterface for testing
 type MockPersonModel struct {
-	GetHumidityDiscountFunc   func(person *uint32, farm uint32) (decimal.Decimal, *model_error.ModelError)
+	GetHumidityDiscountFunc   func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError)
 	GetPersonConfigFunc       func(person uint32) (entity_public.PersonConfig, *model_error.ModelError)
 	GetHumidityDiscountCalled bool
 	GetPersonConfigCalled     bool
 	GetHumidityDiscountArgs   struct {
-		Person *uint32
-		Farm   uint32
+		Person   *uint32
+		Farm     uint32
+		Humidity decimal.Decimal
 	}
 	GetPersonConfigArgs struct {
 		Person uint32
 	}
 }
 
-func (m *MockPersonModel) GetHumidityDiscount(person *uint32, farm uint32) (decimal.Decimal, *model_error.ModelError) {
+func (m *MockPersonModel) GetHumidityDiscount(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
 	m.GetHumidityDiscountCalled = true
 	m.GetHumidityDiscountArgs.Person = person
 	m.GetHumidityDiscountArgs.Farm = farm
-	return m.GetHumidityDiscountFunc(person, farm)
+	m.GetHumidityDiscountArgs.Humidity = humidity
+	return m.GetHumidityDiscountFunc(person, farm, humidity)
 }
 
 func (m *MockPersonModel) GetPersonConfig(person uint32) (entity_public.PersonConfig, *model_error.ModelError) {

@@ -14,7 +14,7 @@ type EntryModelInterface interface {
 
 // PersonModelInterface defines person-related operations
 type PersonModelInterface interface {
-	GetHumidityDiscount(person *uint32, farm uint32) (decimal.Decimal, *model_error.ModelError)
+	GetHumidityDiscount(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError)
 	GetPersonConfig(person uint32) (entity_public.PersonConfig, *model_error.ModelError)
 }
 

@@ -59,7 +59,7 @@ func AddEntry(ge entity_public.Entry, em EntryModelInterface, pm PersonModelInte
 
 	var discountModifier decimal.Decimal
 	if ge.Humidity != nil && ge.Humidity.GreaterThan(calculator.HumidityThreshold) {
-		discountModifierTmp, humErr := pm.GetHumidityDiscount(ge.Origin, ge.Farm)
+		discountModifierTmp, humErr := pm.GetHumidityDiscount(ge.Origin, ge.Farm, *ge.Humidity)
 		if humErr != nil {
 			return entity_public.DisplayEntry{}, entity_public.GetErrorToast("Falha ao calcular desconto de humidade", "")
 		}
@@ -178,7 +178,7 @@ func PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public
 		exceedingHumidty := ge.Humidity.Sub(humidityThreshold)
 		if exceedingHumidty.GreaterThan(decimal.Zero) {
 			pm := person_model.GetPersonModel()
-			discountModifier, humErr := pm.GetHumidityDiscount(ge.Origin, ge.Farm)
+			discountModifier, humErr := pm.GetHumidityDiscount(ge.Origin, ge.Farm, *ge.Humidity)
 			if humErr != nil {
 				toast := entity_public.GetWarningToast("Falha ao calcular desconto de humidade", "")
 				return entity_public.DisplayEntry{}, toast

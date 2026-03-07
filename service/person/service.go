@@ -185,17 +185,16 @@ func UpdateLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDispla
 
 // SyncPerson represents a person for synchronization
 type SyncPerson struct {
-	Id                uint32  `json:"id"`
-	Type              uint8   `json:"type"`
-	Name              string  `json:"name"`
-	Document          string  `json:"document"`
-	IE                string  `json:"ie"`
-	Farm              uint32  `json:"farm"`
-	HumidityDiscount  float64 `json:"humidityDiscount"`
-	EntrySoyDiscount  float64 `json:"entrySoyDiscount"`
-	EntryCornDiscount float64 `json:"entryCornDiscount"`
-	ModifiedAt        int64   `json:"modifiedAt"`
-	Deleted           bool    `json:"deleted,omitempty"`
+	Id                    uint32  `json:"id"`
+	Name                  string  `json:"name"`
+	Document              string  `json:"document"`
+	IE                    string  `json:"ie"`
+	Farm                  uint32  `json:"farm"`
+	HumidityProgressionId *uint32 `json:"humidityProgressionId"`
+	EntrySoyDiscount      float64 `json:"entrySoyDiscount"`
+	EntryCornDiscount     float64 `json:"entryCornDiscount"`
+	ModifiedAt            int64   `json:"modifiedAt"`
+	Deleted               bool    `json:"deleted,omitempty"`
 }
 
 // GetPeopleForSync retrieves people modified since a specific time
@@ -222,18 +221,16 @@ func GetModifiedPersonCount(since time.Time, farm uint32) (int, error) {
 
 func convertToSyncPerson(person entity_public.Person) SyncPerson {
 	syncPerson := SyncPerson{
-		Id:                person.Id,
-		IE:                person.Ie,
-		Farm:              person.Farm,
-		HumidityDiscount:  0,
-		EntrySoyDiscount:  0,
-		EntryCornDiscount: 0,
-		ModifiedAt:        person.ModifiedAt.Unix(),
+		Id:                    person.Id,
+		IE:                    person.Ie,
+		Farm:                  person.Farm,
+		HumidityProgressionId: person.PersonConfig.HumidityProgressionId,
+		EntrySoyDiscount:      0,
+		EntryCornDiscount:     0,
+		ModifiedAt:            person.ModifiedAt.Unix(),
 	}
 
 	// Convert PersonConfig
-	hd, _ := person.PersonConfig.HumidityDiscount.Float64()
-	syncPerson.HumidityDiscount = hd
 	esd, _ := person.PersonConfig.EntrySoyDiscount.Float64()
 	syncPerson.EntrySoyDiscount = esd
 	ecd, _ := person.PersonConfig.EntryCornDiscount.Float64()

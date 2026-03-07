@@ -68,9 +68,9 @@ type SyncPerson struct {
 }
 
 type SyncPersonConfig struct {
-	HumidityDiscount  float64 `json:"humidityDiscount"`
-	EntrySoyDiscount  float64 `json:"entrySoyDiscount"`
-	EntryCornDiscount float64 `json:"entryCornDiscount"`
+	HumidityProgressionId *uint32 `json:"humidityProgressionId"`
+	EntrySoyDiscount      float64 `json:"entrySoyDiscount"`
+	EntryCornDiscount     float64 `json:"entryCornDiscount"`
 }
 
 func getEntriesForSync(c *gin.Context) {

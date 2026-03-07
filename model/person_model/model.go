@@ -3,6 +3,7 @@ package person_model
 import (
 	entity_public "armazenda/entity/public"
 	model_error "armazenda/model/error"
+	"armazenda/model/humidity_progression_model"
 	"context"
 	"errors"
 	"fmt"
@@ -50,7 +51,7 @@ type basePerson struct {
 }
 
 const basePersonQuery = `
-	SELECT ad.id, ad.street, ad.cep, ad.number, adc.complement, ad.neighborhood, ad.city, ad.state, c.email, c.phone_number, p.ie, p.id, p.farm, COALESCE(pc.humidity_discount, dpc.humidity_discount), COALESCE(pc.entry_soy_discount, dpc.entry_soy_discount), COALESCE(pc.entry_corn_discount, dpc.entry_corn_discount) FROM person p
+	SELECT ad.id, ad.street, ad.cep, ad.number, adc.complement, ad.neighborhood, ad.city, ad.state, c.email, c.phone_number, p.ie, p.id, p.farm, COALESCE(pc.humidity_progression_id, dpc.humidity_progression_id), COALESCE(pc.entry_soy_discount, dpc.entry_soy_discount), COALESCE(pc.entry_corn_discount, dpc.entry_corn_discount) FROM person p
 		LEFT JOIN address ad ON ad.person_id = p.id
 		LEFT JOIN address_complement adc ON adc.address_id = ad.id
 		LEFT JOIN contact c ON c.person_id = p.id
@@ -114,9 +115,9 @@ func (bm *PersonModel) AddLegalPerson(lp entity_public.LegalPerson) (entity_publ
 		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: "Failed to get default person config", IsServerErr: true}
 	}
 
-	var humDiscount *decimal.Decimal
-	if !lp.Person.HumidityDiscount.Equal(defaultConfig.HumidityDiscount) {
-		humDiscount = &lp.Person.HumidityDiscount
+	var humProgressionId *uint32
+	if lp.Person.HumidityProgressionId != nil && (defaultConfig.HumidityProgressionId == nil || *lp.Person.HumidityProgressionId != *defaultConfig.HumidityProgressionId) {
+		humProgressionId = lp.Person.HumidityProgressionId
 	}
 
 	var soyDiscount *decimal.Decimal
@@ -129,12 +130,12 @@ func (bm *PersonModel) AddLegalPerson(lp entity_public.LegalPerson) (entity_publ
 		cornDiscount = &lp.Person.EntryCornDiscount
 	}
 
-	if humDiscount != nil || soyDiscount != nil || cornDiscount != nil {
+	if humProgressionId != nil || soyDiscount != nil || cornDiscount != nil {
 		_, err = tx.Exec(ctx, `INSERT INTO person_config 
-			(person_id, ie, farm, humidity_discount, entry_soy_discount, entry_corn_discount) 
+			(person_id, ie, farm, humidity_progression_id, entry_soy_discount, entry_corn_discount) 
 			VALUES ($1, $2, $3, $4, $5, $6)`,
 			personID, lp.Person.Ie, lp.Person.Farm,
-			humDiscount, soyDiscount, cornDiscount)
+			humProgressionId, soyDiscount, cornDiscount)
 		if err != nil {
 			return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
 		}
@@ -213,9 +214,9 @@ func (bm *PersonModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_
 		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: "Failed to get default person config", IsServerErr: true}
 	}
 
-	var humDiscount *decimal.Decimal
-	if !bp.Person.HumidityDiscount.Equal(defaultConfig.HumidityDiscount) {
-		humDiscount = &bp.Person.HumidityDiscount
+	var humProgressionId *uint32
+	if bp.Person.HumidityProgressionId != nil && (defaultConfig.HumidityProgressionId == nil || *bp.Person.HumidityProgressionId != *defaultConfig.HumidityProgressionId) {
+		humProgressionId = bp.Person.HumidityProgressionId
 	}
 
 	var soyDiscount *decimal.Decimal
@@ -228,12 +229,12 @@ func (bm *PersonModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_
 		cornDiscount = &bp.Person.EntryCornDiscount
 	}
 
-	if humDiscount != nil || soyDiscount != nil || cornDiscount != nil {
+	if humProgressionId != nil || soyDiscount != nil || cornDiscount != nil {
 		_, err = tx.Exec(ctx, `INSERT INTO person_config 
-			(person_id, ie, farm, humidity_discount, entry_soy_discount, entry_corn_discount) 
+			(person_id, ie, farm, humidity_progression_id, entry_soy_discount, entry_corn_discount) 
 			VALUES ($1, $2, $3, $4, $5, $6)`,
 			personID, bp.Person.Ie, bp.Person.Farm,
-			humDiscount, soyDiscount, cornDiscount)
+			humProgressionId, soyDiscount, cornDiscount)
 		if err != nil {
 			return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
 		}
@@ -433,35 +434,54 @@ func (bm *PersonModel) CpfExistsInFarm(cpf string, farmId uint32) (bool, *model_
 	return exists, nil
 }
 
-func (bm *PersonModel) GetHumidityDiscount(person *uint32, farm uint32) (decimal.Decimal, *model_error.ModelError) {
-	var discountModifier decimal.Decimal
-	var err error
+func (bm *PersonModel) GetHumidityDiscount(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
+	hpm := humidity_progression_model.GetHumidityProgressionModel()
+
+	var progressionId *uint32
+
 	if person != nil {
-		err = bm.pool.QueryRow(context.Background(), `
-		SELECT pc.humidity_discount FROM person_config pc WHERE pc.person_id = @person
-		`, pgx.NamedArgs{"person": person}).Scan(&discountModifier)
-	} else {
-		err = bm.pool.QueryRow(context.Background(), `
-		SELECT COALESCE(fc.humidity_discount, 1.15) AS humidity_discount FROM farm_config fc WHERE fc.farm_id = @farm
-		`, pgx.NamedArgs{"farm": farm}).Scan(&discountModifier)
-	}
+		// Try to get person's progression
+		err := bm.pool.QueryRow(context.Background(), `
+			SELECT humidity_progression_id FROM person_config WHERE person_id = @person
+		`, pgx.NamedArgs{"person": person}).Scan(&progressionId)
 
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			defaultDisc := "1.15"
-			if person != nil {
-				defaultDisc = "1.7"
-			}
-			discountModifier, newDecErr := decimal.NewFromString(defaultDisc)
-			if newDecErr != nil {
-				return discountModifier, &model_error.ModelError{Message: newDecErr.Error()}
-			}
-			return discountModifier, nil
-
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return decimal.Zero, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
 		}
-		return discountModifier, &model_error.ModelError{Message: err.Error()}
+
+		// If no person progression, try default_person_config
+		if progressionId == nil {
+			err = bm.pool.QueryRow(context.Background(), `
+				SELECT humidity_progression_id FROM default_person_config WHERE id = 1
+			`).Scan(&progressionId)
+
+			if err != nil {
+				// Fall back to system default
+				sysDefault, err := hpm.GetSystemDefaultProgression()
+				if err != nil {
+					return decimal.Zero, err
+				}
+				progressionId = &sysDefault
+			}
+		}
+	} else {
+		// No origin (Própria) - use farm's progression
+		err := bm.pool.QueryRow(context.Background(), `
+			SELECT humidity_progression_id FROM farm_config WHERE farm_id = @farm
+		`, pgx.NamedArgs{"farm": farm}).Scan(&progressionId)
+
+		if err != nil || progressionId == nil {
+			// Fall back to system default
+			sysDefault, err := hpm.GetSystemDefaultProgression()
+			if err != nil {
+				return decimal.Zero, err
+			}
+			progressionId = &sysDefault
+		}
 	}
-	return discountModifier, nil
+
+	// Get the discount value for this humidity from the progression
+	return hpm.GetDiscountForHumidity(progressionId, humidity)
 }
 
 func (pm *PersonModel) GetLegalPersonById(id uint32) (entity_public.LegalPerson, *model_error.ModelError) {
@@ -520,24 +540,24 @@ func (pm *PersonModel) GetNaturalPersonById(id uint32) (entity_public.NaturalPer
 
 func (bm *PersonModel) UpdateNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
 	row, queryErr := bm.pool.Query(context.Background(), `
-			SELECT * FROM update_get_natural_person(@name, @cpf, @ie, @id, @farm, @humidityDiscount, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone)
+			SELECT * FROM update_get_natural_person(@name, @cpf, @ie, @id, @farm, @humidityProgressionId, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone)
 		`,
 		pgx.NamedArgs{
-			"id":               bp.Person.Id,
-			"ie":               bp.Person.Ie,
-			"cpf":              bp.Cpf,
-			"name":             bp.Name,
-			"farm":             bp.Person.Farm,
-			"humidityDiscount": bp.Person.HumidityDiscount,
-			"street":           bp.Street,
-			"cep":              bp.Cep,
-			"number":           bp.Number,
-			"neighborhood":     bp.Neighborhood,
-			"city":             bp.City,
-			"state":            bp.State,
-			"complement":       bp.Complement,
-			"email":            bp.Email,
-			"phone":            bp.PhoneNumber,
+			"id":                    bp.Person.Id,
+			"ie":                    bp.Person.Ie,
+			"cpf":                   bp.Cpf,
+			"name":                  bp.Name,
+			"farm":                  bp.Person.Farm,
+			"humidityProgressionId": bp.Person.HumidityProgressionId,
+			"street":                bp.Street,
+			"cep":                   bp.Cep,
+			"number":                bp.Number,
+			"neighborhood":          bp.Neighborhood,
+			"city":                  bp.City,
+			"state":                 bp.State,
+			"complement":            bp.Complement,
+			"email":                 bp.Email,
+			"phone":                 bp.PhoneNumber,
 		})
 	if queryErr != nil {
 		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: queryErr.Error()}
@@ -567,24 +587,24 @@ func (bm *PersonModel) UpdateNaturalPerson(bp entity_public.NaturalPerson) (enti
 func (bm *PersonModel) UpdateLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, *model_error.ModelError) {
 	row, queryErr := bm.pool.Query(
 		context.Background(),
-		`SELECT * FROM update_get_legal_person(@companyName, @cnpj, @ie, @id, @fantasyName, @farm, @humidityDiscount, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone)`,
+		`SELECT * FROM update_get_legal_person(@companyName, @cnpj, @ie, @id, @fantasyName, @farm, @humidityProgressionId, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone)`,
 		pgx.NamedArgs{
-			"id":               bc.Person.Id,
-			"ie":               bc.Person.Ie,
-			"cnpj":             bc.Cnpj,
-			"fantasyName":      bc.FantasyName,
-			"farm":             bc.Person.Farm,
-			"companyName":      bc.CompanyName,
-			"humidityDiscount": bc.Person.HumidityDiscount,
-			"street":           bc.Street,
-			"cep":              bc.Cep,
-			"number":           bc.Number,
-			"neighborhood":     bc.Neighborhood,
-			"city":             bc.City,
-			"state":            bc.State,
-			"complement":       bc.Complement,
-			"email":            bc.Email,
-			"phone":            bc.PhoneNumber,
+			"id":                    bc.Person.Id,
+			"ie":                    bc.Person.Ie,
+			"cnpj":                  bc.Cnpj,
+			"fantasyName":           bc.FantasyName,
+			"farm":                  bc.Person.Farm,
+			"companyName":           bc.CompanyName,
+			"humidityProgressionId": bc.Person.HumidityProgressionId,
+			"street":                bc.Street,
+			"cep":                   bc.Cep,
+			"number":                bc.Number,
+			"neighborhood":          bc.Neighborhood,
+			"city":                  bc.City,
+			"state":                 bc.State,
+			"complement":            bc.Complement,
+			"email":                 bc.Email,
+			"phone":                 bc.PhoneNumber,
 		})
 
 	if queryErr != nil {
@@ -601,13 +621,13 @@ func (bm *PersonModel) UpdateLegalPerson(bc entity_public.LegalPerson) (entity_p
 
 func (bm *PersonModel) getDefaultPersonConfig(ctx context.Context) (entity_public.PersonConfig, error) {
 	var config entity_public.PersonConfig
-	err := bm.pool.QueryRow(ctx, "SELECT humidity_discount, entry_soy_discount, entry_corn_discount FROM default_person_config WHERE id = 1").Scan(&config.HumidityDiscount, &config.EntrySoyDiscount, &config.EntryCornDiscount)
+	err := bm.pool.QueryRow(ctx, "SELECT humidity_progression_id, entry_soy_discount, entry_corn_discount FROM default_person_config WHERE id = 1").Scan(&config.HumidityProgressionId, &config.EntrySoyDiscount, &config.EntryCornDiscount)
 	return config, err
 }
 
 func (bm *PersonModel) GetPersonConfig(person uint32) (entity_public.PersonConfig, *model_error.ModelError) {
 	rows, err := bm.pool.Query(context.Background(), `
-		SELECT COALESCE(pc.humidity_discount, dpc.humidity_discount), COALESCE(pc.entry_soy_discount, dpc.entry_soy_discount), COALESCE(pc.entry_corn_discount, dpc.entry_corn_discount)
+		SELECT COALESCE(pc.humidity_progression_id, dpc.humidity_progression_id), COALESCE(pc.entry_soy_discount, dpc.entry_soy_discount), COALESCE(pc.entry_corn_discount, dpc.entry_corn_discount)
 			FROM person_config pc
 			LEFT JOIN default_person_config dpc ON dpc.id = 1
 			WHERE pc.person_id = @person
@@ -618,7 +638,6 @@ func (bm *PersonModel) GetPersonConfig(person uint32) (entity_public.PersonConfi
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return entity_public.PersonConfig{
-				HumidityDiscount:  decimal.NewFromFloat(1.7),
 				EntrySoyDiscount:  decimal.NewFromFloat(3.5),
 				EntryCornDiscount: decimal.NewFromFloat(5.5),
 			}, nil
@@ -633,7 +652,7 @@ func (bm *PersonModel) GetPersonConfig(person uint32) (entity_public.PersonConfi
 func (bm *PersonModel) GetPeopleModifiedSince(since time.Time, farm uint32) ([]entity_public.Person, error) {
 	query := `
 		SELECT p.id, p.ie, p.farm, p.modified_at,
-		       COALESCE(pc.humidity_discount, dpc.humidity_discount) as humidity_discount,
+		       COALESCE(pc.humidity_progression_id, dpc.humidity_progression_id) as humidity_progression_id,
 		       COALESCE(pc.entry_soy_discount, dpc.entry_soy_discount) as entry_soy_discount,
 		       COALESCE(pc.entry_corn_discount, dpc.entry_corn_discount) as entry_corn_discount
 		FROM person p
@@ -653,18 +672,19 @@ func (bm *PersonModel) GetPeopleModifiedSince(since time.Time, farm uint32) ([]e
 	for rows.Next() {
 		var person entity_public.Person
 		var modifiedAt time.Time
-		var humidityDiscount, entrySoyDiscount, entryCornDiscount float64
+		var humidityProgressionId *uint32
+		var entrySoyDiscount, entryCornDiscount float64
 
 		err := rows.Scan(
 			&person.Id, &person.Ie, &person.Farm, &modifiedAt,
-			&humidityDiscount, &entrySoyDiscount, &entryCornDiscount,
+			&humidityProgressionId, &entrySoyDiscount, &entryCornDiscount,
 		)
 		if err != nil {
 			return nil, err
 		}
 
 		person.ModifiedAt = modifiedAt
-		person.PersonConfig.HumidityDiscount = decimal.NewFromFloat(humidityDiscount)
+		person.PersonConfig.HumidityProgressionId = humidityProgressionId
 		person.PersonConfig.EntrySoyDiscount = decimal.NewFromFloat(entrySoyDiscount)
 		person.PersonConfig.EntryCornDiscount = decimal.NewFromFloat(entryCornDiscount)
 

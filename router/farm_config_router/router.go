@@ -17,9 +17,8 @@ func UseFarmConfigRouter(router *gin.Engine) {
 		if err != nil || config == nil {
 			c.HTML(http.StatusOK, "config.html", gin.H{
 				"Farm": &entity_public.Farm{
-					Id:               farm,
-					HumidityDiscount: 1.15,
-					Address:          entity_public.Address{},
+					Id:      farm,
+					Address: entity_public.Address{},
 				},
 			})
 			return
