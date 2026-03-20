@@ -13,21 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// SyncEntry represents an entry for sync (simplified structure)
-type SyncEntry struct {
-	Id          uint32          `json:"id"`
-	Field       uint16          `json:"field"`
-	Crop        uint8           `json:"crop"`
-	Vehicle     uint16          `json:"vehicle"`
-	CargoWeight SyncCargoWeight `json:"cargoWeight"`
-	Analysis    SyncAnalysis    `json:"analysis"`
-	ArrivalDate time.Time       `json:"arrivalDate"`
-	Farm        uint32          `json:"farm"`
-	Origin      *uint32         `json:"origin,omitempty"`
-	ModifiedAt  time.Time       `json:"modifiedAt"`
-	Deleted     bool            `json:"deleted,omitempty"`
-}
-
 type SyncCargoWeight struct {
 	GrossWeight float64 `json:"grossWeight"`
 	Tare        float64 `json:"tare"`
@@ -191,8 +176,7 @@ func getProgressionsForSync(c *gin.Context) {
 		return
 	}
 
-	syncProgressions := make([]SyncEntry, len(progressions))
-	c.JSON(http.StatusOK, syncProgressions)
+	c.JSON(http.StatusOK, progressions)
 }
 
 func getSyncStatus(c *gin.Context) {

@@ -142,7 +142,7 @@ class SyncEngine {
       // 2. Download updates from server
       await this.downloadUpdates();
 
-      this.notify({ type: 'SYNC_SUCCESS' });
+      // this.notify({ type: 'SYNC_SUCCESS' });
     } catch (error) {
       console.error('[Sync] Sync failed:', error);
       this.notify({ type: 'SYNC_ERROR', error: error.message });

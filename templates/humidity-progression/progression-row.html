@@ -1,0 +1,25 @@
+{{ block "progression-row" . }}
+<tr id="progression-{{ .Id }}" class="border-b border-white/5 hover:bg-white/5">
+    <td class="px-3 py-2 text-white/90">
+        {{ .Name }}
+        {{ if .IsSystemDefault }}
+        <span class="text-xs text-emerald-400/70 ml-1">(Padrão)</span>
+        {{ end }}
+    </td>
+    <td class="px-3 py-2 text-white/60">
+        {{ len .Tiers }} faixa{{ if ne (len .Tiers) 1 }}s{{ end }}
+    </td>
+    <td class="px-3 py-2 text-right">
+        <div class="flex items-center justify-end gap-1">
+            {{ if not .IsSystemDefault }}
+            <button type="button" hx-get="/progressao/form/{{ .Id }}" hx-target="body" hx-swap="beforeend" title="Editar" class="icon-btn">
+                <iconify-icon icon="mdi:pencil" class="text-lg"></iconify-icon>
+            </button>
+            <button type="button" hx-trigger="confirmed" hx-delete="/progressao/{{ .Id }}" hx-target="#progression-{{ .Id }}" hx-swap="delete" title="Excluir" class="icon-btn" onClick="Swal.fire({title:'Excluir', text:'Deseja excluir a progressão {{ .Name }} ?', showCancelButton:true, cancelButtonText:'Cancelar', cancelButtonColor:'#ff7200', reverseButtons:true, confirmButtonText:'Excluir', confirmButtonColor:'#22c55e'}).then((result)=>{ if(result.isConfirmed){ htmx.trigger(this,'confirmed'); } })">
+                <iconify-icon icon="mdi:trash-can" class="text-lg"></iconify-icon>
+            </button>
+            {{ end }}
+        </div>
+    </td>
+</tr>
+{{ end }}

@@ -47,3 +47,8 @@ func (t *Toast) ToJson() []byte {
 	marshalled, _ := json.Marshal(map[string]Toast{"toast": *t})
 	return marshalled
 }
+
+func (t *Toast) ToJsonStr() string {
+	marshalled, _ := json.Marshal(map[string]Toast{"toast": *t})
+	return string(marshalled)
+}

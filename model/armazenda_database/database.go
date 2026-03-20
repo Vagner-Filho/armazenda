@@ -1454,7 +1454,7 @@ func initDefaultHumidityProgression(c *pgx.Conn) {
 	if err == nil && count == 0 {
 		_, insertErr := c.Exec(context.Background(), `
 			INSERT INTO humidity_progression (name, farm_id, is_system_default) 
-			VALUES ('System Default', NULL, TRUE)
+			VALUES ('Padrão do Sistema', NULL, TRUE)
 		`)
 		if insertErr != nil {
 			fmt.Printf("error inserting system default humidity progression: %v\n", insertErr.Error())

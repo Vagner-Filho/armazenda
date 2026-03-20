@@ -12,6 +12,7 @@
     <script src="/public/assets/js/htmx.min.js"></script>
     <script type="module" src="/public/assets/js/toast.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
 </head>
 <body class="main-bg">
     {{ template "navbar" . }}
@@ -27,6 +28,18 @@
         </header>
         <div class="glass-panel rounded-xl shadow-center p-4 mb-8">
             {{ template "config-form" . }}
+        </div>
+        <div class="my-8 border-b-2 border-white/20"></div>
+        <div class="glass-panel rounded-xl shadow-center p-4 mb-8">
+            <h2 class="text-lg font-bold text-white/95 border-b border-white/20 pb-2 mb-4">
+                Progressões de Umidade
+            </h2>
+            <p class="text-sm text-white/70 mb-4">
+                Configure as faixas de desconto por umidade para seus compradores.
+            </p>
+            <div hx-get="/farm/config/progressions" hx-trigger="load" hx-swap="outerHTML">
+                <p class="text-white/50 text-sm">Carregando...</p>
+            </div>
         </div>
         <div class="my-8 border-b-2 border-white/20"></div>
         <div hx-get="/user/pending" hx-trigger="load"></div>

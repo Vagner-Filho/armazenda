@@ -65,7 +65,10 @@ func addNaturalPerson(c *gin.Context) {
 }
 
 func getPersonForm(c *gin.Context) {
-	c.HTML(http.StatusOK, "person-form", gin.H{})
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	progressions := person_view.GetProgressionsForForm(farm)
+	c.HTML(http.StatusOK, "person-form", gin.H{"Progressions": progressions})
 }
 
 func getFilledNaturalPersonForm(c *gin.Context) {
@@ -73,9 +76,13 @@ func getFilledNaturalPersonForm(c *gin.Context) {
 	converted, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
 		c.String(http.StatusBadRequest, "", err.Error())
+		return
 	}
 
-	person, t := person_view.GetFilledNaturalPersonForm(uint32(converted))
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+
+	person, t := person_view.GetFilledNaturalPersonForm(uint32(converted), farm)
 	if t != nil {
 		c.Header("HX-Trigger", string(t.ToJson()))
 		return
@@ -88,9 +95,13 @@ func getFilledLegalPersonForm(c *gin.Context) {
 	converted, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
 		c.String(http.StatusBadRequest, "", err.Error())
+		return
 	}
 
-	pform, t := person_view.GetFilledLegalPersonForm(uint32(converted))
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+
+	pform, t := person_view.GetFilledLegalPersonForm(uint32(converted), farm)
 	if t != nil {
 		c.Header("HX-Trigger", string(t.ToJson()))
 		return

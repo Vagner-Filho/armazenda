@@ -43,7 +43,7 @@ func (hm *HumidityProgressionModel) GetProgression(id uint32) (entity_public.Hum
 
 	// Get progression details
 	row, err := hm.pool.Query(context.Background(), `
-		SELECT id, name, farm_id, is_system_default, is_active, modified_at 
+		SELECT id, name, farm_id, is_system_default, is_active, modified_at, NULL
 		FROM humidity_progression 
 		WHERE id = $1
 	`, id)
@@ -75,7 +75,7 @@ func (hm *HumidityProgressionModel) GetProgression(id uint32) (entity_public.Hum
 		return progression, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
 	}
 
-	progression.Tiers = tiers
+	progression.Tiers = &tiers
 	return progression, nil
 }
 
@@ -326,8 +326,8 @@ func (hm *HumidityProgressionModel) DeleteProgression(id uint32) *model_error.Mo
 // ListProgressions lists all active progressions for a farm (including system default)
 func (hm *HumidityProgressionModel) ListProgressions(farmId uint32) ([]entity_public.HumidityProgression, *model_error.ModelError) {
 	rows, err := hm.pool.Query(context.Background(), `
-		SELECT id, name, farm_id, is_system_default, is_active, modified_at 
-		FROM humidity_progression 
+		SELECT id, name, farm_id, is_system_default, is_active, modified_at, NULL
+		FROM humidity_progression
 		WHERE (farm_id = $1 OR is_system_default = TRUE) AND is_active = TRUE
 		ORDER BY is_system_default DESC, name ASC
 	`, farmId)
@@ -359,7 +359,7 @@ func (hm *HumidityProgressionModel) ListProgressions(farmId uint32) ([]entity_pu
 			continue
 		}
 
-		progressions[i].Tiers = tiers
+		progressions[i].Tiers = &tiers
 	}
 
 	return progressions, nil
@@ -424,7 +424,9 @@ func (hm *HumidityProgressionModel) GetProgressionsForSync(since time.Time, farm
 		progressions[i].Tiers = tiers
 	}
 
-	return progressions, nil
+	syncProgression := make([]SyncProgression, len(progressions))
+	copy(syncProgression, progressions)
+	return syncProgression, nil
 }
 
 // GetModifiedProgressionCount returns count of progressions modified since timestamp

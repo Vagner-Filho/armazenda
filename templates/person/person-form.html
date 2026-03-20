@@ -22,7 +22,7 @@
     {{ end }}
     <form id="pessoa-juridica-form" {{ with .Legal }}{{ if .Person.Id }}hx-put="/person/legal/{{ .Person.Id }}" hx-target="#person-{{ .Person.Id }}" hx-swap="outerHTML"{{ else }}hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend"{{ end }}{{ else }}hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend"{{ end }} class="gap-4 {{ if ne .Natural nil }} hidden {{ end }}">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl" id="pessoa-juridica-fieldset">
+        <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2" id="pessoa-juridica-fieldset">
           <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
             Identificação
           </legend>
@@ -51,11 +51,32 @@
               Inscrição Estadual
             </label>
           </div>
-          <div class="flex flex-col-reverse">
-            <input type="number" step="0.01" name="humidityDiscount" id="desconto-umidade-pj" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Legal }} value="{{ .Person.HumidityDiscount }}" {{ end }} {{ if eq .Legal nil}} value="1.7" {{ end }}>
-            <label for="desconto-umidade-pj" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-              Desconto Umidade
+          <div class="flex flex-col w-full relative pr-[30px]">
+            <label for="desconto-umidade-pj" class="peer-focus:text-white px-2 text-white/70 transition-all duration-300 ease-linear text-xs lg:text-sm font-medium uppercase tracking-wider">
+              Progressão de Umidade
             </label>
+            <select name="humidityProgressionId" id="desconto-umidade-pj" class="w-full bg-white/10 border-white/20 text-white peer">
+              {{ range .Progressions }}
+                {{ if $.Legal }}
+                  {{ if and $.Legal.Person.HumidityProgressionId (eq .Id (deref $.Legal.Person.HumidityProgressionId)) }}
+                    <option value="{{ .Id }}" selected>{{ .Name }}</option>
+                  {{ else if and (eq $.Legal.Person.HumidityProgressionId nil) .IsSystemDefault }}
+                    <option value="{{ .Id }}" selected>{{ .Name }}</option>
+                  {{ else }}
+                    <option value="{{ .Id }}">{{ .Name }}</option>
+                  {{ end }}
+                {{ else }}
+                  {{ if .IsSystemDefault }}
+                    <option value="{{ .Id }}" selected>{{ .Name }}</option>
+                  {{ else }}
+                    <option value="{{ .Id }}">{{ .Name }}</option>
+                  {{ end }}
+                {{ end }}
+              {{ end }}
+            </select>
+            <button class="icon-btn absolute right-0 bottom-0 top-0 my-auto text-[24px]" type="button" hx-get="/progressao/form" hx-target="body" hx-swap="beforeend">
+              <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
+            </button>
           </div>
           <div class="flex flex-col-reverse">
             <input type="number" step="0.1" name="entrySoyDiscount" id="desconto-soja-pj" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Legal }} value="{{ .Person.EntrySoyDiscount }}" {{ end }} {{ if eq .Legal nil}} value="3.5" {{ end }}>
@@ -87,7 +108,7 @@
     </form>
     <form id="pessoa-fisica-form" {{ with .Natural }}{{ if .Person.Id }}hx-put="/person/natural/{{ .Person.Id }}" hx-target="#person-{{ .Person.Id }}" hx-swap="outerHTML"{{ else }}hx-post="/person/natural" hx-target="#people-rows" hx-swap="beforeend"{{ end }}{{ else }}hx-post="/person/natural" hx-target="#people-rows" hx-swap="beforeend"{{ end }} class="gap-4 {{ if eq .Natural nil }} hidden {{ end }}">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl" id="pessoa-fisica-fieldset">
+        <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2" id="pessoa-fisica-fieldset">
           <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
             Identificação
           </legend>
@@ -109,11 +130,32 @@
               Inscrição Estadual
             </label>
           </div>
-          <div class="flex flex-col-reverse">
-            <input type="number" step="0.01" name="humidityDiscount" id="desconto-umidade-pf" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Natural }} value="{{ .Person.HumidityDiscount }}" {{ end }} {{ if eq .Natural nil}} value="1.7" {{ end }}>
-            <label for="desconto-umidade-pf" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-              Desconto Umidade
+          <div class="flex flex-col w-full relative pr-[30px]">
+            <label for="desconto-umidade-pf" class="peer-focus:text-white px-2 text-white/70 transition-all duration-300 ease-linear text-xs lg:text-sm font-medium uppercase tracking-wider">
+              Progressão de Umidade
             </label>
+            <select name="humidityProgressionId" id="desconto-umidade-pf" class="w-full bg-white/10 border-white/20 text-white peer">
+              {{ range .Progressions }}
+                {{ if $.Natural }}
+                  {{ if and $.Natural.Person.HumidityProgressionId (eq .Id (deref $.Natural.Person.HumidityProgressionId)) }}
+                    <option value="{{ .Id }}" selected>{{ .Name }}</option>
+                  {{ else if and (eq $.Natural.Person.HumidityProgressionId nil) .IsSystemDefault }}
+                    <option value="{{ .Id }}" selected>{{ .Name }}</option>
+                  {{ else }}
+                    <option value="{{ .Id }}">{{ .Name }}</option>
+                  {{ end }}
+                {{ else }}
+                  {{ if .IsSystemDefault }}
+                    <option value="{{ .Id }}" selected>{{ .Name }}</option>
+                  {{ else }}
+                    <option value="{{ .Id }}">{{ .Name }}</option>
+                  {{ end }}
+                {{ end }}
+              {{ end }}
+            </select>
+            <button class="icon-btn absolute right-0 bottom-2 text-[24px]" type="button" hx-get="/progressao/form" hx-target="body" hx-swap="beforeend">
+              <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
+            </button>
           </div>
           <div class="flex flex-col-reverse">
             <input type="number" step="0.1" name="entrySoyDiscount" id="desconto-soja-pf" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Natural }} value="{{ .Person.EntrySoyDiscount }}" {{ end }} {{ if eq .Natural nil}} value="3.5" {{ end }}>

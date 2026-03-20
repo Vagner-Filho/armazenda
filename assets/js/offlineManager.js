@@ -10,8 +10,6 @@ import { syncEngine } from './db/syncEngine.js';
 import { progressionSync } from './db/progressionSync.js';
 import { wasmCalculator } from './wasmCalculator.js';
 import { templateRenderer } from './templateRenderer.js';
-import { formatDateToDisplay, formatDateToInput } from './date.js';
-import { formatWeight } from './weight.js';
 
 /**
  * Main coordinator for all offline functionality
@@ -330,11 +328,12 @@ class OfflineManager {
    * @returns {Promise<void>}
    */
   async initialLoad(farmId) {
-    this.showToast('Carregando dados...', 'info');
+    //this.showToast('Carregando dados...', 'info');
 
     try {
-      await syncEngine.initialLoad(farmId);
-      this.showToast('Dados carregados com sucesso', 'success');
+      //await syncEngine.initialLoad(farmId);
+      await db.setSyncMetadata('farmId', farmId);
+      //this.showToast('Dados carregados com sucesso', 'success');
     } catch (error) {
       console.error('[Offline] Initial load failed:', error);
       this.showToast('Erro ao carregar dados. Tente novamente.', 'error');
@@ -745,7 +744,7 @@ class OfflineManager {
     const personConfig = JSON.parse(sessionStorage.getItem('personConfig') || '{}');
     const farmConfig = JSON.parse(sessionStorage.getItem('farmConfig') || '{}');
     let progressionSnapshot = null;
-    
+
     try {
       const progression = await progressionSync.getCurrentProgression(personConfig, farmConfig);
       if (progression) {
@@ -955,7 +954,7 @@ class OfflineManager {
     // Render the crop-option template
     try {
       const html = await templateRenderer.render('crop-option', templateData);
-      
+
       // Find the crop-selector select element
       const cropSelector = document.getElementById('crop-selector');
       if (cropSelector) {
@@ -967,7 +966,7 @@ class OfflineManager {
 
         // Insert the new option
         cropSelector.insertAdjacentHTML('beforeend', html);
-        
+
         // Get the newly inserted option and select it
         const newOption = cropSelector.lastElementChild;
         if (newOption) {
@@ -1031,7 +1030,7 @@ class OfflineManager {
     // Render the vehicle-option template
     try {
       const html = await templateRenderer.render('vehicle-option', templateData);
-      
+
       // Find the vehicle-selector select element
       const vehicleSelector = document.getElementById('vehicle-selector');
       if (vehicleSelector) {
@@ -1043,7 +1042,7 @@ class OfflineManager {
 
         // Insert the new option
         vehicleSelector.insertAdjacentHTML('beforeend', html);
-        
+
         // Get the newly inserted option and select it
         const newOption = vehicleSelector.lastElementChild;
         if (newOption) {
@@ -1056,8 +1055,8 @@ class OfflineManager {
         if (newOption) {
           newOption.dataset.offlinePending = 'true';
           newOption.style.fontStyle = 'italic';
-          const displayText = parameters.name 
-            ? `${parameters.plate} | ${parameters.name} (pendente)` 
+          const displayText = parameters.name
+            ? `${parameters.plate} | ${parameters.name} (pendente)`
             : `${parameters.plate} (pendente)`;
           newOption.textContent = displayText;
         }
@@ -1107,7 +1106,7 @@ class OfflineManager {
     // Render the field-option template
     try {
       const html = await templateRenderer.render('field-option', templateData);
-      
+
       // Find the field-selector select element
       const fieldSelector = document.getElementById('field-selector');
       if (fieldSelector) {
@@ -1119,7 +1118,7 @@ class OfflineManager {
 
         // Insert the new option
         fieldSelector.insertAdjacentHTML('beforeend', html);
-        
+
         // Get the newly inserted option and select it
         const newOption = fieldSelector.lastElementChild;
         if (newOption) {

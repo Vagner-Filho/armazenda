@@ -177,6 +177,12 @@ func main() {
 	router.Use(authenticate, setPublicAssetsHeaders)
 
 	funcMap := template.FuncMap{
+		"deref": func(p *uint32) uint32 {
+			if p == nil {
+				return 0
+			}
+			return *p
+		},
 		"dict": dict,
 		"decIsZero": func(v interface{}) bool {
 			switch d := v.(type) {
@@ -224,6 +230,7 @@ func main() {
 	stats_router.UseStatsRoutes(router)
 	sync_router.UseSyncRoutes(router)
 	humidity_progression_router.UseHumidityProgressionRouter(router)
+	humidity_progression_router.UseHumidityProgressionHtmlRoutes(router)
 	template_router.UseTemplateRoutes(router)
 
 	port := os.Getenv("PORT")
