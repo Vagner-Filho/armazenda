@@ -1,10 +1,19 @@
 import { formatWeight } from "./weight.js";
+import { progressionSync } from "./db/progressionSync.js";
 
 const HUMIDITY_THRESHOLD = 14;
 const DAMAGE_THRESHOLD = 8;
 const IMPURITY_THRESHOLD = 1;
 
-function getHumidityDiscount(humidity, gross, tare, h_discount) {
+/**
+ * Get the current humidity discount based on progressive tiers
+ * @param {number} humidity - Humidity value (optional, reads from DOM if not provided)
+ * @param {number} gross - Gross weight (optional)
+ * @param {number} tare - Tare weight (optional)
+ * @param {number} h_discount - Legacy single discount value (deprecated, for backward compatibility)
+ * @returns {Promise<number>} The calculated discount
+ */
+async function getHumidityDiscount(humidity, gross, tare, h_discount) {
 	const humidityInput = humidity ? { value: humidity } : document.querySelector('input#humidity');
 	const exceedingHumidity = parseFloat(humidityInput.value) - HUMIDITY_THRESHOLD;
 
@@ -19,15 +28,50 @@ function getHumidityDiscount(humidity, gross, tare, h_discount) {
 	}
 
 	const personConfig = sessionStorage.getItem('personConfig');
-	if (!personConfig && !h_discount) {
+	const farmConfig = sessionStorage.getItem('farmConfig');
+
+	let discountValue;
+
+	// Check for legacy single discount (backward compatibility)
+	if (h_discount) {
+		discountValue = parseFloat(h_discount);
+	} else if (personConfig || farmConfig) {
+		// Get progression for this person/farm
+		const person = personConfig ? JSON.parse(personConfig) : {};
+		const farm = farmConfig ? JSON.parse(farmConfig) : {};
+		
+		try {
+			const progression = await progressionSync.getCurrentProgression(
+				person.personConfig || person,
+				farm.farmConfig || farm
+			);
+			
+			if (progression) {
+				discountValue = progressionSync.getDiscountForHumidity(
+					progression, 
+					parseFloat(humidityInput.value)
+				);
+				
+				// Update UI with tier info
+				updateHumidityTierUI(progression, parseFloat(humidityInput.value));
+			} else {
+				// Fallback: try legacy humidityDiscount
+				discountValue = person.humidityDiscount || 0;
+			}
+		} catch (error) {
+			console.error('[Discount] Failed to get progression:', error);
+			// Fallback to legacy
+			discountValue = (person && person.humidityDiscount) ? parseFloat(person.humidityDiscount) : 0;
+		}
+	} else {
 		return 0;
 	}
 
-	const person = h_discount ? { humidityDiscount: h_discount } : JSON.parse(personConfig);
-	const discount = exceedingHumidity * parseFloat(person.humidityDiscount);
-	if (discount === undefined || discount === null || isNaN(discount)) {
+	if (discountValue === undefined || discountValue === null || isNaN(discountValue)) {
 		return 0;
 	}
+
+	const discount = exceedingHumidity * discountValue;
 
 	const netWeightInput = document.querySelector('input#netWeight');
 	if (!netWeightInput || !netWeightInput.dataset.raw && !gross && !tare) {
@@ -47,6 +91,36 @@ function getHumidityDiscount(humidity, gross, tare, h_discount) {
 	}
 
 	return (rawNetWeight * discount) / 100;
+}
+
+/**
+ * Update UI with current tier information
+ * @param {Object} progression - The progression object
+ * @param {number} humidity - Current humidity value
+ */
+function updateHumidityTierUI(progression, humidity) {
+	const tierInfo = progressionSync.getTierDisplayInfo(progression, humidity);
+	const tierDisplay = document.getElementById('humidityTierDisplay');
+	
+	if (tierDisplay) {
+		if (tierInfo.hasTier) {
+			tierDisplay.textContent = `Umidade ${humidity}% → Desconto ${tierInfo.tier.discountValue}`;
+			tierDisplay.classList.remove('text-gray-400');
+			tierDisplay.classList.add('text-green-600');
+		} else {
+			tierDisplay.textContent = '';
+		}
+	}
+
+	// Update progression source indicator
+	const sourceDisplay = document.getElementById('humidityProgressionSource');
+	if (sourceDisplay && tierInfo.progressionName) {
+		let sourceText = tierInfo.progressionName;
+		if (tierInfo.isDefault) {
+			sourceText += ' (Padrão)';
+		}
+		sourceDisplay.textContent = sourceText;
+	}
 }
 
 function getDamageDiscount(damage, gross, tare) {
@@ -168,13 +242,17 @@ const productTypeDiscountHandler = {
 	2: getSoyDiscount
 }
 
-export function applyDiscounts() {
+/**
+ * Apply all discounts and calculate final net weight
+ * @returns {Promise<void>}
+ */
+export async function applyDiscounts() {
 	const hasGrossValue = document.querySelector('input#grossWeight')?.value
 	const hasTareValue = document.querySelector('input#tare')?.value
 	if (!hasGrossValue || !hasTareValue) {
 		return
 	}
-	const humidityDiscount = getHumidityDiscount();
+	const humidityDiscount = await getHumidityDiscount();
 	const damageDiscount = getDamageDiscount();
 	const impurityDiscount = getImpurityDiscount();
 

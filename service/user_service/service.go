@@ -63,6 +63,7 @@ type OAuthLoginResult struct {
 	IsNewUser bool
 	Email     string
 	Name      string
+	Farm      uint32
 }
 
 func LoginWithGoogle(code string) (OAuthLoginResult, *entity_public.Toast) {
@@ -115,6 +116,7 @@ func LoginWithGoogle(code string) (OAuthLoginResult, *entity_public.Toast) {
 	return OAuthLoginResult{
 		Token:    jwtToken,
 		Username: user.Name,
+		Farm:     user.Farm,
 	}, nil
 }
 
@@ -176,6 +178,7 @@ func LoginWithMicrosoft(code string) (OAuthLoginResult, *entity_public.Toast) {
 	return OAuthLoginResult{
 		Token:    jwtToken,
 		Username: user.Name,
+		Farm:     user.Farm,
 	}, nil
 }
 

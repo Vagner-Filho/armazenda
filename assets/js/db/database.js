@@ -8,7 +8,7 @@
 const DB_NAME = 'ArmazendaDB';
 
 /** @constant {number} */
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 /**
  * Database store names
@@ -30,6 +30,7 @@ const STORES = {
   CROPS: 'crops',
   FIELDS: 'fields',
   VEHICLES: 'vehicles',
+  HUMIDITY_PROGRESSIONS: 'humidityProgressions',
   PENDING_CHANGES: 'pendingChanges',
   SYNC_METADATA: 'syncMetadata',
   TEMPLATES: 'templates'
@@ -112,9 +113,9 @@ class ArmazendaDB {
 
         // Pending changes queue
         if (!db.objectStoreNames.contains(STORES.PENDING_CHANGES)) {
-          const pendingStore = db.createObjectStore(STORES.PENDING_CHANGES, { 
+          const pendingStore = db.createObjectStore(STORES.PENDING_CHANGES, {
             keyPath: 'id',
-            autoIncrement: true 
+            autoIncrement: true
           });
           pendingStore.createIndex('entity', 'entity', { unique: false });
           pendingStore.createIndex('operation', 'operation', { unique: false });
@@ -129,6 +130,13 @@ class ArmazendaDB {
         // Cached templates
         if (!db.objectStoreNames.contains(STORES.TEMPLATES)) {
           db.createObjectStore(STORES.TEMPLATES, { keyPath: 'name' });
+        }
+
+        // Humidity Progressions store (added in v2)
+        if (!db.objectStoreNames.contains(STORES.HUMIDITY_PROGRESSIONS)) {
+          const progressionStore = db.createObjectStore(STORES.HUMIDITY_PROGRESSIONS, { keyPath: 'id' });
+          // Index by farm for quick filtering
+          progressionStore.createIndex('farm', 'farm', { unique: false });
         }
       };
     });
@@ -156,7 +164,7 @@ class ArmazendaDB {
   async get(storeName, id) {
     const transaction = await this.getTransaction(storeName);
     const store = transaction.objectStore(storeName);
-    
+
     return new Promise((resolve, reject) => {
       const request = store.get(id);
       request.onsuccess = () => resolve(request.result);
@@ -174,12 +182,12 @@ class ArmazendaDB {
   async getAll(storeName, indexName = null, query = null) {
     const transaction = await this.getTransaction(storeName);
     const store = transaction.objectStore(storeName);
-    
+
     let target = store;
     if (indexName) {
       target = store.index(indexName);
     }
-    
+
     return new Promise((resolve, reject) => {
       const request = target.getAll(query);
       request.onsuccess = () => resolve(request.result);
@@ -196,7 +204,7 @@ class ArmazendaDB {
   async put(storeName, data) {
     const transaction = await this.getTransaction(storeName, 'readwrite');
     const store = transaction.objectStore(storeName);
-    
+
     return new Promise((resolve, reject) => {
       const request = store.put(data);
       request.onsuccess = () => resolve(request.result);
@@ -213,7 +221,7 @@ class ArmazendaDB {
   async delete(storeName, id) {
     const transaction = await this.getTransaction(storeName, 'readwrite');
     const store = transaction.objectStore(storeName);
-    
+
     return new Promise((resolve, reject) => {
       const request = store.delete(id);
       request.onsuccess = () => resolve();
@@ -229,7 +237,7 @@ class ArmazendaDB {
   async clear(storeName) {
     const transaction = await this.getTransaction(storeName, 'readwrite');
     const store = transaction.objectStore(storeName);
-    
+
     return new Promise((resolve, reject) => {
       const request = store.clear();
       request.onsuccess = () => resolve();
@@ -453,6 +461,58 @@ class ArmazendaDB {
     return this.getAll(STORES.VEHICLES);
   }
 
+  // ==================== HUMIDITY PROGRESSIONS ====================
+
+  /**
+   * Save multiple humidity progressions
+   * @param {Array<Object>} progressions - Array of progression objects
+   * @returns {Promise<void>}
+   */
+  async saveProgressions(progressions) {
+    for (const progression of progressions) {
+      await this.put(STORES.HUMIDITY_PROGRESSIONS, { ...progression, synced: true });
+    }
+  }
+
+  /**
+   * Get a single humidity progression by ID
+   * @param {number} id - Progression ID
+   * @returns {Promise<Object|null>} The progression record
+   */
+  async getProgression(id) {
+    return this.get(STORES.HUMIDITY_PROGRESSIONS, id);
+  }
+
+  /**
+   * Get all humidity progressions, optionally filtered by farm
+   * @param {number} [farmId=null] - Optional farm ID filter
+   * @returns {Promise<Array>} Array of progression records
+   */
+  async getAllProgressions(farmId = null) {
+    if (farmId) {
+      return this.getAll(STORES.HUMIDITY_PROGRESSIONS, 'farm', IDBKeyRange.only(farmId));
+    }
+    return this.getAll(STORES.HUMIDITY_PROGRESSIONS);
+  }
+
+  /**
+   * Get the system default humidity progression
+   * @returns {Promise<Object|null>} The system default progression
+   */
+  async getSystemDefaultProgression() {
+    const all = await this.getAll(STORES.HUMIDITY_PROGRESSIONS);
+    return all.find(p => p.isSystemDefault) || null;
+  }
+
+  /**
+   * Delete a humidity progression
+   * @param {number} id - Progression ID to delete
+   * @returns {Promise<void>}
+   */
+  async deleteProgression(id) {
+    return this.delete(STORES.HUMIDITY_PROGRESSIONS, id);
+  }
+
   // ==================== PENDING CHANGES QUEUE ====================
 
   /**
@@ -552,7 +612,7 @@ class ArmazendaDB {
   async bulkSaveEntries(entries) {
     const transaction = await this.getTransaction(STORES.ENTRIES, 'readwrite');
     const store = transaction.objectStore(STORES.ENTRIES);
-    
+
     const promises = entries.map(entry => {
       return new Promise((resolve, reject) => {
         const request = store.put({
@@ -564,7 +624,7 @@ class ArmazendaDB {
         request.onerror = () => reject(request.error);
       });
     });
-    
+
     await Promise.all(promises);
   }
 
@@ -576,7 +636,7 @@ class ArmazendaDB {
   async bulkSaveDepartures(departures) {
     const transaction = await this.getTransaction(STORES.DEPARTURES, 'readwrite');
     const store = transaction.objectStore(STORES.DEPARTURES);
-    
+
     const promises = departures.map(departure => {
       return new Promise((resolve, reject) => {
         const request = store.put({
@@ -588,7 +648,7 @@ class ArmazendaDB {
         request.onerror = () => reject(request.error);
       });
     });
-    
+
     await Promise.all(promises);
   }
 
@@ -600,7 +660,7 @@ class ArmazendaDB {
   async bulkSavePeople(people) {
     const transaction = await this.getTransaction(STORES.PEOPLE, 'readwrite');
     const store = transaction.objectStore(STORES.PEOPLE);
-    
+
     const promises = people.map(person => {
       return new Promise((resolve, reject) => {
         const request = store.put({
@@ -612,7 +672,7 @@ class ArmazendaDB {
         request.onerror = () => reject(request.error);
       });
     });
-    
+
     await Promise.all(promises);
   }
 }

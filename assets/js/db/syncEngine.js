@@ -5,6 +5,7 @@
  */
 
 import { db, STORES } from './database.js';
+import { progressionSync } from './progressionSync.js';
 
 /**
  * Manages data synchronization between client and server
@@ -648,6 +649,9 @@ class SyncEngine {
     }
 
     try {
+      // Sync progressions first (reference data)
+      await this.syncProgressions(lastSync, farmId);
+
       // Download entries
       await this.downloadEntries(lastSync, farmId);
 
@@ -663,6 +667,22 @@ class SyncEngine {
     } catch (error) {
       console.error('[Sync] Download failed:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Sync humidity progressions from server
+   * @param {string} lastSync - ISO timestamp of last sync
+   * @param {number} farmId - Farm ID
+   * @returns {Promise<void>}
+   */
+  async syncProgressions(lastSync, farmId) {
+    try {
+      await progressionSync.init();
+      await progressionSync.syncProgressions(farmId, lastSync);
+    } catch (error) {
+      console.error('[Sync] Failed to sync progressions:', error);
+      // Don't throw - progressions are reference data
     }
   }
 

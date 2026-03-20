@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"armazenda/model/humidity_progression_model"
 	"armazenda/service/departure_service"
 	"armazenda/service/entry_service"
 	"armazenda/service/person"
@@ -160,6 +161,40 @@ func getPeopleForSync(c *gin.Context) {
 	c.JSON(http.StatusOK, people)
 }
 
+func getProgressionsForSync(c *gin.Context) {
+	sid, err := c.Cookie("session_id")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+		return
+	}
+
+	farm := user_service.GetFarmFromToken(sid)
+	if farm == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+		return
+	}
+
+	sinceStr := c.Query("since")
+	since, err := time.Parse(time.RFC3339, sinceStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid since parameter", "details": err.Error()})
+		return
+	}
+
+	progressions, modelErr := humidity_progression_model.GetHumidityProgressionModel().GetProgressionsForSync(since, farm)
+	if modelErr != nil {
+		if modelErr.IsServerErr {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": modelErr.Error()})
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": modelErr.Error()})
+		}
+		return
+	}
+
+	syncProgressions := make([]SyncEntry, len(progressions))
+	c.JSON(http.StatusOK, syncProgressions)
+}
+
 func getSyncStatus(c *gin.Context) {
 	sid, err := c.Cookie("session_id")
 	if err != nil {
@@ -208,12 +243,19 @@ func getSyncStatus(c *gin.Context) {
 		return
 	}
 
+	progressionCount, err := humidity_progression_model.GetHumidityProgressionModel().GetModifiedProgressionCount(*req.LastSync, req.Farm)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"hasUpdates":      entryCount > 0 || departureCount > 0 || personCount > 0,
-		"entriesCount":    entryCount,
-		"departuresCount": departureCount,
-		"peopleCount":     personCount,
-		"serverTimestamp": time.Now().UTC(),
+		"hasUpdates":        entryCount > 0 || departureCount > 0 || personCount > 0 || progressionCount > 0,
+		"entriesCount":      entryCount,
+		"departuresCount":   departureCount,
+		"peopleCount":       personCount,
+		"progressionsCount": progressionCount,
+		"serverTimestamp":   time.Now().UTC(),
 	})
 }
 
@@ -224,6 +266,7 @@ func UseSyncRoutes(router *gin.Engine) {
 		api.GET("/entries", getEntriesForSync)
 		api.GET("/departures", getDeparturesForSync)
 		api.GET("/people", getPeopleForSync)
+		api.GET("/humidity-progressions/sync", getProgressionsForSync)
 		api.POST("/sync/status", getSyncStatus)
 	}
 }

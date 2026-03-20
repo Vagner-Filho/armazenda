@@ -7,6 +7,7 @@
 
 import { db, STORES } from './db/database.js';
 import { syncEngine } from './db/syncEngine.js';
+import { progressionSync } from './db/progressionSync.js';
 import { wasmCalculator } from './wasmCalculator.js';
 import { templateRenderer } from './templateRenderer.js';
 import { formatDateToDisplay, formatDateToInput } from './date.js';
@@ -740,6 +741,24 @@ class OfflineManager {
   async handleOfflineEntryCreate(parameters, target, formElement) {
     const tempId = `offline_${Date.now()}`;
 
+    // Get current progression for snapshot
+    const personConfig = JSON.parse(sessionStorage.getItem('personConfig') || '{}');
+    const farmConfig = JSON.parse(sessionStorage.getItem('farmConfig') || '{}');
+    let progressionSnapshot = null;
+    
+    try {
+      const progression = await progressionSync.getCurrentProgression(personConfig, farmConfig);
+      if (progression) {
+        progressionSnapshot = {
+          id: progression.id,
+          name: progression.name,
+          tiers: progression.tiers || []
+        };
+      }
+    } catch (error) {
+      console.warn('[Offline] Failed to get progression for snapshot:', error);
+    }
+
     // Data for UI rendering (display fields + calculated values)
     const displayData = {
       id: tempId,
@@ -778,7 +797,8 @@ class OfflineManager {
       damage: parameters.damage,
       impurity: parameters.impurity,
       arrivalDate: arrivalDateOffsetted.toISOString(),
-      modifiedAt: nowOffsetted.toISOString()
+      modifiedAt: nowOffsetted.toISOString(),
+      _progressionSnapshot: progressionSnapshot  // Store for offline verification
     };
 
     // Queue the change

@@ -2,30 +2,38 @@ import { formatDateToInput } from "./date.js"
 import { applyDiscounts } from "./discount.js"
 import { removeEmptyFields } from "./form.js"
 
+/**
+ * Wrapper for async applyDiscounts
+ * @returns {Promise<void>}
+ */
+async function applyDiscountsAsync() {
+    await applyDiscounts();
+}
+
 export function setupEntryForm(payload) {
     const humidityInput = document.querySelector('input#humidity')
     if (humidityInput) {
-        humidityInput.addEventListener('input', applyDiscounts)
+        humidityInput.addEventListener('input', applyDiscountsAsync)
     }
 
     const damageInput = document.querySelector('input#damage')
     if (damageInput) {
-        damageInput.addEventListener('input', applyDiscounts)
+        damageInput.addEventListener('input', applyDiscountsAsync)
     }
 
     const impurityInput = document.querySelector('input#impurity')
     if (impurityInput) {
-        impurityInput.addEventListener('input', applyDiscounts)
+        impurityInput.addEventListener('input', applyDiscountsAsync)
     }
 
     const grossWeightInput = document.querySelector('input#grossWeight')
     if (grossWeightInput) {
-        grossWeightInput.addEventListener('input', applyDiscounts)
+        grossWeightInput.addEventListener('input', applyDiscountsAsync)
     }
 
     const tareInput = document.querySelector('input#tare')
     if (tareInput) {
-        tareInput.addEventListener('input', applyDiscounts)
+        tareInput.addEventListener('input', applyDiscountsAsync)
     }
 
     const dateVal = formatDateToInput(payload && typeof payload === "object" ? payload.arrivalDate : null)
@@ -56,7 +64,7 @@ export function setupEntryForm(payload) {
         if (netWeightInput && rawNetWeightInput) {
             if (netWeightInput.value !== "") {
                 netWeightInput.dataset.raw = grossWeightValue - tareValue
-                applyDiscounts()
+                applyDiscountsAsync()
             }
 
             grossWeightInput.addEventListener('input', (e) => {
@@ -65,7 +73,7 @@ export function setupEntryForm(payload) {
                 netWeightInput.value = grossWeightValue - tareValue
                 rawNetWeightInput.value = grossWeightValue - tareValue
                 netWeightInput.dataset.raw = grossWeightValue - tareValue
-                applyDiscounts()
+                applyDiscountsAsync()
             })
             tareInput.addEventListener('input', (e) => {
                 tareValue = Number(e.target.value) ?? 0
@@ -73,7 +81,7 @@ export function setupEntryForm(payload) {
                 netWeightInput.value = grossWeightValue - tareValue
                 rawNetWeightInput.value = grossWeightValue - tareValue
                 netWeightInput.dataset.raw = grossWeightValue - tareValue
-                applyDiscounts()
+                applyDiscountsAsync()
             })
         }
         document.body.addEventListener('htmx:configRequest', function(evt) {
@@ -96,21 +104,21 @@ export function setupEntryForm(payload) {
         sessionStorage.setItem('product', selectedOption.dataset.productId)
     }
 
-    function setPersonConfig(el) {
+    async function setPersonConfig(el) {
         const selectedOption = el.options[el.selectedIndex];
-        const humidityDiscount = selectedOption.getAttribute('data-humidity');
+        const humidityProgressionId = selectedOption.getAttribute('data-humidity-progression-id');
         const entrySoyDiscount = selectedOption.getAttribute('data-entry-soy-discount');
         const entryCornDiscount = selectedOption.getAttribute('data-entry-corn-discount');
         const personId = selectedOption.value;
         const personName = selectedOption.textContent.trim();
 
         sessionStorage.setItem('personConfig', JSON.stringify({
-            humidityDiscount: humidityDiscount,
+            humidityProgressionId: humidityProgressionId,
             entrySoyDiscount: entrySoyDiscount,
             entryCornDiscount: entryCornDiscount
         }));
 
-        applyDiscounts();
+        await applyDiscounts();
     }
     const selector = document.getElementById('origin-selector');
     if (selector) {
@@ -119,9 +127,9 @@ export function setupEntryForm(payload) {
         });
         const option = selector.querySelector('option[selected]')
 
-        if (option && option.dataset.humidity) {
+        if (option && option.dataset.humidityProgressionId) {
             sessionStorage.setItem('personConfig', JSON.stringify({
-                humidityDiscount: option.dataset.humidity,
+                humidityProgressionId: option.dataset.humidityProgressionId,
                 entrySoyDiscount: option.dataset.entrySoyDiscount,
                 entryCornDiscount: option.dataset.entryCornDiscount
             }));

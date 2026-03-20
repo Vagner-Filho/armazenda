@@ -6,8 +6,8 @@
   <select name="recipient" id="recipient-selector" class="w-full bg-white/10 border-white/20 text-white peer">
     {{ range $.People }}
     <option
-      {{ if eq .Id nil }} value="" {{ else }} value="{{ .Id }}" {{ end }} data-humidity="{{ .HumidityDiscount }}" data-entry-soy-discount="{{ .EntrySoyDiscount }}" data-entry-corn-discount="{{ .EntryCornDiscount }}"
-      {{ if eq .Id $.SelectedRecipient }} selected {{ end }}>
+      {{ if eq .Id nil }} value="" {{ else }} value="{{ .Id }}" {{ end }} {{ if eq .Id $.SelectedRecipient }} selected {{ end }}
+    >
       {{ .Name }}
     </option>
     {{ else }}

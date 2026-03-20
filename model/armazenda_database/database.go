@@ -1406,6 +1406,8 @@ func initHumidityProgression(c *pgx.Conn) {
 			name TEXT NOT NULL,
 			farm_id INTEGER,
 			is_system_default BOOLEAN DEFAULT FALSE,
+			is_active BOOLEAN DEFAULT TRUE,
+			modified_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 			created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (farm_id) REFERENCES farm(id),
 			CONSTRAINT single_system_default CHECK (
@@ -1415,6 +1417,21 @@ func initHumidityProgression(c *pgx.Conn) {
 		);
 	`)
 	handleStmtExec(c, stmt, err, "create humidity_progression")
+
+	// Migration: Add is_active column if it doesn't exist
+	_, migrationErr := c.Exec(context.Background(), `
+		DO $$
+		BEGIN
+			IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+							WHERE table_name = 'humidity_progression' 
+							AND column_name = 'is_active') THEN
+				ALTER TABLE humidity_progression ADD COLUMN is_active BOOLEAN DEFAULT TRUE;
+			END IF;
+		END $$;
+	`)
+	if migrationErr != nil {
+		fmt.Printf("error adding is_active column to humidity_progression: %v\n", migrationErr.Error())
+	}
 
 	stmt, err = c.Prepare(context.Background(), "init humidity progression tier table", `
 		CREATE TABLE IF NOT EXISTS humidity_progression_tier (
@@ -1495,6 +1512,7 @@ func initModifiedAtTriggers(c *pgx.Conn) {
 
 func InitDb(c *pgx.Conn) {
 	initFarm(c)
+	initHumidityProgression(c)
 	initFarmConfig(c)
 	initFarmAddrress(c)
 	initFarmAddrressComplement(c)
@@ -1503,7 +1521,6 @@ func InitDb(c *pgx.Conn) {
 	initUser(c)
 	initUserApproval(c)
 	initInactiveUser(c)
-	initHumidityProgression(c)
 	initPerson(c)
 	initProduct(c)
 	initCrop(c)

@@ -313,6 +313,7 @@ func googleCallback(c *gin.Context) {
 	if len(credentials.Token) > 0 {
 		c.SetCookie("session_id", credentials.Token, 6000, "", "", true, true)
 		c.SetCookie("username", credentials.Username, 6000, "", "", true, false)
+		c.SetCookie("farmId", fmt.Sprintf("%v", credentials.Farm), 6000, "", "", true, false)
 		c.Redirect(http.StatusSeeOther, "/romaneio")
 		return
 	}
@@ -369,6 +370,7 @@ func microsoftCallback(c *gin.Context) {
 	if len(credentials.Token) > 0 {
 		c.SetCookie("session_id", credentials.Token, 6000, "", "", true, true)
 		c.SetCookie("username", credentials.Username, 6000, "", "", true, false)
+		c.SetCookie("farmId", fmt.Sprintf("%v", credentials.Farm), 6000, "", "", true, false)
 		c.Redirect(http.StatusSeeOther, "/romaneio")
 		return
 	}
