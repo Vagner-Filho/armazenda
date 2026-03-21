@@ -19,11 +19,11 @@
                     Nome da Safra
                 </label>
             </div>
-            <div class="flex flex-col-reverse">
-                {{ template "grain-selector" .Products }}
-                <label for="grain-selector" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+            <div class="flex flex-col">
+                <label for="grain-selector" class="peer focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                     Grão
                 </label>
+                {{ template "grain-selector" .Products }}
             </div>
             <div class="flex flex-col-reverse">
                 <input type="date" name="startDate" id="start-date" 

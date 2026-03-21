@@ -38,7 +38,7 @@
 }
 
 @utility glass-btn {
-    @apply btn-shape shadow-lg border bg-sky-50/15 border-sky-50/40 text-white/80 hover:text-white hover:bg-sky-50/30 focus:text-white focus:bg-sky-50/30 transition-all duration-300 ease-in-out backdrop-blur-xs
+    @apply btn-shape shadow-lg bg-sky-50/15 text-white/80 hover:text-white hover:bg-sky-50/30 focus:text-white focus:bg-sky-50/30 transition-all duration-300 ease-in-out backdrop-blur-xs
 }
 
 @utility primary-glass-btn {

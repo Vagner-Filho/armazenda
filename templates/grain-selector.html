@@ -1,5 +1,5 @@
 {{ block "grain-selector" . }}
-<select name="product" id="grain-selector" class="appearance-none px-2 peer">
+<select name="product" id="grain-selector" class="w-full bg-white/10 border-white/20 text-white">
     {{ range . }}
         <option value="{{ .Id }}">
             {{ .Name }}

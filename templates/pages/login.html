@@ -19,16 +19,16 @@
     </div>
     <main class="glass-card w-full max-w-md p-8 md:p-12 flex flex-col items-center z-10 space-y-6">
       <h2 class="text-3xl font-extrabold text-white tracking-wide drop-shadow-lg font-[Noto_Sans]">Login</h2>
-      <form hx-post="/login" hx-target="#error-indicator-space" class="space-y-6 w-full">
-        {{ template "cpf-field" "glass-input h-12" }}
+      <form hx-post="/login" hx-target="#error-indicator-space" class="space-y-6 w-full first:space-y-2">
+        {{ template "cpf-field" }}
         <div class="flex flex-col space-y-2">
           <label for="password" class="px-2 text-inherit text-xs font-bold uppercase tracking-wide">Senha</label>
           <input type="password" id="password" name="passwd" required aria-placeholder="senha" placeholder="*********" class="w-full px-2 glass-input h-12">
         </div>
-        <button type="submit" class="w-full py-3 glass-btn glass-btn-primary rounded-full text-lg uppercase tracking-wider font-bold shadow-lg">Entrar</button>
+        <button type="submit" class="w-full py-3 primary-glass-btn rounded-full text-lg uppercase tracking-wider font-bold shadow-lg">Entrar</button>
       </form>
       <div class="flex flex-col gap-2 w-full">
-        <a href="/auth/google/login" class="glass-btn w-full flex justify-center items-center gap-2 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded shadow-sm transition-all duration-300">
+        <a href="/auth/google/login" class="glass-btn w-full text-white flex justify-center items-center gap-2 font-semibold py-2 px-4 rounded shadow-sm transition-all duration-300">
           <svg class="w-5 h-5" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -37,7 +37,7 @@
           </svg>
           Entrar com Google
         </a>
-        <a href="/auth/microsoft/login" class="glass-btn w-full flex justify-center items-center gap-2 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded shadow-sm transition-all duration-300">
+        <a href="/auth/microsoft/login" class="glass-btn w-full text-white flex justify-center items-center gap-2 font-semibold py-2 px-4 rounded shadow-sm transition-all duration-300">
           <svg class="w-5 h-5" viewBox="0 0 21 21">
             <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
             <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
@@ -170,31 +170,11 @@
     transition: background-color 5000s ease-in-out 0s;
   }
 
-  .glass-btn {
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(8px);
-  }
-
   .glass-btn:hover {
     background: rgba(255, 255, 255, 0.25);
     border-color: rgba(255, 255, 255, 0.6);
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
     transform: translateY(-2px);
-  }
-
-  .glass-btn-primary {
-    background: rgba(22, 163, 74, 0.5);
-    border-color: rgba(255, 255, 255, 0.3);
-    color: #ffffff;
-  }
-
-  .glass-btn-primary:hover {
-    background: rgba(22, 163, 74, 0.7);
-    border-color: #ffffff;
-    box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
   }
   </style>
 </html>

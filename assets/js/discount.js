@@ -17,7 +17,7 @@ async function getHumidityDiscount(humidity, gross, tare, h_discount) {
 	const humidityInput = humidity ? { value: humidity } : document.querySelector('input#humidity');
 	const exceedingHumidity = parseFloat(humidityInput.value) - HUMIDITY_THRESHOLD;
 
-	if (!humidityInput || exceedingHumidity <= 0) {
+	if (!humidityInput || exceedingHumidity <= 0 || isNaN(exceedingHumidity)) {
 		if (humidityInput instanceof HTMLInputElement) {
 			const label = humidityInput.previousElementSibling;
 			if (label instanceof HTMLElement) {
@@ -39,19 +39,19 @@ async function getHumidityDiscount(humidity, gross, tare, h_discount) {
 		// Get progression for this person/farm
 		const person = personConfig ? JSON.parse(personConfig) : {};
 		const farm = farmConfig ? JSON.parse(farmConfig) : {};
-		
+
 		try {
 			const progression = await progressionSync.getCurrentProgression(
 				person.personConfig || person,
 				farm.farmConfig || farm
 			);
-			
+
 			if (progression) {
 				discountValue = progressionSync.getDiscountForHumidity(
-					progression, 
+					progression,
 					parseFloat(humidityInput.value)
 				);
-				
+
 				// Update UI with tier info
 				updateHumidityTierUI(progression, parseFloat(humidityInput.value));
 			} else {
@@ -101,10 +101,10 @@ async function getHumidityDiscount(humidity, gross, tare, h_discount) {
 function updateHumidityTierUI(progression, humidity) {
 	const tierInfo = progressionSync.getTierDisplayInfo(progression, humidity);
 	const tierDisplay = document.getElementById('humidityTierDisplay');
-	
+
 	if (tierDisplay) {
 		if (tierInfo.hasTier) {
-			tierDisplay.textContent = `Umidade ${humidity}% → Desconto ${tierInfo.tier.discountValue}`;
+			tierDisplay.textContent = `Desconto ${tierInfo.tier.discountValue}`;
 			tierDisplay.classList.remove('text-gray-400');
 			tierDisplay.classList.add('text-green-600');
 		} else {
