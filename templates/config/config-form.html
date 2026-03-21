@@ -28,8 +28,12 @@
                     Inscrição Estadual
                 </label>
             </div>
-            <div class="flex flex-col w-full relative pr-[30px]">
-                <select name="humidityProgressionId" id="humidity-progression" class="w-full bg-white/10 border-white/20 text-white peer">
+            <div class="flex flex-col w-full">
+                <label for="humidity-progression" class="px-2 text-white/70 transition-all duration-300 ease-linear text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Progressão de Umidade
+                </label>
+                <div class="flex gap-2 items-center">
+                    <select name="humidityProgressionId" id="humidity-progression" class="w-full bg-white/10 border-white/20 text-white">
                     {{ range $.Progressions }}
                         {{ if $.Farm.HumidityProgressionId }}
                             {{ if eq .Id (deref $.Farm.HumidityProgressionId) }}
@@ -45,13 +49,11 @@
                             {{ end }}
                         {{ end }}
                     {{ end }}
-                </select>
-                <button class="icon-btn absolute right-0 bottom-2 text-[24px]" type="button" hx-get="/progressao/form" hx-target="body" hx-swap="beforeend">
-                    <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
-                </button>
-                <label for="humidity-progression" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear text-xs lg:text-sm font-medium uppercase tracking-wider">
-                    Progressão de Umidade
-                </label>
+                    </select>
+                    <button class="icon-btn text-[24px]" type="button" hx-get="/progressao/form" hx-target="body" hx-swap="beforeend">
+                        <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
+                    </button>
+                </div>
             </div>
         </div>
     </fieldset>

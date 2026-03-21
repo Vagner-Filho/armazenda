@@ -96,6 +96,9 @@ func setPublicAssetsHeaders(c *gin.Context) {
 	path := c.FullPath()
 	if strings.Contains(path, "/public") && strings.Contains(path, "filepath") {
 		c.Header("Cache-Control", "public, max-age=28800")
+		if strings.Contains(c.Request.URL.Path, "htmx.min.js.gz") {
+			c.Header("Content-Encoding", "gzip")
+		}
 		return
 	}
 }
