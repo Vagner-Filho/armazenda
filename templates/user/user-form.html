@@ -1,53 +1,53 @@
 {{ define "user-form" }}
-<dialog id="new-user-dialog" class="rounded-md w-full max-w-lg bg-stone-100">
+<dialog id="new-user-dialog" class="user-dialog">
   <div class="p-4 relative" id="user-form-content">
     {{ template "close-dialog-btn" "dialog#new-user-dialog" }}
     <header class="text-center mb-4">
-      <h1 class="text-2xl font-bold text-slate-700">
+      <h1 class="text-2xl font-bold" style="color: white;">
         Nova Conta
       </h1>
-      <p class="text-gray-600 mt-2">
+      <p class="mt-2" style="color: rgba(245, 245, 244, 0.90);">
         Crie uma nova conta de usuário para acessar o sistema.
       </p>
     </header>
     <div>
       <form hx-post="/user" hx-vals='{"role": "user"}' hx-target="#user-form-content" class="flex flex-col gap-4 mt-4">
-      <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
+      <fieldset class="flex flex-col gap-4 p-2 bg-fieldset rounded-lg">
         <legend class="fieldset-legend">
           Identificação
         </legend>
-        <div class="flex flex-col-reverse">
-          <input type="text" id="name" required class="peer" name="name" aria-placeholder="Nome">
+        <div class="flex flex-col-reverse gap-2">
+          <input type="text" id="name" required class="peer" name="name" aria-placeholder="Nome" placeholder="João da Silva">
           <label for="name" class="label-peer">Nome</label>
         </div>
         {{ template "cpf-field" }}
-        <div class="flex flex-col-reverse">
+        <div class="flex flex-col-reverse gap-2">
           <input type="text" id="inscEstadual" required class="peer" name="inscricaoEstadual"
-            aria-placeholder="inscrição estadual">
+            aria-placeholder="inscrição estadual" placeholder="0013000001-9">
           <label for="inscEstadual" class="label-peer">Inscrição Estadual</label>
         </div>
       </fieldset>
-      <fieldset class="flex flex-col gap-2 p-2 bg-white rounded-lg shadow">
+      <fieldset class="flex flex-col gap-4 p-2 bg-fieldset rounded-lg">
         <legend class="fieldset-legend">
           Credenciais
         </legend>
-        <div class="flex flex-col-reverse">
-          <input type="email" id="email" required class="peer" name="email" aria-placeholder="email de cadastro">
+        <div class="flex flex-col-reverse gap-2">
+          <input type="email" id="email" required class="peer" name="email" aria-placeholder="email de cadastro" placeholder="jsilva@email.com">
           <label for="email" class="label-peer">E-mail</label>
         </div>
-        <div class="flex flex-col-reverse">
-          <input type="password" id="passwd" required class="peer" name="passwd" aria-placeholder="senha de acesso">
+        <div class="flex flex-col-reverse gap-2">
+          <input type="password" id="passwd" required class="peer" name="passwd" aria-placeholder="senha de acesso" placeholder="********">
           <label for="passwd" class="label-peer">Senha</label>
         </div>
-        <div class="flex flex-col-reverse">
+        <div class="flex flex-col-reverse gap-2">
           <input type="password" id="passwdConfim" required class="peer" name="passwdConfirm"
-            aria-placeholder="repita a senha de acesso">
+            aria-placeholder="repita a senha de acesso" placeholder="********">
           <label for="passwdConfirm" class="label-peer">Confirme a senha</label>
         </div>
       </fieldset>
-      <div class="flex items-center justify-around mt-2 w-52 mx-auto">
-        <button type="button" class="cancel-btn" onclick="closeUserForm()">Cancelar</button>
-        <button type="submit" class="add-btn">Cadastrar</button>
+      <div class="flex items-center justify-center mt-2 gap-2">
+        <button type="button" class="cancel-new-user" onclick="closeUserForm()">Cancelar</button>
+        <button type="submit" class="login-btn-primary" style="padding-left: 20px; padding-right: 20px; width: fit-content;">Cadastrar</button>
       </div>
       </form>
     </div>
@@ -64,5 +64,188 @@
       dialog.addEventListener('close', closeUserForm)
     }
   </script>
+  <style>
+    .user-dialog {
+      border-radius: 0.7rem;
+      width: 100%;
+      max-width: 32rem;
+      background-color: rgba(245, 245, 244, 0.25);
+      backdrop-filter: blur(25px);
+      border: 0;
+      box-shadow: 0px 10px 10px 5px rgb(0 0 0 / 0.2);
+      color: white;
+      outline: 0;
+    }
+  
+    .p-4 {
+      padding: 1rem;
+    }
+  
+    .relative {
+      position: relative;
+    }
+  
+    .text-center {
+      text-align: center;
+    }
+  
+    .mb-4 {
+      margin-bottom: 1rem;
+    }
+  
+    .text-2xl {
+      font-size: 1.5rem
+        /* 24px */
+      ;
+      line-height: 2rem
+        /* 32px */
+      ;
+    }
+  
+    .font-bold {
+      font-weight: bold;
+    }
+  
+    .text-slate-700 {
+      color: rgb(51 65 85 / 1);
+    }
+  
+    .text-gray-600 {
+      color: rgb(75 85 99 / 1);
+    }
+  
+    .mt-2 {
+      margin-top: .5rem;
+    }
+  
+    .flex {
+      display: flex;
+    }
+  
+    .flex-col {
+      flex-direction: column;
+    }
+  
+    .gap-4 {
+      gap: 1rem;
+    }
+  
+    .mt-4 {
+      margin-top: 1rem;
+    }
+  
+    .gap-2 {
+      gap: .5rem;
+    }
+  
+    .p-2 {
+      padding: .5rem;
+    }
+  
+    .bg-fieldset {
+      border: 0;
+      --tw-shadow: 0 0px 3px 0 rgb(255 255 255 / 0.6), 0 0px 2px -1px rgb(255 255 255 / 0.6);
+      --tw-shadow-colored: 0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);
+      box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+    }
+  
+    .rounded-lg {
+      border-radius: 0.5rem;
+    }
+  
+    .flex-col-reverse {
+      flex-direction: column-reverse;
+    }
+  
+    .items-center {
+      align-items: center;
+    }
+  
+    .justify-center {
+      justify-content: center;
+    }
+  
+    .mx-auto {
+      margin-left: auto;
+      margin-right: auto;
+    }
+  
+    dialog::backdrop {
+      background-color: color-mix(in oklab, #000000 50%, transparent);
+    }
+  
+    .cancel-new-user {
+      background-color: #ffa500cc;
+      border-radius: 9999px;
+      font-size: 1.125rem;
+      padding: 0.75rem 20px;
+      outline: 0;
+      border: 0;
+      color: white;
+      transition: all;
+      transition-duration: 300ms;
+      cursor: pointer;
+    }
+  
+    .cancel-new-user:hover {
+      transform: translateY(-2px);
+      box-shadow: 0px 5px 5px 2px #ffa50088;
+    }
+  
+    input {
+      font-size: 1rem;
+      padding: 0 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      border-radius: 0.75rem;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+      height: 3rem;
+      outline: 0;
+    }
+  
+    input::placeholder {
+      color: rgba(245, 245, 244, 0.65);
+    }
+  
+    label {
+      padding: 0 0.5rem;
+      color: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  
+    fieldset legend {
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      font-size: .8rem;
+      font-weight: 600;
+    }
+  
+    .close-dialog-btn {
+      position: absolute;
+      top: 0px;
+      right: 3px;
+      font-size: 2.5em;
+      color: white;
+      cursor: pointer;
+      background: none;
+      outline: 0;
+      border: 0;
+      width: 40px;
+      height: 40px;
+      transition: all;
+      transition-duration: 300ms;
+    }
+
+    .close-dialog-btn:hover {
+      transform: scale(1.15);
+    }
+  </style>
 </dialog>
 {{ end }}
