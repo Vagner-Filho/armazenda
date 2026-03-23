@@ -1,4 +1,5 @@
-{{ block "menu" . }}
+{{ block "menu" (dict "page" . "CSPNonce" .CSPNonce) }}
+
 <!-- Hamburger Button -->
 <button id="open-menu-btn" class="lg:hidden fixed top-2 left-2 z-30 text-green-700 print:hidden">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -33,7 +34,7 @@
     <ul
         class="space-y-4 mt-10">
         <li>
-            <a href="/romaneio" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all{{ if eq . "romaneio" }} bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500{{ end }}" title="Página de romaneio">
+            <a href="/romaneio" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all{{ if eq .page "romaneio" }} bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500{{ end }}" title="Página de romaneio">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                     <path fill="currentColor"
                         d="M8.5 2a6.5 6.5 0 0 1 6.46 5.78L22 12v2l-2-1.2V22h-2V11.6l-3-1.8V22h-2V9H4v13H2V8.5A6.5 6.5 0 0 1 8.5 2m0 2C6.54 4 4.87 5.25 4.26 7h8.48c-.61-1.75-2.28-3-4.24-3M6 11h5v2H6zm0 4h5v2H6zm0 4h5v2H6z" />
@@ -44,7 +45,7 @@
             </a>
         </li>
         <li>
-            <a href="/pessoa" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all{{ if eq . "pessoa" }} bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500{{ end }}" title="Página de pessoa">
+            <a href="/pessoa" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all{{ if eq .page "pessoa" }} bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500{{ end }}" title="Página de pessoa">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                     <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
                         stroke-width="1.5"
@@ -56,7 +57,7 @@
             </a>
         </li>
         <li>
-            <a href="/relatorio" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all{{ if eq . "relatorio" }} bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500{{ end }}" title="Página de relatório">
+            <a href="/relatorio" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all{{ if eq .page "relatorio" }} bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500{{ end }}" title="Página de relatório">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32">
                     <path fill="currentColor" d="M15 20h2v4h-2zm5-2h2v6h-2zm-10-4h2v10h-2z" />
                     <path fill="currentColor"
@@ -68,7 +69,7 @@
             </a>
         </li>
         <li>
-            <a href="/analise" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all{{ if eq . "analise" }} bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500{{ end }}" title="Página de análise">
+            <a href="/analise" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all{{ if eq .page "analise" }} bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500{{ end }}" title="Página de análise">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                     <path fill="currentColor"
                         d="M21.71 7.29a1 1 0 0 0-1.42 0L14 13.59l-4.29-4.3a1 1 0 0 0-1.42 0l-6 6a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L9 11.41l4.29 4.3a1 1 0 0 0 1.42 0l7-7a1 1 0 0 0 0-1.42" />
@@ -79,7 +80,7 @@
             </a>
         </li>
         <li>
-            <a href="/farm/config" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all{{ if eq . "config" }} bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500{{ end }}" title="Configurações">
+            <a href="/farm/config" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all{{ if eq .page "config" }} bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500{{ end }}" title="Configurações">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32">
                     <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
                         stroke-width="2">
@@ -99,7 +100,7 @@
 <!-- Overlay -->
 <div id="menu-overlay" class="fixed inset-0 bg-transparent hidden z-30"></div>
 
-<script>
+<script nonce="{{ .CSPNonce }}">
     document.addEventListener('DOMContentLoaded', function () {
         const menu = document.getElementById('menu');
         const openBtn = document.getElementById('open-menu-btn');

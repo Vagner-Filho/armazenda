@@ -29,7 +29,16 @@ func getRomaneioPage(c *gin.Context) {
 	if page < 1 {
 		page = 1
 	}
-	c.HTML(http.StatusOK, "romaneio.html", entry_view.GetEntryContent(farm, page))
+
+	nonce, exists := c.Get("csp_nonce")
+	if exists == false {
+		c.Status(http.StatusForbidden)
+		c.Redirect(http.StatusTemporaryRedirect, "/")
+	}
+
+	content := entry_view.GetEntryContent(farm, page)
+	content.CSPNonce = nonce.(string)
+	c.HTML(http.StatusOK, "romaneio.html", content)
 }
 
 func getEntryContent(c *gin.Context) {
@@ -39,7 +48,16 @@ func getEntryContent(c *gin.Context) {
 	if page < 1 {
 		page = 1
 	}
-	c.HTML(http.StatusOK, "entry-content", entry_view.GetEntryContent(farm, page))
+
+	nonce, exists := c.Get("csp_nonce")
+	if exists == false {
+		c.Status(http.StatusForbidden)
+		c.Redirect(http.StatusTemporaryRedirect, "/")
+	}
+
+	content := entry_view.GetEntryContent(farm, page)
+	content.CSPNonce = nonce.(string)
+	c.HTML(http.StatusOK, "entry-content", content)
 }
 
 func getEntryForm(c *gin.Context) {
@@ -58,6 +76,8 @@ func getEntryForm(c *gin.Context) {
 		}
 	}
 
+	nonce, _ := c.Get("csp_nonce")
+	entryForm.CSPNonce = nonce.(string)
 	c.HTML(
 		http.StatusOK,
 		"entry-form",
@@ -268,6 +288,8 @@ func getEmptyEntryForm(c *gin.Context) {
 			c.Header("HX-Trigger", string(t.ToJson()))
 		}
 	}
+	nonce, _ := c.Get("csp_nonce")
+	formMembers.CSPNonce = nonce.(string)
 	c.HTML(http.StatusOK, "entry-form", formMembers)
 }
 
@@ -297,6 +319,8 @@ func getEntryDraftForm(c *gin.Context) {
 	farm := user_service.GetFarmFromToken(sid)
 	formMembers, _ := entry_view.GetEntryDraftForm(farm)
 
+	nonce, _ := c.Get("csp_nonce")
+	formMembers.CSPNonce = nonce.(string)
 	c.HTML(http.StatusOK, "entry-draft-form", formMembers)
 }
 
@@ -334,6 +358,8 @@ func getFilledEntryDraftForm(c *gin.Context) {
 		return
 	}
 
+	nonce, _ := c.Get("csp_nonce")
+	formMembers.CSPNonce = nonce.(string)
 	c.HTML(http.StatusOK, "entry-draft-form", formMembers)
 }
 

@@ -102,6 +102,11 @@ func servePreRenderedTemplate(c *gin.Context, name string) (string, error) {
 		return "", fmt.Errorf("failed to prepare data: %w", err)
 	}
 
+	// Merge c.Keys into template data so templates can access csp_nonce and other context values
+	for k, v := range c.Keys {
+		data[k] = v
+	}
+
 	// Execute template with data
 	var buf bytes.Buffer
 	if err := htmlTemplate.ExecuteTemplate(&buf, name, data); err != nil {

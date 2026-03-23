@@ -21,7 +21,7 @@
         }}</strong>
     </td>
   </tr>
-  <script type="module">
+  <script nonce="{{ .CSPNonce }}" type="module">
     import { formatWeight } from '/public/assets/js/weight.js';
 
     const entryTotalEl = document.getElementById('entryTotal');

@@ -33,7 +33,9 @@ import (
 	"armazenda/router/vehicle_router"
 	"armazenda/service/user_service"
 	"context"
+	"crypto/rand"
 	"embed"
+	"encoding/base64"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -98,9 +100,37 @@ func setPublicAssetsHeaders(c *gin.Context) {
 		c.Header("Cache-Control", "public, max-age=28800")
 		if strings.Contains(c.Request.URL.Path, "htmx.min.js.gz") {
 			c.Header("Content-Encoding", "gzip")
+			c.Header("Content-Type", "application/javascript")
 		}
 		return
 	}
+}
+
+func generateNonce() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return base64.StdEncoding.EncodeToString(b)
+}
+
+func setSecurityHeaders(c *gin.Context) {
+	//nonce := c.Request.Header.Get("X-nonce")
+
+	//if nonce == "" {
+	//	nonce = generateNonce()
+	//}
+
+	nonce := generateNonce()
+	c.Set("csp_nonce", nonce)
+
+	c.Header("Content-Security-Policy",
+		"script-src 'nonce-"+nonce+"' 'strict-dynamic' https: 'nonce-"+nonce+"' 'wasm-unsafe-eval'; "+
+			"object-src 'none'; "+
+			"base-uri 'none'; "+
+			"frame-ancestors 'none'; ")
+	c.Header("X-Content-Type-Options", "nosniff")
+	c.Header("X-Frame-Options", "DENY")
+	c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+	c.Header("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
 }
 
 func adminOnlyMiddleware() gin.HandlerFunc {
@@ -177,7 +207,7 @@ func main() {
 	}
 
 	router := gin.Default()
-	router.Use(authenticate, setPublicAssetsHeaders)
+	router.Use(setSecurityHeaders, authenticate, setPublicAssetsHeaders)
 
 	funcMap := template.FuncMap{
 		"deref": func(p *uint32) uint32 {
@@ -217,7 +247,8 @@ func main() {
 	router.StaticFS("/public", http.FS(assetsFS))
 
 	router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "login.html", gin.H{})
+		nonce, _ := c.Get("csp_nonce")
+		c.HTML(http.StatusOK, "login.html", gin.H{"CSPNonce": nonce.(string)})
 	})
 
 	user_router.UserRoutes(router)

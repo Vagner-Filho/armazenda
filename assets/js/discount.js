@@ -24,6 +24,7 @@ async function getHumidityDiscount(humidity, gross, tare, h_discount) {
 				label.textContent = "";
 			}
 		}
+		updateHumidityTierUI(null, 0);
 		return 0;
 	}
 
@@ -51,13 +52,12 @@ async function getHumidityDiscount(humidity, gross, tare, h_discount) {
 					progression,
 					parseFloat(humidityInput.value)
 				);
-
-				// Update UI with tier info
-				updateHumidityTierUI(progression, parseFloat(humidityInput.value));
 			} else {
 				// Fallback: try legacy humidityDiscount
 				discountValue = person.humidityDiscount || 0;
 			}
+			// Update UI with tier info
+			updateHumidityTierUI(progression, parseFloat(humidityInput.value));
 		} catch (error) {
 			console.error('[Discount] Failed to get progression:', error);
 			// Fallback to legacy
@@ -73,7 +73,7 @@ async function getHumidityDiscount(humidity, gross, tare, h_discount) {
 
 	const discount = exceedingHumidity * discountValue;
 
-	const netWeightInput = document.querySelector('input#netWeight');
+	const netWeightInput = document.querySelector('input#net_weight');
 	if (!netWeightInput || !netWeightInput.dataset.raw && !gross && !tare) {
 		return 0;
 	}
@@ -120,6 +120,10 @@ function updateHumidityTierUI(progression, humidity) {
 			sourceText += ' (Padrão)';
 		}
 		sourceDisplay.textContent = sourceText;
+		return
+	}
+	if (sourceDisplay) {
+		sourceDisplay.textContent = '';
 	}
 }
 
@@ -137,7 +141,7 @@ function getDamageDiscount(damage, gross, tare) {
 		return 0;
 	}
 
-	const netWeightInput = document.querySelector('input#netWeight');
+	const netWeightInput = document.querySelector('input#net_weight');
 	if (!netWeightInput || !netWeightInput.dataset.raw && !gross && !tare) {
 		return 0;
 	}
@@ -171,7 +175,7 @@ function getImpurityDiscount(impurity, gross, tare) {
 		return 0;
 	}
 
-	const netWeightInput = document.querySelector('input#netWeight');
+	const netWeightInput = document.querySelector('input#net_weight');
 	if (!netWeightInput || !netWeightInput.dataset.raw && !gross && !tare) {
 		return 0;
 	}
@@ -258,8 +262,8 @@ export async function applyDiscounts() {
 
 	const totalDiscount = humidityDiscount + damageDiscount + impurityDiscount;
 
-	const netWeightInput = document.querySelector('input#netWeight');
-	const rawNetWeightInput = document.querySelector('input#netWeightRaw');
+	const netWeightInput = document.querySelector('input#net_weight');
+	const rawNetWeightInput = document.querySelector('input#net_weight_raw');
 	if (!netWeightInput || !netWeightInput.dataset.raw) {
 		return;
 	}

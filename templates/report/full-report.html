@@ -120,7 +120,7 @@
         <span class="format-weight">{{.Balance}}</span></p>
     </div>
   </div>
-  <script type="module">
+  <script nonce="{{ .CSPNonce }}" type="module">
     // Format weights before printing
     const weightFormatter = new Intl.NumberFormat('pt-BR', {
       style: 'decimal',

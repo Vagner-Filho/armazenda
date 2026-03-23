@@ -43,7 +43,8 @@ func UseHumidityProgressionHtmlRoutes(router *gin.Engine) {
 			return
 		}
 
-		c.HTML(http.StatusOK, "progression-form", gin.H{})
+		nonce, _ := c.Get("csp_nonce")
+		c.HTML(http.StatusOK, "progression-form", gin.H{"CSPNonce": nonce.(string)})
 	})
 
 	// GET /progressao/form/:id - Return edit dialog with data pre-filled
@@ -74,7 +75,8 @@ func UseHumidityProgressionHtmlRoutes(router *gin.Engine) {
 			return
 		}
 
-		c.HTML(http.StatusOK, "progression-form", progression)
+		nonce, _ := c.Get("csp_nonce")
+		c.HTML(http.StatusOK, "progression-form", gin.H{"Progression": progression, "CSPNonce": nonce.(string)})
 	})
 
 	// POST /progressao - Create from form-data, return new row fragment

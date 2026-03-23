@@ -59,8 +59,8 @@ export function setupEntryForm(payload) {
         let grossWeightValue = Number(grossWeightInput ? grossWeightInput.value : 0)
         let tareValue = Number(tareInput ? tareInput.value : 0)
 
-        const netWeightInput = dialogEl.querySelector('input#netWeight')
-        const rawNetWeightInput = dialogEl.querySelector('input#netWeightRaw')
+        const netWeightInput = dialogEl.querySelector('input#net_weight')
+        const rawNetWeightInput = dialogEl.querySelector('input#net_weight_raw')
         if (netWeightInput && rawNetWeightInput) {
             if (netWeightInput.value !== "") {
                 netWeightInput.dataset.raw = grossWeightValue - tareValue
@@ -90,6 +90,11 @@ export function setupEntryForm(payload) {
         document.body.addEventListener('htmx:afterRequest', function(evt) {
             if (evt.detail.successful && evt.detail.requestConfig.path === '/entry' && (evt.detail.requestConfig.verb === 'post' || evt.detail.requestConfig.verb === 'put')) {
                 closeEntryFormDialog()
+            }
+        });
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.successful && evt.detail.requestConfig.path === '/entry' && (evt.detail.requestConfig.verb === 'post' || evt.detail.requestConfig.verb === 'put')) {
+                window.formatEntryListItem('#' + evt.detail.elt.firstElementChild.id);
             }
         });
     }

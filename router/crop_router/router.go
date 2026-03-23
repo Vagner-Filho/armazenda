@@ -22,6 +22,8 @@ func getCropForm(c *gin.Context) {
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}
+	nonce, _ := c.Get("csp_nonce")
+	cropForm.CSPNonce = nonce.(string)
 	c.HTML(http.StatusOK, "crop-form", cropForm)
 }
 

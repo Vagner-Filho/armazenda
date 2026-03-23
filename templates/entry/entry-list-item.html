@@ -3,7 +3,8 @@
   <td class="py-3 px-4 text-left" data-label="Romaneio">
     {{ .Id }}
   </td>
-  <td class="py-3 px-4 text-left {{ if eq .Product "Milho" }}text-yellow-300{{ else }}text-emerald-300{{ end }}" data-label="Produto">
+  <td class="py-3 px-4 text-left {{ if eq .Product "Milho" }}text-yellow-300{{ else }}text-emerald-300{{ end }}"
+    data-label="Produto">
     {{ .Product }}
   </td>
   <td class="py-3 px-4 text-left truncate max-w-64" data-label="Origem" title="{{ .Origin }}">
@@ -40,14 +41,5 @@
       </button>
     </div>
   </td>
-  <script type="module">
-    import {formatDateToDisplay} from "/public/assets/js/date.js"
-    import {formatWeight} from '/public/assets/js/weight.js';
-    const itemRow = document.querySelector("tr#entry-{{ .Id }}")
-    if (itemRow) {
-      itemRow.querySelector("td#arrivalDate").textContent = formatDateToDisplay({{ .ArrivalDate}})
-    itemRow.querySelector("td#netWeight").textContent = formatWeight({{ .NetWeight}})
-        }
-  </script>
 </tr>
 {{ end }}

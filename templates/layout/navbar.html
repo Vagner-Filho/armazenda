@@ -4,7 +4,7 @@
     {{ template "user-icon" "text-green-500 size-6 lg:size-7" }}
     <h3 id="username" class="text-white text-lg">...</h3>
   </div>
-  <script type="module">
+  <script nonce="{{ .CSPNonce }}" type="module">
     cookieStore.get('username')
       .then((username) => {
         const usernameEl = document.querySelector('nav h3')

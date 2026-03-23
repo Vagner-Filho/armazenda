@@ -4,6 +4,7 @@ import (
 	entity_public "armazenda/entity/public"
 	"armazenda/service/departure_service"
 	"armazenda/service/user_service"
+	"armazenda/view"
 	departure_view "armazenda/view/departure"
 	"fmt"
 	"net/http"
@@ -25,6 +26,8 @@ func getDepartureContent(c *gin.Context) {
 			c.Header("HX-Trigger", string(toast.ToJson()))
 		}
 	}
+	nonce, _ := c.Get("csp_nonce")
+	content.CSPNonce = nonce.(string)
 	c.HTML(http.StatusOK, "departure-content", content)
 }
 
@@ -39,6 +42,8 @@ func getDepartureForm(c *gin.Context) {
 		}
 	}
 
+	nonce, _ := c.Get("csp_nonce")
+	form.CSPNonce = nonce.(string)
 	c.HTML(http.StatusOK, "departure-form", form)
 }
 
@@ -59,6 +64,8 @@ func getFilledDepartureForm(c *gin.Context) {
 		}
 	}
 
+	nonce, _ := c.Get("csp_nonce")
+	form.CSPNonce = nonce.(string)
 	c.HTML(http.StatusOK, "departure-form", form)
 }
 
@@ -79,6 +86,8 @@ func getDepartureFormFromDraft(c *gin.Context) {
 		}
 	}
 
+	nonce, _ := c.Get("csp_nonce")
+	form.CSPNonce = nonce.(string)
 	c.HTML(http.StatusOK, "departure-form", form)
 }
 
@@ -100,7 +109,11 @@ func addDeparture(c *gin.Context) {
 		c.Header("HX-Trigger", json)
 	}
 
-	c.HTML(http.StatusCreated, "departure-list-item", departure)
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusCreated, "departure-list-item", departure_view.DepartureListItemView{
+		Departure:        departure,
+		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
+	})
 }
 
 func putDeparture(c *gin.Context) {
@@ -123,7 +136,11 @@ func putDeparture(c *gin.Context) {
 	updatedDeparture, toast := departure_service.PutDeparture(df)
 	c.Header("HX-Trigger", string(toast.ToJson()))
 
-	c.HTML(http.StatusOK, "departure-list-item", updatedDeparture)
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusOK, "departure-list-item", departure_view.DepartureListItemView{
+		Departure:        updatedDeparture,
+		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
+	})
 }
 
 func deleteDeparture(c *gin.Context) {
@@ -249,6 +266,8 @@ func getDepartureDraftForm(c *gin.Context) {
 			c.Header("HX-Trigger", string(toast.ToJson()))
 		}
 	}
+	nonce, _ := c.Get("csp_nonce")
+	formFields.CSPNonce = nonce.(string)
 	c.HTML(http.StatusOK, "departure-draft-form", formFields)
 }
 
@@ -275,7 +294,11 @@ func addDepartureDraft(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	c.HTML(http.StatusCreated, "departure-draft-list-item", draft)
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusCreated, "departure-draft-list-item", departure_view.DepartureDraftListItemView{
+		Draft:            draft,
+		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
+	})
 }
 
 func putDepartureDraft(c *gin.Context) {
@@ -305,7 +328,11 @@ func putDepartureDraft(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	c.HTML(http.StatusOK, "departure-draft-list-item", updatedDraft)
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusOK, "departure-draft-list-item", departure_view.DepartureDraftListItemView{
+		Draft:            updatedDraft,
+		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
+	})
 }
 
 func deleteDepartureDraft(c *gin.Context) {

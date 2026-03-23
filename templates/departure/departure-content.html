@@ -1,6 +1,6 @@
 {{ block "departure-content" . }}
 {{ if .NoContent }}
-{{ template "no-departure" }}
+{{ template "no-departure" . }}
 {{ end }}
 <div class="{{ if .NoContent }} hidden {{ end }} glass-panel rounded-xl p-4" id="departure-content">
     <div class="flex justify-between items-end gap-2 mb-4">

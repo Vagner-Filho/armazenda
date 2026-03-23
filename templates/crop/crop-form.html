@@ -1,7 +1,7 @@
 {{ block "crop-form" . }}
 <dialog id="cropFormDialog" class="glass-panel rounded-xl w-72 sm:w-96">
     <div class="p-4 relative">
-        {{ template "close-dialog-btn" "dialog#cropFormDialog" }}
+        {{ template "close-dialog-btn" (dict "selector" "dialog#cropFormDialog" "CSPNonce" .CSPNonce) }}
         <header class="text-center mb-4">
             <h1 class="text-xl lg:text-2xl font-bold text-white/95 font-[Noto_Sans]">
                 Nova Safra
@@ -42,7 +42,7 @@
             </div>
         </form>
     </div>
-    <script type="module">
+    <script nonce="{{ .CSPNonce }}" type="module">
         import { cropDialogSetup } from "/public/assets/js/cropDialog.js"
         cropDialogSetup()
     </script>

@@ -17,7 +17,8 @@ type VehicleForm struct {
 func getVehiclesForm(c *gin.Context) {
 	//vehicles, _ := vehicle_service.GetVehicles()
 	//c.HTML(http.StatusOK, "vehicle-form", vehicles)
-	c.HTML(http.StatusOK, "vehicle-form", nil)
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusOK, "vehicle-form", gin.H{"CSPNonce": nonce.(string)})
 }
 
 func addVehicle(c *gin.Context) {

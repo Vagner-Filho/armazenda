@@ -1,7 +1,7 @@
 {{ block "person-form" . }}
 <dialog id="personFormDialog" class="rounded-xl w-full max-w-5xl glass-panel">
   <div class="p-4 relative">
-    {{ template "close-dialog-btn" "dialog#personFormDialog" }}
+    {{ template "close-dialog-btn" (dict "selector" "dialog#personFormDialog" "CSPNonce" .CSPNonce) }}
     <header class="text-center mb-4">
       <h1 class="text-2xl font-bold text-white/95">
         {{ if or (and .Legal .Legal.Person.Id) (and .Natural .Natural.Person.Id) }}Editar Comprador{{ else }}Novo Comprador{{ end }}
@@ -186,7 +186,7 @@
       </div>
     </form>
   </div>
-  <script type="module">
+  <script nonce="{{ .CSPNonce }}" type="module">
     import {removeEmptyFields} from "/public/assets/js/form.js"
     import {setupCepListener} from "/public/assets/js/address.js";
 

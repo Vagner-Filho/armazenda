@@ -1,7 +1,7 @@
 {{ block "departure-form" . }}
 <dialog id="departure-form-dialog" class="glass-panel rounded-xl w-full max-w-5xl">
     <div class="p-4 relative">
-        {{ template "close-dialog-btn" "dialog#departure-form-dialog" }}
+        {{ template "close-dialog-btn" (dict "selector" "dialog#departure-form-dialog" "CSPNonce" .CSPNonce) }}
         <header class="text-center mb-4">
             <h1 class="text-xl lg:text-3xl font-bold text-white/95 font-[Noto_Sans]">
                 {{ if .Departure.Id }}
@@ -104,7 +104,7 @@
         </form>
     </div>
 
-    <script type="module">
+    <script nonce="{{ .CSPNonce }}" type="module">
         import {removeEmptyFields} from "/public/assets/js/form.js";
         import {formatDateToInput} from "/public/assets/js/date.js"
         const dateVal = formatDateToInput({{ .Departure.DepartureDate}})

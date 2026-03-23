@@ -1,7 +1,7 @@
 {{ block "vehicle-form" . }}
 <dialog id="vehicleFormDialog" class="glass-panel rounded-xl w-72 sm:w-96">
     <div class="p-4 relative">
-        {{ template "close-dialog-btn" "dialog#vehicleFormDialog" }}
+        {{ template "close-dialog-btn" (dict "selector" "dialog#vehicleFormDialog" "CSPNonce" .CSPNonce) }}
         <header class="text-center mb-4">
             <h1 class="text-xl lg:text-2xl font-bold text-white/95 font-[Noto_Sans]">
                 Novo Veículo
@@ -35,7 +35,7 @@
             </div>
         </form>
     </div>
-    <script type="module">
+    <script nonce="{{ .CSPNonce }}" type="module">
         import { vehicleDialogSetup } from "/public/assets/js/vehicleDialog.js"
         vehicleDialogSetup()
     </script>

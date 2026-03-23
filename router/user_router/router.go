@@ -28,7 +28,6 @@ func UserRoutes(router *gin.Engine) {
 		}
 
 		if len(credentials.Token) > 0 {
-			fmt.Printf("%v", credentials.Username)
 			c.SetCookie("session_id", credentials.Token, 6000, "", "", true, true)
 			c.SetCookie("username", credentials.Username, 6000, "", "", true, false)
 			c.SetCookie("farmId", fmt.Sprintf("%v", credentials.Farm), 6000, "", "", true, false)
@@ -87,7 +86,8 @@ func UserRoutes(router *gin.Engine) {
 }
 
 func getUserForm(c *gin.Context) {
-	c.HTML(http.StatusOK, "user-form", gin.H{})
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusOK, "user-form", gin.H{"CSPNonce": nonce.(string)})
 }
 
 func getUsers(c *gin.Context) {
@@ -307,7 +307,8 @@ func googleCallback(c *gin.Context) {
 	credentials, toast := user_service.LoginWithGoogle(code)
 
 	if toast != nil {
-		c.HTML(http.StatusOK, "login.html", gin.H{"error": toast.Message})
+		nonce, _ := c.Get("csp_nonce")
+		c.HTML(http.StatusOK, "login.html", gin.H{"error": toast.Message, "CSPNonce": nonce.(string)})
 		return
 	}
 
@@ -322,7 +323,8 @@ func googleCallback(c *gin.Context) {
 	if credentials.IsNewUser {
 		preRegToken, err := user_service.CreatePreRegistrationToken(credentials.Email, credentials.Name)
 		if err != nil {
-			c.HTML(http.StatusOK, "login.html", gin.H{"error": "Erro ao iniciar cadastro"})
+			nonce, _ := c.Get("csp_nonce")
+			c.HTML(http.StatusOK, "login.html", gin.H{"error": "Erro ao iniciar cadastro", "CSPNonce": nonce.(string)})
 			return
 		}
 
@@ -345,11 +347,13 @@ func googleRegisterForm(c *gin.Context) {
 		return
 	}
 
+	nonce, _ := c.Get("csp_nonce")
 	c.HTML(http.StatusOK, "oauth-registration.html", gin.H{
 		"Email":        claims.Email,
 		"Name":         claims.Name,
 		"ProviderName": "Google",
 		"PostUrl":      "/user/google-register",
+		"CSPNonce":     nonce.(string),
 	})
 }
 
@@ -364,7 +368,8 @@ func microsoftCallback(c *gin.Context) {
 
 	if toast != nil {
 		fmt.Printf("%v", toast.Message)
-		c.HTML(http.StatusOK, "login.html", gin.H{"error": toast.Message})
+		nonce, _ := c.Get("csp_nonce")
+		c.HTML(http.StatusOK, "login.html", gin.H{"error": toast.Message, "CSPNonce": nonce.(string)})
 		return
 	}
 
@@ -379,7 +384,8 @@ func microsoftCallback(c *gin.Context) {
 	if credentials.IsNewUser {
 		preRegToken, err := user_service.CreatePreRegistrationToken(credentials.Email, credentials.Name)
 		if err != nil {
-			c.HTML(http.StatusOK, "login.html", gin.H{"error": "Erro ao iniciar cadastro"})
+			nonce, _ := c.Get("csp_nonce")
+			c.HTML(http.StatusOK, "login.html", gin.H{"error": "Erro ao iniciar cadastro", "CSPNonce": nonce.(string)})
 			return
 		}
 
@@ -402,11 +408,13 @@ func microsoftRegisterForm(c *gin.Context) {
 		return
 	}
 
+	nonce, _ := c.Get("csp_nonce")
 	c.HTML(http.StatusOK, "oauth-registration.html", gin.H{
 		"Email":        claims.Email,
 		"Name":         claims.Name,
 		"ProviderName": "Microsoft",
 		"PostUrl":      "/user/microsoft-register",
+		"CSPNonce":     nonce.(string),
 	})
 }
 

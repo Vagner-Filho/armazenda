@@ -23,7 +23,7 @@
       </button>
     </div>
   </td>
-  <script type="module">
+  <script nonce="{{ .CSPNonce }}" type="module">
     import {formatDateToDisplay} from "/public/assets/js/date.js"
     const itemRow = document.querySelector("tr#departure-{{ .Id }}")
     if (itemRow) {

@@ -14,7 +14,7 @@
         <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
         Começar agora
     </button>
-    <script type="module">
+    <script nonce="{{ .CSPNonce }}" type="module">
         function handleAddFirstEntry(evt) {
             if (evt.detail.requestConfig.path === '/entry' && evt.detail.requestConfig.verb === 'post' && evt.detail.xhr.status === 201) {
                 const entryContent = document.querySelector('#entry-content');

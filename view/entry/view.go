@@ -9,15 +9,18 @@ import (
 	person_service "armazenda/service/person"
 	product_service "armazenda/service/product"
 	"armazenda/service/vehicle_service"
+	"armazenda/view"
 )
 
 type entryFilters struct {
+	view.BaseTemplateData
 	Fields   []entity_public.Field
 	Vehicles []entity_public.Vehicle
 	Crops    []entity_public.Crop
 }
 
 type entryContent struct {
+	view.BaseTemplateData
 	Entries     []entity_public.DisplayEntry
 	Drafts      []entity_public.DisplayEntryDraft
 	Filters     entryFilters
@@ -101,6 +104,7 @@ func GetEntryContent(farm uint32, page int) entryContent {
 }
 
 type EntryForm struct {
+	view.BaseTemplateData
 	Vehicles        []entity_public.Vehicle
 	SelectedVehicle uint16
 	Crops           []entity_public.Crop
@@ -184,6 +188,7 @@ func GetEntryFormFromDraft(draftId uint32, farm uint32) (EntryForm, []*entity_pu
 }
 
 type EntryDraftForm struct {
+	view.BaseTemplateData
 	Vehicles        []entity_public.Vehicle
 	SelectedVehicle uint16
 	Crops           []entity_public.Crop
@@ -211,4 +216,16 @@ func GetEntryDraftForm(farm uint32) (EntryDraftForm, []*entity_public.Toast) {
 
 func GetEntryDraftTable(farm uint32) []entity_public.DisplayEntryDraft {
 	return GetAllEntryDraftsDisplay(farm)
+}
+
+// EntryListItemView wraps DisplayEntry for template rendering with CSP nonce
+type EntryListItemView struct {
+	view.BaseTemplateData
+	entity_public.DisplayEntry
+}
+
+// EntryDraftListItemView wraps DisplayEntryDraft for template rendering with CSP nonce
+type EntryDraftListItemView struct {
+	view.BaseTemplateData
+	entity_public.DisplayEntryDraft
 }

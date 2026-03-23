@@ -1,6 +1,6 @@
 {{ block "entry-content" . }}
 {{ if .NoContent }}
-{{ template "no-entry" }}
+{{ template "no-entry" . }}
 {{ end }}
 <div class="{{ if .NoContent }} hidden {{ end }} glass-panel rounded-xl shadow-center p-4" id="entry-content">
   <div class="flex justify-between items-center gap-2 has-open:flex-col mb-2">

@@ -1,7 +1,7 @@
 {{ define "user-form" }}
 <dialog id="new-user-dialog" class="user-dialog">
   <div class="p-4 relative" id="user-form-content">
-    {{ template "close-dialog-btn" "dialog#new-user-dialog" }}
+    {{ template "close-dialog-btn" (dict "selector" "dialog#new-user-dialog" "CSPNonce" .CSPNonce) }}
     <header class="text-center mb-4">
       <h1 class="text-2xl font-bold" style="color: white;">
         Nova Conta
@@ -17,10 +17,10 @@
           Identificação
         </legend>
         <div class="flex flex-col-reverse gap-2">
-          <input type="text" id="name" required class="peer" name="name" aria-placeholder="Nome" placeholder="João da Silva">
+          <input type="text" id="name" required class="peer" name="name" aria-placeholder="Nome" placeholder="João da Silva" autocomplete="on">
           <label for="name" class="label-peer">Nome</label>
         </div>
-        {{ template "cpf-field" }}
+        {{ template "cpf-field" . }}
         <div class="flex flex-col-reverse gap-2">
           <input type="text" id="inscEstadual" required class="peer" name="inscricaoEstadual"
             aria-placeholder="inscrição estadual" placeholder="0013000001-9">
@@ -32,7 +32,7 @@
           Credenciais
         </legend>
         <div class="flex flex-col-reverse gap-2">
-          <input type="email" id="email" required class="peer" name="email" aria-placeholder="email de cadastro" placeholder="jsilva@email.com">
+          <input type="email" id="email" required class="peer" name="email" aria-placeholder="email de cadastro" placeholder="armazenda@email.com" autocomplete="on">
           <label for="email" class="label-peer">E-mail</label>
         </div>
         <div class="flex flex-col-reverse gap-2">
@@ -40,19 +40,19 @@
           <label for="passwd" class="label-peer">Senha</label>
         </div>
         <div class="flex flex-col-reverse gap-2">
-          <input type="password" id="passwdConfim" required class="peer" name="passwdConfirm"
+          <input type="password" id="passwdConfirm" required class="peer" name="passwdConfirm"
             aria-placeholder="repita a senha de acesso" placeholder="********">
           <label for="passwdConfirm" class="label-peer">Confirme a senha</label>
         </div>
       </fieldset>
       <div class="flex items-center justify-center mt-2 gap-2">
-        <button type="button" class="cancel-new-user" onclick="closeUserForm()">Cancelar</button>
+        <button type="button" class="cancel-new-user">Cancelar</button>
         <button type="submit" class="login-btn-primary" style="padding-left: 20px; padding-right: 20px; width: fit-content;">Cadastrar</button>
       </div>
       </form>
     </div>
   </div>
-  <script type="module">
+  <script nonce="{{ .CSPNonce }}" type="module">
     const dialog = document.querySelector("dialog#new-user-dialog");
     if (dialog) {
       dialog.showModal();
@@ -61,7 +61,12 @@
         dialog.remove();
         window.closeUserForm = undefined;
       }
-      dialog.addEventListener('close', closeUserForm)
+      dialog.addEventListener('close', closeUserForm);
+
+      const cancelBtn = dialog.querySelector(".cancel-new-user");
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeUserForm);
+      }
     }
   </script>
   <style>

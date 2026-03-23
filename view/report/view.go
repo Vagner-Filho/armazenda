@@ -8,12 +8,14 @@ import (
 	product_service "armazenda/service/product"
 	"armazenda/service/report_service"
 	"armazenda/service/vehicle_service"
+	"armazenda/view"
 	"reflect"
 	"strconv"
 	"time"
 )
 
 type reportView struct {
+	view.BaseTemplateData
 	Products []entity_public.Product
 	Vehicles []entity_public.Vehicle
 	Fields   map[string][]entity_public.Field
@@ -25,6 +27,7 @@ type reportView struct {
 }
 
 type reportContent struct {
+	view.BaseTemplateData
 	Operations     []entity_public.ReportDisplay
 	EntryTotal     float64
 	DepartureTotal float64
@@ -80,6 +83,7 @@ func FilterReport(rf entity_public.ReportFilter, farm uint32) (reportContent, *e
 }
 
 type FullReportView struct {
+	view.BaseTemplateData
 	FullOperations []entity_public.FullReport
 	EntryTotal     float64
 	DepartureTotal float64

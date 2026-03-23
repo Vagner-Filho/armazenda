@@ -11,20 +11,20 @@
     <link rel="icon" type="image/x-icon" href="/public/assets/favicon.ico">
     <link rel="manifest" href="/public/assets/manifest.json">
     <title>Romaneio - Armazenda</title>
-    <script src="/public/assets/js/htmx.min.js"></script>
-    <script type="module" src="/public/assets/js/toast.js" async></script>
-    <script type="module" src="/public/assets/js/getEntryPdf.js" defer></script>
-    <script type="module" src="/public/assets/js/getDeparturePdf.js" defer></script>
-    <script type="module" src="/public/assets/js/entryForm.js" async></script>
-    <script type="module" src="/public/assets/js/cropDialog.js" async></script>
-    <script type="module" src="/public/assets/js/vehicleDialog.js" async></script>
-    <script type="module" src="/public/assets/js/fieldDialog.js" async></script>
-    <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
-    <script src="/public/assets/js/sweetalert2.min.js" async></script>
+    <script nonce="{{ .CSPNonce }}" src="/public/assets/static/htmx.min.js.gz"></script>
+    <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/toast.js" async></script>
+    <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/getEntryPdf.js" defer></script>
+    <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/getDeparturePdf.js" defer></script>
+    <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/entryForm.js" async></script>
+    <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/cropDialog.js" async></script>
+    <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/vehicleDialog.js" async></script>
+    <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/fieldDialog.js" async></script>
+    <script nonce="{{ .CSPNonce }}" src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
+    <script nonce="{{ .CSPNonce }}" src="/public/assets/js/sweetalert2.min.js" async></script>
   </head>
   <body class="main-bg">
-    {{ template "navbar" }}
-  {{ template "menu" "romaneio" }}
+    {{ template "navbar" . }}
+  {{ template "menu" (dict "page" "romaneio" "CSPNonce" .CSPNonce) }}
     <section class="mt-14 lg:mt-20 mb-4 lg:pl-12 px-2 max-w-screen-xl mx-auto">
       <header class="text-center mb-8">
         <h1 class="text-xl lg:text-3xl font-bold text-white font-[Noto_Sans] drop-shadow-lg">
@@ -36,12 +36,16 @@
       </header>
       <div class="max-w-md mx-auto mb-8">
         <div class="glass-panel rounded-2xl p-1 flex" id="type-toggler">
-          <button type="button" id="show-entry-manifest" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 bg-blue-500/70 text-white shadow-sm transition-colors duration-300" hx-trigger="click" hx-get="/entry/list" hx-target="#content-container" onclick="handleToggle(this)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill="currentColor" d="m15.5 5.69l2.81 2.81l-6.37 6.39h4.95v3.42H5.69V7.11h3.43v4.95z"/></svg>
+          <button type="button" id="toggler" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 bg-blue-500/70 text-white shadow-sm transition-colors duration-300" hx-trigger="click" hx-get="/entry/list" hx-target="#content-container">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+              <path fill="currentColor" d="m15.5 5.69l2.81 2.81l-6.37 6.39h4.95v3.42H5.69V7.11h3.43v4.95z"/>
+            </svg>
             <span class="font-semibold">Entrada</span>
           </button>
-          <button type="button" id="show-departure-manifest" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 text-white/70 hover:bg-sky-50/10 transition-colors duration-300" hx-trigger="click" hx-get="/departure/list" hx-target="#content-container" onclick="handleToggle(this)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill="currentColor" d="M8.5 18.31L5.69 15.5l6.37-6.38H7.11V5.69h11.2v11.2h-3.42v-4.95z"/></svg>
+          <button type="button" id="toggler" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 text-white/70 hover:bg-sky-50/10 transition-colors duration-300" hx-trigger="click" hx-get="/departure/list" hx-target="#content-container">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+              <path fill="currentColor" d="M8.5 18.31L5.69 15.5l6.37-6.38H7.11V5.69h11.2v11.2h-3.42v-4.95z"/>
+            </svg>
             <span class="font-semibold">Saída</span>
           </button>
         </div>
@@ -50,18 +54,48 @@
         {{ template "entry-content" . }}
       </div>
     </section>
-  <script type="module" src="/public/assets/js/offlineManager.js"></script>
-  <script type="module">
+    <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/offlineManager.js"></script>
+    <script nonce="{{ .CSPNonce }}" type="module">
+      import {formatDateToDisplay} from "/public/assets/js/date.js"
+    import {formatWeight} from "/public/assets/js/weight.js";
+
     function handleToggle(clickedButton) {
-      const buttons = clickedButton.parentElement.querySelectorAll('button');
+      const buttons = clickedButton.currentTarget.parentElement.querySelectorAll('button');
       buttons.forEach(button => {
         button.classList.remove('bg-blue-500/70', 'text-white', 'shadow-sm');
         button.classList.add('text-white/70');
       });
-      clickedButton.classList.add('bg-blue-500/70', 'text-white', 'shadow-sm');
-      clickedButton.classList.remove('text-white/70');
+
+      clickedButton.currentTarget.classList.add('bg-blue-500/70', 'text-white', 'shadow-sm');
+      clickedButton.currentTarget.classList.remove('text-white/70');
     }
-    window.handleToggle = handleToggle
-  </script>
+    for (const toggler of document.querySelectorAll('button#toggler')) {
+      toggler.addEventListener('click', handleToggle);
+    }
+
+    async function formatEntryListItem(selector) {
+      if (!selector) {
+        for (const entryRow of document.querySelector("#entries-table-body").children) {
+          const date = entryRow.querySelector("td#arrivalDate");
+          date.textContent = formatDateToDisplay(date.textContent);
+
+          const weight = entryRow.querySelector("td#netWeight");
+          weight.textContent = formatWeight(weight.textContent);
+        }
+        return
+      }
+
+      const itemRow = document.querySelector(selector);
+      if (itemRow) {
+        const date = itemRow.querySelector("td#arrivalDate");
+        date.textContent = formatDateToDisplay(date.textContent);
+
+        const weight = itemRow.querySelector("td#netWeight");
+        weight.textContent = formatWeight(weight.textContent);
+      }
+    }
+    formatEntryListItem();
+    window.formatEntryListItem = formatEntryListItem;
+    </script>
   </body>
 </html>

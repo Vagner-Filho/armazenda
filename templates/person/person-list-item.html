@@ -18,7 +18,7 @@
       <iconify-icon icon="mdi:pencil" class="text-xl"></iconify-icon>
     </button>
   </td>
-  <script type="module">
+  <script nonce="{{ .CSPNonce }}" type="module">
     import {formatDocument} from "/public/assets/js/document.js"
     const itemRow = document.querySelector("#person-{{ .Id }}")
     if (itemRow) {

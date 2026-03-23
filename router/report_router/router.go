@@ -14,7 +14,8 @@ func getRelatorioPage(c *gin.Context) {
 	farm := user_service.GetFarmFromToken(sid)
 
 	pageData := report_view.GetReportPage(farm)
-
+	nonce, _ := c.Get("csp_nonce")
+	pageData.CSPNonce = nonce.(string)
 	c.HTML(http.StatusOK, "relatorio.html", pageData)
 }
 
@@ -49,6 +50,8 @@ func getFullReport(c *gin.Context) {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 		return
 	}
+	nonce, _ := c.Get("csp_nonce")
+	report.CSPNonce = nonce.(string)
 	c.HTML(http.StatusOK, "full-report.html", report)
 }
 

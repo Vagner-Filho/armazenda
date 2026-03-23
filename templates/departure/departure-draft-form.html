@@ -1,7 +1,7 @@
 {{ block "departure-draft-form" . }}
 <dialog id="addDepartureDraftDialog" class="glass-panel rounded-xl w-full max-w-3xl">
     <div class="p-4 relative">
-        {{ template "close-dialog-btn" "dialog#addDepartureDraftDialog" }}
+        {{ template "close-dialog-btn" (dict "selector" "dialog#addDepartureDraftDialog" "CSPNonce" .CSPNonce) }}
         <header class="text-center mb-4">
             <h1 class="text-xl lg:text-3xl font-bold text-white/95 font-[Noto_Sans]">
                 {{ if .Draft.Id }}
@@ -59,7 +59,7 @@
         </form>
     </div>
 
-    <script type="module">
+    <script nonce="{{ .CSPNonce }}" type="module">
         import {removeEmptyFields} from "/public/assets/js/form.js";
         document.body.addEventListener('htmx:configRequest', function (evt) {
             evt.detail.parameters = removeEmptyFields(evt.detail.parameters);

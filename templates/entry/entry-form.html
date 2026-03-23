@@ -1,7 +1,7 @@
 {{ block "entry-form" . }}
 <dialog id="addEntryDialog" class="glass-panel rounded-xl w-full max-w-5xl">
     <div class="p-4 relative">
-        {{ template "close-dialog-btn" "dialog#addEntryDialog" }}
+        {{ template "close-dialog-btn" (dict "selector" "dialog#addEntryDialog" "CSPNonce" .CSPNonce) }}
         <header class="text-center mb-4">
             <h1 class="text-xl lg:text-3xl font-bold text-white/95 font-[Noto_Sans]">
                 {{ if .Entry.Id }}
@@ -84,6 +84,11 @@
                         Análise
                     </legend>
                     <div class="flex flex-col-reverse relative">
+                        <!-- Progressive Tier Display -->
+                        <div id="humidityProgressionInfo" class="absolute -top-5 left-2 text-xs text-white/50 mt-1 flex gap-2">
+                            <span id="humidityTierDisplay" class="text-[#caff89]"></span>
+                            <span id="humidityProgressionSource" class="text-white/40 italic"></span>
+                        </div>
                         <div role="status" class="absolute bottom-3 right-8 text-sm text-[#caff89] h-fit"
                             aria-label="Desconto de Umidade"></div>
                         <input type="number" value="{{ .Entry.Humidity }}" step="0.01" min="0" max="100" name="humidity" id="humidity" class="peer bg-white/10 border-white/20 text-white placeholder-white/50">
@@ -92,11 +97,6 @@
                             <i class="text-xs font-normal text-white/60 normal-case">Desconta do Peso Líquido a partir
                                 de 14%</i>
                         </label>
-                        <!-- Progressive Tier Display -->
-                        <div id="humidityProgressionInfo" class="text-xs text-white/50 mt-1 flex gap-2">
-                            <span id="humidityTierDisplay" class="text-[#caff89]"></span>
-                            <span id="humidityProgressionSource" class="text-white/40 italic"></span>
-                        </div>
                     </div>
                     <div class="flex flex-col-reverse relative">
                         <div role="status" class="absolute bottom-3 right-8 text-sm text-[#caff89] h-fit"
@@ -127,20 +127,20 @@
                     Peso <i class="text-xs font-normal text-white/60 normal-case px-2">(preenchimento automático)</i>
                 </legend>
                 <div class="flex flex-col w-full">
-                    <label for="netWeightRaw" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    <label for="net_weight_raw" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                         Peso Líquido
                         <i class="text-xs font-normal text-white/60 normal-case">Peso Bruto - Tara</i>
                     </label>
-                    <input type="text" name="netWeightRaw" id="netWeightRaw" class="cursor-not-allowed bg-white/10 border-white/20 text-white placeholder-white/50" {{ if decIsNotZero
+                    <input type="text" name="netWeightRaw" id="net_weight_raw" class="cursor-not-allowed bg-white/10 border-white/20 text-white placeholder-white/50" {{ if decIsNotZero
                         .Entry.NetWeight }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0"
                         data-raw="0" required disabled>
                 </div>
                 <div class="flex flex-col w-full">
-                    <label for="netWeight" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    <label for="net_weight" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                         Peso Líquido Final
                         <i class="text-xs font-normal text-white/60 normal-case">Peso Líquido - Descontos</i>
                     </label>
-                    <input type="text" name="netWeight" id="netWeight" class="cursor-not-allowed bg-white/10 border-white/20 text-white placeholder-white/50" {{ if decIsNotZero
+                    <input type="text" name="netWeight" id="net_weight" class="cursor-not-allowed bg-white/10 border-white/20 text-white placeholder-white/50" {{ if decIsNotZero
                         .Entry.NetWeight }} value="{{ .Entry.NetWeight }}" {{ end }} readonly min="0"
                         data-raw="0" required disabled>
                 </div>
@@ -155,7 +155,7 @@
         </form>
     </div>
 
-    <script type="module">
+    <script nonce="{{ .CSPNonce }}" type="module">
         import {setupEntryForm} from "/public/assets/js/entryForm.js"
         setupEntryForm({{ .Entry.ArrivalDate }})
     </script>

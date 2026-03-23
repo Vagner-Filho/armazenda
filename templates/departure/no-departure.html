@@ -14,7 +14,7 @@
         <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
         Começar agora
     </button>
-    <script type="module">
+    <script nonce="{{ .CSPNonce }}" type="module">
         function handleAddFirstDeparture(evt) {
             if (evt.detail.requestConfig.path === '/departure' && evt.detail.requestConfig.verb === 'post' && evt.detail.xhr.status === 201) {
                 const departureContent = document.querySelector('#departure-content');

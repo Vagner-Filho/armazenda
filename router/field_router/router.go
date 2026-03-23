@@ -26,7 +26,8 @@ func getFieldForm(c *gin.Context) {
 		}
 	}
 	regexPattern += ").*"
-	c.HTML(http.StatusOK, "field-form", nil)
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusOK, "field-form", gin.H{"CSPNonce": nonce.(string)})
 }
 
 func addField(c *gin.Context) {

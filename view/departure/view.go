@@ -6,15 +6,18 @@ import (
 	"armazenda/service/departure_service"
 	"armazenda/service/person"
 	"armazenda/service/vehicle_service"
+	"armazenda/view"
 )
 
 type departureFilters struct {
+	view.BaseTemplateData
 	Vehicles []entity_public.Vehicle
 	Crops    []entity_public.Crop
 	People   []entity_public.PersonOption
 }
 
 type DepartureContent struct {
+	view.BaseTemplateData
 	Departures  []entity_public.DisplayDeparture
 	Drafts      []entity_public.DisplayDepartureDraft
 	Filters     departureFilters
@@ -80,6 +83,7 @@ func GetDepartureContent(farmId uint32, page int) (DepartureContent, []*entity_p
 }
 
 type DepartureDraftForm struct {
+	view.BaseTemplateData
 	Vehicles          []entity_public.Vehicle
 	Crops             []entity_public.Crop
 	People            []entity_public.PersonOption
@@ -103,6 +107,7 @@ func GetDepartureDraftForm(farm uint32) (DepartureDraftForm, []*entity_public.To
 }
 
 type DepartureForm struct {
+	view.BaseTemplateData
 	Vehicles          []entity_public.Vehicle
 	SelectedVehicle   uint16
 	Crops             []entity_public.Crop
@@ -194,4 +199,16 @@ func GetDepartureFormFromDraft(draftId uint32, farm uint32) (DepartureForm, []*e
 func GetDepartureDrafts(farmId uint32) ([]entity_public.DisplayDepartureDraft, *entity_public.Toast) {
 	drafts, draftToast := departure_service.GetAllDepartureDrafts(farmId)
 	return drafts, draftToast
+}
+
+// DepartureListItemView wraps Departure for template rendering with CSP nonce
+type DepartureListItemView struct {
+	view.BaseTemplateData
+	Departure entity_public.DisplayDeparture
+}
+
+// DepartureDraftListItemView wraps DepartureDraft for template rendering with CSP nonce
+type DepartureDraftListItemView struct {
+	view.BaseTemplateData
+	Draft entity_public.DisplayDepartureDraft
 }

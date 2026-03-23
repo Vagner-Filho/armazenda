@@ -4,6 +4,7 @@ import (
 	entity_public "armazenda/entity/public"
 	person_service "armazenda/service/person"
 	"armazenda/service/user_service"
+	"armazenda/view"
 	person_view "armazenda/view/person"
 	"net/http"
 	"strconv"
@@ -30,7 +31,11 @@ func addLegalPerson(c *gin.Context) {
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}
-	c.HTML(http.StatusCreated, "person-list-item", person)
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusCreated, "person-list-item", person_view.PersonListItemView{
+		Person:           person,
+		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
+	})
 }
 
 func addNaturalPerson(c *gin.Context) {
@@ -61,14 +66,19 @@ func addNaturalPerson(c *gin.Context) {
 		}
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}
-	c.HTML(http.StatusOK, "person-list-item", person)
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusOK, "person-list-item", person_view.PersonListItemView{
+		Person:           person,
+		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
+	})
 }
 
 func getPersonForm(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
 	progressions := person_view.GetProgressionsForForm(farm)
-	c.HTML(http.StatusOK, "person-form", gin.H{"Progressions": progressions})
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusOK, "person-form", gin.H{"Progressions": progressions, "CSPNonce": nonce.(string)})
 }
 
 func getFilledNaturalPersonForm(c *gin.Context) {
@@ -87,6 +97,8 @@ func getFilledNaturalPersonForm(c *gin.Context) {
 		c.Header("HX-Trigger", string(t.ToJson()))
 		return
 	}
+	nonce, _ := c.Get("csp_nonce")
+	person.CSPNonce = nonce.(string)
 	c.HTML(http.StatusOK, "person-form", person)
 }
 
@@ -106,6 +118,8 @@ func getFilledLegalPersonForm(c *gin.Context) {
 		c.Header("HX-Trigger", string(t.ToJson()))
 		return
 	}
+	nonce, _ := c.Get("csp_nonce")
+	pform.CSPNonce = nonce.(string)
 	c.HTML(http.StatusOK, "person-form", pform)
 }
 
@@ -140,6 +154,8 @@ func getPersonPage(c *gin.Context) {
 		return
 	}
 
+	nonce, _ := c.Get("csp_nonce")
+	pageData["CSPNonce"] = nonce.(string)
 	c.HTML(http.StatusOK, "person.html", pageData)
 }
 
@@ -180,7 +196,11 @@ func updateNaturalPerson(c *gin.Context) {
 		}
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}
-	c.HTML(http.StatusOK, "person-list-item", person)
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusOK, "person-list-item", person_view.PersonListItemView{
+		Person:           person,
+		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
+	})
 }
 
 func updateLegalPerson(c *gin.Context) {
@@ -220,7 +240,11 @@ func updateLegalPerson(c *gin.Context) {
 		}
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}
-	c.HTML(http.StatusOK, "person-list-item", person)
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusOK, "person-list-item", person_view.PersonListItemView{
+		Person:           person,
+		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
+	})
 }
 
 func UsePersonRoutes(router *gin.Engine) {

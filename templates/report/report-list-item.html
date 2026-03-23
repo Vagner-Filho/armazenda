@@ -32,7 +32,7 @@
   <td id="operationDate" class="py-3 px-4 text-left" data-label="DATA">
     ...
   </td>
-  <script type="module">
+  <script nonce="{{ .CSPNonce }}" type="module">
     import {formatDateToDisplay} from "/public/assets/js/date.js"
     const itemRow = document.querySelector("#operation-{{ .OperationType }}-{{ .Romaneio }}")
     if (itemRow) {

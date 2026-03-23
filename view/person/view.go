@@ -4,6 +4,7 @@ import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/humidity_progression_model"
 	person_service "armazenda/service/person"
+	"armazenda/view"
 )
 
 type personPage struct {
@@ -15,9 +16,10 @@ func GetPersonPage(farm uint32) personPage {
 }
 
 type FilledPersonForm struct {
-	Legal                *entity_public.LegalPerson
-	Natural              *entity_public.NaturalPerson
-	Progressions         []entity_public.HumidityProgression
+	view.BaseTemplateData
+	Legal                 *entity_public.LegalPerson
+	Natural               *entity_public.NaturalPerson
+	Progressions          []entity_public.HumidityProgression
 	SelectedProgressionId *uint32
 }
 
@@ -50,4 +52,10 @@ func getProgressions(farm uint32) []entity_public.HumidityProgression {
 		return []entity_public.HumidityProgression{}
 	}
 	return progressions
+}
+
+// PersonListItemView wraps PersonDisplay for template rendering with CSP nonce
+type PersonListItemView struct {
+	view.BaseTemplateData
+	Person entity_public.PersonDisplay
 }

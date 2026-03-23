@@ -1,7 +1,7 @@
 {{ block "field-form" . }}
 <dialog id="fieldFormDialog" class="glass-panel rounded-xl w-72 sm:w-96">
   <div class="p-4 relative">
-    {{ template "close-dialog-btn" "dialog#fieldFormDialog" }}
+    {{ template "close-dialog-btn" (dict "selector" "dialog#fieldFormDialog" "CSPNonce" .CSPNonce) }}
     <header class="text-center mb-4">
       <h1 class="text-xl lg:text-2xl font-bold text-white/95 font-[Noto_Sans]">
         Novo Talhão
@@ -37,7 +37,7 @@
       </div>
     </form>
   </div>
-  <script type="module">
+  <script nonce="{{ .CSPNonce }}" type="module">
     import { fieldDialogSetup } from "/public/assets/js/fieldDialog.js"
     fieldDialogSetup()
   </script>

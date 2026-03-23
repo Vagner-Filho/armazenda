@@ -25,8 +25,8 @@
         unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
       }
     </style>
-    <script src="/public/assets/static/htmx.min.js.gz" defer></script>
-    <script type="module" src="/public/assets/js/toast.js" async></script>
+    <script nonce="{{ .CSPNonce }}" src="/public/assets/static/htmx.min.js.gz" defer></script>
+    <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/toast.js" async></script>
   </head>
   <body class="login-container">
     <div class="liquid-bg">
@@ -37,7 +37,7 @@
     <main class="login-card-wrapper">
       <h2 class="login-title">Login</h2>
       <form hx-post="/login" hx-target="#error-indicator-space" class="login-form">
-        {{ template "login-cpf-field" }}
+        {{ template "login-cpf-field" . }}
         <div class="login-field">
           <label for="password" class="login-label">Senha</label>
           <input type="password" id="password" name="passwd" required aria-placeholder="senha" placeholder="*********" class="login-input">
@@ -66,14 +66,14 @@
       </div>
       <p class="login-footer-text">
         Novo por aqui?
-        <button type="button" class="login-btn-create" hx-trigger="click" hx-get="/user/form" hx-target="body" hx-swap="beforeend">Crie uma conta!</button>
+        <button type="button" class="login-btn-create" hx-trigger="click" hx-get="/user/form" hx-headers='{"X-nonce": "{{ .CSPNonce }}"}' hx-target="body" hx-swap="beforeend">Crie uma conta!</button>
       </p>
       <div id="error-indicator-space" class="login-error-space">
         <!-- Message error login -->
       </div>
     </main>
   </body>
-  <script>
+  <script nonce="{{ .CSPNonce }}">
     document.querySelectorAll('input').forEach(input => {
     input.addEventListener('focus', function () {
       const errorMsg = document.getElementById('error-msg');
@@ -83,7 +83,7 @@
     });
   });
   </script>
-  <style>
+  <style nonce="{{ .CSPNonce }}">
     body {
     background-color: #7dd3fc;
     color: white;

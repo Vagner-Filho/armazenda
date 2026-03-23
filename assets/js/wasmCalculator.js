@@ -46,19 +46,20 @@ class WasmCalculator {
       }
 
       const go = new Go();
-      
+
       // Fetch and instantiate WASM
       const response = await fetch('/public/assets/wasm/calculator.wasm');
       if (!response.ok) {
         throw new Error(`Failed to load WASM: ${response.status}`);
       }
 
-      const wasmBuffer = await response.arrayBuffer();
-      const wasmModule = await WebAssembly.instantiate(wasmBuffer, go.importObject);
-      
+      //const wasmBuffer = await response.arrayBuffer();
+      //const wasmModule = await WebAssembly.instantiate(wasmBuffer, go.importObject);
+      const wasmModule = await WebAssembly.instantiateStreaming(response, go.importObject);
+
       // Start the Go runtime
       go.run(wasmModule.instance);
-      
+
       this.ready = true;
       console.log('[WASM] Calculator loaded successfully');
     } catch (error) {
