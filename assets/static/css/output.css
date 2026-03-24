@@ -479,6 +479,10 @@
   .table {
     display: table;
   }
+  .size-5 {
+    width: calc(var(--spacing) * 5);
+    height: calc(var(--spacing) * 5);
+  }
   .size-6 {
     width: calc(var(--spacing) * 6);
     height: calc(var(--spacing) * 6);
@@ -1527,6 +1531,12 @@
   }
   .ring-inset {
     --tw-ring-inset: inset;
+  }
+  .\*\:size-5 {
+    :is(& > *) {
+      width: calc(var(--spacing) * 5);
+      height: calc(var(--spacing) * 5);
+    }
   }
   .\*\:font-medium {
     :is(& > *) {

@@ -104,16 +104,10 @@ func addDeparture(c *gin.Context) {
 	df.Farm = farm
 	departure, toast := departure_service.AddDeparture(df)
 	if toast != nil {
-		json := string(toast.ToJson())
-		fmt.Printf("\n%v\n", json)
-		c.Header("HX-Trigger", json)
+		c.Header("HX-Trigger", toast.ToJsonStr())
 	}
 
-	nonce, _ := c.Get("csp_nonce")
-	c.HTML(http.StatusCreated, "departure-list-item", departure_view.DepartureListItemView{
-		Departure:        departure,
-		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
-	})
+	c.HTML(http.StatusCreated, "departure-list-item", departure)
 }
 
 func putDeparture(c *gin.Context) {

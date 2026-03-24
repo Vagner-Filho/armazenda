@@ -23,8 +23,8 @@
     {{ .ArrivalDate }}
   </td>
   <td class="py-3 px-4 text-left" data-label="Ações">
-    <div class="flex items-center justify-end lg:justify-start gap-2">
-      <button type="button" id="{{ .Id }}" onclick="getEntryPdf(this)" title="PDF de Entrada" class="icon-btn">
+    <div class="flex items-center justify-end lg:justify-start gap-2 *:size-5">
+      <button type="button" id="{{ .Id }}" onclick="getEntryPdf(this)" title="PDF de Entrada" class="icon-btn size-5">
         <iconify-icon icon="mdi:file-pdf-box" class="text-xl"></iconify-icon>
       </button>
       <button type="button" hx-get="/entry/form/{{ .Id }}" hx-target="body" hx-swap="beforeend" title="Editar Entrada"

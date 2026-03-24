@@ -16,6 +16,8 @@
     <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/getEntryPdf.js" defer></script>
     <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/getDeparturePdf.js" defer></script>
     <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/entryForm.js" async></script>
+    <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/departureForm.js" async></script>
+    <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/departureListItem.js" async></script>
     <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/cropDialog.js" async></script>
     <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/vehicleDialog.js" async></script>
     <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/fieldDialog.js" async></script>
@@ -57,7 +59,8 @@
     <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/offlineManager.js"></script>
     <script nonce="{{ .CSPNonce }}" type="module">
       import {formatDateToDisplay} from "/public/assets/js/date.js"
-    import {formatWeight} from "/public/assets/js/weight.js";
+      import {formatWeight} from "/public/assets/js/weight.js";
+      import {formatAllDepartureListItems} from "/public/assets/js/departureListItem.js"
 
     function handleToggle(clickedButton) {
       const buttons = clickedButton.currentTarget.parentElement.querySelectorAll('button');
@@ -96,6 +99,14 @@
     }
     formatEntryListItem();
     window.formatEntryListItem = formatEntryListItem;
+
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+      if (evt.detail.successful && evt.detail.requestConfig.path === '/departure/list' && evt.detail.requestConfig.verb === 'get') {
+        formatAllDepartureListItems();
+      } else if (evt.detail.successful && evt.detail.requestConfig.path === '/entry/list' && evt.detail.requestConfig.verb === 'get') {
+        formatEntryListItem();
+      }
+    });
     </script>
   </body>
 </html>
