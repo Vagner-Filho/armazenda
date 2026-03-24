@@ -13,6 +13,10 @@ function cropDialogSetup() {
         }
         dialogEl.addEventListener('close', closeCropForm)
         window.closeCropForm = closeCropForm
+        const cancelButton = dialogEl.querySelector('.cancel-btn');
+        if (cancelButton) {
+            cancelButton.addEventListener('click', closeCropForm);
+        }
         handleNewOption(closeCropForm)
     }
 }

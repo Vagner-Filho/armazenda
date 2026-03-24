@@ -12,10 +12,10 @@
     </header>
     {{ if and (eq .Legal nil) (eq .Natural nil) }}
       <div class="glass-panel rounded-2xl p-1 flex max-w-md mx-auto mb-4" id="type-toggler">
-        <button type="button" id="pessoa-juridica-btn" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 bg-blue-500/70 text-white shadow-sm transition-colors duration-300" onclick="toggleForm()">
+        <button type="button" id="pessoa-juridica-btn" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 bg-blue-500/70 text-white shadow-sm transition-colors duration-300">
           <span class="font-semibold">Pessoa Jurídica</span>
         </button>
-        <button type="button" id="pessoa-fisica-btn" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 text-white/70 hover:bg-sky-50/10 transition-colors duration-300" onclick="toggleForm()">
+        <button type="button" id="pessoa-fisica-btn" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 text-white/70 hover:bg-sky-50/10 transition-colors duration-300">
           <span class="font-semibold">Pessoa Física</span>
         </button>
       </div>
@@ -98,7 +98,7 @@
         {{ end }}
       </div>
       <div class="flex items-center justify-around mt-4 w-52 mx-auto">
-        <button type="button" class="cancel-btn" onclick="closePersonForm()">
+        <button type="button" class="cancel-btn">
           Cancelar
         </button>
         <button class="primary-glass-btn" type="submit">
@@ -177,7 +177,7 @@
         {{ end }}
       </div>
       <div class="flex items-center justify-around mt-4 w-52 mx-auto">
-        <button type="button" class="cancel-btn" onclick="closePersonForm()">
+        <button type="button" class="cancel-btn">
           Cancelar
         </button>
         <button class="primary-glass-btn" type="submit">
@@ -204,6 +204,10 @@
       }
       dialogEl.addEventListener('close', closePersonForm)
       window.closePersonForm = closePersonForm
+      const cancelButtons = dialogEl.querySelectorAll('.cancel-btn');
+      cancelButtons.forEach(btn => {
+          btn.addEventListener('click', closePersonForm);
+      });
 
       document.body.addEventListener('htmx:configRequest', function (evt) {
         evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
@@ -232,6 +236,8 @@
           pessoaFisicaBtn.classList.toggle('hover:bg-sky-50/10')
         }
 
+      pessoaJuridicaBtn.addEventListener('click', toggleForm);
+      pessoaFisicaBtn.addEventListener('click', toggleForm);
       window.toggleForm = toggleForm
     {{ end }}
   </script>

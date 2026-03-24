@@ -13,6 +13,10 @@ function progressionDialogSetup() {
     }
     dialogEl.addEventListener('close', closeProgressionForm)
     window.closeProgressionForm = closeProgressionForm
+    const cancelButton = dialogEl.querySelector('.cancel-btn');
+    if (cancelButton) {
+        cancelButton.addEventListener('click', closeProgressionForm);
+    }
 
     // Clean empty fields before HTMX submit
     dialogEl.addEventListener('htmx:configRequest', function (evt) {

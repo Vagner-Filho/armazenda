@@ -52,6 +52,10 @@ export function setupEntryForm(payload) {
         }
         dialogEl.addEventListener('close', closeEntryFormDialog)
         window.closeEntryFormDialog = closeEntryFormDialog
+        const cancelButton = dialogEl.querySelector('.cancel-btn');
+        if (cancelButton) {
+            cancelButton.addEventListener('click', closeEntryFormDialog);
+        }
 
         const grossWeightInput = dialogEl.querySelector('input#grossWeight')
         const tareInput = dialogEl.querySelector('input#tare')

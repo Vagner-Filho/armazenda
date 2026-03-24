@@ -68,6 +68,17 @@
         cancelBtn.addEventListener('click', closeUserForm);
       }
     }
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        if (evt.detail.successful && 
+            evt.detail.requestConfig.path === '/user' && 
+            evt.detail.requestConfig.verb === 'post' &&
+            evt.detail.target.id === 'user-form-content') {
+            const button = evt.detail.target.querySelector('button.add-btn');
+            if (button) {
+                button.addEventListener('click', window.closeUserForm);
+            }
+        }
+    });
   </script>
   <style>
     .user-dialog {

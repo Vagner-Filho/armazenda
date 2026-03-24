@@ -50,7 +50,7 @@
                 </div>
             </fieldset>
             <div class="flex items-center justify-around mt-4 w-52 mx-auto" id="btns-container">
-                <button class="cancel-btn" type="button" onclick="closeDepartureDraftFormDialog()">Cancelar</button>
+                <button class="cancel-btn" type="button">Cancelar</button>
                 <button class="primary-glass-btn" type="submit">
                     {{ if .Draft.Id }} Salvar {{ else }} Adicionar {{ end }}
                 </button>
@@ -74,6 +74,10 @@
             }
             dialogEl.addEventListener('close', closeDepartureDraftFormDialog)
             window.closeDepartureDraftFormDialog = closeDepartureDraftFormDialog
+            const cancelButton = dialogEl.querySelector('.cancel-btn');
+            if (cancelButton) {
+                cancelButton.addEventListener('click', closeDepartureDraftFormDialog);
+            }
         }
     </script>
     <style>

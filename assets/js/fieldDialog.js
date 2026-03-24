@@ -10,6 +10,10 @@ function fieldDialogSetup() {
         }
         dialogEl.addEventListener('close', closeFieldForm)
         window.closeFieldForm = closeFieldForm
+        const cancelButton = dialogEl.querySelector('.cancel-btn');
+        if (cancelButton) {
+            cancelButton.addEventListener('click', closeFieldForm);
+        }
         handleNewOption(closeFieldForm)
     }
 }

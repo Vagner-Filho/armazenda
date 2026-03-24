@@ -20,6 +20,10 @@ export function setupDepartureForm(payload) {
 
         dialogEl.addEventListener('close', closeDepartureForm)
         window.closeDepartureForm = closeDepartureForm
+        const cancelButton = dialogEl.querySelector('.cancel-btn');
+        if (cancelButton) {
+            cancelButton.addEventListener('click', closeDepartureForm);
+        }
 
         const grossWeightInput = dialogEl.querySelector('input#grossWeight')
         const tareInput = dialogEl.querySelector('input#tare')

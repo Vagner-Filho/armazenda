@@ -11,6 +11,10 @@ function vehicleDialogSetup() {
         }
         dialogEl.addEventListener('close', closeVehicleForm)
         window.closeVehicleForm = closeVehicleForm
+        const cancelButton = dialogEl.querySelector('.cancel-btn');
+        if (cancelButton) {
+            cancelButton.addEventListener('click', closeVehicleForm);
+        }
         handleNewOption(closeVehicleForm)
     }
 }
