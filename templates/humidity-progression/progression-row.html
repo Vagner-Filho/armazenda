@@ -15,7 +15,7 @@
             <button type="button" hx-get="/progressao/form/{{ .Id }}" hx-target="body" hx-swap="beforeend" title="Editar" class="icon-btn">
                 <iconify-icon icon="mdi:pencil" class="text-lg"></iconify-icon>
             </button>
-            <button type="button" hx-trigger="confirmed" hx-delete="/progressao/{{ .Id }}" hx-target="#progression-{{ .Id }}" hx-swap="delete" title="Excluir" class="icon-btn" onClick="Swal.fire({title:'Excluir', text:'Deseja excluir a progressão {{ .Name }} ?', showCancelButton:true, cancelButtonText:'Cancelar', cancelButtonColor:'#ff7200', reverseButtons:true, confirmButtonText:'Excluir', confirmButtonColor:'#22c55e'}).then((result)=>{ if(result.isConfirmed){ htmx.trigger(this,'confirmed'); } })">
+            <button type="button" hx-trigger="confirmed" hx-delete="/progressao/{{ .Id }}" hx-target="#progression-{{ .Id }}" hx-swap="delete" title="Excluir" class="icon-btn" data-delete-text="Deseja excluir a progressão {{ .Name }} ?">
                 <iconify-icon icon="mdi:trash-can" class="text-lg"></iconify-icon>
             </button>
             {{ end }}

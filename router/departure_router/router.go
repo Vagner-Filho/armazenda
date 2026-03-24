@@ -6,7 +6,6 @@ import (
 	"armazenda/service/user_service"
 	"armazenda/view"
 	departure_view "armazenda/view/departure"
-	"fmt"
 	"net/http"
 	"strconv"
 

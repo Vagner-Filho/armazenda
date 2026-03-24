@@ -29,11 +29,7 @@
         <iconify-icon icon="mdi:pencil" class="text-xl"></iconify-icon>
       </button>
       <button type="button" hx-trigger="confirmed" hx-delete="/entry/draft/{{ .Id }}" hx-target="#entry-draft-{{ .Id }}"
-        hx-swap="delete" title="Excluir Rascunho" class="icon-btn" onClick="Swal.fire({title: 'Excluir', text:'Deseja excluir o rascunho {{ .Name }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
-                    if (result.isConfirmed) {
-                        htmx.trigger(this, 'confirmed');
-                    }
-                })">
+        hx-swap="delete" title="Excluir Rascunho" class="icon-btn" data-delete-text="Deseja excluir o rascunho {{ .Name }} ?">
         <iconify-icon icon="mdi:trash-can" class="text-xl"></iconify-icon>
       </button>
     </div>

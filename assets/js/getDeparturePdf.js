@@ -64,3 +64,16 @@ function getDeparturePdf(element) {
 }
 
 window.getDeparturePdf = getDeparturePdf;
+
+function attachDeparturePdfListeners() {
+	document.querySelectorAll('button[data-pdf="departure"]').forEach(button => {
+		if (button.dataset.pdfInitialized) return;
+		button.dataset.pdfInitialized = 'true';
+		button.addEventListener('click', () => {
+			getDeparturePdf(button);
+		});
+	});
+}
+
+document.addEventListener('DOMContentLoaded', attachDeparturePdfListeners);
+document.addEventListener('htmx:afterSwap', attachDeparturePdfListeners);

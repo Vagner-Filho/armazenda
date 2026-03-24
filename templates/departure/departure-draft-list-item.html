@@ -13,11 +13,7 @@
       <button type="button" hx-get="/departure/draft/form/{{ .Id }}" hx-target="body" hx-swap="beforeend" title="Editar Rascunho" class="icon-btn">
         <iconify-icon icon="mdi:pencil" class="text-xl"></iconify-icon>
       </button>
-      <button type="button" hx-trigger="confirmed" hx-delete="/departure/draft/{{ .Id }}" hx-target="#departure-draft-{{ .Id }}" hx-swap="delete" title="Excluir Rascunho" class="icon-btn" onClick="Swal.fire({title: 'Excluir', text:'Deseja excluir o rascunho {{ .Name }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
-                    if (result.isConfirmed) {
-                        htmx.trigger(this, 'confirmed');
-                    }
-                })">
+      <button type="button" hx-trigger="confirmed" hx-delete="/departure/draft/{{ .Id }}" hx-target="#departure-draft-{{ .Id }}" hx-swap="delete" title="Excluir Rascunho" class="icon-btn" data-delete-text="Deseja excluir o rascunho {{ .Name }} ?">
         <iconify-icon icon="mdi:trash-can" class="text-xl"></iconify-icon>
       </button>
     </div>

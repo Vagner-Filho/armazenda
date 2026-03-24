@@ -86,7 +86,7 @@ async function getHumidityDiscount(humidity, gross, tare, h_discount) {
 	if (humidityInput instanceof HTMLInputElement) {
 		const label = humidityInput.previousElementSibling;
 		if (label instanceof HTMLElement) {
-			label.textContent = "Peso descontado: " + ((rawNetWeight * discount) / 100).toFixed(2);
+			label.textContent = "Peso descontado: " + ((rawNetWeight * discount) / 100).toFixed(3);
 		}
 	}
 
@@ -154,7 +154,7 @@ function getDamageDiscount(damage, gross, tare) {
 	if (damageInput instanceof HTMLInputElement) {
 		const label = damageInput.previousElementSibling;
 		if (label instanceof HTMLElement) {
-			label.textContent = "Peso descontado: " + ((rawNetWeight * exceedingDamage) / 100).toFixed(2);
+			label.textContent = "Peso descontado: " + ((rawNetWeight * exceedingDamage) / 100).toFixed(3);
 		}
 	}
 
@@ -188,7 +188,7 @@ function getImpurityDiscount(impurity, gross, tare) {
 	if (impurityInput instanceof HTMLInputElement) {
 		const label = impurityInput.previousElementSibling;
 		if (label instanceof HTMLElement) {
-			label.textContent = "Peso descontado: " + ((rawNetWeight * exceedingImpurity) / 100).toFixed(2);
+			label.textContent = "Peso descontado: " + ((rawNetWeight * exceedingImpurity) / 100).toFixed(3);
 		}
 	}
 

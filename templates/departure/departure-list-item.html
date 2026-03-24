@@ -8,17 +8,13 @@
   <td id="departureDate" class="py-3 px-4 text-left" data-label="Data de Saída" data-raw="{{ .DepartureDate }}">{{ .DepartureDate }}</td>
   <td class="py-3 px-4 text-left" data-label="Ações">
     <div class="flex items-center justify-end lg:justify-start gap-2 *:size-5">
-      <button type="button" id="{{ .Id }}" onclick="getDeparturePdf(this)" title="PDF de Saída" class="icon-btn">
+      <button type="button" id="{{ .Id }}" data-pdf="departure" title="PDF de Saída" class="icon-btn">
         <iconify-icon icon="mdi:file-pdf-box" class="text-xl"></iconify-icon>
       </button>
       <button type="button" hx-get="/departure/form/{{ .Id }}" hx-target="body" hx-swap="beforeend" title="Editar Saída" class="icon-btn">
         <iconify-icon icon="mdi:pencil" class="text-xl"></iconify-icon>
       </button>
-      <button type="button" hx-trigger="confirmed" hx-delete="/departure/{{ .Id }}" hx-target="#departure-{{ .Id }}" title="Excluir Saída" hx-swap="delete" class="icon-btn" onClick="Swal.fire({title: 'Excluir', text: 'Deseja excluir o romaneio de saída {{ .Id }} ?', showCancelButton: true, cancelButtonText: 'Cancelar', cancelButtonColor: '#ff7200', reverseButtons: true, confirmButtonText: 'Excluir', confirmButtonColor: '#22c55e'}).then((result)=>{
-                    if (result.isConfirmed) {
-                        htmx.trigger(this, 'confirmed');
-                    }
-                })">
+      <button type="button" hx-trigger="confirmed" hx-delete="/departure/{{ .Id }}" hx-target="#departure-{{ .Id }}" title="Excluir Saída" hx-swap="delete" class="icon-btn" data-delete-text="Deseja excluir o romaneio de saída {{ .Id }} ?">
         <iconify-icon icon="mdi:trash-can" class="text-xl"></iconify-icon>
       </button>
     </div>

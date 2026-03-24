@@ -64,3 +64,16 @@ function getEntryPdf(element) {
 }
 
 window.getEntryPdf = getEntryPdf;
+
+function attachEntryPdfListeners() {
+	document.querySelectorAll('button[data-pdf="entry"]').forEach(button => {
+		if (button.dataset.pdfInitialized) return;
+		button.dataset.pdfInitialized = 'true';
+		button.addEventListener('click', () => {
+			getEntryPdf(button);
+		});
+	});
+}
+
+document.addEventListener('DOMContentLoaded', attachEntryPdfListeners);
+document.addEventListener('htmx:afterSwap', attachEntryPdfListeners);
