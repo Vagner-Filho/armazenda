@@ -66,6 +66,8 @@ func AddEntry(ge entity_public.Entry, em EntryModelInterface, pm PersonModelInte
 		discountModifier = discountModifierTmp
 	}
 
+	ge.HumidityDiscountModifier = &discountModifier
+
 	result := calculator.CalculateEntry(calculator.EntryCalculationInput{
 		GrossWeight:        ge.GrossWeight,
 		Tare:               ge.Tare,

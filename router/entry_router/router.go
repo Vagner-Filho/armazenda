@@ -132,7 +132,7 @@ func addEntry(c *gin.Context) {
 	cm := crop_model.GetCropModel()
 	em := entry_model.GetEntryModel()
 	entry, toast := entry_service.AddEntry(newEntry, em, pm, prod_m, cm)
-	c.Header("HX-Trigger", string(toast.ToJson()))
+	c.Header("HX-Trigger", toast.ToJsonStr())
 
 	if toast.Type == entity_public.WarningToast {
 		c.Status(http.StatusBadRequest)
@@ -307,7 +307,7 @@ func getEntryPdf(c *gin.Context) {
 	}
 	if entryPdf == nil {
 		notFoundToast := entity_public.GetInfoToast("Entrada não encontrada", "")
-		c.Header("HX-Trigger", string(notFoundToast.ToJson()))
+		c.Header("HX-Trigger", notFoundToast.ToJsonStr())
 		c.Status(http.StatusNoContent)
 		return
 	}
