@@ -123,7 +123,7 @@ func setSecurityHeaders(c *gin.Context) {
 	c.Set("csp_nonce", nonce)
 
 	c.Header("Content-Security-Policy",
-		"script-src 'nonce-"+nonce+"' 'strict-dynamic' https: 'nonce-"+nonce+"' 'wasm-unsafe-eval'; "+
+		"script-src 'nonce-"+nonce+"' 'strict-dynamic' https: 'nonce-"+nonce+"' 'wasm-unsafe-eval' 'unsafe-inline'; "+
 			"object-src 'none'; "+
 			"base-uri 'none'; "+
 			"frame-ancestors 'none'; ")
@@ -131,6 +131,8 @@ func setSecurityHeaders(c *gin.Context) {
 	c.Header("X-Frame-Options", "DENY")
 	c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
 	c.Header("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+	c.Header("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
+	c.Header("Cross-Origin-Opener-Policy", "same-origin")
 }
 
 func adminOnlyMiddleware() gin.HandlerFunc {
