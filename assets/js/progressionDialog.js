@@ -6,22 +6,26 @@ function progressionDialogSetup() {
 
     dialogEl.showModal()
 
+    const controller = new AbortController()
+    const signal = controller.signal
+
     function closeProgressionForm() {
+        controller.abort()
         dialogEl.close()
         dialogEl.remove()
         window.closeProgressionForm = undefined
     }
-    dialogEl.addEventListener('close', closeProgressionForm)
+    dialogEl.addEventListener('close', closeProgressionForm, { signal })
     window.closeProgressionForm = closeProgressionForm
     const cancelButton = dialogEl.querySelector('.cancel-btn');
     if (cancelButton) {
-        cancelButton.addEventListener('click', closeProgressionForm);
+        cancelButton.addEventListener('click', closeProgressionForm, { signal });
     }
 
     // Clean empty fields before HTMX submit
     dialogEl.addEventListener('htmx:configRequest', function (evt) {
         evt.detail.parameters = removeEmptyFields(evt.detail.parameters)
-    })
+    }, { signal })
 
     // Close dialog on successful create/update
     document.body.addEventListener('htmx:afterRequest', function handler(evt) {
@@ -36,7 +40,7 @@ function progressionDialogSetup() {
             }
             document.body.removeEventListener('htmx:afterRequest', handler)
         }
-    })
+    }, { signal })
 
     // Add tier row
     const addBtn = dialogEl.querySelector('#add-tier-btn')
@@ -62,8 +66,8 @@ function progressionDialogSetup() {
             container.appendChild(row)
             row.querySelector('.remove-tier-btn').addEventListener('click', function () {
                 removeTierRow(row, container)
-            })
-        })
+            }, { signal })
+        }, { signal })
     }
 
     // Setup remove buttons for existing rows
@@ -71,7 +75,7 @@ function progressionDialogSetup() {
         btn.addEventListener('click', function () {
             const row = btn.closest('.tier-row')
             removeTierRow(row, container)
-        })
+        }, { signal })
     })
 }
 

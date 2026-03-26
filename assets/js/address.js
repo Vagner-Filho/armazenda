@@ -4,6 +4,8 @@ export function setupCepListener(formId, cepFieldId, streetFieldId, neighborhood
 
     const cepInput = parentForm.querySelector('#' + cepFieldId);
     if (cepInput) {
+        if (cepInput.dataset.cepListenerInitialized) return;
+        cepInput.dataset.cepListenerInitialized = 'true';
         cepInput.addEventListener('input', () => {
             const cep = cepInput.value.replace(/\D/g, '');
             if (cep.length === 8) {

@@ -2,8 +2,10 @@
  * Handles the selection of a newly added option in a select element after an HTMX POST request.
  * Automatically selects the last option in the select element and optionally closes a dialog.
  * @param {Function} closeDialogCallback - Optional callback function to close a dialog after selection
+ * @param {AbortSignal} signal - Optional signal to remove the listener when aborted
  */
-function handleNewOption(closeDialogCallback) {
+function handleNewOption(closeDialogCallback, signal) {
+    const options = signal ? { signal } : undefined;
     document.addEventListener("htmx:afterSwap", (evt) => {
         if (evt.detail.requestConfig.verb === 'post' && evt.detail.xhr.status === 201 && evt.target instanceof HTMLSelectElement) {
             const target = evt.target
@@ -23,7 +25,7 @@ function handleNewOption(closeDialogCallback) {
                 closeDialogCallback()
             }
         }
-    })
+    }, options)
 
 }
 
