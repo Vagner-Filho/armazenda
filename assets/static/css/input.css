@@ -26,6 +26,7 @@
     background: linear-gradient(180deg, #0ea5e9 0%, #64b5dc 40%, #30b60b 100%);
     background-image: url(/public/assets/static/inside_bg_3.jpg);
     background-size: cover;
+    overflow: hidden;
 }
 
 @theme {
@@ -99,6 +100,10 @@
     h2 {
         font-family: "Noto Serif";
     }
+
+    option {
+        @apply bg-gray-900;
+    }
 }
 
 @utility label-peer {
@@ -143,13 +148,13 @@
     }
 
     .responsive-table tr {
-        border-bottom: 3px solid rgba(255,255,255,0.2);
+        border-bottom: 3px solid rgba(255, 255, 255, 0.2);
         display: block;
         margin-bottom: .625em;
     }
 
     .responsive-table td {
-        border-bottom: 1px solid rgba(255,255,255,0.1);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         display: block;
         font-size: .8em;
         text-align: right;
