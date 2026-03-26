@@ -129,11 +129,7 @@ func putDeparture(c *gin.Context) {
 	updatedDeparture, toast := departure_service.PutDeparture(df)
 	c.Header("HX-Trigger", string(toast.ToJson()))
 
-	nonce, _ := c.Get("csp_nonce")
-	c.HTML(http.StatusOK, "departure-list-item", departure_view.DepartureListItemView{
-		Departure:        updatedDeparture,
-		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
-	})
+	c.HTML(http.StatusOK, "departure-list-item", updatedDeparture)
 }
 
 func deleteDeparture(c *gin.Context) {

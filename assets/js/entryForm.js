@@ -96,9 +96,15 @@ export function setupEntryForm(payload) {
                 closeEntryFormDialog()
             }
         });
+
+        const putEntryPattern = new RegExp(/entry\/[0-9]+$/gm);
         document.body.addEventListener('htmx:afterSwap', function(evt) {
-            if (evt.detail.successful && evt.detail.requestConfig.path === '/entry' && (evt.detail.requestConfig.verb === 'post' || evt.detail.requestConfig.verb === 'put')) {
-                window.formatEntryListItem('#' + evt.detail.elt.firstElementChild.id);
+            if (evt.detail.successful && (evt.detail.requestConfig.path === '/entry' || putEntryPattern.test(evt.detail.requestConfig.path))) {
+                if (evt.detail.requestConfig.verb === 'post') {
+                    window.formatEntryListItem('#' + evt.detail.elt.firstElementChild.id);
+                } else if (evt.detail.requestConfig.verb === 'put') {
+                    window.formatEntryListItem('#' + evt.detail.elt.id);
+                }
             }
         });
     }

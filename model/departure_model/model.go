@@ -177,7 +177,7 @@ func (dm *departureModel) GetDisplayDepartures(farm uint32, page int) ([]entity_
 
 func (dm *departureModel) GetDeparture(id uint32) (entity_public.Departure, *model_error.ModelError) {
 	row, queryErr := dm.pool.Query(context.Background(), `
-		SELECT d.*, dr.person_id, da.humidity, da.damage, da.impurity, dor.person_id FROM departure d
+		SELECT d.*, dr.person_id, da.humidity, da.damage, da.impurity, NULL, dor.person_id FROM departure d
 		LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
 		LEFT JOIN departure_analysis da ON da.departure_id = d.id
 		LEFT JOIN departure_origin dor ON dor.departure_id = d.id

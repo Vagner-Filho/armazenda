@@ -13,11 +13,11 @@ type Departure struct {
 	Vehicle       uint16    `form:"vehiclePlate" binding:"required" json:"vehiclePlate"`
 	Crop          uint8     `form:"crop" binding:"required" json:"crop"`
 	CargoWeight
-	Farm      uint32  `form:"farm" binding:"gte=0" json:"farm"`
-	Recipient *uint32 `form:"recipient" json:"recipient"`
-	Analysis
-	Origin     *uint32   `form:"origin,omitempty" json:"origin,omitempty"`
+	Farm       uint32    `form:"farm" binding:"gte=0" json:"farm"`
 	ModifiedAt time.Time `json:"modifiedAt"`
+	Recipient  *uint32   `form:"recipient" json:"recipient"`
+	Analysis
+	Origin *uint32 `form:"origin,omitempty" json:"origin,omitempty"`
 }
 
 func (d Departure) ToDTO() DepartureDTO {
