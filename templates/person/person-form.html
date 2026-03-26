@@ -197,49 +197,53 @@
     if (dialogEl) {
       dialogEl.showModal()
 
+      const controller = new AbortController()
+      const signal = controller.signal
+
       function closePersonForm() {
+        controller.abort()
         dialogEl.close()
         dialogEl.remove()
         window.closePersonForm = undefined
       }
-      dialogEl.addEventListener('close', closePersonForm)
+      dialogEl.addEventListener('close', closePersonForm, { signal })
       window.closePersonForm = closePersonForm
       const cancelButtons = dialogEl.querySelectorAll('.cancel-btn');
       cancelButtons.forEach(btn => {
-          btn.addEventListener('click', closePersonForm);
+          btn.addEventListener('click', closePersonForm, { signal });
       });
 
       document.body.addEventListener('htmx:configRequest', function (evt) {
         evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
-      });
+      }, { signal });
+
+      {{ if and (eq .Legal nil) (eq .Natural nil) }}
+        const pessoaJuridicaBtn = document.querySelector('button#pessoa-juridica-btn')
+        const pessoaFisicaBtn = document.querySelector('button#pessoa-fisica-btn')
+        const pessoaJuridicaForm = document.querySelector('form#pessoa-juridica-form')
+        const pessoaFisicaForm = document.querySelector('form#pessoa-fisica-form')
+        function toggleForm() {
+            pessoaFisicaForm.classList.toggle('hidden')
+            pessoaJuridicaForm.classList.toggle('hidden')
+
+            pessoaJuridicaBtn.classList.toggle('bg-blue-500/70')
+            pessoaJuridicaBtn.classList.toggle('text-white')
+            pessoaJuridicaBtn.classList.toggle('shadow-sm')
+            pessoaJuridicaBtn.classList.toggle('text-white/70')
+            pessoaJuridicaBtn.classList.toggle('hover:bg-sky-50/10')
+
+            pessoaFisicaBtn.classList.toggle('bg-blue-500/70')
+            pessoaFisicaBtn.classList.toggle('text-white')
+            pessoaFisicaBtn.classList.toggle('shadow-sm')
+            pessoaFisicaBtn.classList.toggle('text-white/70')
+            pessoaFisicaBtn.classList.toggle('hover:bg-sky-50/10')
+          }
+
+        pessoaJuridicaBtn.addEventListener('click', toggleForm, { signal });
+        pessoaFisicaBtn.addEventListener('click', toggleForm, { signal });
+        window.toggleForm = toggleForm
+      {{ end }}
     }
-
-    {{ if and (eq .Legal nil) (eq .Natural nil) }}
-      const pessoaJuridicaBtn = document.querySelector('button#pessoa-juridica-btn')
-      const pessoaFisicaBtn = document.querySelector('button#pessoa-fisica-btn')
-      const pessoaJuridicaForm = document.querySelector('form#pessoa-juridica-form')
-      const pessoaFisicaForm = document.querySelector('form#pessoa-fisica-form')
-      function toggleForm() {
-          pessoaFisicaForm.classList.toggle('hidden')
-          pessoaJuridicaForm.classList.toggle('hidden')
-
-          pessoaJuridicaBtn.classList.toggle('bg-blue-500/70')
-          pessoaJuridicaBtn.classList.toggle('text-white')
-          pessoaJuridicaBtn.classList.toggle('shadow-sm')
-          pessoaJuridicaBtn.classList.toggle('text-white/70')
-          pessoaJuridicaBtn.classList.toggle('hover:bg-sky-50/10')
-
-          pessoaFisicaBtn.classList.toggle('bg-blue-500/70')
-          pessoaFisicaBtn.classList.toggle('text-white')
-          pessoaFisicaBtn.classList.toggle('shadow-sm')
-          pessoaFisicaBtn.classList.toggle('text-white/70')
-          pessoaFisicaBtn.classList.toggle('hover:bg-sky-50/10')
-        }
-
-      pessoaJuridicaBtn.addEventListener('click', toggleForm);
-      pessoaFisicaBtn.addEventListener('click', toggleForm);
-      window.toggleForm = toggleForm
-    {{ end }}
   </script>
 </dialog>
 {{ end }}

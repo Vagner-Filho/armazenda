@@ -61,23 +61,29 @@
 
     <script nonce="{{ .CSPNonce }}" type="module">
         import {removeEmptyFields} from "/public/assets/js/form.js";
-        document.body.addEventListener('htmx:configRequest', function (evt) {
-            evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
-        });
         const dialogEl = document.querySelector("#addDepartureDraftDialog")
         if (dialogEl) {
             dialogEl.showModal()
 
+            const controller = new AbortController()
+            const signal = controller.signal
+
             function closeDepartureDraftFormDialog() {
+                controller.abort()
                 dialogEl.close()
                 dialogEl.remove()
+                window.closeDepartureDraftFormDialog = undefined
             }
-            dialogEl.addEventListener('close', closeDepartureDraftFormDialog)
+            dialogEl.addEventListener('close', closeDepartureDraftFormDialog, { signal })
             window.closeDepartureDraftFormDialog = closeDepartureDraftFormDialog
             const cancelButton = dialogEl.querySelector('.cancel-btn');
             if (cancelButton) {
-                cancelButton.addEventListener('click', closeDepartureDraftFormDialog);
+                cancelButton.addEventListener('click', closeDepartureDraftFormDialog, { signal });
             }
+
+            document.body.addEventListener('htmx:configRequest', function (evt) {
+                evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
+            }, { signal });
         }
     </script>
     <style>

@@ -65,19 +65,25 @@
         const dialogEl = document.querySelector("#addEntryDraftDialog")
         if (dialogEl) {
             dialogEl.showModal()
+
+            const controller = new AbortController()
+            const signal = controller.signal
+
             function closeEntryFormDialog() {
+                controller.abort()
                 dialogEl.close()
                 dialogEl.remove()
+                window.closeEntryFormDialog = undefined
             }
-            dialogEl.addEventListener('close', closeEntryFormDialog)
+            dialogEl.addEventListener('close', closeEntryFormDialog, { signal })
             window.closeEntryFormDialog = closeEntryFormDialog
             const cancelButton = dialogEl.querySelector('.cancel-btn');
             if (cancelButton) {
-                cancelButton.addEventListener('click', closeEntryFormDialog);
+                cancelButton.addEventListener('click', closeEntryFormDialog, { signal });
             }
             document.body.addEventListener('htmx:configRequest', function (evt) {
                 evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
-            });
+            }, { signal });
         }
     </script>
     <style>

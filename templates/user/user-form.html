@@ -56,29 +56,35 @@
     const dialog = document.querySelector("dialog#new-user-dialog");
     if (dialog) {
       dialog.showModal();
+
+      const controller = new AbortController()
+      const signal = controller.signal
+
       window.closeUserForm = function () {
-        dialog.close();
-        dialog.remove();
-        window.closeUserForm = undefined;
+        controller.abort()
+        dialog.close()
+        dialog.remove()
+        window.closeUserForm = undefined
       }
-      dialog.addEventListener('close', closeUserForm);
+      dialog.addEventListener('close', window.closeUserForm, { signal })
 
       const cancelBtn = dialog.querySelector(".cancel-new-user");
       if (cancelBtn) {
-        cancelBtn.addEventListener('click', closeUserForm);
+        cancelBtn.addEventListener('click', window.closeUserForm, { signal });
       }
+
+      document.body.addEventListener('htmx:afterSwap', function(evt) {
+          if (evt.detail.successful && 
+              evt.detail.requestConfig.path === '/user' && 
+              evt.detail.requestConfig.verb === 'post' &&
+              evt.detail.target.id === 'user-form-content') {
+              const button = evt.detail.target.querySelector('button.add-btn');
+              if (button) {
+                  button.addEventListener('click', window.closeUserForm, { signal });
+              }
+          }
+      }, { signal });
     }
-    document.body.addEventListener('htmx:afterSwap', function(evt) {
-        if (evt.detail.successful && 
-            evt.detail.requestConfig.path === '/user' && 
-            evt.detail.requestConfig.verb === 'post' &&
-            evt.detail.target.id === 'user-form-content') {
-            const button = evt.detail.target.querySelector('button.add-btn');
-            if (button) {
-                button.addEventListener('click', window.closeUserForm);
-            }
-        }
-    });
   </script>
   <style>
     .user-dialog {
