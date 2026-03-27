@@ -78,7 +78,7 @@
               evt.detail.requestConfig.path === '/user' && 
               evt.detail.requestConfig.verb === 'post' &&
               evt.detail.target.id === 'user-form-content') {
-              const button = evt.detail.target.querySelector('button.add-btn');
+              const button = evt.detail.target.querySelector('button.success-button');
               if (button) {
                   button.addEventListener('click', window.closeUserForm, { signal });
               }
