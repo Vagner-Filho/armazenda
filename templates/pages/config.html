@@ -40,9 +40,10 @@
             <button class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 text-white/70 hover:bg-sky-50/10 tab-btn" data-tab="users">
                 <iconify-icon icon="mdi:account-group"></iconify-icon>
                 <span class="font-semibold">Usuários</span>
+                <span id="pending-users-badge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-bold bg-red-500/60 text-red-300 border border-red-400/60 !hidden"></span>
             </button>
         </div>
-        
+
         <!-- Tab Content -->
         <div id="tab-content">
             <!-- Farm Config Tab (default) -->
@@ -51,7 +52,7 @@
                     {{ template "config-form" . }}
                 </div>
             </div>
-            
+
             <!-- Humidity Progression Tab -->
             <div id="tab-humidity" class="tab-panel hidden">
                 <div class="glass-panel rounded-xl shadow-center p-4 mb-8">
@@ -69,7 +70,7 @@
 
             <!-- Users Tab -->
             <div id="tab-users" class="tab-panel hidden">
-                <div hx-get="/user/pending" hx-trigger="load" class="mb-8"></div>
+                <div id="pending-users-container" hx-get="/user/pending" hx-trigger="load" class="mb-8"></div>
                 <div hx-get="/users" hx-trigger="load"></div>
             </div>
         </div>
@@ -107,6 +108,33 @@
                 document.getElementById(`tab-${tabId}`).classList.remove('hidden');
             });
         });
+
+        // Update pending users badge when HTMX loads the fragment
+        const pendingContainer = document.getElementById('pending-users-container');
+        if (pendingContainer) {
+            pendingContainer.addEventListener('htmx:afterSwap', function(evt) {
+                const countEl = evt.detail.target.querySelector('[data-pending-count]');
+                const count = countEl ? (parseInt(countEl.dataset.pendingCount) || 0) : 0;
+                const badge = document.getElementById('pending-users-badge');
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.classList.remove('!hidden');
+
+                    document.body.addEventListener('htmx:afterRequest', function updatePendingUserBadge(evt) {
+                        const pendingUserPattern = new RegExp(/\/user\/(approve|decline)/gm);
+                        if (evt.detail.successful && evt.detail.requestConfig.path && evt.detail.requestConfig.verb === 'post') {
+                            badge.textContent = Number(badge.textContent) - 1;
+                            if (badge.textContent === '0') {
+                                badge.classList.add('!hidden');
+                            }
+                        }
+                    })
+                } else {
+                    badge.classList.add('!hidden');
+                }
+            });
+
+        }
     </script>
 </body>
 </html>
