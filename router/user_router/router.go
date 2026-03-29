@@ -21,7 +21,7 @@ func UserRoutes(router *gin.Engine) {
 			return
 		}
 
-		credentials, toast := user_service.Login(signInUser.Cpf, signInUser.Passwd)
+		credentials, toast := user_service.Login(signInUser.Cpf, signInUser.Passwd, c.ClientIP(), c.Request.UserAgent())
 
 		if toast != nil {
 			c.Header("HX-Trigger", string(toast.ToJson()))
@@ -34,6 +34,28 @@ func UserRoutes(router *gin.Engine) {
 			c.Header("HX-Redirect", "/romaneio")
 			c.Status(http.StatusOK)
 		}
+	})
+
+	router.POST("/logout", func(c *gin.Context) {
+		sessionCookie, cookieErr := c.Request.Cookie("session_id")
+		if cookieErr != nil {
+			c.Status(http.StatusOK)
+			return
+		}
+
+		// Extract session_id from JWT
+		claims := user_service.GetClaimsFromToken(sessionCookie.Value)
+		if claims != nil && claims.SessionId != "" {
+			// Delete session from database
+			user_service.DeleteSession(claims.SessionId)
+		}
+
+		// Clear cookies
+		c.SetCookie("session_id", "", -1, "", "", true, true)
+		c.SetCookie("username", "", -1, "", "", true, false)
+		c.SetCookie("farmId", "", -1, "", "", true, false)
+
+		c.Status(http.StatusOK)
 	})
 
 	router.GET("/auth/google/login", googleLogin)
@@ -304,7 +326,7 @@ func googleLogin(c *gin.Context) {
 
 func googleCallback(c *gin.Context) {
 	code := c.Query("code")
-	credentials, toast := user_service.LoginWithGoogle(code)
+	credentials, toast := user_service.LoginWithGoogle(code, c.ClientIP(), c.Request.UserAgent())
 
 	if toast != nil {
 		nonce, _ := c.Get("csp_nonce")
@@ -364,7 +386,7 @@ func microsoftLogin(c *gin.Context) {
 
 func microsoftCallback(c *gin.Context) {
 	code := c.Query("code")
-	credentials, toast := user_service.LoginWithMicrosoft(code)
+	credentials, toast := user_service.LoginWithMicrosoft(code, c.ClientIP(), c.Request.UserAgent())
 
 	if toast != nil {
 		fmt.Printf("%v", toast.Message)

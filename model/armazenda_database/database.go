@@ -1525,6 +1525,7 @@ func InitDb(c *pgx.Conn) {
 	initUser(c)
 	initUserApproval(c)
 	initInactiveUser(c)
+	initUserSession(c)
 	initPerson(c)
 	initProduct(c)
 	initCrop(c)
@@ -1597,6 +1598,30 @@ func initInactiveUser(c *pgx.Conn) {
 		);
 	`)
 	handleStmtExec(c, stmt, err, "init inactive user table")
+}
+
+func initUserSession(c *pgx.Conn) {
+	// Drop table if it exists (development environment)
+	_, err := c.Exec(context.Background(), "DROP TABLE IF EXISTS user_session")
+	if err != nil {
+		fmt.Printf("error dropping user_session table: %v\n", err.Error())
+		return
+	}
+
+	stmt, err := c.Prepare(context.Background(), "init user session stmt", `
+		CREATE TABLE user_session (
+			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			session_id TEXT NOT NULL UNIQUE,
+			user_id INTEGER NOT NULL,
+			created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			expires_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+			ip_address TEXT,
+			user_agent TEXT,
+			is_active BOOLEAN NOT NULL DEFAULT TRUE,
+			FOREIGN KEY (user_id) REFERENCES app_user(id)
+		);
+	`)
+	handleStmtExec(c, stmt, err, "init user session table")
 }
 
 var dbPool *pgxpool.Pool

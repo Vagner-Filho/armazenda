@@ -84,12 +84,16 @@ func authenticate(c *gin.Context) {
 		return
 	}
 
-	verifyErr := user_service.VerifyToken(sessionCookie.Value)
-	if verifyErr != nil {
+	// Validate token and session
+	valid, err := user_service.ValidateTokenAndSession(sessionCookie.Value)
+	if err != nil || !valid {
 		c.HTML(http.StatusUnauthorized, "401", gin.H{})
 		c.Abort()
 		return
 	}
+
+	// Also check user role from database for admin routes
+	// For now, we rely on session validation which includes user deactivation check
 	c.Next()
 }
 
@@ -143,13 +147,15 @@ func adminOnlyMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		verifyErr := user_service.VerifyToken(sessionCookie.Value)
-		if verifyErr != nil {
+		// Validate token and session
+		valid, err := user_service.ValidateTokenAndSession(sessionCookie.Value)
+		if err != nil || !valid {
 			c.HTML(http.StatusUnauthorized, "401", gin.H{})
 			c.Abort()
 			return
 		}
 
+		// Check admin status from JWT (if role changed, session should be deleted)
 		if !user_service.IsAdmin(sessionCookie.Value) {
 			c.String(http.StatusForbidden, "Acesso negado. Apenas administradores podem realizar esta ação.")
 			c.Abort()

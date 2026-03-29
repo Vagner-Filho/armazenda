@@ -167,6 +167,39 @@ func (e *ModelError) Error() string {
 - Use `pgx.CollectRows` for scanning multiple rows into structs
 - Mock database operations using `pgxmock` in tests
 
+### Authentication
+
+The system uses stateful JWT authentication with session validation:
+
+1. **Login Flow**:
+   - User submits credentials (CPF/password, Google OAuth, Microsoft OAuth)
+   - Server creates a session record in `user_session` table
+   - Server issues JWT token with `session_id` claim (20-hour expiration)
+   - JWT stored in `session_id` cookie (httpOnly, secure)
+
+2. **Request Validation**:
+   - Middleware validates JWT signature and expiration
+   - Middleware validates session exists in database and is active
+   - Middleware checks user is not deactivated (not in `inactive_user` table)
+
+3. **Session Management**:
+   - Sessions are deleted on logout, user deactivation, or role change
+   - Expired sessions can be cleaned up with `user_service.CleanupExpiredSessions()`
+   - Each login creates a new session (multiple devices allowed)
+
+4. **Key Functions**:
+   - `user_service.CreateSession()`: Creates new session
+   - `user_service.ValidateSession()`: Validates session exists and user is active
+   - `user_service.DeleteSession()`: Deletes specific session
+   - `user_service.DeleteUserSessions()`: Deletes all sessions for a user
+   - `user_service.ValidateTokenAndSession()`: Validates JWT and session together
+
+5. **Security Considerations**:
+   - Immediate session invalidation on logout
+   - Immediate permission revocation on role change
+   - Immediate access denial on user deactivation
+   - Audit trail with IP address and user agent tracking
+
 ### Project Structure
 
 ```

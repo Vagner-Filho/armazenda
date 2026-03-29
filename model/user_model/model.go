@@ -279,3 +279,7 @@ func (um *userModel) ExistsAndIsActive(cpf string) (bool, error) {
 
 	return exists, nil
 }
+
+func (um *userModel) GetPool() *pgxpool.Pool {
+	return um.pool
+}

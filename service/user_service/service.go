@@ -5,6 +5,8 @@ import (
 	"armazenda/model/farm_config_model"
 	"armazenda/model/user_model"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -66,7 +68,7 @@ type OAuthLoginResult struct {
 	Farm      uint32
 }
 
-func LoginWithGoogle(code string) (OAuthLoginResult, *entity_public.Toast) {
+func LoginWithGoogle(code, ipAddress, userAgent string) (OAuthLoginResult, *entity_public.Toast) {
 	token, err := googleOauthConfig.Exchange(context.Background(), code)
 	if err != nil {
 		toast := entity_public.GetErrorToast("Falha ao trocar código com Google", "")
@@ -107,7 +109,14 @@ func LoginWithGoogle(code string) (OAuthLoginResult, *entity_public.Toast) {
 		}, nil
 	}
 
-	jwtToken, tokenErr := createToken(user.Name, user.Email, user.Farm, user.Role, user.Id)
+	// Create session
+	sessionID, sessionErr := CreateSession(user.Id, ipAddress, userAgent)
+	if sessionErr != nil {
+		toast := entity_public.GetErrorToast("Desculpe, houve um erro interno :(", "")
+		return OAuthLoginResult{}, &toast
+	}
+
+	jwtToken, tokenErr := createToken(user.Name, user.Email, user.Farm, user.Role, user.Id, sessionID)
 	if tokenErr != nil {
 		toast := entity_public.GetErrorToast("Desculpe, houve um erro interno :(", "")
 		return OAuthLoginResult{}, &toast
@@ -120,7 +129,7 @@ func LoginWithGoogle(code string) (OAuthLoginResult, *entity_public.Toast) {
 	}, nil
 }
 
-func LoginWithMicrosoft(code string) (OAuthLoginResult, *entity_public.Toast) {
+func LoginWithMicrosoft(code, ipAddress, userAgent string) (OAuthLoginResult, *entity_public.Toast) {
 	token, err := microsoftOauthConfig.Exchange(context.Background(), code)
 	if err != nil {
 		fmt.Printf("%v", err.Error())
@@ -169,7 +178,14 @@ func LoginWithMicrosoft(code string) (OAuthLoginResult, *entity_public.Toast) {
 		}, nil
 	}
 
-	jwtToken, tokenErr := createToken(user.Name, user.Email, user.Farm, user.Role, user.Id)
+	// Create session
+	sessionID, sessionErr := CreateSession(user.Id, ipAddress, userAgent)
+	if sessionErr != nil {
+		toast := entity_public.GetErrorToast("Desculpe, houve um erro interno :(", "")
+		return OAuthLoginResult{}, &toast
+	}
+
+	jwtToken, tokenErr := createToken(user.Name, user.Email, user.Farm, user.Role, user.Id, sessionID)
 	if tokenErr != nil {
 		toast := entity_public.GetErrorToast("Desculpe, houve um erro interno :(", "")
 		return OAuthLoginResult{}, &toast
@@ -263,25 +279,27 @@ func GetClaimsFromToken(sessionId string) *ArmazendaUserClaims {
 }
 
 type ArmazendaUserClaims struct {
-	Username string
-	Email    string
-	Farm     uint32
-	Role     string
+	Username  string
+	Email     string
+	Farm      uint32
+	Role      string
+	Id        uint32
+	SessionId string
 	jwt.RegisteredClaims
-	Id uint32
 }
 
-func createToken(username string, email string, farm uint32, role string, id uint32) (string, error) {
+func createToken(username string, email string, farm uint32, role string, id uint32, sessionId string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		ArmazendaUserClaims{
-			Username: username,
-			Email:    email,
-			Farm:     farm,
-			Role:     role,
+			Username:  username,
+			Email:     email,
+			Farm:      farm,
+			Role:      role,
+			Id:        id,
+			SessionId: sessionId,
 			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 20)),
 			},
-			Id: id,
 		})
 
 	tokenString, err := token.SignedString(secretKey)
@@ -308,13 +326,166 @@ func VerifyToken(tokenString string) error {
 	return nil
 }
 
+func ValidateTokenAndSession(tokenString string) (bool, error) {
+	// First verify token signature and expiration
+	token, err := jwt.ParseWithClaims(tokenString, &ArmazendaUserClaims{}, func(token *jwt.Token) (any, error) {
+		return secretKey, nil
+	})
+
+	if err != nil {
+		return false, err
+	}
+
+	if !token.Valid {
+		return false, fmt.Errorf("invalid token")
+	}
+
+	// Extract session_id from claims
+	claims, ok := token.Claims.(*ArmazendaUserClaims)
+	if !ok {
+		return false, fmt.Errorf("invalid token claims")
+	}
+
+	// Validate session in database
+	return ValidateSession(claims.SessionId)
+}
+
+// Session management functions
+
+type Session struct {
+	ID        uint32
+	SessionID string
+	UserID    uint32
+	CreatedAt time.Time
+	ExpiresAt time.Time
+	IPAddress string
+	UserAgent string
+	IsActive  bool
+}
+
+func CreateSession(userID uint32, ipAddress, userAgent string) (string, error) {
+	um := user_model.GetUserModel()
+	pool := um.GetPool()
+
+	sessionID := generateSessionID()
+	expiresAt := time.Now().Add(time.Hour * 20) // Same as JWT expiration
+
+	_, err := pool.Exec(context.Background(),
+		`INSERT INTO user_session (session_id, user_id, expires_at, ip_address, user_agent) 
+		 VALUES ($1, $2, $3, $4, $5)`,
+		sessionID, userID, expiresAt, ipAddress, userAgent)
+
+	if err != nil {
+		return "", err
+	}
+
+	return sessionID, nil
+}
+
+func GetSession(sessionID string) (*Session, error) {
+	um := user_model.GetUserModel()
+	pool := um.GetPool()
+
+	var session Session
+	err := pool.QueryRow(context.Background(),
+		`SELECT id, session_id, user_id, created_at, expires_at, ip_address, user_agent, is_active 
+		 FROM user_session WHERE session_id = $1`,
+		sessionID).Scan(
+		&session.ID, &session.SessionID, &session.UserID, &session.CreatedAt,
+		&session.ExpiresAt, &session.IPAddress, &session.UserAgent, &session.IsActive)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &session, nil
+}
+
+func DeleteSession(sessionID string) error {
+	um := user_model.GetUserModel()
+	pool := um.GetPool()
+
+	_, err := pool.Exec(context.Background(),
+		`DELETE FROM user_session WHERE session_id = $1`,
+		sessionID)
+
+	return err
+}
+
+func DeleteUserSessions(userID uint32) error {
+	um := user_model.GetUserModel()
+	pool := um.GetPool()
+
+	_, err := pool.Exec(context.Background(),
+		`DELETE FROM user_session WHERE user_id = $1`,
+		userID)
+
+	return err
+}
+
+func ValidateSession(sessionID string) (bool, error) {
+	session, err := GetSession(sessionID)
+	if err != nil {
+		return false, nil
+	}
+
+	if !session.IsActive {
+		return false, nil
+	}
+
+	if time.Now().After(session.ExpiresAt) {
+		return false, nil
+	}
+
+	// Check if user is still active (not deactivated)
+	um := user_model.GetUserModel()
+	pool := um.GetPool()
+
+	var inactiveCount int
+	err = pool.QueryRow(context.Background(),
+		`SELECT COUNT(*) FROM inactive_user WHERE user_id = $1`,
+		session.UserID).Scan(&inactiveCount)
+
+	if err != nil {
+		return false, err
+	}
+
+	if inactiveCount > 0 {
+		// User is deactivated, delete their session
+		DeleteSession(sessionID)
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func generateSessionID() string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+func CleanupExpiredSessions() (int64, error) {
+	um := user_model.GetUserModel()
+	pool := um.GetPool()
+
+	result, err := pool.Exec(context.Background(),
+		`DELETE FROM user_session WHERE expires_at < NOW()`)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return result.RowsAffected(), nil
+}
+
 type credentials struct {
 	Token    string
 	Username string
 	Farm     uint32
 }
 
-func Login(cpf string, passwd string) (credentials, *entity_public.Toast) {
+func Login(cpf string, passwd string, ipAddress, userAgent string) (credentials, *entity_public.Toast) {
 	um := user_model.GetUserModel()
 	user, err := um.AuthUser(cpf, passwd)
 
@@ -323,7 +494,14 @@ func Login(cpf string, passwd string) (credentials, *entity_public.Toast) {
 		return credentials{}, &toast
 	}
 
-	token, tokenErr := createToken(user.Name, user.Email, user.Farm, user.Role, user.Id)
+	// Create session
+	sessionID, sessionErr := CreateSession(user.Id, ipAddress, userAgent)
+	if sessionErr != nil {
+		toast := entity_public.GetErrorToast("Desculpe, houve um erro interno :(", "")
+		return credentials{}, &toast
+	}
+
+	token, tokenErr := createToken(user.Name, user.Email, user.Farm, user.Role, user.Id, sessionID)
 	if tokenErr != nil {
 		toast := entity_public.GetErrorToast("Desculpe, houve um erro interno :(", "")
 		return credentials{}, &toast
@@ -386,6 +564,11 @@ func IsAdmin(sessionId string) bool {
 
 func MakeAdmin(userId uint32) error {
 	um := user_model.GetUserModel()
+	// Delete all user sessions before changing role
+	err := DeleteUserSessions(userId)
+	if err != nil {
+		return err
+	}
 	return um.MakeAdmin(userId)
 }
 
@@ -409,6 +592,12 @@ func RemoveAdmin(userId uint32, adminId uint32) (*entity_public.User, entity_pub
 		return nil, entity_public.GetErrorToast("Falha ao consultar admins", "")
 	}
 
+	// Delete all user sessions before changing role
+	err = DeleteUserSessions(userId)
+	if err != nil {
+		return nil, entity_public.GetErrorToast("Falha ao remover sessões do usuário", "")
+	}
+
 	usr, err := um.RemoveAdmin(userId)
 	if err != nil {
 		return nil, entity_public.GetErrorToast("Falha ao remover privilégios de administrador", "")
@@ -419,6 +608,11 @@ func RemoveAdmin(userId uint32, adminId uint32) (*entity_public.User, entity_pub
 
 func RemoveUser(userId uint32) error {
 	um := user_model.GetUserModel()
+	// Delete all user sessions before deactivating
+	err := DeleteUserSessions(userId)
+	if err != nil {
+		return err
+	}
 	return um.RemoveUser(userId)
 }
 
