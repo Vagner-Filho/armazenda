@@ -86,7 +86,6 @@ func authenticate(c *gin.Context) {
 
 	verifyErr := user_service.VerifyToken(sessionCookie.Value)
 	if verifyErr != nil {
-		fmt.Printf("\nverifyErr:\n %+v\n", verifyErr)
 		c.HTML(http.StatusUnauthorized, "401", gin.H{})
 		c.Abort()
 		return

@@ -5,7 +5,6 @@ import (
 	"armazenda/model/humidity_progression_model"
 	farm_config_service "armazenda/service/farm_config"
 	"armazenda/service/user_service"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -30,7 +29,6 @@ func UseFarmConfigRouter(router *gin.Engine) {
 		config, err := farm_config_service.GetFarmConfig(farm)
 		if err != nil || config == nil {
 			nonce, _ := c.Get("csp_nonce")
-			fmt.Printf("\n%v\n", nonce)
 			c.HTML(http.StatusOK, "config.html", gin.H{
 				"Farm":         &entity_public.Farm{Id: farm, Address: entity_public.Address{}},
 				"Progressions": progressions,
@@ -39,7 +37,6 @@ func UseFarmConfigRouter(router *gin.Engine) {
 			return
 		}
 		nonce, _ := c.Get("csp_nonce")
-		fmt.Printf("\n%v\n", nonce)
 		c.HTML(http.StatusOK, "config.html", gin.H{"Farm": config, "Progressions": progressions, "CSPNonce": nonce.(string)})
 	})
 
