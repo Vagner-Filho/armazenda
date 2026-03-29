@@ -1,22 +1,42 @@
 {{ block "progression-row" . }}
-<tr id="progression-{{ .Id }}" class="border-b border-white/5 hover:bg-white/5">
+<tr id="progression-{{ .Progression.Id }}" class="border-b border-white/5 hover:bg-white/5">
     <td class="px-3 py-2 text-white/90">
-        {{ .Name }}
-        {{ if .IsSystemDefault }}
+        {{ .Progression.Name }}
+        {{ if .Progression.IsSystemDefault }}
         <span class="text-xs text-emerald-400/70 ml-1">(Padrão)</span>
+        {{ end }}
+        {{ if and .CurrentFarmProgressionId (eq .Progression.Id (deref .CurrentFarmProgressionId)) }}
+        <span class="text-xs text-blue-400/70 ml-1">(Padrão da Fazenda)</span>
         {{ end }}
     </td>
     <td class="px-3 py-2 text-white/60">
-        {{ len .Tiers }} faixa{{ if ne (len .Tiers) 1 }}s{{ end }}
+        {{ len .Progression.Tiers }} faixa{{ if ne (len .Progression.Tiers) 1 }}s{{ end }}
     </td>
     <td class="px-3 py-2 text-right">
         <div class="flex items-center justify-end gap-1">
-            {{ if not .IsSystemDefault }}
-            <button type="button" hx-get="/progressao/form/{{ .Id }}" hx-target="body" hx-swap="beforeend" title="Editar" class="icon-btn">
+            {{ if not .Progression.IsSystemDefault }}
+            <button type="button" hx-get="/progressao/form/{{ .Progression.Id }}" hx-target="body" hx-swap="beforeend" title="Editar" class="icon-btn">
                 <iconify-icon icon="mdi:pencil" class="text-lg"></iconify-icon>
             </button>
-            <button type="button" hx-trigger="confirmed" hx-delete="/progressao/{{ .Id }}" hx-target="#progression-{{ .Id }}" hx-swap="delete" title="Excluir" class="icon-btn" data-delete-text="Deseja excluir a progressão {{ .Name }} ?">
+            <button type="button" hx-trigger="confirmed" hx-delete="/progressao/{{ .Progression.Id }}" hx-target="#progression-{{ .Progression.Id }}" hx-swap="delete" title="Excluir" class="icon-btn" data-delete-text="Deseja excluir a progressão {{ .Progression.Name }} ?">
                 <iconify-icon icon="mdi:trash-can" class="text-lg"></iconify-icon>
+            </button>
+            {{ end }}
+            {{ if and .CurrentFarmProgressionId (eq .Progression.Id (deref .CurrentFarmProgressionId)) }}
+            <button type="button"
+                    disabled
+                    title="Padrão da Fazenda"
+                    class="text-amber-500 cursor-default">
+                <iconify-icon icon="mdi:star" class="text-lg"></iconify-icon>
+            </button>
+            {{ else }}
+            <button type="button"
+                    hx-patch="/api/farm/humidity-progression/{{ .Progression.Id }}"
+                    hx-swap="outerHTML"
+                    hx-target="#progression-table"
+                    title="Definir como padrão da fazenda"
+                    class="icon-btn">
+                <iconify-icon icon="mdi:star-outline" class="text-lg"></iconify-icon>
             </button>
             {{ end }}
         </div>

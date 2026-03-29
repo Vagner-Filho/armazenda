@@ -104,3 +104,66 @@ func (fcm *farmConfigModel) GetFarmByInscricaoEstadual(inscricaoEstadual string)
 	}
 	return &result, nil
 }
+
+// SetFarmHumidityProgression updates the farm's default humidity progression
+func (fcm *farmConfigModel) SetFarmHumidityProgression(farmID uint32, progressionID *uint32) error {
+	ctx := context.Background()
+
+	// Validate progression exists and is accessible (farm-specific or system default)
+	if progressionID != nil {
+		var exists bool
+		err := fcm.pool.QueryRow(ctx, `
+			SELECT EXISTS (
+				SELECT 1 FROM humidity_progression 
+				WHERE id = $1 AND (farm_id = $2 OR is_system_default = TRUE) AND is_active = TRUE
+			)
+		`, *progressionID, farmID).Scan(&exists)
+		if err != nil {
+			return fmt.Errorf("failed to validate progression: %w", err)
+		}
+		if !exists {
+			return fmt.Errorf("progressão não encontrada ou não acessível")
+		}
+	}
+
+	// Check if farm_config exists
+	var configExists bool
+	err := fcm.pool.QueryRow(ctx, `
+		SELECT EXISTS (SELECT 1 FROM farm_config WHERE farm_id = $1)
+	`, farmID).Scan(&configExists)
+	if err != nil {
+		return fmt.Errorf("failed to check farm config: %w", err)
+	}
+
+	if configExists {
+		// Update existing farm_config
+		_, err = fcm.pool.Exec(ctx, `
+			UPDATE farm_config
+			SET humidity_progression_id = $1
+			WHERE farm_id = $2
+		`, progressionID, farmID)
+		if err != nil {
+			return fmt.Errorf("failed to update farm config: %w", err)
+		}
+	} else {
+		// Need to create farm_config with default values
+		// Get farm's inscricao_estadual for name, use default storage_name
+		var inscricaoEstadual string
+		err = fcm.pool.QueryRow(ctx, `
+			SELECT inscricao_estadual FROM farm WHERE id = $1
+		`, farmID).Scan(&inscricaoEstadual)
+		if err != nil {
+			return fmt.Errorf("failed to get farm data: %w", err)
+		}
+
+		_, err = fcm.pool.Exec(ctx, `
+			INSERT INTO farm_config (farm_id, name, storage_name, humidity_progression_id)
+			VALUES ($1, $2, $3, $4)
+		`, farmID, inscricaoEstadual, "Armazém", progressionID)
+		if err != nil {
+			return fmt.Errorf("failed to create farm config: %w", err)
+		}
+	}
+
+	return nil
+}

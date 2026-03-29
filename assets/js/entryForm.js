@@ -52,12 +52,12 @@ export function setupEntryForm(payload) {
         if (impurityInput) {
             impurityInput.addEventListener('input', applyDiscountsAsync, { signal })
         }
-        if (grossWeightInput) {
+        /*if (grossWeightInput) {
             grossWeightInput.addEventListener('input', applyDiscountsAsync, { signal })
         }
         if (tareInput) {
             tareInput.addEventListener('input', applyDiscountsAsync, { signal })
-        }
+        }*/
 
         let grossWeightValue = Number(grossWeightInput ? grossWeightInput.value : 0)
         let tareValue = Number(tareInput ? tareInput.value : 0)
@@ -140,8 +140,8 @@ export function setupEntryForm(payload) {
             const humidityProgressionId = selectedOption.getAttribute('data-humidity-progression-id');
             const entrySoyDiscount = selectedOption.getAttribute('data-entry-soy-discount');
             const entryCornDiscount = selectedOption.getAttribute('data-entry-corn-discount');
-            const personId = selectedOption.value;
-            const personName = selectedOption.textContent.trim();
+            //const personId = selectedOption.value;
+            //const personName = selectedOption.textContent.trim();
 
             sessionStorage.setItem('personConfig', JSON.stringify({
                 humidityProgressionId: humidityProgressionId,

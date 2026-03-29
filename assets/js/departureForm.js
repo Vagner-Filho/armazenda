@@ -1,4 +1,5 @@
 import { formatDateToInput } from "./date.js"
+import { formatWeight } from "./weight.js"
 import { removeEmptyFields } from "./form.js"
 
 export function setupDepartureForm(payload) {
@@ -40,11 +41,13 @@ export function setupDepartureForm(payload) {
         if (netWeightInput) {
             grossWeightInput.addEventListener('input', (e) => {
                 grossWeightValue = Number(e.target.value) ?? 0
-                netWeightInput.value = grossWeightValue - tareValue
+                netWeightInput.dataset.raw = grossWeightValue - tareValue;
+                netWeightInput.value = formatWeight(grossWeightValue - tareValue);
             }, { signal })
             tareInput.addEventListener('input', (e) => {
                 tareValue = Number(e.target.value) ?? 0
-                netWeightInput.value = grossWeightValue - tareValue
+                netWeightInput.dataset.raw = grossWeightValue - tareValue;
+                netWeightInput.value = formatWeight(grossWeightValue - tareValue);
             }, { signal })
         }
 

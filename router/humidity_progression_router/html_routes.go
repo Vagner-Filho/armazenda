@@ -7,6 +7,7 @@ import (
 
 	entity_public "armazenda/entity/public"
 	"armazenda/model/humidity_progression_model"
+	farm_config_service "armazenda/service/farm_config"
 	"armazenda/service/user_service"
 
 	"github.com/gin-gonic/gin"
@@ -31,7 +32,17 @@ func UseHumidityProgressionHtmlRoutes(router *gin.Engine) {
 			return
 		}
 
-		c.HTML(http.StatusOK, "progression-table", gin.H{"Progressions": progressions})
+		// Get current farm config to know which progression is default
+		config, configErr := farm_config_service.GetFarmConfig(uint32(farm))
+		var currentProgressionId *uint32
+		if configErr == nil && config != nil {
+			currentProgressionId = config.HumidityProgressionId
+		}
+
+		c.HTML(http.StatusOK, "progression-table", gin.H{
+			"Progressions":             progressions,
+			"CurrentFarmProgressionId": currentProgressionId,
+		})
 	})
 
 	// GET /progressao/form - Return empty create dialog

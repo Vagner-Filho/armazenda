@@ -1,9 +1,9 @@
 {{ block "vehicle-selector" $ }}
-<div class="flex flex-col w-full relative pr-[30px]">
-  <label for="vehicle-selector" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear text-xs lg:text-sm font-medium uppercase tracking-wider">
+<div class="flex flex-wrap w-full gap-2">
+  <label for="vehicle-selector" class="peer-focus:text-white px-2 w-full text-white/70 transition-all duration-300 ease-linear text-xs lg:text-sm font-medium uppercase tracking-wider">
     Veículo
   </label>
-  <select name="vehiclePlate" id="vehicle-selector" class="w-full bg-white/10 border-white/20 text-white peer" required>
+  <select name="vehiclePlate" id="vehicle-selector" class="bg-white/10 border-white/20 text-white peer grow" required>
     {{ range $.Vehicles }}
             {{ if eq .Id $.SelectedVehicle }}
     <option value="{{ .Id }}" selected>
@@ -18,7 +18,7 @@
     </option>
     {{ end }}
   </select>
-  <button class="icon-btn absolute right-0 bottom-2 text-[24px]" type="button" hx-get="/vehicle/form" hx-target="body" hx-swap="beforeend">
+  <button class="icon-btn text-[24px] flex items-center" type="button" hx-get="/vehicle/form" hx-target="body" hx-swap="beforeend">
     <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
   </button>
 </div>

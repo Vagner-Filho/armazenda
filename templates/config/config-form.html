@@ -28,33 +28,7 @@
                     Inscrição Estadual
                 </label>
             </div>
-            <div class="flex flex-col w-full">
-                <label for="humidity-progression" class="px-2 text-white/70 transition-all duration-300 ease-linear text-xs lg:text-sm font-medium uppercase tracking-wider">
-                    Progressão de Umidade
-                </label>
-                <div class="flex gap-2 items-center">
-                    <select name="humidityProgressionId" id="humidity-progression" class="w-full bg-white/10 border-white/20 text-white">
-                    {{ range $.Progressions }}
-                        {{ if $.Farm.HumidityProgressionId }}
-                            {{ if eq .Id (deref $.Farm.HumidityProgressionId) }}
-                                <option value="{{ .Id }}" selected>{{ .Name }}</option>
-                            {{ else }}
-                                <option value="{{ .Id }}">{{ .Name }}</option>
-                            {{ end }}
-                        {{ else }}
-                            {{ if .IsSystemDefault }}
-                                <option value="{{ .Id }}" selected>{{ .Name }}</option>
-                            {{ else }}
-                                <option value="{{ .Id }}">{{ .Name }}</option>
-                            {{ end }}
-                        {{ end }}
-                    {{ end }}
-                    </select>
-                    <button class="icon-btn text-[24px]" type="button" hx-get="/progressao/form" hx-target="body" hx-swap="beforeend">
-                        <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
-                    </button>
-                </div>
-            </div>
+            <!-- Humidity progression selection moved to Humidity tab -->
         </div>
     </fieldset>
     <fieldset class="glass-panel rounded-xl p-6">

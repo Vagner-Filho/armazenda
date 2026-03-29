@@ -1082,7 +1082,11 @@ func initFarmUpdateFunc(c *pgx.Conn) {
 				SELECT EXISTS (SELECT 1 FROM farm_config fc WHERE fc.farm_id = f_id) INTO config_exists;
 
 				IF config_exists THEN
-					UPDATE farm_config SET name = f_name, humidity_progression_id = f_humidity_progression_id, storage_name = f_storage_name WHERE farm_id = f_id;
+					IF f_humidity_progression_id IS NOT NULL THEN
+						UPDATE farm_config SET name = f_name, humidity_progression_id = f_humidity_progression_id, storage_name = f_storage_name WHERE farm_id = f_id;
+					ELSE
+						UPDATE farm_config SET name = f_name, storage_name = f_storage_name WHERE farm_id = f_id;
+					END IF;
 				ELSE
 					INSERT INTO farm_config (farm_id, name, humidity_progression_id, storage_name) VALUES (f_id, f_name, f_humidity_progression_id, f_storage_name);
 				END IF;

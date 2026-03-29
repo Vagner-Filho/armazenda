@@ -19,7 +19,7 @@
             </thead>
             <tbody id="progression-rows">
                 {{ range .Progressions }}
-                    {{ template "progression-row" . }}
+                    {{ template "progression-row" (dict "Progression" . "CurrentFarmProgressionId" $.CurrentFarmProgressionId) }}
                 {{ end }}
             </tbody>
         </table>

@@ -7,6 +7,7 @@ import (
 	"armazenda/service/user_service"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -59,5 +60,48 @@ func UseFarmConfigRouter(router *gin.Engine) {
 		}
 
 		c.HTML(http.StatusOK, "config-form", gin.H{"Farm": &form, "Progressions": getProgressions(farmID), "success": "Configuração salva com sucesso!"})
+	})
+
+	router.PATCH("/api/farm/humidity-progression/:id", func(c *gin.Context) {
+		sid, _ := c.Cookie("session_id")
+		farmID := user_service.GetFarmFromToken(sid)
+		if farmID == 0 {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+			return
+		}
+
+		// Parse progression ID from path
+		idStr := c.Param("id")
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid progression ID"})
+			return
+		}
+		progressionID := uint32(id)
+
+		if err := farm_config_service.SetFarmHumidityProgression(uint32(farmID), &progressionID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Return updated progression table HTML fragment
+		hpm := humidity_progression_model.GetHumidityProgressionModel()
+		progressions, modelErr := hpm.ListProgressions(uint32(farmID))
+		if modelErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": modelErr.Message})
+			return
+		}
+
+		// Get current farm config to know which progression is default
+		config, configErr := farm_config_service.GetFarmConfig(uint32(farmID))
+		if configErr != nil || config == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get farm config"})
+			return
+		}
+
+		c.HTML(http.StatusOK, "progression-table", gin.H{
+			"Progressions":             progressions,
+			"CurrentFarmProgressionId": config.HumidityProgressionId,
+		})
 	})
 }
