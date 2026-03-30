@@ -17,8 +17,12 @@ VALUES ('123456789')
 ON CONFLICT (inscricao_estadual) DO NOTHING;
 
 -- Create farm config for test farm
-INSERT INTO farm_config (farm_id, name, humidity_discount, storage_name)
-SELECT id, 'Test Farm', 1.15, 'Main Storage'
+INSERT INTO farm_config (farm_id, name, humidity_progression_id, storage_name)
+SELECT
+  id,
+  'Test Farm',
+  (SELECT id FROM humidity_progression WHERE is_system_default = TRUE),
+  'Main Storage'
 FROM farm WHERE inscricao_estadual = '123456789'
 ON CONFLICT (farm_id) DO NOTHING;
 

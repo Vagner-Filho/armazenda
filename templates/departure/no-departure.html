@@ -1,15 +1,15 @@
 {{ define "no-departure" }}
-<div class="glass-panel rounded-xl p-8 w-fit mx-auto text-center my-[10vh]" id="no-departure-helper">
-    <span class="block text-8xl h-[130px] w-[130px] mx-auto relative">
+<div class="w-fit mx-auto text-center my-[10vh]" id="no-departure-helper">
+    <span class="block text-8xl size-[130px] mx-auto relative">
         &#128230;
         <span class="absolute -top-1 -right-4 text-6xl text-red-500 drop-shadow-lg">
             &#128711;
         </span>
     </span>
-    <strong class="text-white/95 text-xl md:text-2xl block mb-4">
+    <strong class="text-orange-500 text-xl md:text-2xl">
         Nenhuma saída cadastrada :(
     </strong>
-    <button id="form" type="button" class="primary-glass-btn flex items-center gap-1 mx-auto text-xl cursor-pointer"
+    <button id="form" type="button" class="primary-glass-btn flex items-center gap-1 mx-auto text-xl cursor-pointer mt-2"
         hx-get="/departure/form" hx-target="body" hx-swap="beforeend">
         <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
         Começar agora

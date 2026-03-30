@@ -39,6 +39,17 @@ async function globalTeardown() {
   } catch (error) {
     console.error('⚠️ Failed to stop test database cleanly');
   }
+
+  console.log('\n🧹 Removing node_modules...');
+
+  try {
+    execSync(`rm -rf "${path.join(__dirname, 'node_modules')}"`, {
+      stdio: 'inherit',
+    });
+    console.log('✅ node_modules removed\n');
+  } catch (error) {
+    console.warn('⚠️ Failed to remove node_modules:', error.message);
+  }
 }
 
 module.exports = globalTeardown;
