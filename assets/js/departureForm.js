@@ -49,6 +49,8 @@ export function setupDepartureForm(payload) {
                 netWeightInput.dataset.raw = grossWeightValue - tareValue;
                 netWeightInput.value = formatWeight(grossWeightValue - tareValue);
             }, { signal })
+
+            netWeightInput.value = formatWeight(grossWeightValue - tareValue);
         }
 
         document.body.addEventListener('htmx:configRequest', function(evt) {

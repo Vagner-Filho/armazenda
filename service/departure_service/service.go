@@ -5,6 +5,8 @@ import (
 
 	entity_public "armazenda/entity/public"
 	"armazenda/model/departure_model"
+
+	"github.com/shopspring/decimal"
 )
 
 func GetDeparture(id uint32) (entity_public.Departure, *entity_public.Toast) {
@@ -37,19 +39,27 @@ func GetDisplayDepartures(farm uint32, page int) ([]entity_public.DisplayDepartu
 	return departure, total, nil
 }
 
-func AddDeparture(bd entity_public.Departure) (entity_public.DisplayDeparture, *entity_public.Toast) {
+func AddDeparture(d entity_public.Departure) (entity_public.DisplayDeparture, *entity_public.Toast) {
 	dModel := departure_model.GetDepartureModel()
 
-	departure, err := dModel.AddDeparture(bd)
-	if err != nil {
-		if err.IsServerErr == true {
-			toast := entity_public.GetErrorToast("Houve um erro interno ao adicionar a saída", "")
-			return entity_public.DisplayDeparture{}, &toast
-		}
-		toast := entity_public.GetWarningToast(err.Message, "")
+	var toast entity_public.Toast
+
+	d.NetWeight = d.GrossWeight.Sub(d.Tare)
+	if d.NetWeight.LessThan(decimal.Zero) {
+		toast = entity_public.GetWarningToast("Peso Líquido inválido", "confira peso bruto e tara")
 		return entity_public.DisplayDeparture{}, &toast
 	}
-	toast := entity_public.GetSuccessToast("Saída cadastrada", "")
+
+	departure, err := dModel.AddDeparture(d)
+	if err != nil {
+		if err.IsServerErr == true {
+			toast = entity_public.GetErrorToast("Houve um erro interno ao adicionar a saída", "")
+			return entity_public.DisplayDeparture{}, &toast
+		}
+		toast = entity_public.GetWarningToast(err.Message, "")
+		return entity_public.DisplayDeparture{}, &toast
+	}
+	toast = entity_public.GetSuccessToast("Saída cadastrada", "")
 	return departure, &toast
 }
 
