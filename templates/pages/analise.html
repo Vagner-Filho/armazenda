@@ -39,5 +39,21 @@
         </div>
       </div>
     </section>
+    <script nonce="{{ .CSPNonce }}" type="module">
+      import { setupFieldProdChart } from "/public/assets/js/chart.js";
+
+      document.body.addEventListener('htmx:afterSwap', function(evt) {
+        const container = evt.detail.elt;
+        if (container && container.id === "productive-field-container") {
+          const nominalNames = JSON.parse(container.dataset.nominalNames);
+          const nominalValues = JSON.parse(container.dataset.nominalValues);
+          const relativeNames = JSON.parse(container.dataset.relativeNames);
+          const relativeValues = JSON.parse(container.dataset.relativeValues);
+
+          setupFieldProdChart('fieldVolumeProdChart', 'Talhão Maior Volume', nominalNames, nominalValues);
+          setupFieldProdChart('fieldSizeRelativeProdChart', 'Talhão Mais Produtivo (Peso Líquido / hectare)', relativeNames, relativeValues);
+        }
+      });
+    </script>
   </body>
 </html>

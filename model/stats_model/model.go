@@ -44,15 +44,16 @@ func (sm *StatsModel) GetTopSupplier(farmId uint32) (entity_public.StatCard, *mo
 
 	stmt := `
 		SELECT
-			COALESCE(np.name, lp.companyname) as name,
+			COALESCE(np.name, lp.companyname, fc.name, 'Própria') as name,
 			SUM(e.netweight) as total_weight
 		FROM entry e
-		JOIN entry_origin eo ON e.id = eo.entry_id
-		JOIN person p ON eo.person_id = p.id
+		LEFT JOIN entry_origin eo ON e.id = eo.entry_id
+		LEFT JOIN person p ON eo.person_id = p.id
 		LEFT JOIN natural_person np ON p.id = np.personid
 		LEFT JOIN legal_person lp ON p.id = lp.personid
+		LEFT JOIN farm_config fc ON e.farm = fc.farm_id
 		WHERE e.farm = @farmId
-		GROUP BY COALESCE(np.name, lp.companyname)
+		GROUP BY COALESCE(np.name, lp.companyname, fc.name, 'Própria')
 		ORDER BY total_weight DESC
 		LIMIT 1;
 	`
@@ -84,15 +85,16 @@ func (sm *StatsModel) GetTopBuyer(farmId uint32) (entity_public.StatCard, *model
 
 	stmt := `
 		SELECT
-			COALESCE(np.name, lp.companyname) as name,
+			COALESCE(np.name, lp.companyname, fc.name, 'Própria') as name,
 			SUM(d.netweight) as total_weight
 		FROM departure d
-		JOIN departure_recipient dr ON d.id = dr.departure_id
-		JOIN person p ON dr.person_id = p.id
+		LEFT JOIN departure_recipient dr ON d.id = dr.departure_id
+		LEFT JOIN person p ON dr.person_id = p.id
 		LEFT JOIN natural_person np ON p.id = np.personid
 		LEFT JOIN legal_person lp ON p.id = lp.personid
+		LEFT JOIN farm_config fc ON fc.farm_id = d.farm
 		WHERE d.farm = @farmId
-		GROUP BY COALESCE(np.name, lp.companyname)
+		GROUP BY COALESCE(np.name, lp.companyname, fc.name, 'Própria')
 		ORDER BY total_weight DESC
 		LIMIT 1;
 	`
@@ -124,15 +126,16 @@ func (sm *StatsModel) GetMostFrequentSupplier(farmId uint32) (entity_public.Stat
 
 	stmt := `
 		SELECT
-			COALESCE(np.name, lp.companyname) as name,
+			COALESCE(np.name, lp.companyname, fc.name, 'Própria') as name,
 			COUNT(e.id) as delivery_count
 		FROM entry e
-		JOIN entry_origin eo ON e.id = eo.entry_id
-		JOIN person p ON eo.person_id = p.id
+		LEFT JOIN entry_origin eo ON e.id = eo.entry_id
+		LEFT JOIN person p ON eo.person_id = p.id
 		LEFT JOIN natural_person np ON p.id = np.personid
 		LEFT JOIN legal_person lp ON p.id = lp.personid
+		LEFT JOIN farm_config fc ON e.farm = fc.farm_id
 		WHERE e.farm = @farmId
-		GROUP BY COALESCE(np.name, lp.companyname)
+		GROUP BY COALESCE(np.name, lp.companyname, fc.name, 'Própria')
 		ORDER BY delivery_count DESC
 		LIMIT 1;
 	`
@@ -163,16 +166,17 @@ func (sm *StatsModel) GetBestQualitySupplier(farmId uint32) (entity_public.StatC
 
 	stmt := `
 		SELECT
-			COALESCE(np.name, lp.companyname) as name,
+			COALESCE(np.name, lp.companyname, fc.name, 'Própria') as name,
 			AVG(ea.humidity) as avg_humidity
 		FROM entry_analysis ea
 		JOIN entry e ON ea.entryid = e.id
-		JOIN entry_origin eo ON e.id = eo.entry_id
-		JOIN person p ON eo.person_id = p.id
+		LEFT JOIN entry_origin eo ON e.id = eo.entry_id
+		LEFT JOIN person p ON eo.person_id = p.id
 		LEFT JOIN natural_person np ON p.id = np.personid
 		LEFT JOIN legal_person lp ON p.id = lp.personid
+		LEFT JOIN farm_config fc ON e.farm = fc.farm_id
 		WHERE e.farm = @farmId AND ea.humidity IS NOT NULL
-		GROUP BY COALESCE(np.name, lp.companyname)
+		GROUP BY COALESCE(np.name, lp.companyname, fc.name, 'Própria')
 		ORDER BY avg_humidity ASC
 		LIMIT 1;
 	`
@@ -203,16 +207,17 @@ func (sm *StatsModel) GetWorstQualitySupplier(farmId uint32) (entity_public.Stat
 
 	stmt := `
 		SELECT
-			COALESCE(np.name, lp.companyname) as name,
+			COALESCE(np.name, lp.companyname, fc.name, 'Própria') as name,
 			(AVG(ea.humidity) + AVG(ea.impurity) + AVG(ea.damage)) as total_average
 		FROM entry_analysis ea
 		JOIN entry e ON ea.entryid = e.id
-		JOIN entry_origin eo ON e.id = eo.entry_id
-		JOIN person p ON eo.person_id = p.id
+		LEFT JOIN entry_origin eo ON e.id = eo.entry_id
+		LEFT JOIN person p ON eo.person_id = p.id
 		LEFT JOIN natural_person np ON p.id = np.personid
 		LEFT JOIN legal_person lp ON p.id = lp.personid
+		LEFT JOIN farm_config fc ON e.farm = fc.farm_id
 		WHERE e.farm = @farmId AND ea.humidity IS NOT NULL AND ea.impurity IS NOT NULL AND ea.damage IS NOT NULL
-		GROUP BY COALESCE(np.name, lp.companyname)
+		GROUP BY COALESCE(np.name, lp.companyname, fc.name, 'Própria')
 		ORDER BY total_average DESC
 		LIMIT 1;
 	`
