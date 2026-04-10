@@ -64,6 +64,9 @@ var availableReportFilters = map[string]func(ef entity_public.ReportFilter) stri
 		}
 		return fmt.Sprintf("r.personid = '%s'", ef.PersonId)
 	},
+	"Type": func(rf entity_public.ReportFilter) string {
+		return fmt.Sprintf("r.operation_type = %v", rf.Type)
+	},
 }
 
 func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.ReportDisplay, error) {
@@ -72,7 +75,7 @@ func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32) 
 	stmt := `
 	WITH people AS (SELECT np.name, np.personid FROM natural_person np UNION ALL SELECT lp.companyname AS name, lp.personid FROM legal_person lp)
 		SELECT r.id, r.operation_type, r.name, r.vehicle, r.netweight, r.date, r.pessoa
-		FROM (SELECT e.id, 0 AS operation_type, p.name, v.plate AS vehicle, e.netweight, e.arrivaldate AS date, coalesce(prs.name, 'Pŕopria') AS pessoa, prs.personid, p.id AS product_id
+		FROM (SELECT e.id, 1 AS operation_type, p.name, v.plate AS vehicle, e.netweight, e.arrivaldate AS date, coalesce(prs.name, 'Pŕopria') AS pessoa, prs.personid, p.id AS product_id
 			FROM entry e
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
@@ -83,7 +86,7 @@ func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32) 
 			JOIN vehicle v ON v.id = e.vehicle
 			WHERE e.farm = @userFarm AND ie.entry_id IS NULL
 			UNION ALL
-		SELECT d.id, 1 AS operation_type, p.name, v.plate AS vehicle, d.netweight , d.departuredate AS date, coalesce(prs.name, 'Pŕopria') AS pessoa, prs.personid, p.id AS product_id
+		SELECT d.id, 2 AS operation_type, p.name, v.plate AS vehicle, d.netweight , d.departuredate AS date, coalesce(prs.name, 'Pŕopria') AS pessoa, prs.personid, p.id AS product_id
 			FROM departure d
 			JOIN crop c ON d.crop = c.id
 			JOIN product p ON c.product = p.id
@@ -126,12 +129,12 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 	stmt := `
 	WITH people AS (SELECT np.name, np.personid FROM natural_person np UNION ALL SELECT lp.companyname AS name, lp.personid FROM legal_person lp)
 	SELECT r.id, r.operation_type, r.name, r.vehicle, r.netweight, r.date, r.pessoa, r.grossweight, r.tare, r.city, r.state, r.humidity, r.damage, r.impurity, r.humidity_discount FROM
-	(SELECT e.id, 0 AS operation_type,
+	(SELECT e.id, 1 AS operation_type,
 			p.name, v.plate AS vehicle, e.netweight, e.arrivaldate AS date,
 			COALESCE(prs.name, 'Pŕopria') AS pessoa, prs.personid, e.grossweight, e.tare, COALESCE(a.city, 'N/A') AS city,
 			COALESCE(a.state, 'N/A') AS state, COALESCE(ea.humidity, 0) AS humidity,
 			COALESCE(ea.damage, 0) AS damage, COALESCE(ea.impurity, 0) AS impurity, p.id AS product_id,
-			COALESCE(pc.humidity_discount, 1.15) AS humidity_discount
+			COALESCE(ea.humidity_discount_modifier, 1.15) AS humidity_discount
 			FROM entry e
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
@@ -145,12 +148,12 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 			JOIN vehicle v ON v.id = e.vehicle
 			WHERE e.farm = @userFarm AND ie.entry_id IS NULL
 			UNION ALL
-		SELECT d.id, 1 AS operation_type,
+		SELECT d.id, 2 AS operation_type,
 			p.name, v.plate AS vehicle, d.netweight, d.departuredate AS date,
 			COALESCE(prs.name, 'Pŕopria') AS pessoa, prs.personid, d.grossweight, d.tare, COALESCE(a.city, 'N/A') AS city,
 			COALESCE(a.state, 'N/A') AS state, 0 AS humidity,
 			0 AS damage, 0 AS impurity, p.id AS product_id,
-			COALESCE(pc.humidity_discount, 1.15) AS humidity_discount
+			1 AS humidity_discount
 			FROM departure d
 			JOIN crop c ON d.crop = c.id
 			JOIN product p ON c.product = p.id

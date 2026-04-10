@@ -23,6 +23,7 @@
   </tr>
   <script nonce="{{ .CSPNonce }}" type="module">
     import { formatWeight } from '/public/assets/js/weight.js';
+    import {formatDateToDisplay} from "/public/assets/js/date.js"
 
     const entryTotalEl = document.getElementById('entryTotal');
     if (entryTotalEl) {
@@ -38,6 +39,16 @@
     if (balanceEl) {
       balanceEl.textContent = formatWeight(balanceEl.textContent);
     }
+
+    async function formatReportListItem() {
+      for (const row of document.querySelector("#report-content").children) {
+        const dateCell = row.querySelector("#operationDate");
+        if (dateCell) {
+          dateCell.textContent = formatDateToDisplay(dateCell.textContent);
+        }
+      }
+    }
+    formatReportListItem();
   </script>
 </tbody>
 {{ end }}

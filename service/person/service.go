@@ -34,37 +34,47 @@ func GetPeopleByFarm(farm uint32) ([]entity_public.PersonOption, *entity_public.
 	return people, nil
 }
 
-func AddLegalPerson(bc entity_public.LegalPerson) (entity_public.PersonDisplay, *entity_public.Toast) {
+func AddLegalPerson(lp entity_public.LegalPerson) (entity_public.PersonDisplay, *entity_public.Toast) {
 	bmodel := person_model.GetPersonModel()
 
-	exists, err := bmodel.CnpjExistsInFarm(bc.Cnpj, bc.Person.Farm)
+	var t entity_public.Toast
+	if len(lp.Cnpj) < 14 {
+		t = entity_public.GetWarningToast("CNPJ inválido", "verifique tamanho e formato")
+		return entity_public.PersonDisplay{}, &t
+	}
+	exists, err := bmodel.CnpjExistsInFarm(lp.Cnpj, lp.Person.Farm)
 	if err != nil {
-		toast := entity_public.GetErrorToast(err.Message, "")
-		return entity_public.PersonDisplay{}, &toast
+		t = entity_public.GetErrorToast(err.Message, "")
+		return entity_public.PersonDisplay{}, &t
 	}
 	if exists {
-		toast := entity_public.GetWarningToast("CNPJ já cadastrado para esta fazenda.", "")
-		return entity_public.PersonDisplay{}, &toast
+		t = entity_public.GetWarningToast("CNPJ já cadastrado para esta fazenda.", "")
+		return entity_public.PersonDisplay{}, &t
 	}
 
-	person, err := bmodel.AddLegalPerson(bc)
+	person, err := bmodel.AddLegalPerson(lp)
 	if err != nil {
 		if err.IsServerErr == true {
-			toast := entity_public.GetErrorToast(err.Error(), "")
-			return entity_public.PersonDisplay{}, &toast
+			t = entity_public.GetErrorToast(err.Error(), "")
+			return entity_public.PersonDisplay{}, &t
 		}
-		toast := entity_public.GetWarningToast(err.Error(), "")
-		return entity_public.PersonDisplay{}, &toast
+		t = entity_public.GetWarningToast(err.Error(), "")
+		return entity_public.PersonDisplay{}, &t
 	}
 
-	toast := entity_public.GetSuccessToast("Pessoa cadastrada!", "")
-	return person, &toast
+	t = entity_public.GetSuccessToast("Pessoa cadastrada!", "")
+	return person, &t
 }
 
-func AddNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDisplay, *entity_public.Toast) {
+func AddNaturalPerson(np entity_public.NaturalPerson) (entity_public.PersonDisplay, *entity_public.Toast) {
 	bmodel := person_model.GetPersonModel()
 
-	exists, err := bmodel.CpfExistsInFarm(bp.Cpf, bp.Person.Farm)
+	var t entity_public.Toast
+	if len(np.Cpf) < 11 {
+		t = entity_public.GetWarningToast("CPF inválido", "verifique tamanho e formato")
+		return entity_public.PersonDisplay{}, &t
+	}
+	exists, err := bmodel.CpfExistsInFarm(np.Cpf, np.Person.Farm)
 	if err != nil {
 		toast := entity_public.GetErrorToast(err.Message, "")
 		return entity_public.PersonDisplay{}, &toast
@@ -74,7 +84,7 @@ func AddNaturalPerson(bp entity_public.NaturalPerson) (entity_public.PersonDispl
 		return entity_public.PersonDisplay{}, &toast
 	}
 
-	person, err := bmodel.AddNaturalPerson(bp)
+	person, err := bmodel.AddNaturalPerson(np)
 	if err != nil {
 		if err.IsServerErr == true {
 			toast := entity_public.GetErrorToast(err.Error(), "")

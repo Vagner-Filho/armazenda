@@ -16,7 +16,7 @@ const STATIC_ASSETS = [
   '/romaneio',
   '/pessoa',
   '/public/assets/static/css/output.css',
-  '/public/assets/js/htmx.min.js',
+  '/public/assets/static/htmx.min.js.gz',
   '/public/assets/js/sweetalert2.min.js',
   '/public/assets/js/toast.js',
   '/public/assets/js/form.js',

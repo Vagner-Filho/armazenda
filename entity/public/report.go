@@ -15,6 +15,7 @@ type ReportFilter struct {
 	StartDate    time.Time `form:"startDate" time_format:"2006-01-02T15:04"`
 	EndDate      time.Time `form:"endDate" time_format:"2006-01-02T15:04"`
 	PersonId     string    `form:"person"`
+	Type         uint8     `form:"type"`
 }
 
 type reportFilterCollection map[string]func(rf ReportFilter) string

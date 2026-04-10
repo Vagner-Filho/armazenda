@@ -38,7 +38,7 @@ func GetReportBalance(report []entity_public.ReportDisplay) (entry float64, depa
 	var entryAmount float64
 	var departureAmount float64
 	for _, r := range report {
-		if r.OperationType == 0 {
+		if r.OperationType == 1 {
 			entryAmount += r.NetWeight
 		} else {
 			departureAmount += r.NetWeight

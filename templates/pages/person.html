@@ -12,7 +12,7 @@
   <link rel="icon" type="image/x-icon" href="/public/assets/favicon.ico">
   <link rel="manifest" href="/public/assets/manifest.json">
   <title>Pessoa - Armazenda</title>
-  <script nonce="{{ .CSPNonce }}" src="/public/assets/js/htmx.min.js"></script>
+  <script nonce="{{ .CSPNonce }}" src="/public/assets/static/htmx.min.js.gz" defer></script>
   <script nonce="{{ .CSPNonce }}" src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
   <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/toast.js"></script>
 </head>
@@ -111,6 +111,30 @@
     </div>
   </section>
   <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/offlineManager.js"></script>
+  <script nonce="{{ .CSPNonce }}" type="module">
+    import {formatDocument} from "/public/assets/js/document.js"
+    async function formatPersonListItem(selector) {
+      if (!selector) {
+        for (const row of document.querySelector("#people-rows").children) {
+          const docEl = row.querySelector("td:nth-child(3)")
+          if (docEl) {
+           docEl.textContent = formatDocument(docEl.textContent)
+          }
+        }
+        return
+      }
+
+      const itemRow = document.querySelector(selector);
+      if (itemRow) {
+          const docEl = row.querySelector("td:nth-child(3)")
+          if (docEl) {
+           docEl.textContent = formatDocument(docEl.textContent)
+          }
+      }
+    }
+    formatPersonListItem();
+    window.formatPersonListItem = formatPersonListItem;
+  </script>
 </body>
 
 </html>

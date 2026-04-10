@@ -33,7 +33,7 @@ func addLegalPerson(c *gin.Context) {
 	}
 	nonce, _ := c.Get("csp_nonce")
 	c.HTML(http.StatusCreated, "person-list-item", person_view.PersonListItemView{
-		Person:           person,
+		PersonDisplay:    person,
 		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
 	})
 }
@@ -68,7 +68,7 @@ func addNaturalPerson(c *gin.Context) {
 	}
 	nonce, _ := c.Get("csp_nonce")
 	c.HTML(http.StatusOK, "person-list-item", person_view.PersonListItemView{
-		Person:           person,
+		PersonDisplay:    person,
 		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
 	})
 }
@@ -198,7 +198,7 @@ func updateNaturalPerson(c *gin.Context) {
 	}
 	nonce, _ := c.Get("csp_nonce")
 	c.HTML(http.StatusOK, "person-list-item", person_view.PersonListItemView{
-		Person:           person,
+		PersonDisplay:    person,
 		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
 	})
 }
@@ -242,7 +242,7 @@ func updateLegalPerson(c *gin.Context) {
 	}
 	nonce, _ := c.Get("csp_nonce")
 	c.HTML(http.StatusOK, "person-list-item", person_view.PersonListItemView{
-		Person:           person,
+		PersonDisplay:    person,
 		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
 	})
 }

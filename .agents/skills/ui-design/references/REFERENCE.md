@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 <link href="/public/assets/static/css/output.css" rel="stylesheet">
-<script src="/public/assets/js/htmx.min.js"></script>
+<script src="/public/assets/static/htmx.min.js.gz" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
 ```
 
@@ -454,7 +454,7 @@ lg:hidden          <!-- Show mobile, hide desktop -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
   <link href="/public/assets/static/css/output.css" rel="stylesheet">
   <title>New Page - Armazenda</title>
-  <script src="/public/assets/js/htmx.min.js"></script>
+  <script src="/public/assets/static/htmx.min.js.gz" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
 </head>
 <body class="main-bg">

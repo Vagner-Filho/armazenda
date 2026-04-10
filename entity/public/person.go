@@ -45,7 +45,7 @@ type Person struct {
 	Ie         string
 	Id         uint32    `json:"id"`
 	Farm       uint32    `form:"farm" binding:"gte=0" json:"farm"`
-	ModifiedAt time.Time `json:"modifiedAt"`
+	ModifiedAt time.Time `json:"modifiedAt" db:"-"`
 	PersonConfig
 }
 

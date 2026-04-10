@@ -57,5 +57,5 @@ func getProgressions(farm uint32) []entity_public.HumidityProgression {
 // PersonListItemView wraps PersonDisplay for template rendering with CSP nonce
 type PersonListItemView struct {
 	view.BaseTemplateData
-	Person entity_public.PersonDisplay
+	entity_public.PersonDisplay
 }

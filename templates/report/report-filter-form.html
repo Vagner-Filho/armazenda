@@ -1,9 +1,10 @@
 {{ block "report-filter-form" . }}
-<form class="flex flex-col sm:flex-row flex-wrap items-start gap-1 justify-start" id="report-filters-form" hx-post="/report/filter" hx-target="#report-content" hx-swap="outerHTML">
+<form class="flex flex-col sm:flex-row flex-wrap items-start gap-2 justify-start" id="report-filters-form" hx-post="/report/filter" hx-target="#report-content" hx-swap="outerHTML">
   {{ template "filter-report-person" . }}
-    {{ template "filter-entry-grain" }}
-    {{ template "filter-report-date" }}
-    {{ template "filter-entry-netweight" }}
-    {{ template "filter-entry-vehicle" .Vehicles }}
+  {{ template "filter-entry-grain" }}
+  {{ template "filter-report-date" }}
+  {{ template "filter-entry-netweight" }}
+  {{ template "filter-entry-vehicle" .Vehicles }}
+  {{ template "filter-operation-type" }}
 </form>
 {{ end }}

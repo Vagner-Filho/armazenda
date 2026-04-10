@@ -64,7 +64,14 @@ func WorstQualitySupplierCard(c *gin.Context) {
 }
 
 func GetAnalysisPage(c *gin.Context) {
-	c.HTML(http.StatusOK, "analise.html", gin.H{})
+	nonce, exists := c.Get("csp_nonce")
+	if exists == false {
+		c.Status(http.StatusForbidden)
+		c.Redirect(http.StatusTemporaryRedirect, "/")
+	}
+	c.HTML(http.StatusOK, "analise.html", gin.H{
+		"CSPNonce": nonce.(string),
+	})
 }
 
 func GetProductiveFields(c *gin.Context) {

@@ -18,15 +18,5 @@
       <iconify-icon icon="mdi:pencil" class="text-xl"></iconify-icon>
     </button>
   </td>
-  <script nonce="{{ .CSPNonce }}" type="module">
-    import {formatDocument} from "/public/assets/js/document.js"
-    const itemRow = document.querySelector("#person-{{ .Id }}")
-    if (itemRow) {
-      const docEl = itemRow.querySelector("td:nth-child(3)")
-      if (docEl) {
-        docEl.textContent = formatDocument({{ .Document}})
-      }
-    }
-  </script>
 </tr>
 {{ end }}

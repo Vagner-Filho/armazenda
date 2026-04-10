@@ -90,7 +90,7 @@
         <tr>
           <td class="whitespace-nowrap px-6 py-4">{{.Romaneio}}</td>
           <td class="whitespace-nowrap px-6 py-4">
-            {{if eq .OperationType 0}} Entrada {{else}} Saída {{end}}
+            {{if eq .OperationType 1}} Entrada {{else}} Saída {{end}}
           </td>
           <td class="whitespace-nowrap px-6 py-4">{{.Product}}</td>
           <td class="whitespace-nowrap px-6 py-4">{{.Vehicle}}</td>
@@ -105,7 +105,7 @@
           <td class="whitespace-nowrap px-6 py-4">{{.Humidity}}%({{.DiscountedHumidity}})</td>
           <td class="whitespace-nowrap px-6 py-4">{{.Damage}}%({{.DiscountedDamage}})</td>
           <td class="whitespace-nowrap px-6 py-4">{{.Impurity}}%({{.DiscountedImpurity}})</td>
-          <td class="whitespace-nowrap px-6 py-4 font-bold format-weight">{{if eq .OperationType 1}}-{{ end
+          <td class="whitespace-nowrap px-6 py-4 font-bold format-weight">{{if eq .OperationType 2}}-{{ end
             }}{{.NetWeight}}</td>
         </tr>
         {{end}}

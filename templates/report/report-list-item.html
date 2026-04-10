@@ -1,11 +1,10 @@
 {{ block "report-list-item" . }}
-<tr class="text-sm sm:text-base border-b border-white/10 hover:bg-white/5 text-white/90"
-  id="operation-{{ .OperationType }}-{{ .Romaneio }}">
+<tr class="text-sm sm:text-base border-b border-white/10 hover:bg-white/5 text-white/90" id="operation-{{ .OperationType }}-{{ .Romaneio }}">
   <td class="py-3 px-4 text-left" data-label="ROMANEIO">
     {{ .Romaneio }}
   </td>
   <td class="py-3 px-4 text-left" data-label="OPERAÇÃO">
-    {{ if eq .OperationType 0 }}
+    {{ if eq .OperationType 1 }}
     <div title="Entrada" class="flex items-center gap-2">
       <iconify-icon icon="mdi:arrow-bottom-left-thick" class="text-xl text-blue-400"></iconify-icon>
       <span class="font-semibold text-blue-400">Entrada</span>
@@ -30,14 +29,7 @@
     {{ .NetWeight }}
   </td>
   <td id="operationDate" class="py-3 px-4 text-left" data-label="DATA">
-    ...
+    {{ .OperationDate }}
   </td>
-  <script nonce="{{ .CSPNonce }}" type="module">
-    import {formatDateToDisplay} from "/public/assets/js/date.js"
-    const itemRow = document.querySelector("#operation-{{ .OperationType }}-{{ .Romaneio }}")
-    if (itemRow) {
-      itemRow.querySelector("#operationDate").textContent = formatDateToDisplay({{ .OperationDate}})
-    }
-  </script>
 </tr>
 {{ end }}

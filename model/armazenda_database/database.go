@@ -444,7 +444,7 @@ func initNaturalPerson(c *pgx.Conn) {
 	CREATE TABLE IF NOT EXISTS natural_person (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 		name TEXT NOT NULL,
-		cpf VARCHAR(11) NOT NULL,
+		cpf VARCHAR(14) NOT NULL,
 		personId INTEGER UNIQUE NOT NULL,
 		FOREIGN KEY (personId) REFERENCES person(id)
 	);
@@ -457,7 +457,7 @@ func initLegalPerson(c *pgx.Conn) {
 	stmt, err := c.Prepare(context.Background(), "init legal_person table", `
 	CREATE TABLE IF NOT EXISTS legal_person (
 		id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-		cnpj VARCHAR(14) NOT NULL,
+		cnpj VARCHAR(18) NOT NULL,
 		personId INTEGER UNIQUE NOT NULL,
 		companyName TEXT NOT NULL,
 		fantasyName TEXT,
