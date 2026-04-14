@@ -175,3 +175,51 @@
         border-bottom: 0;
     }
 }
+
+/* Progression visualization styles - fixed 0-100 range with segmented bar */
+.progression-visual-wrapper {
+    @apply relative py-2;
+}
+
+.progression-bar {
+    @apply relative h-10 bg-white/5 rounded-lg overflow-hidden border border-white/10;
+}
+
+.progression-segments {
+    @apply absolute inset-0 flex;
+}
+
+.progression-segment {
+    @apply relative h-full flex items-center justify-center border-r border-white/20 last:border-r-0 transition-all duration-300;
+}
+
+.progression-segment:last-child {
+    @apply flex-1;
+}
+
+/* Labels above bar (discount values) */
+.progression-discount-labels {
+    @apply relative h-6 flex items-end mb-1;
+}
+
+.progression-discount-label {
+    @apply absolute text-xs font-semibold text-white/90 transform -translate-x-1/2 transition-all duration-300;
+}
+
+/* Labels below bar (threshold values) */
+.progression-threshold-labels {
+    @apply relative h-6 flex items-start mt-1;
+}
+
+.progression-threshold-label {
+    @apply absolute text-xs font-medium text-white/70 transform -translate-x-1/2 transition-all duration-300;
+}
+
+/* First and last labels (0% and 100%) */
+.progression-threshold-label.first {
+    @apply translate-x-0 left-0;
+}
+
+.progression-threshold-label.last {
+    @apply left-auto right-0 translate-x-0;
+}

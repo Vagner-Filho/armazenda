@@ -58,6 +58,38 @@ func UseHumidityProgressionHtmlRoutes(router *gin.Engine) {
 		c.HTML(http.StatusOK, "progression-form", gin.H{"CSPNonce": nonce.(string)})
 	})
 
+	// GET /progressao/view/:id - Return view-only dialog for system default progression
+	router.GET("/progressao/view/:id", func(c *gin.Context) {
+		sid, _ := c.Cookie("session_id")
+		farm := user_service.GetFarmFromToken(sid)
+		if farm == 0 {
+			c.Status(http.StatusUnauthorized)
+			return
+		}
+
+		idStr := c.Param("id")
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			return
+		}
+
+		progression, modelErr := hpm.GetProgression(uint32(id))
+		if modelErr != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+
+		// Only allow viewing system default progressions
+		if !progression.IsSystemDefault {
+			c.Status(http.StatusForbidden)
+			return
+		}
+
+		nonce, _ := c.Get("csp_nonce")
+		c.HTML(http.StatusOK, "progression-view", gin.H{"Progression": progression, "CSPNonce": nonce.(string)})
+	})
+
 	// GET /progressao/form/:id - Return edit dialog with data pre-filled
 	router.GET("/progressao/form/:id", func(c *gin.Context) {
 		sid, _ := c.Cookie("session_id")
@@ -87,7 +119,16 @@ func UseHumidityProgressionHtmlRoutes(router *gin.Engine) {
 		}
 
 		nonce, _ := c.Get("csp_nonce")
-		c.HTML(http.StatusOK, "progression-form", gin.H{"Progression": progression, "CSPNonce": nonce.(string)})
+		c.HTML(http.StatusOK, "progression-form", gin.H{
+			"Id":              progression.Id,
+			"Name":            progression.Name,
+			"FarmId":          progression.FarmId,
+			"IsSystemDefault": progression.IsSystemDefault,
+			"IsActive":        progression.IsActive,
+			"ModifiedAt":      progression.ModifiedAt,
+			"Tiers":           progression.Tiers,
+			"CSPNonce":        nonce.(string),
+		})
 	})
 
 	// POST /progressao - Create from form-data, return new row fragment

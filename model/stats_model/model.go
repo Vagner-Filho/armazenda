@@ -177,7 +177,7 @@ func (sm *StatsModel) GetBestQualitySupplier(farmId uint32) (entity_public.StatC
 		LEFT JOIN farm_config fc ON e.farm = fc.farm_id
 		WHERE e.farm = @farmId AND ea.humidity IS NOT NULL
 		GROUP BY COALESCE(np.name, lp.companyname, fc.name, 'Própria')
-		ORDER BY avg_humidity ASC
+		ORDER BY avg_humidity DESC
 		LIMIT 1;
 	`
 	err := sm.pool.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId}).Scan(&personName, &avgHumidity)
