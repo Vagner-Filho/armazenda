@@ -28,6 +28,7 @@ func CalculateEntry(input EntryCalculationInput) EntryCalculationResult {
 		input.GrossWeight,
 		input.Tare,
 		input.HumidityModifier,
+		input.HumidityThreshold,
 	)
 
 	result.DiscountedHumidity = discounts.HumidityDiscount
@@ -65,14 +66,21 @@ func CalculateDiscounts(
 	grossWeight decimal.Decimal,
 	tare decimal.Decimal,
 	humidityModifier *decimal.Decimal,
+	humidityThreshold *decimal.Decimal,
 ) DiscountResult {
 	result := DiscountResult{}
 
 	rawNetWeight := grossWeight.Sub(tare)
 
+	// Use provided threshold or default
+	threshold := DefaultHumidityThreshold
+	if humidityThreshold != nil {
+		threshold = *humidityThreshold
+	}
+
 	// Calculate humidity discount
 	if humidity != nil {
-		exceedingHumidity := humidity.Sub(HumidityThreshold)
+		exceedingHumidity := humidity.Sub(threshold)
 		if exceedingHumidity.GreaterThan(decimal.Zero) {
 			var discount decimal.Decimal
 			if humidityModifier != nil {
@@ -129,6 +137,7 @@ func CalculateDeparture(input DepartureCalculationInput) DepartureCalculationRes
 		input.GrossWeight,
 		input.Tare,
 		nil, // No humidity modifier for departures
+		nil, // No custom threshold for departures (uses default)
 	)
 
 	totalDiscount := discounts.TotalDiscount
@@ -146,12 +155,18 @@ func CalculateStorageTax(netWeight decimal.Decimal, storageTaxModifier decimal.D
 }
 
 // DiscountHumidity calculates humidity discount for a specific value
-func DiscountHumidity(humidity *decimal.Decimal, rawNetWeight decimal.Decimal, discountModifier *decimal.Decimal) decimal.Decimal {
+func DiscountHumidity(humidity *decimal.Decimal, rawNetWeight decimal.Decimal, discountModifier *decimal.Decimal, humidityThreshold *decimal.Decimal) decimal.Decimal {
 	if humidity == nil || discountModifier == nil {
 		return DecimalZero
 	}
 
-	exceedingHumidity := humidity.Sub(HumidityThreshold)
+	// Use provided threshold or default
+	threshold := DefaultHumidityThreshold
+	if humidityThreshold != nil {
+		threshold = *humidityThreshold
+	}
+
+	exceedingHumidity := humidity.Sub(threshold)
 	if exceedingHumidity.LessThanOrEqual(DecimalZero) {
 		return DecimalZero
 	}

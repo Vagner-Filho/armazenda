@@ -2,13 +2,13 @@ package entry_service
 
 import "github.com/shopspring/decimal"
 
-var HUMIDITY_THRESHOLD = decimal.NewFromInt(14)
+var DEFAULT_HUMIDITY_THRESHOLD = decimal.NewFromInt(14)
 var DAMAGE_THRESHOLD = decimal.NewFromInt(8)
 var IMPURITY_THRESHOLD = decimal.NewFromInt(1)
 var DECIMAL_ZERO = decimal.NewFromInt(0)
 var DECIMAL_HUNDRED = decimal.NewFromInt(100)
 
-func DiscountHumidity(humidity *decimal.Decimal, rawNetWeight decimal.Decimal, discountModifier *decimal.Decimal) decimal.Decimal {
+func DiscountHumidity(humidity *decimal.Decimal, rawNetWeight decimal.Decimal, discountModifier *decimal.Decimal, humidityThreshold *decimal.Decimal) decimal.Decimal {
 	if humidity == nil {
 		return DECIMAL_ZERO
 	}
@@ -16,7 +16,13 @@ func DiscountHumidity(humidity *decimal.Decimal, rawNetWeight decimal.Decimal, d
 		return DECIMAL_ZERO
 	}
 
-	var exceedingHumidity = humidity.Sub(HUMIDITY_THRESHOLD)
+	// Use provided threshold or default
+	threshold := DEFAULT_HUMIDITY_THRESHOLD
+	if humidityThreshold != nil {
+		threshold = *humidityThreshold
+	}
+
+	var exceedingHumidity = humidity.Sub(threshold)
 	if exceedingHumidity.LessThanOrEqual(DECIMAL_ZERO) {
 		return DECIMAL_ZERO
 	}

@@ -331,9 +331,9 @@ class OfflineManager {
     //this.showToast('Carregando dados...', 'info');
 
     try {
-      //await syncEngine.initialLoad(farmId);
+      await syncEngine.initialLoad(farmId);
       await db.setSyncMetadata('farmId', farmId);
-      //this.showToast('Dados carregados com sucesso', 'success');
+      console.log('[Offline] Initial data load complete');
     } catch (error) {
       console.error('[Offline] Initial load failed:', error);
       this.showToast('Erro ao carregar dados. Tente novamente.', 'error');

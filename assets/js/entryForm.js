@@ -1,6 +1,7 @@
 import { formatDateToInput } from "./date.js"
 import { applyDiscounts } from "./discount.js"
 import { removeEmptyFields } from "./form.js"
+import { progressionSync } from "./db/progressionSync.js"
 
 /**
  * Wrapper for async applyDiscounts
@@ -10,7 +11,7 @@ async function applyDiscountsAsync() {
     await applyDiscounts();
 }
 
-export function setupEntryForm(payload) {
+export async function setupEntryForm(payload) {
     const controller = new AbortController()
     const signal = controller.signal
 
@@ -127,10 +128,27 @@ export function setupEntryForm(payload) {
             const option = selector.querySelector('option[selected]')
 
             if (option && option.dataset.humidityProgressionId) {
+                // Fetch progression and get first tier threshold
+                let humidityThreshold = 14; // Default
+                const progressionId = option.dataset.humidityProgressionId;
+                if (progressionId) {
+                    try {
+                        const progression = await progressionSync.getProgression(parseInt(progressionId));
+                        if (progression && progression.tiers && progression.tiers.length > 0) {
+                            // Get the minimum threshold from all tiers
+                            const thresholds = progression.tiers.map(t => parseFloat(t.thresholdHumidity));
+                            humidityThreshold = Math.min(...thresholds);
+                        }
+                    } catch (error) {
+                        console.error('[EntryForm] Failed to get progression threshold:', error);
+                    }
+                }
+
                 sessionStorage.setItem('personConfig', JSON.stringify({
-                    humidityProgressionId: option.dataset.humidityProgressionId,
+                    humidityProgressionId: progressionId,
                     entrySoyDiscount: option.dataset.entrySoyDiscount,
-                    entryCornDiscount: option.dataset.entryCornDiscount
+                    entryCornDiscount: option.dataset.entryCornDiscount,
+                    humidityThreshold: humidityThreshold
                 }));
             }
         }
@@ -143,10 +161,26 @@ export function setupEntryForm(payload) {
             //const personId = selectedOption.value;
             //const personName = selectedOption.textContent.trim();
 
+            // Fetch progression and get first tier threshold
+            let humidityThreshold = 14; // Default
+            if (humidityProgressionId) {
+                try {
+                    const progression = await progressionSync.getProgression(parseInt(humidityProgressionId));
+                    if (progression && progression.tiers && progression.tiers.length > 0) {
+                        // Get the minimum threshold from all tiers
+                        const thresholds = progression.tiers.map(t => parseFloat(t.thresholdHumidity));
+                        humidityThreshold = Math.min(...thresholds);
+                    }
+                } catch (error) {
+                    console.error('[EntryForm] Failed to get progression threshold:', error);
+                }
+            }
+
             sessionStorage.setItem('personConfig', JSON.stringify({
                 humidityProgressionId: humidityProgressionId,
                 entrySoyDiscount: entrySoyDiscount,
-                entryCornDiscount: entryCornDiscount
+                entryCornDiscount: entryCornDiscount,
+                humidityThreshold: humidityThreshold
             }));
 
             await applyDiscounts();

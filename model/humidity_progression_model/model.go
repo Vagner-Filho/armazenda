@@ -158,6 +158,65 @@ func (hm *HumidityProgressionModel) GetSystemDefaultProgression() (uint32, *mode
 	return id, nil
 }
 
+// GetFirstTierThreshold returns the lowest threshold humidity from a progression
+// This represents the point at which humidity discounts begin
+func (hm *HumidityProgressionModel) GetFirstTierThreshold(progressionId *uint32) (decimal.Decimal, *model_error.ModelError) {
+	// If progressionId is nil, get system default
+	var pid uint32
+	if progressionId == nil {
+		sysDefault, err := hm.GetSystemDefaultProgression()
+		if err != nil {
+			return decimal.Zero, err
+		}
+		pid = sysDefault
+	} else {
+		pid = *progressionId
+	}
+
+	// Check if progression is active, fall back to system default if not
+	var isActive bool
+	err := hm.pool.QueryRow(context.Background(), `
+		SELECT is_active FROM humidity_progression WHERE id = $1
+	`, pid).Scan(&isActive)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Progression not found, try system default
+			sysDefault, sysErr := hm.GetSystemDefaultProgression()
+			if sysErr != nil {
+				return decimal.Zero, sysErr
+			}
+			pid = sysDefault
+		} else {
+			return decimal.Zero, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+		}
+	} else if !isActive {
+		// Progression is inactive, use system default
+		sysDefault, sysErr := hm.GetSystemDefaultProgression()
+		if sysErr != nil {
+			return decimal.Zero, sysErr
+		}
+		pid = sysDefault
+	}
+
+	// Get the lowest threshold humidity (first tier)
+	var thresholdHumidity decimal.Decimal
+	err = hm.pool.QueryRow(context.Background(), `
+		SELECT MIN(threshold_humidity) 
+		FROM humidity_progression_tier 
+		WHERE progression_id = $1
+	`, pid).Scan(&thresholdHumidity)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			// No tiers found - this shouldn't happen with valid data
+			return decimal.NewFromInt(14), nil
+		}
+		return decimal.Zero, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+	}
+
+	return thresholdHumidity, nil
+}
+
 // AddProgression creates a new progression with tiers
 func (hm *HumidityProgressionModel) AddProgression(name string, farmId uint32, tiers []entity_public.HumidityProgressionTier) (uint32, *model_error.ModelError) {
 	// Validate tier count

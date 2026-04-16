@@ -88,3 +88,16 @@ func (m *MockCropModel) GetCropById(id uint8) (entity_public.Crop, error) {
 	m.GetCropByIdArgs = id
 	return m.GetCropByIdFunc(id)
 }
+
+// MockHumidityProgressionModel mocks HumidityProgressionModelInterface for testing
+type MockHumidityProgressionModel struct {
+	GetFirstTierThresholdFunc   func(progressionId *uint32) (decimal.Decimal, *model_error.ModelError)
+	GetFirstTierThresholdCalled bool
+	GetFirstTierThresholdArgs   *uint32
+}
+
+func (m *MockHumidityProgressionModel) GetFirstTierThreshold(progressionId *uint32) (decimal.Decimal, *model_error.ModelError) {
+	m.GetFirstTierThresholdCalled = true
+	m.GetFirstTierThresholdArgs = progressionId
+	return m.GetFirstTierThresholdFunc(progressionId)
+}

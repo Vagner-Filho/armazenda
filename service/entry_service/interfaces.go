@@ -27,3 +27,8 @@ type ProductModelInterface interface {
 type CropModelInterface interface {
 	GetCropById(id uint8) (entity_public.Crop, error)
 }
+
+// HumidityProgressionModelInterface defines humidity progression operations
+type HumidityProgressionModelInterface interface {
+	GetFirstTierThreshold(progressionId *uint32) (decimal.Decimal, *model_error.ModelError)
+}

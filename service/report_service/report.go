@@ -30,7 +30,7 @@ func GetFullReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.
 	rModel := report_model.GetReportModel()
 	report, err := rModel.GetFullReport(rf, farm)
 	for i, r := range report {
-		report[i].DiscountedHumidity = entry_service.DiscountHumidity(&r.Humidity, r.GrossWeight.Sub(r.Tare), &r.HumidityDiscount)
+		report[i].DiscountedHumidity = entry_service.DiscountHumidity(&r.Humidity, r.GrossWeight.Sub(r.Tare), &r.HumidityDiscount, nil)
 		report[i].DiscountedDamage = entry_service.DiscountDamage(&r.Damage, r.GrossWeight.Sub(r.Tare))
 		report[i].DiscountedImpurity = entry_service.DiscountImpurity(&r.Impurity, r.GrossWeight.Sub(r.Tare))
 	}

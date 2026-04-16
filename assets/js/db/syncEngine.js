@@ -42,10 +42,9 @@ class SyncEngine {
       });
     }
 
-    // If online, sync on init
-    if (navigator.onLine) {
-      this.sync();
-    }
+    // Note: We don't auto-sync here anymore.
+    // The initial full data load is handled by initialLoad() in offlineManager.js
+    // Subsequent syncs are triggered by online/offline events or sync() calls
   }
 
   /**

@@ -1,9 +1,23 @@
 import { formatWeight } from "./weight.js";
 import { progressionSync } from "./db/progressionSync.js";
 
-const HUMIDITY_THRESHOLD = 14;
 const DAMAGE_THRESHOLD = 8;
 const IMPURITY_THRESHOLD = 1;
+
+/**
+ * Get the first tier threshold from a progression
+ * @param {Object} progression - The progression object with tiers
+ * @returns {number} The lowest threshold humidity (defaults to 14)
+ */
+function getFirstTierThreshold(progression) {
+	if (!progression || !progression.tiers || progression.tiers.length === 0) {
+		return 14; // Default threshold
+	}
+
+	// Find the minimum threshold
+	const thresholds = progression.tiers.map(t => parseFloat(t.thresholdHumidity));
+	return Math.min(...thresholds);
+}
 
 /**
  * Get the current humidity discount based on progressive tiers
@@ -11,11 +25,26 @@ const IMPURITY_THRESHOLD = 1;
  * @param {number} gross - Gross weight (optional)
  * @param {number} tare - Tare weight (optional)
  * @param {number} h_discount - Legacy single discount value (deprecated, for backward compatibility)
+ * @param {number} threshold - Humidity threshold (optional, reads from sessionStorage if not provided)
  * @returns {Promise<number>} The calculated discount
  */
-async function getHumidityDiscount(humidity, gross, tare, h_discount) {
+async function getHumidityDiscount(humidity, gross, tare, h_discount, threshold) {
 	const humidityInput = humidity ? { value: humidity } : document.querySelector('input#humidity');
-	const exceedingHumidity = parseFloat(humidityInput.value) - HUMIDITY_THRESHOLD;
+
+	// Get threshold from parameter, sessionStorage, or default to 14
+	let humidityThreshold = threshold;
+	if (humidityThreshold === undefined || humidityThreshold === null) {
+		const personConfig = sessionStorage.getItem('personConfig');
+		if (personConfig) {
+			const config = JSON.parse(personConfig);
+			humidityThreshold = config.humidityThreshold;
+		}
+	}
+	if (humidityThreshold === undefined || humidityThreshold === null || isNaN(humidityThreshold)) {
+		humidityThreshold = 14;
+	}
+
+	const exceedingHumidity = parseFloat(humidityInput.value) - humidityThreshold;
 
 	if (!humidityInput || exceedingHumidity <= 0 || isNaN(exceedingHumidity)) {
 		if (humidityInput instanceof HTMLInputElement) {
@@ -24,7 +53,7 @@ async function getHumidityDiscount(humidity, gross, tare, h_discount) {
 				label.textContent = "";
 			}
 		}
-		updateHumidityTierUI(null, 0);
+		updateHumidityTierUI(null, 0, humidityThreshold);
 		return 0;
 	}
 
@@ -52,16 +81,22 @@ async function getHumidityDiscount(humidity, gross, tare, h_discount) {
 					progression,
 					parseFloat(humidityInput.value)
 				);
+				// Get first tier threshold from progression
+				const firstTierThreshold = getFirstTierThreshold(progression);
+				// Update UI with tier info
+				updateHumidityTierUI(progression, parseFloat(humidityInput.value), firstTierThreshold);
 			} else {
 				// Fallback: try legacy humidityDiscount
 				discountValue = person.humidityDiscount || 0;
+				// Update UI with tier info using default threshold
+				updateHumidityTierUI(null, parseFloat(humidityInput.value), humidityThreshold);
 			}
-			// Update UI with tier info
-			updateHumidityTierUI(progression, parseFloat(humidityInput.value));
 		} catch (error) {
 			console.error('[Discount] Failed to get progression:', error);
 			// Fallback to legacy
 			discountValue = (person && person.humidityDiscount) ? parseFloat(person.humidityDiscount) : 0;
+			// Update UI with tier info using default threshold
+			updateHumidityTierUI(null, parseFloat(humidityInput.value), humidityThreshold);
 		}
 	} else {
 		return 0;
@@ -94,11 +129,12 @@ async function getHumidityDiscount(humidity, gross, tare, h_discount) {
 }
 
 /**
- * Update UI with current tier information
+ * Update UI with current tier information and threshold
  * @param {Object} progression - The progression object
  * @param {number} humidity - Current humidity value
+ * @param {number} threshold - Humidity threshold for discounts
  */
-function updateHumidityTierUI(progression, humidity) {
+function updateHumidityTierUI(progression, humidity, threshold) {
 	const tierInfo = progressionSync.getTierDisplayInfo(progression, humidity);
 	const tierDisplay = document.getElementById('humidityTierDisplay');
 
@@ -120,10 +156,14 @@ function updateHumidityTierUI(progression, humidity) {
 			sourceText += ' (Padrão)';
 		}
 		sourceDisplay.textContent = sourceText;
-		return
-	}
-	if (sourceDisplay) {
+	} else if (sourceDisplay) {
 		sourceDisplay.textContent = '';
+	}
+
+	// Update humidity field label with threshold
+	const humidityLabel = document.getElementById('humidityThresholdLabel');
+	if (humidityLabel && threshold !== undefined && threshold !== null) {
+		humidityLabel.textContent = `Desconta do Peso Líquido a partir de ${threshold}%`;
 	}
 }
 

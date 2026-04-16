@@ -7,11 +7,11 @@ import (
 
 // Thresholds for quality discounts
 var (
-	HumidityThreshold = decimal.NewFromInt(14)
-	DamageThreshold   = decimal.NewFromInt(8)
-	ImpurityThreshold = decimal.NewFromInt(1)
-	Base100           = decimal.NewFromInt(100)
-	DecimalZero       = decimal.NewFromInt(0)
+	DefaultHumidityThreshold = decimal.NewFromInt(14) // Default when no progression specified
+	DamageThreshold          = decimal.NewFromInt(8)
+	ImpurityThreshold        = decimal.NewFromInt(1)
+	Base100                  = decimal.NewFromInt(100)
+	DecimalZero              = decimal.NewFromInt(0)
 )
 
 // EntryCalculationInput holds all data needed for entry calculations
@@ -23,6 +23,7 @@ type EntryCalculationInput struct {
 	Impurity           *decimal.Decimal
 	HumidityModifier   *decimal.Decimal // Caller must fetch this from DB
 	StorageTaxModifier *decimal.Decimal // Caller must fetch from PersonConfig if Origin is set
+	HumidityThreshold  *decimal.Decimal // First tier threshold from progression (defaults to 14 if nil)
 }
 
 // EntryCalculationResult holds the result of entry calculations

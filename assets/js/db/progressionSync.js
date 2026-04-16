@@ -91,7 +91,7 @@ class ProgressionSync {
    * @returns {Promise<Object|null>} The progression or null
    */
   async getProgression(id) {
-    const progression = await db.getProgression(id);
+    const progression = await db.getProgression(Number(id));
     // Only return active progressions
     if (progression && progression.isActive !== false) {
       return progression;

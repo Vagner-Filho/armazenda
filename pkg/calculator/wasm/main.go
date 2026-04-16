@@ -93,6 +93,7 @@ func calculateDiscounts(this js.Value, args []js.Value) interface{} {
 		input.GrossWeight,
 		input.Tare,
 		input.HumidityModifier,
+		input.HumidityThreshold,
 	)
 
 	resultJSON, err := json.Marshal(result)
@@ -142,12 +143,13 @@ func createErrorResponse(message string) string {
 // Input types for WASM communication
 
 type DiscountCalculationInput struct {
-	Humidity         *decimal.Decimal `json:"humidity,omitempty"`
-	Damage           *decimal.Decimal `json:"damage,omitempty"`
-	Impurity         *decimal.Decimal `json:"impurity,omitempty"`
-	GrossWeight      decimal.Decimal  `json:"grossWeight"`
-	Tare             decimal.Decimal  `json:"tare"`
-	HumidityModifier *decimal.Decimal `json:"humidityModifier,omitempty"`
+	Humidity          *decimal.Decimal `json:"humidity,omitempty"`
+	Damage            *decimal.Decimal `json:"damage,omitempty"`
+	Impurity          *decimal.Decimal `json:"impurity,omitempty"`
+	GrossWeight       decimal.Decimal  `json:"grossWeight"`
+	Tare              decimal.Decimal  `json:"tare"`
+	HumidityModifier  *decimal.Decimal `json:"humidityModifier,omitempty"`
+	HumidityThreshold *decimal.Decimal `json:"humidityThreshold,omitempty"`
 }
 
 type StorageTaxInput struct {

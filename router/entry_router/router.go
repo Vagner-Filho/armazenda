@@ -2,17 +2,17 @@ package entry_router
 
 import (
 	entity_public "armazenda/entity/public"
+	"armazenda/model/crop_model"
+	"armazenda/model/entry_model"
+	"armazenda/model/humidity_progression_model"
+	"armazenda/model/person_model"
+	"armazenda/model/product_model"
 	"armazenda/service/entry_service"
 	"armazenda/service/user_service"
 	entry_view "armazenda/view/entry"
 	"fmt"
 	"net/http"
 	"strconv"
-
-	"armazenda/model/crop_model"
-	"armazenda/model/entry_model"
-	"armazenda/model/person_model"
-	"armazenda/model/product_model"
 
 	"github.com/gin-gonic/gin"
 )
@@ -131,7 +131,8 @@ func addEntry(c *gin.Context) {
 	pm := person_model.GetPersonModel()
 	cm := crop_model.GetCropModel()
 	em := entry_model.GetEntryModel()
-	entry, toast := entry_service.AddEntry(newEntry, em, pm, prod_m, cm)
+	hpm := humidity_progression_model.GetHumidityProgressionModel()
+	entry, toast := entry_service.AddEntry(newEntry, em, pm, prod_m, cm, hpm)
 	c.Header("HX-Trigger", toast.ToJsonStr())
 
 	if toast.Type == entity_public.WarningToast {

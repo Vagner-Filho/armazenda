@@ -81,10 +81,10 @@
                         </div>
                         <div role="status" class="absolute bottom-3 right-8 text-sm text-[#caff89] h-fit"
                             aria-label="Desconto de Umidade"></div>
-                        <input type="number" inputmode="numeric" value="{{ .Entry.Humidity }}" step="0.01" min="0" max="100" name="humidity" id="humidity" class="peer bg-white/10 border-white/20 text-white placeholder-white/50">
+                        <input type="number" inputmode="numeric" value="{{ if ne .Entry.Humidity nil }}{{ .Entry.Humidity }}{{ end }}" step="0.01" min="0" max="100" name="humidity" id="humidity" class="peer bg-white/10 border-white/20 text-white placeholder-white/50">
                         <label for="humidity" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             % Umidade (opcional)
-                            <i class="text-xs font-normal text-white/60 normal-case">Desconta do Peso Líquido a partir
+                            <i class="text-xs font-normal text-white/60 normal-case" id="humidityThresholdLabel">Desconta do Peso Líquido a partir
                                 de 14%</i>
                         </label>
                     </div>

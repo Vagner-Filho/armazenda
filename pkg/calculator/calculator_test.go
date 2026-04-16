@@ -360,7 +360,7 @@ func TestCalculateDiscounts(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := calculator.CalculateDiscounts(tt.humidity, tt.damage, tt.impurity, tt.grossWeight, tt.tare, tt.humidityModifier)
+			result := calculator.CalculateDiscounts(tt.humidity, tt.damage, tt.impurity, tt.grossWeight, tt.tare, tt.humidityModifier, nil)
 
 			if !result.HumidityDiscount.Equal(tt.expectedHumidity) {
 				t.Errorf("HumidityDiscount = %v, want %v", result.HumidityDiscount, tt.expectedHumidity)
@@ -556,7 +556,7 @@ func TestIndividualDiscountFunctions(t *testing.T) {
 		rawNetWeight := decimal.NewFromInt(900)
 		modifier := decimal.NewFromFloat(1.15)
 
-		result := calculator.DiscountHumidity(&humidity, rawNetWeight, &modifier)
+		result := calculator.DiscountHumidity(&humidity, rawNetWeight, &modifier, nil)
 		expected := decimal.NewFromFloat(20.7)
 
 		if !result.Equal(expected) {

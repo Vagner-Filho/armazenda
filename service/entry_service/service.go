@@ -5,6 +5,7 @@ import (
 
 	entity_public "armazenda/entity/public"
 	"armazenda/model/entry_model"
+	"armazenda/model/humidity_progression_model"
 	"armazenda/model/person_model"
 	"armazenda/pkg/calculator"
 
@@ -39,7 +40,7 @@ func GetEntryDraft(id uint32) (entity_public.EntryDraft, *entity_public.Toast) {
 	return newEntry, nil
 }
 
-func AddEntry(ge entity_public.Entry, em EntryModelInterface, pm PersonModelInterface, prod_m ProductModelInterface, cm CropModelInterface) (entity_public.DisplayEntry, entity_public.Toast) {
+func AddEntry(ge entity_public.Entry, em EntryModelInterface, pm PersonModelInterface, prod_m ProductModelInterface, cm CropModelInterface, hpm HumidityProgressionModelInterface) (entity_public.DisplayEntry, entity_public.Toast) {
 	var storageTaxModifier decimal.Decimal
 	if ge.Origin != nil {
 		crop, err := cm.GetCropById(ge.Crop)
@@ -57,8 +58,16 @@ func AddEntry(ge entity_public.Entry, em EntryModelInterface, pm PersonModelInte
 		storageTaxModifier = personConfig.GetProductEntryDiscount(product.Id)
 	}
 
+	// Fetch the humidity threshold from the progression
+	var progressionId *uint32
+	if ge.Origin != nil {
+		config, _ := pm.GetPersonConfig(*ge.Origin)
+		progressionId = config.HumidityProgressionId
+	}
+	threshold, _ := hpm.GetFirstTierThreshold(progressionId)
+
 	var discountModifier decimal.Decimal
-	if ge.Humidity != nil && ge.Humidity.GreaterThan(calculator.HumidityThreshold) {
+	if ge.Humidity != nil && ge.Humidity.GreaterThan(threshold) {
 		discountModifierTmp, humErr := pm.GetHumidityDiscount(ge.Origin, ge.Farm, *ge.Humidity)
 		if humErr != nil {
 			return entity_public.DisplayEntry{}, entity_public.GetErrorToast("Falha ao calcular desconto de humidade", "")
@@ -76,6 +85,7 @@ func AddEntry(ge entity_public.Entry, em EntryModelInterface, pm PersonModelInte
 		Impurity:           ge.Impurity,
 		HumidityModifier:   &discountModifier,
 		StorageTaxModifier: &storageTaxModifier,
+		HumidityThreshold:  &threshold,
 	})
 
 	if result.IsValid == false {
@@ -139,7 +149,17 @@ func GetEntryPdf(id uint32) (*entity_public.EntryPdf, *entity_public.Toast) {
 		return nil, &toast
 	}
 
-	discountedHumidity := DiscountHumidity(entry.Humidity, entry.GrossWeight.Sub(entry.Tare), entry.HumidityDiscountModifier)
+	// Fetch the humidity threshold from the progression
+	hpm := humidity_progression_model.GetHumidityProgressionModel()
+	pm := person_model.GetPersonModel()
+	var progressionId *uint32
+	if entry.Origin != nil {
+		config, _ := pm.GetPersonConfig(*entry.Origin)
+		progressionId = config.HumidityProgressionId
+	}
+	threshold, _ := hpm.GetFirstTierThreshold(progressionId)
+
+	discountedHumidity := DiscountHumidity(entry.Humidity, entry.GrossWeight.Sub(entry.Tare), entry.HumidityDiscountModifier, &threshold)
 	discountedDamage := DiscountDamage(entry.Damage, entry.GrossWeight.Sub(entry.Tare))
 	discountedImpurity := DiscountImpurity(entry.Impurity, entry.GrossWeight.Sub(entry.Tare))
 
@@ -155,7 +175,6 @@ func PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public
 
 	damageThreshold := decimal.NewFromInt(8)
 	impurityThreshold := decimal.NewFromInt(1)
-	humidityThreshold := decimal.NewFromInt(14)
 	base100 := decimal.NewFromInt(100)
 	var totalDiscount decimal.Decimal
 
@@ -176,10 +195,20 @@ func PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public
 			totalDiscount = totalDiscount.Add(rawNetWeight.Mul(exceedingImpurity).Div(base100))
 		}
 	}
+
+	// Fetch the humidity threshold from the progression
+	hpm := humidity_progression_model.GetHumidityProgressionModel()
+	pm := person_model.GetPersonModel()
+	var progressionId *uint32
+	if ge.Origin != nil {
+		config, _ := pm.GetPersonConfig(*ge.Origin)
+		progressionId = config.HumidityProgressionId
+	}
+	humidityThreshold, _ := hpm.GetFirstTierThreshold(progressionId)
+
 	if ge.Humidity != nil {
 		exceedingHumidty := ge.Humidity.Sub(humidityThreshold)
 		if exceedingHumidty.GreaterThan(decimal.Zero) {
-			pm := person_model.GetPersonModel()
 			discountModifier, humErr := pm.GetHumidityDiscount(ge.Origin, ge.Farm, *ge.Humidity)
 			if humErr != nil {
 				toast := entity_public.GetWarningToast("Falha ao calcular desconto de humidade", "")
