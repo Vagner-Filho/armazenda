@@ -299,19 +299,19 @@ func handleInsertError(err error) (entity_public.PersonDisplay, *model_error.Mod
 
 func (bm *PersonModel) GetPeopleByFarm(farm uint32) ([]entity_public.PersonOption, *model_error.ModelError) {
 	rows, queryErr := bm.pool.Query(context.Background(), `
-		SELECT result.id, result.name, COALESCE(result.humidity_progression_id, dpc.humidity_progression_id), COALESCE(result.entry_soy_discount, dpc.entry_soy_discount), COALESCE(result.entry_corn_discount, dpc.entry_corn_discount) FROM (
+		SELECT result.id, result.name, COALESCE(result.humidity_progression_id, dpc.humidity_progression_id) AS humidity_progression_id, COALESCE(result.entry_soy_discount, dpc.entry_soy_discount) AS entry_soy_discount, COALESCE(result.entry_corn_discount, dpc.entry_corn_discount) AS entry_corn_discount FROM (
 			SELECT p.id, COALESCE(lp.fantasyname, lp.companyname) AS name, pc.humidity_progression_id, pc.entry_soy_discount, pc.entry_corn_discount
 			FROM person p
 			JOIN legal_person lp ON p.id = lp.personid
 			LEFT JOIN person_config pc ON p.id = pc.person_id
 			WHERE p.farm = @userFarm
-			UNION
+			UNION ALL
 			SELECT p.id, np.name, pc.humidity_progression_id, pc.entry_soy_discount, pc.entry_corn_discount
 			FROM person p
 			JOIN natural_person np ON p.id = np.personid
 			LEFT JOIN person_config pc ON p.id = pc.person_id
 			WHERE p.farm = @userFarm
-			UNION
+			UNION ALL
 			SELECT NULL, 'Própria', COALESCE((SELECT humidity_progression_id FROM farm_config WHERE farm_id = @userFarm), (SELECT id FROM humidity_progression WHERE is_system_default = TRUE)) as humidity_progression_id, 0.0, 0.0
 		) AS result, default_person_config dpc
 		ORDER BY CASE WHEN result.id IS NULL THEN 0 ELSE 1 END, name
