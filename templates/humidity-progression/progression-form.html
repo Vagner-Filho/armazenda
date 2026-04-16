@@ -23,34 +23,6 @@
                     Nome da Progressão
                 </label>
             </div>
-            <!-- Visual tier representation -->
-            <div id="tier-visualization" class="bg-white/5 rounded-lg p-4 border border-white/10">
-                <!-- Explanation text -->
-                <div class="flex items-start gap-2 mb-3 text-white/80 text-sm">
-                    <iconify-icon icon="mdi:information" class="text-blue-400 mt-0.5 flex-shrink-0"></iconify-icon>
-                    <p>
-                        <strong>Como funciona:</strong> O desconto é aplicado quando a umidade atinge ou ultrapassa cada limite.
-                        Abaixo do primeiro limite, não há desconto.
-                    </p>
-                </div>
-                <!-- Visual bar with fixed 0-100 range -->
-                <div class="progression-visual-wrapper">
-                    <!-- Discount labels (above bar) -->
-                    <div class="progression-discount-labels">
-                        <!-- Injected by JS -->
-                    </div>
-                    <!-- Segmented bar -->
-                    <div class="progression-bar">
-                        <div class="progression-segments">
-                            <!-- Segments injected by JS -->
-                        </div>
-                    </div>
-                    <!-- Threshold labels (below bar) -->
-                    <div class="progression-threshold-labels">
-                        <!-- Injected by JS -->
-                    </div>
-                </div>
-            </div>
             <div>
                 <div class="flex items-center justify-between mb-2">
                     <label class="text-xs lg:text-sm font-medium uppercase tracking-wider text-white/70">Faixas de Desconto</label>
@@ -92,6 +64,42 @@
                         </div>
                     {{ end }}
                 </div>
+            </div>
+            <!-- Visual tier representation -->
+            <div id="tier-visualization" class="bg-white/5 rounded-lg p-4 border border-white/10">
+                <!-- Explanation text -->
+                <div class="flex items-start gap-2 mb-3 text-white/80 text-sm">
+                    <iconify-icon icon="mdi:information" class="text-blue-400 mt-0.5 flex-shrink-0"></iconify-icon>
+                    <p>
+                        <strong>Como funciona:</strong> O desconto é aplicado quando a umidade atinge ou ultrapassa cada limite.
+                        Abaixo do primeiro limite, não há desconto.
+                    </p>
+                </div>
+                <!-- Visual bar with fixed 0-100 range -->
+                <div class="progression-visual-wrapper">
+                    <!-- Discount labels (above bar) -->
+                    <div class="progression-discount-labels">
+                        <!-- Injected by JS -->
+                    </div>
+                    <!-- Segmented bar -->
+                    <div class="progression-bar">
+                        <div class="progression-segments">
+                            <!-- Segments injected by JS -->
+                        </div>
+                        <!-- Leader lines overlay -->
+                        <div class="progression-leader-lines">
+                            <!-- Lines injected by JS -->
+                        </div>
+                    </div>
+                    <!-- Threshold labels (below bar) -->
+                    <div class="progression-threshold-labels">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+            </div>
+            <!-- Dynamic explanation text -->
+            <div id="progression-explanation" class="text-white/80 text-sm px-4 py-3 bg-white/5 rounded-lg border border-white/10 hidden">
+                <!-- Injected by JS -->
             </div>
             <div class="flex items-center justify-around mt-4 w-52 mx-auto">
                 <button type="button" class="cancel-btn">

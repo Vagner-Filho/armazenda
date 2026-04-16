@@ -62,14 +62,14 @@ class ProgressionSync {
           ...p,
           farm: farmId
         }));
-        
+
         // Remove inactive progressions from IndexedDB (they were soft deleted)
         const inactiveProgressions = progressions.filter(p => !p.isActive);
         for (const inactive of inactiveProgressions) {
           await db.deleteProgression(inactive.id);
           console.log(`[ProgressionSync] Removed inactive progression ${inactive.id}`);
         }
-        
+
         // Save active progressions
         const activeProgressions = progressions.filter(p => p.isActive);
         await db.saveProgressions(activeProgressions);
@@ -115,15 +115,15 @@ class ProgressionSync {
    */
   async getAllProgressions(farmId = null) {
     const all = await db.getAllProgressions();
-    
+
     // Filter active progressions only
     let activeProgressions = all.filter(p => p.isActive !== false);
-    
+
     if (farmId) {
       // Return farm-specific + system default
       return activeProgressions.filter(p => p.farm === farmId || p.isSystemDefault);
     }
-    
+
     return activeProgressions;
   }
 
@@ -140,7 +140,7 @@ class ProgressionSync {
 
     // Sort by threshold descending
     const sorted = [...tiers].sort((a, b) => b.thresholdHumidity - a.thresholdHumidity);
-    
+
     // Find first tier where threshold <= humidity
     return sorted.find(t => t.thresholdHumidity <= humidity) || null;
   }
@@ -222,7 +222,7 @@ class ProgressionSync {
     }
 
     const tier = this.findTierForHumidity(progression.tiers, humidity);
-    
+
     return {
       hasTier: !!tier,
       tier: tier,
