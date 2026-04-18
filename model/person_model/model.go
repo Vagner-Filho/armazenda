@@ -312,7 +312,7 @@ func (bm *PersonModel) GetPeopleByFarm(farm uint32) ([]entity_public.PersonOptio
 			LEFT JOIN person_config pc ON p.id = pc.person_id
 			WHERE p.farm = @userFarm
 			UNION ALL
-			SELECT NULL, 'Própria', COALESCE((SELECT humidity_progression_id FROM farm_config WHERE farm_id = @userFarm), (SELECT id FROM humidity_progression WHERE is_system_default = TRUE)) as humidity_progression_id, 0.0, 0.0
+			SELECT NULL, 'Própria', COALESCE((SELECT farm_used_humidity_progression_id FROM farm_config WHERE farm_id = @userFarm), (SELECT humidity_progression_id FROM farm_config WHERE farm_id = @userFarm), (SELECT id FROM humidity_progression WHERE is_system_default = TRUE)) as humidity_progression_id, 0.0, 0.0
 		) AS result, default_person_config dpc
 		ORDER BY CASE WHEN result.id IS NULL THEN 0 ELSE 1 END, name
 	`, pgx.NamedArgs{"userFarm": farm})

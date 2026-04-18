@@ -39,30 +39,31 @@ func GetFarmConfigModel() *farmConfigModel {
 
 func (fcm *farmConfigModel) UpsertFarmConfig(config *entity_public.Farm) error {
 	query := `
-		SELECT * FROM update_get_farm(@id, @inscricao_estadual, @name, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone_number, @storage_name, @humidity_progression_id);
+		SELECT * FROM update_get_farm(@id, @inscricao_estadual, @name, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone_number, @storage_name, @humidity_progression_id, @farm_used_humidity_progression_id);
 	`
 	_, err := fcm.pool.Exec(context.Background(), query, pgx.NamedArgs{
-		"id":                      config.Id,
-		"inscricao_estadual":      config.InscricaoEstadual,
-		"name":                    config.Name,
-		"street":                  config.Address.Street,
-		"cep":                     config.Address.Cep,
-		"number":                  config.Address.Number,
-		"neighborhood":            config.Address.Neighborhood,
-		"city":                    config.Address.City,
-		"state":                   config.Address.State,
-		"complement":              config.Address.Complement,
-		"email":                   config.Address.Email,
-		"phone_number":            config.Address.PhoneNumber,
-		"storage_name":            config.StorageName,
-		"humidity_progression_id": config.HumidityProgressionId,
+		"id":                                config.Id,
+		"inscricao_estadual":                config.InscricaoEstadual,
+		"name":                              config.Name,
+		"street":                            config.Address.Street,
+		"cep":                               config.Address.Cep,
+		"number":                            config.Address.Number,
+		"neighborhood":                      config.Address.Neighborhood,
+		"city":                              config.Address.City,
+		"state":                             config.Address.State,
+		"complement":                        config.Address.Complement,
+		"email":                             config.Address.Email,
+		"phone_number":                      config.Address.PhoneNumber,
+		"storage_name":                      config.StorageName,
+		"humidity_progression_id":           config.HumidityProgressionId,
+		"farm_used_humidity_progression_id": config.FarmUsedHumidityProgressionId,
 	})
 	return err
 }
 
 func (fcm *farmConfigModel) GetFarmConfig(farmID uint32) (*entity_public.Farm, error) {
 	query := `
-		SELECT f.id, f.inscricao_estadual, fc.name, fc.humidity_progression_id, fa.id, fa.street, fa.cep, fa.number, fac.complement, fa.neighborhood, fa.city, fa.state, fco.email, fco.phone_number, fc.storage_name
+		SELECT f.id, f.inscricao_estadual, fc.name, fc.humidity_progression_id, fa.id, fa.street, fa.cep, fa.number, fac.complement, fa.neighborhood, fa.city, fa.state, fco.email, fco.phone_number, fc.storage_name, fc.farm_used_humidity_progression_id
 		FROM farm f
 		LEFT JOIN farm_config fc ON f.id = fc.farm_id
 		LEFT JOIN farm_address fa ON fa.farm_id = f.id
@@ -159,7 +160,7 @@ func (fcm *farmConfigModel) SetFarmHumidityProgression(farmID uint32, progressio
 		_, err = fcm.pool.Exec(ctx, `
 			INSERT INTO farm_config (farm_id, name, storage_name, humidity_progression_id)
 			VALUES ($1, $2, $3, $4)
-		`, farmID, inscricaoEstadual, "Armazém", progressionID)
+		`, farmID, "", "", progressionID)
 		if err != nil {
 			return fmt.Errorf("failed to create farm config: %w", err)
 		}

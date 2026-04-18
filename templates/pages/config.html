@@ -48,7 +48,7 @@
         <div id="tab-content">
             <!-- Farm Config Tab (default) -->
             <div id="tab-farm" class="tab-panel">
-                <div class="glass-panel rounded-xl shadow-center p-4 mb-8">
+                <div class="mb-8">
                     {{ template "config-form" . }}
                 </div>
             </div>
@@ -78,12 +78,90 @@
     <script nonce="{{ .CSPNonce }}" type="module">
         import {removeEmptyFields} from "/public/assets/js/form.js";
         import {setupCepListener} from "/public/assets/js/address.js";
+        import { db } from "/public/assets/js/db/database.js";
 
         document.body.addEventListener('htmx:configRequest', function (evt) {
             evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
         });
 
         setupCepListener('cep', 'street', 'neighborhood', 'city', 'state');
+
+        // Listen for successful progression add/edit/delete operations and update IndexedDB
+        document.body.addEventListener('htmx:afterSwap', async function(evt) {
+            // Check if this is a progression create, update, or delete operation
+            const path = evt.detail.requestConfig.path;
+            const verb = evt.detail.requestConfig.verb;
+
+            // Match POST /progressao (create), PUT /progressao/:id (update), or DELETE /progressao/:id (delete)
+            const isCreate = path === '/progressao' && verb === 'post';
+            const isUpdate = /^\/progressao\/\d+$/.test(path) && verb === 'put';
+            const isDelete = /^\/progressao\/\d+$/.test(path) && verb === 'delete';
+
+            if (!isCreate && !isUpdate && !isDelete) {
+                return;
+            }
+
+            if (!evt.detail.successful) {
+                return;
+            }
+
+            try {
+                let progressionId;
+
+                if (isUpdate || isDelete) {
+                    // For PUT/DELETE, extract ID from path /progressao/:id
+                    progressionId = path.split('/').pop();
+                } else {
+                    // For POST, the new row was appended to #progression-rows
+                    // The swapped element is the new row with id="progression-{id}"
+                    const target = evt.detail.target;
+                    // Check if target is a progression row (progression-{number}, not progression-rows)
+                    if (target && target.id && /^progression-\d+$/.test(target.id)) {
+                        progressionId = target.id.replace('progression-', '');
+                    } else if (target && target.id === 'progression-rows') {
+                        // The new row is the last child after beforeend swap
+                        // Query for rows with numeric IDs only
+                        const rows = target.querySelectorAll('tr[id^="progression-"]');
+                        // Filter to only those with numeric IDs
+                        const numericRows = Array.from(rows).filter(row => /^progression-\d+$/.test(row.id));
+                        const newRow = numericRows[numericRows.length - 1];
+                        if (newRow) {
+                            progressionId = newRow.id.replace('progression-', '');
+                        }
+                    }
+                }
+
+                if (!progressionId) {
+                    console.warn('[Config] Could not extract progression ID from request');
+                    return;
+                }
+
+                if (isDelete) {
+                    // Remove from IndexedDB
+                    await db.delete('humidityProgressions', Number(progressionId));
+                    console.log('[Config] Progression deleted from IndexedDB:', progressionId);
+                    return;
+                }
+
+                // Fetch the full progression data from the API for create/update
+                const response = await fetch(`/api/humidity-progressions/${progressionId}`, {
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) {
+                    console.error('[Config] Failed to fetch progression data:', response.status);
+                    return;
+                }
+
+                const progression = await response.json();
+
+                // Save to IndexedDB
+                await db.put('humidityProgressions', { ...progression, synced: true });
+                console.log('[Config] Progression saved to IndexedDB:', progressionId);
+            } catch (error) {
+                console.error('[Config] Error updating progression in IndexedDB:', error);
+            }
+        });
 
         // Tab switching functionality
         const tabBtns = document.querySelectorAll('.tab-btn');

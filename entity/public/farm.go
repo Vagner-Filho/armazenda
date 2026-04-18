@@ -6,5 +6,6 @@ type Farm struct {
 	Name                  *string `form:"name"`
 	HumidityProgressionId *uint32 `form:"humidityProgressionId" json:"humidityProgressionId"`
 	Address
-	StorageName *string `form:"storageName"`
+	StorageName                   *string `form:"storageName"`
+	FarmUsedHumidityProgressionId *uint32 `form:"farmUsedHumidityProgressionId" json:"farmUsedHumidityProgressionId"`
 }

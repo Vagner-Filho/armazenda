@@ -174,7 +174,7 @@ func UseHumidityProgressionHtmlRoutes(router *gin.Engine) {
 
 		t := entity_public.GetSuccessToast("Progressão criada com sucesso", "")
 		c.Header("HX-Trigger", t.ToJsonStr())
-		c.HTML(http.StatusCreated, "progression-row", progression)
+		c.HTML(http.StatusCreated, "progression-row", gin.H{"Progression": progression})
 	})
 
 	// PUT /progressao/:id - Update from form-data, return updated row
@@ -226,7 +226,7 @@ func UseHumidityProgressionHtmlRoutes(router *gin.Engine) {
 		}
 
 		c.Header("HX-Trigger", `{"toast":{"Message":"Progressão atualizada com sucesso","Type":0}}`)
-		c.HTML(http.StatusOK, "progression-row", progression)
+		c.HTML(http.StatusOK, "progression-row", gin.H{"Progression": progression})
 	})
 
 	// DELETE /progressao/:id - Soft-delete, HTMX removes row from DOM

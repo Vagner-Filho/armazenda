@@ -2,6 +2,7 @@ package person_router
 
 import (
 	entity_public "armazenda/entity/public"
+	farm_config_service "armazenda/service/farm_config"
 	person_service "armazenda/service/person"
 	"armazenda/service/user_service"
 	"armazenda/view"
@@ -77,8 +78,12 @@ func getPersonForm(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
 	progressions := person_view.GetProgressionsForForm(farm)
+	fc, _ := farm_config_service.GetFarmConfig(farm)
+	if fc == nil {
+		fc = &entity_public.Farm{}
+	}
 	nonce, _ := c.Get("csp_nonce")
-	c.HTML(http.StatusOK, "person-form", gin.H{"Progressions": progressions, "CSPNonce": nonce.(string)})
+	c.HTML(http.StatusOK, "person-form", gin.H{"Progressions": progressions, "CSPNonce": nonce.(string), "FarmProgressionId": fc.HumidityProgressionId})
 }
 
 func getFilledNaturalPersonForm(c *gin.Context) {
