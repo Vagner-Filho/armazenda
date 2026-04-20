@@ -52,6 +52,7 @@ func getFullReport(c *gin.Context) {
 	}
 	nonce, _ := c.Get("csp_nonce")
 	report.CSPNonce = nonce.(string)
+
 	c.HTML(http.StatusOK, "full-report.html", report)
 }
 

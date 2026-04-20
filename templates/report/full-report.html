@@ -41,46 +41,46 @@
     <table class="min-w-full divide-y divide-gray-200">
       <thead class="bg-gray-50">
         <tr>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
             Romaneio
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-            Tipo de Operação
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Operação
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
             Produto
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
             Veículo
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-            Data da Operação
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Data Lançamento
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
             Pessoa
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
             Cidade
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
             Estado
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
             Peso Bruto
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
             Tara
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
             Umidade
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
             Avaria
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
             Impurezas
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
             Peso Líquido
           </th>
         </tr>
@@ -88,24 +88,24 @@
       <tbody class="divide-y divide-gray-200 bg-white">
         {{range .FullOperations}}
         <tr>
-          <td class="whitespace-nowrap px-6 py-4">{{.Romaneio}}</td>
-          <td class="whitespace-nowrap px-6 py-4">
+          <td class="whitespace-nowrap px-2 py-4">{{.Romaneio}}</td>
+          <td class="whitespace-nowrap px-2 py-4">
             {{if eq .OperationType 1}} Entrada {{else}} Saída {{end}}
           </td>
-          <td class="whitespace-nowrap px-6 py-4">{{.Product}}</td>
-          <td class="whitespace-nowrap px-6 py-4">{{.Vehicle}}</td>
-          <td class="whitespace-nowrap px-6 py-4">
+          <td class="whitespace-nowrap px-2 py-4">{{.Product}}</td>
+          <td class="whitespace-nowrap px-2 py-4">{{.Vehicle}}</td>
+          <td class="whitespace-nowrap px-2 py-4">
             {{.OperationDate.Format "02/01/2006 15:04"}}
           </td>
-          <td class="whitespace-nowrap px-6 py-4">{{.Person}}</td>
-          <td class="whitespace-nowrap px-6 py-4">{{.City}}</td>
-          <td class="whitespace-nowrap px-6 py-4">{{.State}}</td>
-          <td class="whitespace-nowrap px-6 py-4 format-weight">{{.GrossWeight}}</td>
-          <td class="whitespace-nowrap px-6 py-4 format-weight">{{.Tare}}</td>
-          <td class="whitespace-nowrap px-6 py-4">{{.Humidity}}%({{.DiscountedHumidity}})</td>
-          <td class="whitespace-nowrap px-6 py-4">{{.Damage}}%({{.DiscountedDamage}})</td>
-          <td class="whitespace-nowrap px-6 py-4">{{.Impurity}}%({{.DiscountedImpurity}})</td>
-          <td class="whitespace-nowrap px-6 py-4 font-bold format-weight">{{if eq .OperationType 2}}-{{ end
+          <td class="whitespace-nowrap px-2 py-4">{{.Person}}</td>
+          <td class="whitespace-nowrap px-2 py-4">{{.City}}</td>
+          <td class="whitespace-nowrap px-2 py-4">{{.State}}</td>
+          <td class="whitespace-nowrap px-2 py-4 format-weight">{{.GrossWeight}}</td>
+          <td class="whitespace-nowrap px-2 py-4 format-weight">{{.Tare}}</td>
+          <td class="whitespace-nowrap px-2 py-4">{{.Humidity}}%({{.DiscountedHumidity}})</td>
+          <td class="whitespace-nowrap px-2 py-4">{{.Damage}}%({{.DiscountedDamage}})</td>
+          <td class="whitespace-nowrap px-2 py-4">{{.Impurity}}%({{.DiscountedImpurity}})</td>
+          <td class="whitespace-nowrap px-2 py-4 font-bold format-weight">{{if eq .OperationType 2}}-{{ end
             }}{{.NetWeight}}</td>
         </tr>
         {{end}}

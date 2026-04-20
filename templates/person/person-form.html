@@ -41,7 +41,7 @@
             </label>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="text" name="cnpj" id="document-pj" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required maxlength="14" {{ with .Legal }} value="{{ .Cnpj }}" {{ end }}>
+            <input type="text" name="cnpj" id="document-pj" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required maxlength="18" {{ with .Legal }} value="{{ .Cnpj }}" {{ end }} pattern="\d{2}\.\d{3}\.\d{3}/\\d{4}-\d{2}">
             <label for="document-pj" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
               CNPJ
             </label>
@@ -121,7 +121,7 @@
             </label>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="text" name="cpf" id="document-pf" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required maxlength="11" {{ with .Natural }} value="{{ .Cpf }}" {{ end }}>
+            <input type="text" name="cpf" id="document-pf" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required maxlength="14" {{ with .Natural }} value="{{ .Cpf }}" {{ end }} pattern="\d{3}\.\d{3}\.\d{3}-\d{2}">
             <label for="document-pf" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
               CPF
             </label>
@@ -192,6 +192,7 @@
   <script nonce="{{ .CSPNonce }}" type="module">
     import {removeEmptyFields} from "/public/assets/js/form.js"
     import {setupCepListener} from "/public/assets/js/address.js";
+    import {setupCpfFormatter, setupCnpjFormatter} from "/public/assets/js/utils.js";
 
     setupCepListener('pessoa-juridica-form', 'cep-input', 'street-input', 'neighborhood-input', 'city-input', 'state-input');
     setupCepListener('pessoa-fisica-form', 'cep-input', 'street-input', 'neighborhood-input', 'city-input', 'state-input');
@@ -219,6 +220,15 @@
       document.body.addEventListener('htmx:configRequest', function (evt) {
         evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
       }, { signal });
+
+      {{ if and (eq .Legal nil) (eq .Natural nil) }}
+        setupCpfFormatter("input#document-pf")
+        setupCnpjFormatter("input#document-pj")
+      {{ else if .Legal}}
+        setupCnpjFormatter("input#document-pj")
+      {{ else }}
+        setupCpfFormatter("input#document-pf")
+      {{ end }}
 
       {{ if and (eq .Legal nil) (eq .Natural nil) }}
         const pessoaJuridicaBtn = document.querySelector('button#pessoa-juridica-btn')

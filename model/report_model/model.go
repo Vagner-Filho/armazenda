@@ -62,7 +62,7 @@ var availableReportFilters = map[string]func(ef entity_public.ReportFilter) stri
 		if ef.PersonId == "NULL" {
 			return "r.personid IS NULL"
 		}
-		return fmt.Sprintf("r.personid = '%s'", ef.PersonId)
+		return fmt.Sprintf("r.personid = %s", ef.PersonId)
 	},
 	"Type": func(rf entity_public.ReportFilter) string {
 		return fmt.Sprintf("r.operation_type = %v", rf.Type)
@@ -90,9 +90,9 @@ func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32) 
 			FROM departure d
 			JOIN crop c ON d.crop = c.id
 			JOIN product p ON c.product = p.id
-			LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
+			LEFT JOIN departure_origin dor ON dor.departure_id = d.id
 			LEFT JOIN people
-			AS prs ON prs.personid = dr.person_id
+			AS prs ON prs.personid = dor.person_id
 			LEFT OUTER JOIN inactive_departure id ON id.departure_id = d.id
 			JOIN vehicle v ON v.id = d.vehicle
 			WHERE d.farm = @userFarm AND id.departure_id IS NULL) AS r`
@@ -157,11 +157,11 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 			FROM departure d
 			JOIN crop c ON d.crop = c.id
 			JOIN product p ON c.product = p.id
-			LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
+			LEFT JOIN departure_origin dor ON dor.departure_id = d.id
 			LEFT JOIN people
-			AS prs ON prs.personid = dr.person_id
-			LEFT JOIN address a ON a.person_id = dr.person_id
-			LEFT JOIN person_config pc ON pc.person_id = dr.person_id
+			AS prs ON prs.personid = dor.person_id
+			LEFT JOIN address a ON a.person_id = dor.person_id
+			LEFT JOIN person_config pc ON pc.person_id = dor.person_id
 			LEFT OUTER JOIN inactive_departure id ON id.departure_id = d.id
 			JOIN vehicle v ON v.id = d.vehicle
 			WHERE d.farm = @userFarm AND id.departure_id IS NULL) AS r
