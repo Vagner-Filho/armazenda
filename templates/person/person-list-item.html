@@ -3,7 +3,7 @@
   <td class="py-3 px-4 text-left" data-label="TIPO">
     {{ if eq .Type 0 }}Pessoa Física{{ else }}Pessoa Jurídica{{ end }}
   </td>
-  <td class="py-3 px-4 text-left truncate max-w-64" data-label="NOME" title="{{ .Name }}">
+  <td class="py-3 px-4 text-left truncate max-w-64 font-bold" data-label="NOME" title="{{ .Name }}">
     {{ .Name }}
   </td>
   <td class="py-3 px-4 text-left" data-label="DOCUMENTO">

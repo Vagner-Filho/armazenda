@@ -1,5 +1,5 @@
 import { formatDateToInput } from "./date.js"
-import { formatWeight } from "./weight.js"
+import { formatWeight, setupWeightInput } from "./weight.js"
 import { removeEmptyFields } from "./form.js"
 
 export function setupDepartureForm(payload) {
@@ -34,20 +34,28 @@ export function setupDepartureForm(payload) {
         const grossWeightInput = dialogEl.querySelector('input#grossWeight')
         const tareInput = dialogEl.querySelector('input#tare')
 
-        let grossWeightValue = Number(grossWeightInput ? grossWeightInput.value : 0)
-        let tareValue = Number(tareInput ? tareInput.value : 0)
+        // Setup weight formatting first so dataset.raw is populated
+        setupWeightInput(grossWeightInput, signal)
+        setupWeightInput(tareInput, signal)
+
+        let grossWeightValue = parseFloat(grossWeightInput?.dataset.raw || 0)
+        let tareValue = parseFloat(tareInput?.dataset.raw || 0)
 
         const netWeightInput = dialogEl.querySelector('input#netWeight')
         if (netWeightInput) {
-            grossWeightInput.addEventListener('input', (e) => {
-                grossWeightValue = Number(e.target.value) ?? 0
-                netWeightInput.dataset.raw = grossWeightValue - tareValue;
-                netWeightInput.value = formatWeight(grossWeightValue - tareValue);
+            grossWeightInput.addEventListener('input', () => {
+                grossWeightValue = parseFloat(grossWeightInput.dataset.raw || 0)
+                tareValue = parseFloat(tareInput.dataset.raw || 0)
+                const net = grossWeightValue - tareValue;
+                netWeightInput.dataset.raw = net;
+                netWeightInput.value = formatWeight(net);
             }, { signal })
-            tareInput.addEventListener('input', (e) => {
-                tareValue = Number(e.target.value) ?? 0
-                netWeightInput.dataset.raw = grossWeightValue - tareValue;
-                netWeightInput.value = formatWeight(grossWeightValue - tareValue);
+            tareInput.addEventListener('input', () => {
+                grossWeightValue = parseFloat(grossWeightInput.dataset.raw || 0)
+                tareValue = parseFloat(tareInput.dataset.raw || 0)
+                const net = grossWeightValue - tareValue;
+                netWeightInput.dataset.raw = net;
+                netWeightInput.value = formatWeight(net);
             }, { signal })
 
             netWeightInput.value = formatWeight(grossWeightValue - tareValue);
@@ -55,6 +63,12 @@ export function setupDepartureForm(payload) {
 
         document.body.addEventListener('htmx:configRequest', function(evt) {
             evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
+            if (grossWeightInput && grossWeightInput.dataset.raw !== undefined) {
+                evt.detail.parameters.grossWeight = grossWeightInput.dataset.raw;
+            }
+            if (tareInput && tareInput.dataset.raw !== undefined) {
+                evt.detail.parameters.tare = tareInput.dataset.raw;
+            }
         }, { signal });
 
         document.body.addEventListener('htmx:afterRequest', function(evt) {

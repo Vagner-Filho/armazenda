@@ -100,9 +100,10 @@
     formatEntryListItem();
     window.formatEntryListItem = formatEntryListItem;
 
-    const romaneioListPattern = new RegExp(/\/(departure|entry)\/list/gm);
+    const romaneioListPattern = new RegExp(/\/(departure|entry)\/list/);
+    const romaneioFilterPattern = new RegExp(/\/(departure|entry)\/filter/);
     document.body.addEventListener('htmx:afterSwap', function(evt) {
-      if (evt.detail.successful && romaneioListPattern.test(evt.detail.requestConfig.path) && evt.detail.requestConfig.verb === 'get') {
+      if (evt.detail.successful && ((romaneioListPattern.test(evt.detail.requestConfig.path) && evt.detail.requestConfig.verb === 'get') || (romaneioFilterPattern.test(evt.detail.requestConfig.path) && evt.detail.requestConfig.verb === 'post'))) {
           if (evt.detail.requestConfig.path.includes('departure')) {
             formatAllDepartureListItems();
           } else if (evt.detail.requestConfig.path.includes('entry')) {

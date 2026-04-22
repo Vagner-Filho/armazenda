@@ -1,6 +1,7 @@
 import { formatDateToInput } from "./date.js"
 import { applyDiscounts } from "./discount.js"
 import { removeEmptyFields } from "./form.js"
+import { setupWeightInput } from "./weight.js"
 import { progressionSync } from "./db/progressionSync.js"
 
 /**
@@ -54,6 +55,10 @@ export async function setupEntryForm(payload, entry_id) {
         const damageInput = dialogEl.querySelector('input#damage')
         const impurityInput = dialogEl.querySelector('input#impurity')
 
+        // Setup weight formatting first so dataset.raw is populated
+        setupWeightInput(grossWeightInput, signal)
+        setupWeightInput(tareInput, signal)
+
         if (humidityInput) {
             humidityInput.addEventListener('input', applyDiscountsAsync, { signal })
         }
@@ -63,15 +68,9 @@ export async function setupEntryForm(payload, entry_id) {
         if (impurityInput) {
             impurityInput.addEventListener('input', applyDiscountsAsync, { signal })
         }
-        /*if (grossWeightInput) {
-            grossWeightInput.addEventListener('input', applyDiscountsAsync, { signal })
-        }
-        if (tareInput) {
-            tareInput.addEventListener('input', applyDiscountsAsync, { signal })
-        }*/
 
-        let grossWeightValue = Number(grossWeightInput ? grossWeightInput.value : 0)
-        let tareValue = Number(tareInput ? tareInput.value : 0)
+        let grossWeightValue = parseFloat(grossWeightInput?.dataset.raw || 0)
+        let tareValue = parseFloat(tareInput?.dataset.raw || 0)
 
         const netWeightInput = dialogEl.querySelector('input#net_weight')
         const rawNetWeightInput = dialogEl.querySelector('input#net_weight_raw')
@@ -81,25 +80,35 @@ export async function setupEntryForm(payload, entry_id) {
                 applyDiscountsAsync()
             }
 
-            grossWeightInput.addEventListener('input', (e) => {
-                grossWeightValue = Number(e.target.value) ?? 0
+            grossWeightInput.addEventListener('input', () => {
+                grossWeightValue = parseFloat(grossWeightInput.dataset.raw || 0)
+                tareValue = parseFloat(tareInput.dataset.raw || 0)
 
-                netWeightInput.value = grossWeightValue - tareValue
-                rawNetWeightInput.value = grossWeightValue - tareValue
-                netWeightInput.dataset.raw = grossWeightValue - tareValue
+                const net = grossWeightValue - tareValue
+                netWeightInput.value = net
+                rawNetWeightInput.value = net
+                netWeightInput.dataset.raw = net
                 applyDiscountsAsync()
             }, { signal })
-            tareInput.addEventListener('input', (e) => {
-                tareValue = Number(e.target.value) ?? 0
+            tareInput.addEventListener('input', () => {
+                grossWeightValue = parseFloat(grossWeightInput.dataset.raw || 0)
+                tareValue = parseFloat(tareInput.dataset.raw || 0)
 
-                netWeightInput.value = grossWeightValue - tareValue
-                rawNetWeightInput.value = grossWeightValue - tareValue
-                netWeightInput.dataset.raw = grossWeightValue - tareValue
+                const net = grossWeightValue - tareValue
+                netWeightInput.value = net
+                rawNetWeightInput.value = net
+                netWeightInput.dataset.raw = net
                 applyDiscountsAsync()
             }, { signal })
         }
         document.body.addEventListener('htmx:configRequest', function(evt) {
             evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
+            if (grossWeightInput && grossWeightInput.dataset.raw !== undefined) {
+                evt.detail.parameters.grossWeight = grossWeightInput.dataset.raw;
+            }
+            if (tareInput && tareInput.dataset.raw !== undefined) {
+                evt.detail.parameters.tare = tareInput.dataset.raw;
+            }
             const crop = evt.detail.parameters.crop;
             if (!isNaN(crop)) {
                 localStorage.setItem("last_used_crop", crop);
@@ -137,9 +146,19 @@ export async function setupEntryForm(payload, entry_id) {
 
         // Origin selector
         const selector = dialogEl.querySelector('#origin-selector');
+        const fieldSelector = dialogEl.querySelector('select#field-selector')
         if (selector) {
             selector.addEventListener('change', function(evt) {
                 setPersonConfig(evt.target);
+                // INFO: se origem não é própria fazenda
+                if (evt.target.value && fieldSelector) {
+                    for (const fieldOpt of fieldSelector.options) {
+                        if (fieldOpt.text === 'Externo') {
+                            fieldOpt.selected = true;
+                            break;
+                        }
+                    }
+                }
             }, { signal });
             const option = selector.querySelector('option[selected]')
 

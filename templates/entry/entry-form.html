@@ -45,7 +45,7 @@
                     </div>
                     {{ template "vehicle-selector" . }}
                     <div class="flex flex-col-reverse gap-2">
-                        <input type="number" inputmode="numeric" name="grossWeight" id="grossWeight" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ if decIsNotZero
+                        <input type="text" inputmode="numeric" name="grossWeight" id="grossWeight" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ if decIsNotZero
                             .Entry.GrossWeight }} value="{{ .Entry.GrossWeight }}" {{ end }} required>
                         <label for="grossWeight" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             Peso Bruto (KG)
@@ -54,7 +54,7 @@
                         </label>
                     </div>
                     <div class="flex flex-col-reverse gap-2">
-                        <input type="number" inputmode="numeric" name="tare" id="tare" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ if decIsNotZero .Entry.Tare }}
+                        <input type="text" inputmode="numeric" name="tare" id="tare" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ if decIsNotZero .Entry.Tare }}
                             value="{{ .Entry.Tare }}" {{ end }} required>
                         <label for="tare" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             Tara (KG)

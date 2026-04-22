@@ -75,8 +75,12 @@
       if (tbody) {
         for (const row of tbody.children) {
           const dateCell = row.querySelector("#operationDate");
+          const weight_cell = row.querySelector("#operation_weight");
           if (dateCell) {
             dateCell.textContent = formatDateToDisplay(dateCell.textContent);
+          }
+          if (weight_cell) {
+            weight_cell.textContent = formatWeight(weight_cell.textContent);
           }
         }
       }

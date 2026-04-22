@@ -4,6 +4,7 @@ import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/farm_config_model"
 	"armazenda/model/user_model"
+	field_service "armazenda/service/field"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/shopspring/decimal"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"golang.org/x/oauth2/microsoft"
@@ -531,6 +533,11 @@ func Create(newUser entity_public.NewUser) entity_public.Toast {
 		if !created || err != nil {
 			return entity_public.GetErrorToast(err.Error(), "")
 		}
+		field_service.AddField(entity_public.Field{
+			Name:     "Externo",
+			Hectares: decimal.Zero,
+			Farm:     farm.Id,
+		})
 
 		return entity_public.GetSuccessToast("Usuário enviado para aprovação", "")
 	}

@@ -291,8 +291,8 @@ const productTypeDiscountHandler = {
  * @returns {Promise<void>}
  */
 export async function applyDiscounts() {
-	const hasGrossValue = document.querySelector('input#grossWeight')?.value
-	const hasTareValue = document.querySelector('input#tare')?.value
+	const hasGrossValue = document.querySelector('input#grossWeight')?.dataset.raw
+	const hasTareValue = document.querySelector('input#tare')?.dataset.raw
 	if (!hasGrossValue || !hasTareValue) {
 		return
 	}
