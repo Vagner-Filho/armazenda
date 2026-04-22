@@ -65,6 +65,12 @@ func AddDeparture(d entity_public.Departure) (entity_public.DisplayDeparture, *e
 
 func PutDeparture(d entity_public.Departure) (entity_public.DisplayDeparture, entity_public.Toast) {
 	dModel := departure_model.GetDepartureModel()
+
+	d.NetWeight = d.GrossWeight.Sub(d.Tare)
+	if d.NetWeight.LessThan(decimal.Zero) {
+		return entity_public.DisplayDeparture{}, entity_public.GetWarningToast("Peso Líquido não pode ser negativo", "verifique bruto e tara")
+	}
+
 	departure, error := dModel.PutDeparture(d)
 	if error != nil {
 		if error.IsServerErr == true {

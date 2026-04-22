@@ -1,5 +1,5 @@
 {{ block "person-list-item" . }}
-<tr class="text-sm sm:text-base border-b border-white/10 hover:bg-white/5 text-white/90" id="person-{{ .Id }}">
+<tr class="text-sm border-b border-sky-50/30 hover:bg-sky-50/10 whitespace-nowrap" id="person-{{ .Id }}">
   <td class="py-3 px-4 text-left" data-label="TIPO">
     {{ if eq .Type 0 }}Pessoa Física{{ else }}Pessoa Jurídica{{ end }}
   </td>

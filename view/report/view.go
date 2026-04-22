@@ -32,6 +32,12 @@ type reportContent struct {
 	EntryTotal     float64
 	DepartureTotal float64
 	Balance        float64
+	CurrentPage    int
+	TotalPages     int
+	NextPage       int
+	PrevPage       int
+	HasNext        bool
+	HasPrev        bool
 }
 
 func GetReportBalance(report []entity_public.ReportDisplay) (entry float64, departure float64, balance float64) {
@@ -48,13 +54,39 @@ func GetReportBalance(report []entity_public.ReportDisplay) (entry float64, depa
 
 }
 
-func GetReportPage(farm uint32) reportView {
+func buildReportPagination(page int, totalCount int) (currentPage int, totalPages int, nextPage int, prevPage int, hasNext bool, hasPrev bool) {
+	if page < 1 {
+		page = 1
+	}
+	pageSize := 10
+	totalPages = 0
+	if totalCount > 0 {
+		totalPages = (totalCount + pageSize - 1) / pageSize
+	}
+
+	hasNext = page < totalPages
+	hasPrev = page > 1
+
+	nextPage = page + 1
+	if !hasNext {
+		nextPage = page
+	}
+
+	prevPage = page - 1
+	if !hasPrev {
+		prevPage = page
+	}
+
+	return page, totalPages, nextPage, prevPage, hasNext, hasPrev
+}
+
+func GetReportPage(farm uint32, page int) reportView {
 	products, _ := product_service.GetProducts()
 	vehicles, _ := vehicle_service.GetVehiclesByFarm(farm)
 	fields, _ := field_service.GetFieldsByFarm(farm)
-	report, _ := report_service.GetReport(entity_public.ReportFilter{}, farm)
-	entryAmount, departureAmount, balance := GetReportBalance(report)
+	report, totalCount, entryAmount, departureAmount, balance, _ := report_service.GetReport(entity_public.ReportFilter{}, farm, page)
 	people, _ := person_service.GetPeopleByFarm(farm)
+	currentPage, totalPages, nextPage, prevPage, hasNext, hasPrev := buildReportPagination(page, totalCount)
 	return reportView{
 		Products: products,
 		Vehicles: vehicles,
@@ -67,19 +99,34 @@ func GetReportPage(farm uint32) reportView {
 			EntryTotal:     entryAmount,
 			DepartureTotal: departureAmount,
 			Balance:        balance,
+			CurrentPage:    currentPage,
+			TotalPages:     totalPages,
+			NextPage:       nextPage,
+			PrevPage:       prevPage,
+			HasNext:        hasNext,
+			HasPrev:        hasPrev,
 		},
 	}
 }
 
-func FilterReport(rf entity_public.ReportFilter, farm uint32) (reportContent, *entity_public.Toast) {
-	report, toast := report_service.FilterReport(rf, farm)
-	entryAmount, departureAmount, balance := GetReportBalance(report)
+func FilterReport(rf entity_public.ReportFilter, farm uint32, page int) (reportContent, *entity_public.Toast) {
+	report, totalCount, entryAmount, departureAmount, balance, toast := report_service.FilterReport(rf, farm, page)
+	if toast != nil {
+		return reportContent{}, toast
+	}
+	currentPage, totalPages, nextPage, prevPage, hasNext, hasPrev := buildReportPagination(page, totalCount)
 	return reportContent{
 		Operations:     report,
 		EntryTotal:     entryAmount,
 		DepartureTotal: departureAmount,
 		Balance:        balance,
-	}, toast
+		CurrentPage:    currentPage,
+		TotalPages:     totalPages,
+		NextPage:       nextPage,
+		PrevPage:       prevPage,
+		HasNext:        hasNext,
+		HasPrev:        hasPrev,
+	}, nil
 }
 
 type FullReportView struct {

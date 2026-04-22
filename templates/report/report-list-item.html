@@ -1,5 +1,5 @@
 {{ block "report-list-item" . }}
-<tr class="text-sm sm:text-base border-b border-white/10 hover:bg-white/5 text-white/90" id="operation-{{ .OperationType }}-{{ .Romaneio }}">
+<tr class="text-sm border-b border-sky-50/30 hover:bg-sky-50/10 whitespace-nowrap" id="operation-{{ .OperationType }}-{{ .Romaneio }}">
   <td class="py-3 px-4 text-left" data-label="ROMANEIO">
     {{ .Romaneio }}
   </td>
@@ -22,10 +22,10 @@
   <td class="py-3 px-4 text-left" data-label="PRODUTO">
     {{ .Product }}
   </td>
-  <td class="py-3 px-4 text-left" data-label="VEÍCULO">
+  <td class="py-3 px-4 text-left font-mono" data-label="VEÍCULO">
     {{ .Vehicle }}
   </td>
-  <td class="py-3 px-4 text-left" data-label="PESO LÍQUIDO">
+  <td class="py-3 px-4 text-left font-bold" data-label="PESO LÍQUIDO">
     {{ .NetWeight }}
   </td>
   <td id="operationDate" class="py-3 px-4 text-left" data-label="DATA">

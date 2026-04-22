@@ -6,24 +6,24 @@ import (
 	"armazenda/service/entry_service"
 )
 
-func GetReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.ReportDisplay, *entity_public.Toast) {
+func GetReport(rf entity_public.ReportFilter, farm uint32, page int) ([]entity_public.ReportDisplay, int, float64, float64, float64, *entity_public.Toast) {
 	rm := report_model.GetReportModel()
-	report, err := rm.FilterReport(rf, farm)
+	report, totalCount, entryTotal, departureTotal, balance, err := rm.FilterReport(rf, farm, page)
 	if err != nil {
 		toast := entity_public.GetWarningToast(err.Error(), "")
-		return []entity_public.ReportDisplay{}, &toast
+		return []entity_public.ReportDisplay{}, 0, 0, 0, 0, &toast
 	}
-	return report, nil
+	return report, totalCount, entryTotal, departureTotal, balance, nil
 }
 
-func FilterReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.ReportDisplay, *entity_public.Toast) {
+func FilterReport(rf entity_public.ReportFilter, farm uint32, page int) ([]entity_public.ReportDisplay, int, float64, float64, float64, *entity_public.Toast) {
 	rModel := report_model.GetReportModel()
-	report, err := rModel.FilterReport(rf, farm)
+	report, totalCount, entryTotal, departureTotal, balance, err := rModel.FilterReport(rf, farm, page)
 	if err != nil {
 		toast := entity_public.GetWarningToast("Falha ao filtrar relatório", "")
-		return report, &toast
+		return report, 0, 0, 0, 0, &toast
 	}
-	return report, nil
+	return report, totalCount, entryTotal, departureTotal, balance, nil
 }
 
 func GetFullReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.FullReport, *entity_public.Toast) {

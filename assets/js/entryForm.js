@@ -11,7 +11,7 @@ async function applyDiscountsAsync() {
     await applyDiscounts();
 }
 
-export async function setupEntryForm(payload) {
+export async function setupEntryForm(payload, entry_id) {
     const controller = new AbortController()
     const signal = controller.signal
 
@@ -21,8 +21,18 @@ export async function setupEntryForm(payload) {
     if (dialogEl) {
         dialogEl.showModal()
         const arrivalDateEl = dialogEl.querySelector("input#arrival-date")
-        if (!!arrivalDateEl) {
+        if (arrivalDateEl) {
             arrivalDateEl.setAttribute("value", dateVal)
+        }
+        const cropSelector = dialogEl.querySelector("select#crop-selector")
+        const lastUsedCrop = localStorage.getItem("last_used_crop");
+        if (cropSelector && lastUsedCrop && !entry_id) {
+            for (const option of cropSelector.options) {
+                if (option.value === lastUsedCrop) {
+                    option.selected = true;
+                    break;
+                }
+            }
         }
 
         function closeEntryFormDialog() {
@@ -90,6 +100,12 @@ export async function setupEntryForm(payload) {
         }
         document.body.addEventListener('htmx:configRequest', function(evt) {
             evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
+            const crop = evt.detail.parameters.crop;
+            if (!isNaN(crop)) {
+                localStorage.setItem("last_used_crop", crop);
+            } else {
+                localStorage.removeItem("last_used_crop");
+            }
         }, { signal });
         document.body.addEventListener('htmx:afterRequest', function(evt) {
             if (evt.detail.successful && evt.detail.requestConfig.path === '/entry' && (evt.detail.requestConfig.verb === 'post' || evt.detail.requestConfig.verb === 'put')) {

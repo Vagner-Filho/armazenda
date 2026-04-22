@@ -1,26 +1,56 @@
 {{ block "report-content" . }}
-<tbody id="report-content" class="text-white/80">
-  {{ range .Operations }}
-  {{ template "report-list-item" . }}
+<div id="report-content">
+  <table class="responsive-table">
+    <thead class="border-b border-white/10 text-xs text-gray-400 uppercase tracking-wider *:font-medium whitespace-nowrap hidden md:table-header-group" id="report-header">
+      <tr>
+        <th class="py-3 px-4 text-left">Romaneio</th>
+        <th class="py-3 px-4 text-left">Operação</th>
+        <th class="py-3 px-4 text-left">Origem</th>
+        <th class="py-3 px-4 text-left">Produto</th>
+        <th class="py-3 px-4 text-left">Veículo</th>
+        <th class="py-3 px-4 text-left">Peso Líquido</th>
+        <th class="py-3 px-4 text-left">Data Operação</th>
+      </tr>
+    </thead>
+    <tbody class="text-white/80">
+      {{ range .Operations }}
+      {{ template "report-list-item" . }}
+      {{ end }}
+      <tr class="text-sm font-semibold text-white bg-white/10">
+        <td class="py-3 px-4 text-left" colspan="3" data-label="Balanço">
+          Balanço:
+        </td>
+        <td class="py-3 px-4 text-left" data-label="Entradas">
+          Entradas:
+          <strong class="text-blue-400" id="entryTotal">{{ .EntryTotal }}</strong>
+        </td>
+        <td class="py-3 px-4 text-left" data-label="Saídas">
+          Saídas:
+          <strong class="text-amber-400" id="departureTotal">{{ .DepartureTotal }}</strong>
+        </td>
+        <td class="py-3 px-4 text-left" colspan="2" data-label="Saldo">
+          Saldo:
+          <strong class="{{ if lt .Balance 0.0 }} text-red-400{{ else }}text-green-400{{ end }}" id="balance">{{ .Balance
+            }}</strong>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  {{ if gt .TotalPages 1 }}
+  <div class="flex justify-center items-center p-4">
+    {{ if .HasPrev }}
+    <button hx-post="/report/filter?page={{ .PrevPage }}" hx-include="form#report-filters-form" hx-target="#report-content" hx-swap="outerHTML" class="px-2 lg:px-4 py-1 lg:py-2 bg-sky-50/20 hover:bg-sky-50/30 rounded-lg transition-colors">Anterior</button>
+    {{ else }}
+    <button class="px-2 lg:px-4 py-1 lg:py-2 bg-sky-50/10 text-white/40 rounded-lg cursor-not-allowed" disabled>Anterior</button>
+    {{ end }}
+    <span class="text-sm lg:text-base mx-2 lg:mx-4 text-white/90">Página {{ .CurrentPage }} de {{ .TotalPages }}</span>
+    {{ if .HasNext }}
+    <button hx-post="/report/filter?page={{ .NextPage }}" hx-include="form#report-filters-form" hx-target="#report-content" hx-swap="outerHTML" class="px-2 lg:px-4 py-1 lg:py-2 bg-sky-50/20 hover:bg-sky-50/30 rounded-lg transition-colors">Próxima</button>
+    {{ else }}
+    <button class="px-2 lg:px-4 py-1 lg:py-2 bg-sky-50/10 text-white/40 rounded-lg cursor-not-allowed" disabled>Próxima</button>
+    {{ end }}
+  </div>
   {{ end }}
-  <tr class="text-sm sm:text-base font-semibold text-white bg-white/10">
-    <td class="py-3 px-4 text-left" colspan="3" data-label="Balanço">
-      Balanço:
-    </td>
-    <td class="py-3 px-4 text-left" data-label="Entradas">
-      Entradas:
-      <strong class="text-blue-400" id="entryTotal">{{ .EntryTotal }}</strong>
-    </td>
-    <td class="py-3 px-4 text-left" data-label="Saídas">
-      Saídas:
-      <strong class="text-amber-400" id="departureTotal">{{ .DepartureTotal }}</strong>
-    </td>
-    <td class="py-3 px-4 text-left" colspan="2" data-label="Saldo">
-      Saldo:
-      <strong class="{{ if lt .Balance 0.0 }} text-red-400{{ else }}text-green-400{{ end }}" id="balance">{{ .Balance
-        }}</strong>
-    </td>
-  </tr>
   <script nonce="{{ .CSPNonce }}" type="module">
     import { formatWeight } from '/public/assets/js/weight.js';
     import {formatDateToDisplay} from "/public/assets/js/date.js"
@@ -41,14 +71,17 @@
     }
 
     async function formatReportListItem() {
-      for (const row of document.querySelector("#report-content").children) {
-        const dateCell = row.querySelector("#operationDate");
-        if (dateCell) {
-          dateCell.textContent = formatDateToDisplay(dateCell.textContent);
+      const tbody = document.querySelector("#report-content tbody");
+      if (tbody) {
+        for (const row of tbody.children) {
+          const dateCell = row.querySelector("#operationDate");
+          if (dateCell) {
+            dateCell.textContent = formatDateToDisplay(dateCell.textContent);
+          }
         }
       }
     }
     formatReportListItem();
   </script>
-</tbody>
+</div>
 {{ end }}

@@ -147,7 +147,7 @@
 
     <script nonce="{{ .CSPNonce }}" type="module">
         import {setupEntryForm} from "/public/assets/js/entryForm.js"
-        setupEntryForm({{ .Entry.ArrivalDate }})
+        setupEntryForm({{ .Entry.ArrivalDate }}, {{ .Entry.Id }})
     </script>
     <style>
         .htmx-indicator {

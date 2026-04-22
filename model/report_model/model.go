@@ -69,58 +69,90 @@ var availableReportFilters = map[string]func(ef entity_public.ReportFilter) stri
 	},
 }
 
-func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.ReportDisplay, error) {
+func buildReportWhereClause(rf entity_public.ReportFilter) string {
 	filters := rf.GetFilters(availableReportFilters)
 
-	stmt := `
-	WITH people AS (SELECT np.name, np.personid FROM natural_person np UNION ALL SELECT COALESCE(lp.fantasyname, lp.companyname) AS name, lp.personid FROM legal_person lp)
-		SELECT r.id, r.operation_type, r.name, r.vehicle, r.netweight, r.date, r.pessoa
-		FROM (SELECT e.id, 1 AS operation_type, p.name, v.plate AS vehicle, e.netweight, e.arrivaldate AS date, coalesce(prs.name, 'Própria') AS pessoa, prs.personid, p.id AS product_id
-			FROM entry e
-			JOIN crop c ON e.crop = c.id
-			JOIN product p ON c.product = p.id
-			LEFT JOIN entry_origin eo ON eo.entry_id = e.id
-			LEFT JOIN people
-			AS prs ON prs.personid = eo.person_id
-			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
-			JOIN vehicle v ON v.id = e.vehicle
-			WHERE e.farm = @userFarm AND ie.entry_id IS NULL
-			UNION ALL
-		SELECT d.id, 2 AS operation_type, p.name, v.plate AS vehicle, d.netweight , d.departuredate AS date, coalesce(prs.name, 'Própria') AS pessoa, prs.personid, p.id AS product_id
-			FROM departure d
-			JOIN crop c ON d.crop = c.id
-			JOIN product p ON c.product = p.id
-			LEFT JOIN departure_origin dor ON dor.departure_id = d.id
-			LEFT JOIN people
-			AS prs ON prs.personid = dor.person_id
-			LEFT OUTER JOIN inactive_departure id ON id.departure_id = d.id
-			JOIN vehicle v ON v.id = d.vehicle
-			WHERE d.farm = @userFarm AND id.departure_id IS NULL) AS r`
-
-	if len(filters) > 0 {
-		stmt += " WHERE "
+	if len(filters) == 0 {
+		return ""
 	}
 
-	var idx int = 0
+	whereClause := " WHERE "
+	idx := 0
 	for _, filter := range filters {
-		stmt += filter(rf)
+		whereClause += filter(rf)
 		if idx < len(filters)-1 {
-			stmt += " AND "
+			whereClause += " AND "
 		}
 		idx++
 	}
+	return whereClause
+}
 
-	rows, queryErr := rm.pool.Query(context.Background(), stmt, pgx.NamedArgs{"userFarm": farm})
+func getReportSubquery() string {
+	return `
+	FROM (SELECT e.id, 1 AS operation_type, p.name, v.plate AS vehicle, e.netweight, e.arrivaldate AS date, coalesce(prs.name, 'Própria') AS pessoa, prs.personid, p.id AS product_id
+		FROM entry e
+		JOIN crop c ON e.crop = c.id
+		JOIN product p ON c.product = p.id
+		LEFT JOIN entry_origin eo ON eo.entry_id = e.id
+		LEFT JOIN people
+		AS prs ON prs.personid = eo.person_id
+		LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
+		JOIN vehicle v ON v.id = e.vehicle
+		WHERE e.farm = @userFarm AND ie.entry_id IS NULL
+		UNION ALL
+	SELECT d.id, 2 AS operation_type, p.name, v.plate AS vehicle, d.netweight , d.departuredate AS date, coalesce(prs.name, 'Própria') AS pessoa, prs.personid, p.id AS product_id
+		FROM departure d
+		JOIN crop c ON d.crop = c.id
+		JOIN product p ON c.product = p.id
+		LEFT JOIN departure_origin dor ON dor.departure_id = d.id
+		LEFT JOIN people
+		AS prs ON prs.personid = dor.person_id
+		LEFT OUTER JOIN inactive_departure id ON id.departure_id = d.id
+		JOIN vehicle v ON v.id = d.vehicle
+		WHERE d.farm = @userFarm AND id.departure_id IS NULL) AS r`
+}
+
+func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32, page int) ([]entity_public.ReportDisplay, int, float64, float64, float64, error) {
+	whereClause := buildReportWhereClause(rf)
+
+	cte := `
+	WITH people AS (SELECT np.name, np.personid FROM natural_person np UNION ALL SELECT COALESCE(lp.fantasyname, lp.companyname) AS name, lp.personid FROM legal_person lp)
+	`
+
+	subquery := getReportSubquery()
+
+	countStmt := cte + "SELECT COUNT(*), COALESCE(SUM(CASE WHEN r.operation_type = 1 THEN r.netweight ELSE 0 END), 0), COALESCE(SUM(CASE WHEN r.operation_type = 2 THEN r.netweight ELSE 0 END), 0) " + subquery + whereClause
+
+	var totalCount int
+	var entryTotal, departureTotal float64
+	countRow := rm.pool.QueryRow(context.Background(), countStmt, pgx.NamedArgs{"userFarm": farm})
+	if err := countRow.Scan(&totalCount, &entryTotal, &departureTotal); err != nil {
+		return nil, 0, 0, 0, 0, err
+	}
+
+	balance := entryTotal - departureTotal
+
+	if totalCount == 0 {
+		return []entity_public.ReportDisplay{}, 0, 0, 0, 0, nil
+	}
+
+	pageSize := 10
+	offset := (page - 1) * pageSize
+
+	dataStmt := cte + "SELECT r.id, r.operation_type, r.name, r.vehicle, r.netweight, r.date, r.pessoa " + subquery + whereClause + " ORDER BY r.date DESC LIMIT @pageSize OFFSET @offset"
+
+	rows, queryErr := rm.pool.Query(context.Background(), dataStmt, pgx.NamedArgs{"userFarm": farm, "pageSize": pageSize, "offset": offset})
 	if queryErr != nil {
-		return []entity_public.ReportDisplay{}, queryErr
+		return nil, 0, 0, 0, 0, queryErr
 	}
 
 	result, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.ReportDisplay])
 	if collectErr != nil {
-		return []entity_public.ReportDisplay{}, collectErr
+		return nil, 0, 0, 0, 0, collectErr
 	}
 
-	return result, nil
+	return result, totalCount, entryTotal, departureTotal, balance, nil
 }
 
 func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32) ([]entity_public.FullReport, error) {
@@ -170,7 +202,7 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 		stmt += " WHERE "
 	}
 
-	var idx int = 0
+	idx := 0
 	for _, filter := range filters {
 		stmt += filter(rf)
 		if idx < len(filters)-1 {

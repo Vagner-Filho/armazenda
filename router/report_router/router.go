@@ -5,6 +5,7 @@ import (
 	"armazenda/service/user_service"
 	report_view "armazenda/view/report"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,7 +14,12 @@ func getRelatorioPage(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
 
-	pageData := report_view.GetReportPage(farm)
+	page, _ := strconv.Atoi(c.Query("page"))
+	if page < 1 {
+		page = 1
+	}
+
+	pageData := report_view.GetReportPage(farm, page)
 	nonce, _ := c.Get("csp_nonce")
 	pageData.CSPNonce = nonce.(string)
 	c.HTML(http.StatusOK, "relatorio.html", pageData)
@@ -26,13 +32,21 @@ func filterReport(c *gin.Context) {
 		c.String(http.StatusBadRequest, "", err.Error())
 		return
 	}
+
+	page, _ := strconv.Atoi(c.Query("page"))
+	if page < 1 {
+		page = 1
+	}
+
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
-	report, toast := report_view.FilterReport(reportFilter, farm)
+	report, toast := report_view.FilterReport(reportFilter, farm, page)
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 		return
 	}
+	nonce, _ := c.Get("csp_nonce")
+	report.CSPNonce = nonce.(string)
 	c.HTML(http.StatusOK, "report-content", report)
 }
 

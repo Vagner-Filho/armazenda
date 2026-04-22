@@ -27,6 +27,7 @@
     background-image: url(/public/assets/static/inside_bg_3.jpg);
     background-size: cover;
     overflow: hidden;
+    display: flex;
 }
 
 @theme {
@@ -70,6 +71,10 @@
     @apply flex items-center gap-3 px-4 py-3 bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500 transition-all
 }
 
+@utility content-container {
+    @apply mt-6 2xl:mt-20 mb-4 px-2 max-w-screen-lg 2xl:max-w-screen-xl mx-auto w-full flex flex-col
+}
+
 @layer base {
     label {
         @apply text-gray-500
@@ -94,6 +99,7 @@
 
     * {
         font-family: "Noto Sans";
+        scrollbar-color: white;
     }
 
     h1,
@@ -194,7 +200,8 @@
 .progression-segment {
     @apply relative h-full flex items-center justify-center border-r border-white/30 last:border-r-0 transition-all duration-300;
     /* No background color - segments are transparent to show the gradient */
-    flex: none; /* Use exact pixel width, don't grow or shrink */
+    flex: none;
+    /* Use exact pixel width, don't grow or shrink */
 }
 
 .progression-segment:last-child {
@@ -217,21 +224,25 @@
 
 .progression-leader-line {
     @apply absolute top-0 w-px bg-white;
-    height: 2.5rem; /* Medium length - extends below the bar */
+    height: 2.5rem;
+    /* Medium length - extends below the bar */
 }
 
 .progression-leader-line.stretched {
-    height: 4rem; /* Extended length for crowded labels */
+    height: 4rem;
+    /* Extended length for crowded labels */
 }
 
 /* Labels below bar (threshold values) */
 .progression-threshold-labels {
     @apply relative flex items-start mt-1;
-    height: 2.5rem; /* Extra space for rotated labels */
+    height: 2.5rem;
+    /* Extra space for rotated labels */
 }
 
 .progression-threshold-labels.has-stretched {
-    height: 4rem; /* Extra space when labels are stretched */
+    height: 4rem;
+    /* Extra space when labels are stretched */
 }
 
 .progression-threshold-label {
@@ -253,7 +264,8 @@
 
 /* Default label: positioned left of leader line */
 .progression-threshold-label {
-    margin-left: -0.8rem; /* Shift left of leader */
+    margin-left: -0.8rem;
+    /* Shift left of leader */
 }
 
 .progression-threshold-label .label-text {
@@ -262,11 +274,13 @@
 
 /* Swing right variant: label positioned right of leader line */
 .progression-threshold-label.swing-right {
-    margin-left: 0.5rem; /* Shift right of leader */
+    margin-left: 0.5rem;
+    /* Shift right of leader */
 }
 
 .progression-threshold-label.swing-right .label-link-line {
-    transform: rotate(30deg); /* Points up-right to leader line */
+    transform: rotate(30deg);
+    /* Points up-right to leader line */
     transform-origin: 10px -20px;
 }
 
@@ -277,15 +291,18 @@
 
 /* Stretched variant: pushed down, no diagonal link */
 .progression-threshold-label.stretched {
-    margin-top: 1.8rem; /* Push down */
+    margin-top: 1.8rem;
+    /* Push down */
 }
 
 .progression-threshold-label.stretched .label-link-line {
-    display: none; /* No diagonal link */
+    display: none;
+    /* No diagonal link */
 }
 
 .progression-threshold-label.stretched .label-text {
-    transform: none; /* No rotation */
+    transform: none;
+    /* No rotation */
 }
 
 /* First and last labels (0% and 100%) - keep horizontal */
