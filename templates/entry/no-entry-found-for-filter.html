@@ -1,0 +1,14 @@
+{{ define "no-entry-found-for-filter" }}
+<div class="flex flex-col items-center justify-between gap-2 text-orange-500 rounded-md bg-orange-100 mx-auto w-fit p-3 shadow-md">
+    <div class="flex items-center justify-center gap-1">
+        <iconify-icon icon="material-symbols:folder-open-rounded" width="24" height="24"></iconify-icon>
+        <div class="font-semibold" role="alert" aria-live="assertive" aria-atomic="true">
+            Não encontramos nenhuma entrada para o filtro aplicado
+        </div>
+    </div>
+    <button type="button" class="cancel-btn flex items-center justify-between gap-1" hx-post="/entry/filter" hx-target="main#list">
+        <iconify-icon icon="solar:restart-bold" width="24" height="24"></iconify-icon>
+        Recomeçar
+    </button>
+</div>
+{{ end }}

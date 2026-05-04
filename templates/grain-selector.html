@@ -1,10 +1,9 @@
-{{ define "grain-selector" }}
-<select name="product" id="grain-selector" class="appearance-none px-2">
-    <option value="0">
-        Milho
-    </option>
-    <option value="1">
-        Soja
-    </option>
+{{ block "grain-selector" . }}
+<select name="product" id="grain-selector" class="w-full bg-white/10 border-white/20 text-white">
+    {{ range . }}
+        <option value="{{ .Id }}">
+            {{ .Name }}
+        </option>
+    {{ end }}
 </select>
 {{ end }}

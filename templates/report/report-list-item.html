@@ -1,0 +1,35 @@
+{{ block "report-list-item" . }}
+<tr class="text-sm border-b border-sky-50/30 hover:bg-sky-50/10 whitespace-nowrap" id="operation-{{ .OperationType }}-{{ .Romaneio }}">
+  <td class="py-3 px-4 text-left" data-label="ROMANEIO">
+    {{ .Romaneio }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="OPERAÇÃO">
+    {{ if eq .OperationType 1 }}
+    <div title="Entrada" class="flex items-center gap-2">
+      <iconify-icon icon="mdi:arrow-bottom-left-thick" class="text-xl text-blue-400"></iconify-icon>
+      <span class="font-semibold text-blue-400">Entrada</span>
+    </div>
+    {{ else }}
+    <div title="Saída" class="flex items-center gap-2">
+      <iconify-icon icon="mdi:arrow-top-right-thick" class="text-xl text-amber-400"></iconify-icon>
+      <span class="font-semibold text-amber-400">Saída</span>
+    </div>
+    {{ end }}
+  </td>
+  <td class="py-3 px-4 text-left truncate max-w-64" data-label="PESSOA">
+    {{ .Person }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="PRODUTO">
+    {{ .Product }}
+  </td>
+  <td class="py-3 px-4 text-left font-mono" data-label="VEÍCULO">
+    {{ .Vehicle }}
+  </td>
+  <td id="operation_weight" class="py-3 px-4 text-left font-bold" data-label="PESO LÍQUIDO">
+    {{ .NetWeight }}
+  </td>
+  <td id="operationDate" class="py-3 px-4 text-left" data-label="DATA">
+    {{ .OperationDate }}
+  </td>
+</tr>
+{{ end }}

@@ -1,0 +1,19 @@
+
+{{ define "filter-operation-type" }}
+<fieldset class="filter-card">
+    <legend class="w-full text-center">
+        <label for="operation-filter" class="font-medium text-sm text-white/90">Operação</label>
+    </legend>
+    <select name="type" id="operation-filter" class="w-full text-sm peer bg-slate-800/80 text-white/90 border-white/20">
+        <option value="" selected>
+          Nenhuma
+        </option>
+        <option value="1">
+          Entrada
+        </option>
+        <option value="2">
+          Saída
+        </option>
+    </select>
+</fieldset>
+{{ end }}

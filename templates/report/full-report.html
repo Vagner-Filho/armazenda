@@ -1,0 +1,199 @@
+<div id="full-report" class="hidden print:block">
+  <div class="mx-auto">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <img src="/public/assets/favicon.ico" alt="Armazenda Logo" class="h-10 w-10">
+        <h1 class="text-2xl font-bold">ARMAZENDA</h1>
+      </div>
+      {{ with .FarmConfig }}
+      <div class="text-right">
+        {{ with .Name }}<h2 class="text-2xl font-semibold">{{ . }}</h2>{{ end }}
+        <p class="text-sm">
+          {{- with .InscricaoEstadual -}}Inscrição Estadual: {{ . }}{{- end -}}
+        </p>
+        <p class="text-sm">
+          {{- with .Street -}}{{.}}{{- end -}}
+          {{- if and .Street .Number -}}, {{ end }}
+          {{- with .Number -}}{{.}}{{- end -}}
+        </p>
+        <p class="text-sm">
+          {{- with .City -}}{{.}}{{- end -}}
+          {{- if and .City .State }} - {{ end }}
+          {{- with .State -}}{{.}}{{- end -}}
+        </p>
+        {{ with .Cep }}<p class="text-sm">CEP: {{ . }}</p>{{ end }}
+      </div>
+      {{ end }}
+    </div>
+    <h1 class="mb-4 text-2xl font-bold">Relatório Completo</h1>
+    <div class="flex items-center gap-2 flex-wrap mb-2 text-xl">
+      <div class="pr-2">Filtros:</div>
+      {{ range $key, $value := .AppliedFilters }}
+      <span class="bg-gray-300 rounded-lg">
+        <span>{{ $key }}:</span>
+        <span class="font-bold">{{ $value }}</span>
+      </span>
+      {{ end }}
+    </div>
+    <div>
+      Gerado em: {{ .RequestedAt.Format "02/01/2006 15:04" }}
+    </div>
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Romaneio
+          </th>
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Operação
+          </th>
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Produto
+          </th>
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Veículo
+          </th>
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Data Lançamento
+          </th>
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Pessoa
+          </th>
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Cidade
+          </th>
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Estado
+          </th>
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Peso Bruto
+          </th>
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Tara
+          </th>
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Umidade
+          </th>
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Avaria
+          </th>
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Impurezas
+          </th>
+          <th scope="col" class="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            Peso Líquido
+          </th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 bg-white">
+        {{range .FullOperations}}
+        <tr>
+          <td class="whitespace-nowrap px-2 py-4">{{.Romaneio}}</td>
+          <td class="whitespace-nowrap px-2 py-4">
+            {{if eq .OperationType 1}} Entrada {{else}} Saída {{end}}
+          </td>
+          <td class="whitespace-nowrap px-2 py-4">{{.Product}}</td>
+          <td class="whitespace-nowrap px-2 py-4">{{.Vehicle}}</td>
+          <td class="whitespace-nowrap px-2 py-4">
+            {{.OperationDate.Format "02/01/2006 15:04"}}
+          </td>
+          <td class="whitespace-nowrap px-2 py-4">{{.Person}}</td>
+          <td class="whitespace-nowrap px-2 py-4">{{.City}}</td>
+          <td class="whitespace-nowrap px-2 py-4">{{.State}}</td>
+          <td class="whitespace-nowrap px-2 py-4 format-weight">{{.GrossWeight}}</td>
+          <td class="whitespace-nowrap px-2 py-4 format-weight">{{.Tare}}</td>
+          <td class="whitespace-nowrap px-2 py-4">{{.Humidity}}%({{.DiscountedHumidity}})</td>
+          <td class="whitespace-nowrap px-2 py-4">{{.Damage}}%({{.DiscountedDamage}})</td>
+          <td class="whitespace-nowrap px-2 py-4">{{.Impurity}}%({{.DiscountedImpurity}})</td>
+          <td class="whitespace-nowrap px-2 py-4 font-bold format-weight">{{if eq .OperationType 2}}-{{ end
+            }}{{.NetWeight}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    <div class="mt-4">
+      <p><strong>Total de Entrada:</strong>
+        <span class="format-weight">{{.EntryTotal}}</span></p>
+      <p><strong>Total de Saída:</strong>
+        <span class="format-weight">{{.DepartureTotal}}</span></p>
+      <p><strong>Saldo:</strong>
+        <span class="format-weight">{{.Balance}}</span></p>
+    </div>
+  </div>
+  <script nonce="{{ .CSPNonce }}" type="module">
+    // Find the current (newest) report and remove any stale ones
+    const allReports = document.querySelectorAll('#full-report');
+    const reportElement = allReports[allReports.length - 1];
+    for (let i = 0; i < allReports.length - 1; i++) {
+      allReports[i].remove();
+    }
+
+    // Format weights before printing
+    const weightFormatter = new Intl.NumberFormat('pt-BR', {
+      style: 'decimal',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 3
+    });
+    reportElement.querySelectorAll('.format-weight').forEach(el => {
+      const value = parseFloat(el.textContent);
+      if (!isNaN(value)) {
+        el.textContent = weightFormatter.format(value) + ' kg';
+      }
+    });
+
+    // Printing logic
+    const reportHtml = reportElement.cloneNode(true);
+
+    // Remove the script from the clone to prevent recursion
+    reportHtml.querySelector('script')?.remove();
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'full-report';
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument;
+    doc.write('<!DOCTYPE html><html><head><title>Relatório</title></head><body></body></html>');
+
+    // Add print-specific styles for landscape orientation
+    const style = doc.createElement('style');
+    style.textContent = `
+      @media print {
+        @page {
+          size: landscape;
+          margin: .4cm;
+        }
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+    `;
+    doc.head.appendChild(style);
+
+    doc.body.appendChild(reportHtml);
+    doc.close();
+
+    function cleanup() {
+      reportElement.remove();
+      iframe.remove();
+      window.removeEventListener('afterprint', cleanup);
+    }
+    window.addEventListener('afterprint', cleanup);
+    window.onafterprint = cleanup;
+
+    const css = document.querySelector("link[href*='output.css']");
+    if (css) {
+      const link = doc.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = css.href;
+      link.onload = () => {
+        iframe.contentWindow.print();
+      };
+      doc.head.appendChild(link);
+    } else {
+      // Fallback if CSS is not found
+      iframe.contentWindow.print();
+    }
+  </script>
+</div>

@@ -1,0 +1,5 @@
+{{ block "simple-option" . }}
+<option value="{{ if ne .Id nil }}{{ .Id }}{{ end }}">
+  {{ .Name }}
+</option>
+{{ end }}

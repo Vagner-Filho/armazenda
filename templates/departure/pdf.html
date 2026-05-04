@@ -1,0 +1,235 @@
+{{ block "departure-pdf" . }}
+<div class="hidden flex-col print:flex h-dvh" id="departure-pdf">
+    <div class="text-xl font-bold text-center" style="margin-bottom: 12px;">
+        Romaneio de Saída
+    </div>
+    <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                Número do romaneio
+            </div>
+            <div class="">
+                {{ .Id }}
+            </div>
+        </div>
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                Data de emissão
+            </div>
+            <div class="" id="emission-date">
+                {{ .DepartureDate }}
+            </div>
+        </div>
+    </div>
+    <div style="text-align: left; font-size: 0.85rem; width: 100%; padding-top: 10px; font-weight: bold;">
+        ARMAZÉM
+    </div>
+    <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+        {{if .StorageName }}
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                Nome
+            </div>
+            <div class="">
+                {{ .StorageName }}
+            </div>
+        </div>
+        {{ else if .FarmName }}
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                Nome
+            </div>
+            <div class="">
+                {{ .FarmName }}
+            </div>
+        </div>
+        {{end}}
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                Inscrição Estadual
+            </div>
+            <div class="">
+                {{ .InscricaoEstadual }}
+            </div>
+        </div>
+    </div>
+    {{if .FarmStreet}}
+    <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+        <div class="flex flex-col" style="width: 100%;">
+            <div class="font-light" style="color: #7a7b87">
+                Endereço
+            </div>
+            <div class="">
+                {{if .FarmStreet}}{{.FarmStreet}}{{end}}{{if .FarmNumber}}, {{.FarmNumber}}{{end}}{{if
+                .FarmNeighborhood}} - {{.FarmNeighborhood}}{{end}}
+            </div>
+        </div>
+    </div>
+    <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                Cidade
+            </div>
+            <div class="">
+                {{if .FarmCity}}{{.FarmCity}}{{end}}{{if .FarmState}}/{{.FarmState}}{{end}}
+            </div>
+        </div>
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                CEP
+            </div>
+            <div class="">
+                {{.FarmCep}}
+            </div>
+        </div>
+    </div>
+    {{end}}
+    <div class="flex justify-between border-b mt-3" style="border-color: #909699;">
+        <div class="flex flex-col" style="width: 100%;">
+            <div style="color: #7a7b87; font-size: 0.85rem; font-weight: bold;">
+                ORIGEM
+            </div>
+            <div class="">
+                {{.OriginName}}
+            </div>
+        </div>
+        <div class="flex flex-col" style="width: 100%;">
+            <div class="font-light" style="color: #7a7b87">
+                {{ $docLength := len .OriginDocument }}
+                {{ if eq $docLength 11 }}CPF{{ else if eq $docLength 14 }}CNPJ{{ else }}Inscrição Estadual{{ end }}
+            </div>
+            <div class="">
+                {{.OriginDocument}}
+            </div>
+        </div>
+    </div>
+    <div class="flex justify-between border-b mt-3" style="border-color: #909699;">
+        <div class="flex flex-col" style="width: 100%;">
+            <div style="color: #7a7b87; font-size: 0.85rem; font-weight: bold;">
+                DESTINO
+            </div>
+            <div class="">
+                {{.RecipientName}}
+            </div>
+        </div>
+        <div class="flex flex-col" style="width: 100%;">
+            <div class="font-light" style="color: #7a7b87">
+                {{ $docLength := len .Document }}
+                {{ if eq $docLength 11 }}CPF{{ else if eq $docLength 14 }}CNPJ{{ else }}Inscrição Estadual{{ end }}
+            </div>
+            <div class="">
+                {{.Document}}
+            </div>
+        </div>
+    </div>
+    <div class="flex justify-between border-b mt-3" style="border-color: #909699;">
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                Safra
+            </div>
+            <div class="">
+                {{ .Safra }}
+            </div>
+        </div>
+    </div>
+    <div style="text-align: left; font-size: 0.85rem; width: 100%; padding-top: 10px; font-weight: bold;">
+        VEÍCULO
+    </div>
+    <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                Placa
+            </div>
+            <div class="">
+                {{ .VehiclePlate }}
+            </div>
+        </div>
+    </div>
+    <div style="text-align: left; font-size: 0.85rem; width: 100%; padding-top: 10px; font-weight: bold;">
+        CARGA
+    </div>
+    <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                Peso Bruto
+            </div>
+            <div class="" id="grossWeight">
+                {{ .GrossWeight }}
+            </div>
+        </div>
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                Tara
+            </div>
+            <div class="" id="tare">
+                {{ .Tare }}
+            </div>
+        </div>
+    </div>
+    <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                Produto
+            </div>
+            <div class="">
+                {{ .Produto }}
+            </div>
+        </div>
+        <div class="flex flex-col" style="width: 50%;">
+            <div class="font-light" style="color: #7a7b87">
+                Peso Líquido
+            </div>
+            <div class="" id="netWeight">
+                {{ .NetWeight }}
+            </div>
+        </div>
+    </div>
+    <div style="text-align: left; font-size: 0.85rem; width: 100%; padding-top: 10px; font-weight: bold;">
+        QUALIDADE
+    </div>
+    <div class="flex justify-between border-b my-1" style="border-color: #909699;">
+        <div class="flex flex-col" style="width: 33%;">
+            <div class="font-light" style="color: #7a7b87">
+                Umidade
+            </div>
+            <div class="">
+                {{ if .Humidity }}{{ .Humidity }}%{{ else }}N/A{{ end }}
+            </div>
+        </div>
+        <div class="flex flex-col" style="width: 33%;">
+            <div class="font-light" style="color: #7a7b87">
+                Avariado
+            </div>
+            <div class="">
+                {{ if .Damage }}{{ .Damage }}%{{ else }}N/A{{ end }}
+            </div>
+        </div>
+        <div class="flex flex-col" style="width: 33%;">
+            <div class="font-light" style="color: #7a7b87">
+                Impureza
+            </div>
+            <div class="">
+                {{ if .Impurity }}{{ .Impurity }}%{{ else }}N/A{{ end }}
+            </div>
+        </div>
+    </div>
+    <div class="flex justify-between mt-auto" style="text-align: left; font-size: 1rem; width: 100%;">
+        <div class="border-t border-black w-1/4">
+            OPERADOR
+        </div>
+        <div class="border-t border-black w-1/4 text-end">
+            MOTORISTA
+        </div>
+    </div>
+    <style>
+        @media print {
+
+            body section,
+            body nav,
+            body [role="menu"] {
+                display: none;
+            }
+        }
+    </style>
+</div>
+{{ end }}

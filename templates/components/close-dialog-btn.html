@@ -1,14 +1,9 @@
 {{ block "close-dialog-btn" . }}
-<button type="button" class="close-dialog-btn" onclick="closeModal('{{ . }}')">
+<button type="button" class="close-dialog-btn" id="close-dialog-{{ .selector }}">
     &times;
 </button>
-<script>
-    function closeModal(selector) {
-        const dialogEl = document.querySelector(selector)
-        if (dialogEl) {
-            dialogEl.close()
-            dialogEl.remove()
-        }
-    }
+<script nonce="{{ .CSPNonce }}" type="module">
+    import { closeModal } from "/public/assets/js/utils.js";
+    document.getElementById('close-dialog-{{ .selector }}').addEventListener('click', () => closeModal('{{ .selector }}'));
 </script>
 {{ end }}

@@ -1,0 +1,23 @@
+{
+  "name": "armazenda-tests",
+  "version": "1.0.0",
+  "description": "Test suite for Armazenda (E2E and Unit)",
+  "scripts": {
+    "test": "bun test unit/",
+    "test:watch": "bun test --watch unit/",
+    "test:e2e": "cd e2e && bun run test",
+    "test:e2e:ui": "cd e2e && bun run test:ui",
+    "test:e2e:headed": "cd e2e && bun run test:headed",
+    "test:e2e:debug": "cd e2e && bun run test:debug",
+    "test:all": "bun test unit/ && cd e2e && bun run test",
+    "db:start": "cd e2e && bun run db:start",
+    "db:stop": "cd e2e && bun run db:stop",
+    "db:seed": "cd e2e && bun run db:seed"
+  },
+  "keywords": [
+    "testing",
+    "armazenda"
+  ],
+  "author": "",
+  "license": "MIT"
+}

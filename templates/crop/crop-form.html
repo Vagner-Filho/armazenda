@@ -1,0 +1,50 @@
+{{ block "crop-form" . }}
+<dialog id="cropFormDialog" class="glass-panel rounded-xl w-72 sm:w-96">
+    <div class="p-4 relative">
+        {{ template "close-dialog-btn" (dict "selector" "dialog#cropFormDialog" "CSPNonce" .CSPNonce) }}
+        <header class="text-center mb-4">
+            <h1 class="text-xl lg:text-2xl font-bold text-white/95 font-[Noto_Sans]">
+                Nova Safra
+            </h1>
+            <p class="text-sm text-white/90 mt-2">
+                Preencha os campos abaixo para cadastrar uma nova safra.
+            </p>
+        </header>
+        <form class="flex flex-col gap-4" hx-post="/crop" hx-target="#crop-selector" hx-swap="beforeend">
+            <div class="flex flex-col-reverse">
+                <input type="text" name="name" id="crop-name" 
+                    class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required 
+                    {{ if .Pattern }} pattern="{{ .Pattern }}" {{ end }} autofocus>
+                <label for="crop-name" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Nome da Safra
+                </label>
+            </div>
+            <div class="flex flex-col">
+                <label for="grain-selector" class="peer focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Grão
+                </label>
+                {{ template "grain-selector" .Products }}
+            </div>
+            <div class="flex flex-col-reverse">
+                <input type="date" name="startDate" id="start-date" 
+                    class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required>
+                <label for="start-date" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Data de início da safra
+                </label>
+            </div>
+            <div class="flex items-center justify-around mt-4 w-52 mx-auto">
+                <button type="button" class="cancel-btn">
+                    Cancelar
+                </button>
+                <button class="primary-glass-btn" type="submit">
+                    Adicionar
+                </button>
+            </div>
+        </form>
+    </div>
+    <script nonce="{{ .CSPNonce }}" type="module">
+        import { cropDialogSetup } from "/public/assets/js/cropDialog.js"
+        cropDialogSetup()
+    </script>
+</dialog>
+{{ end }}

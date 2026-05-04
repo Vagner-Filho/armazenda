@@ -1,0 +1,75 @@
+package crop_router
+
+import (
+	entity_public "armazenda/entity/public"
+	"armazenda/model/crop_model"
+	"armazenda/service/user_service"
+	crop_view "armazenda/view/crop"
+	"net/http"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
+
+type CropForm struct {
+	Name      string `form:"name"`
+	Product   uint8  `form:"product"`
+	StartDate string `form:"startDate"`
+}
+
+func getCropForm(c *gin.Context) {
+	cropForm, toast := crop_view.GetCropForm()
+	if toast != nil {
+		c.Header("HX-Trigger", string(toast.ToJson()))
+	}
+	nonce, _ := c.Get("csp_nonce")
+	cropForm.CSPNonce = nonce.(string)
+	c.HTML(http.StatusOK, "crop-form", cropForm)
+}
+
+func addCrop(c *gin.Context) {
+	var newCrop CropForm
+	err := c.Bind(&newCrop)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+
+	startDateTime, startDateErr := time.Parse("2006-01-02", newCrop.StartDate)
+	if startDateErr != nil {
+		c.String(http.StatusBadRequest, "", startDateErr.Error())
+		return
+	}
+
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	cropModel := crop_model.GetCropModel()
+	addedCrop, addErr := cropModel.AddCrop(entity_public.Crop{
+		Name:      newCrop.Name,
+		StartDate: startDateTime,
+		Product:   newCrop.Product,
+		Farm:      farm,
+	})
+
+	if addErr != nil {
+		if addErr.IsServerErr == true {
+			toast := entity_public.GetErrorToast(addErr.Error(), "")
+			c.Header("HX-Trigger", string(toast.ToJson()))
+			return
+		}
+
+		t := entity_public.GetWarningToast(addErr.Error(), "")
+		c.Header("HX-Trigger", string(t.ToJson()))
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	t := entity_public.GetSuccessToast("Safra Cadastrada", "")
+	c.Header("HX-Trigger", string(t.ToJson()))
+	c.HTML(http.StatusCreated, "crop-option", addedCrop)
+}
+
+func UseCropRoutes(router *gin.Engine) {
+	router.GET("/crop/form", getCropForm)
+	router.POST("/crop", addCrop)
+}

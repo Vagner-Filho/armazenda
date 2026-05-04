@@ -1,0 +1,38 @@
+{{ block "entry-draft-list-item" . }}
+<tr class="text-sm sm:text-base border-b border-sky-50/30 hover:bg-sky-50/10 whitespace-nowrap" id="entry-draft-{{ .Id }}">
+  <td class="py-3 px-4 text-left" data-label="Nome">
+    {{ .Name }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="Talhão">
+    {{ .Field }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="Tara">
+    {{ .Origin }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="Safra">
+    {{ .Crop }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="Placa">
+    {{ .Vehicle }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="Tara">
+    {{ if eq .Tare nil }}N/A{{ else }}{{ .Tare }}{{ end }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="Ações">
+    <div class="flex items-center justify-end lg:justify-start gap-2">
+      <button type="button" hx-get="/entry/form?draft_id={{ .Id }}" hx-target="body" hx-swap="beforeend" title="Gerar Entrada a partir do Rascunho"
+        class="icon-btn">
+        <iconify-icon icon="mdi:file-document-plus-outline" class="text-xl"></iconify-icon>
+      </button>
+      <button type="button" hx-get="/entry/draft/form/{{ .Id }}" hx-target="body" hx-swap="beforeend" title="Editar Rascunho"
+        class="icon-btn">
+        <iconify-icon icon="mdi:pencil" class="text-xl"></iconify-icon>
+      </button>
+      <button type="button" hx-trigger="confirmed" hx-delete="/entry/draft/{{ .Id }}" hx-target="#entry-draft-{{ .Id }}"
+        hx-swap="delete" title="Excluir Rascunho" class="icon-btn" data-delete-text="Deseja excluir o rascunho {{ .Name }} ?">
+        <iconify-icon icon="mdi:trash-can" class="text-xl"></iconify-icon>
+      </button>
+    </div>
+  </td>
+</tr>
+{{ end }}

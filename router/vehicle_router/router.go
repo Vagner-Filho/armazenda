@@ -1,7 +1,8 @@
 package vehicle_router
 
 import (
-	"armazenda/model/vehicle_model"
+	entity_public "armazenda/entity/public"
+	"armazenda/service/user_service"
 	"armazenda/service/vehicle_service"
 	"net/http"
 
@@ -13,11 +14,14 @@ type VehicleForm struct {
 	Plate string `form:"plate" binding:"required"`
 }
 
-func GetVehiclesForm(c *gin.Context) {
-	c.HTML(http.StatusOK, "vehicle-form", vehicle_service.GetVehicles())
+func getVehiclesForm(c *gin.Context) {
+	//vehicles, _ := vehicle_service.GetVehicles()
+	//c.HTML(http.StatusOK, "vehicle-form", vehicles)
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusOK, "vehicle-form", gin.H{"CSPNonce": nonce.(string)})
 }
 
-func AddVehicle(c *gin.Context) {
+func addVehicle(c *gin.Context) {
 	var newVehicle VehicleForm
 	err := c.Bind(&newVehicle)
 	if err != nil {
@@ -25,14 +29,27 @@ func AddVehicle(c *gin.Context) {
 		return
 	}
 
-    vehicle, _ := vehicle_service.AddVehicle(vehicle_model.Vehicle{
-        Name: newVehicle.Name,
-        Plate: newVehicle.Plate,
-    })
+	ssi, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(ssi)
+	vehicle, addErr := vehicle_service.AddVehicle(entity_public.Vehicle{
+		Name:  newVehicle.Name,
+		Plate: newVehicle.Plate,
+		Farm:  farm,
+	})
 
-    c.HTML(http.StatusCreated, "vehicle-option", vehicle)
+	if addErr != nil {
+		t := entity_public.GetWarningToast(addErr.Error(), "")
+		c.Header("HX-Trigger", string(t.ToJson()))
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	t := entity_public.GetSuccessToast("Veículo Cadastrado", "")
+	c.Header("HX-Trigger", string(t.ToJson()))
+	c.HTML(http.StatusCreated, "vehicle-option", vehicle)
 }
 
-func GetVehicles() []vehicle_model.Vehicle {
-	return vehicle_service.GetVehicles()
+func UseVehicleRouter(router *gin.Engine) {
+	router.GET("/vehicle/form", getVehiclesForm)
+	router.POST("/vehicle", addVehicle)
 }

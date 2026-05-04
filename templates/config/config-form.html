@@ -1,0 +1,134 @@
+{{ block "config-form" . }}
+<form hx-put="/farm/config" hx-swap="outerHTML" class="space-y-6">
+    <input type="hidden" name="id" value="{{ .Id }}">
+    <fieldset class="glass-panel rounded-xl p-6">
+        <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+            Dados da Fazenda
+        </legend>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="flex flex-col-reverse">
+                <input type="text" name="name" id="name" value="{{ if .Farm.Name }}{{ .Farm.Name }}{{ end }}" 
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40" required>
+                <label for="name" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Nome da Fazenda
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <input type="text" name="storageName" id="storageName" value="{{ if .Farm.StorageName }}{{ .Farm.StorageName }}{{ end }}" 
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40" required>
+                <label for="storageName" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Nome do Armazém
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <input type="text" name="inscricaoEstadual" id="inscricaoEstadual" value="{{ .Farm.InscricaoEstadual }}"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40" required>
+                <label for="inscricaoEstadual" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Inscrição Estadual
+                </label>
+            </div>
+            <div class="flex flex-col">
+                <label for="farmUsedHumidityProgressionId" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Prog. Umidade para entradas da fazenda
+                </label>
+                <select name="farmUsedHumidityProgressionId" id="desconto-umidade-aplicado-fazenda" class="w-full bg-white/10 border-white/20 text-white peer">
+                    {{ $farmProgression := .Farm.FarmUsedHumidityProgressionId }}
+                    {{ range .Progressions }}
+                        {{ if and (ne $farmProgression nil) (eq (deref $farmProgression) .Id) }}
+                            <option value="{{ .Id }}" selected>{{ .Name }}</option>
+                        {{ else }}
+                            <option value="{{ .Id }}">{{ .Name }}</option>
+                        {{ end }}
+                    {{ end }}
+                </select>
+            </div>
+        </div>
+    </fieldset>
+    <fieldset class="glass-panel rounded-xl p-6">
+        <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+            Endereço
+        </legend>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-6 gap-6">
+            <div class="flex flex-col-reverse md:col-span-2">
+                <input type="text" name="cep" id="cep" value="{{ if .Farm.Cep }}{{ .Farm.Cep }}{{ end }}" 
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                <label for="cep" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    CEP
+                </label>
+            </div>
+            <div class="flex flex-col-reverse md:col-span-4">
+                <input type="text" name="street" id="street" value="{{ if .Farm.Street }}{{ .Farm.Street }}{{ end }}"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 group-[.cep-data-loading]:animate-pulse">
+                <label for="street" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Rua
+                </label>
+            </div>
+            <div class="flex flex-col-reverse md:col-span-2">
+                <input type="text" name="number" id="number" value="{{ if .Farm.Number }}{{ .Farm.Number }}{{ end }}"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                <label for="number" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Número
+                </label>
+            </div>
+            <div class="flex flex-col-reverse md:col-span-4">
+                <input type="text" name="complement" id="complement"
+                    value="{{ if .Farm.Complement }}{{ .Farm.Complement }}{{ end }}" 
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                <label for="complement" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Complemento
+                </label>
+            </div>
+            <div class="flex flex-col-reverse md:col-span-3">
+                <input type="text" name="neighborhood" id="neighborhood"
+                    value="{{ if .Farm.Neighborhood }}{{ .Farm.Neighborhood }}{{ end }}"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 group-[.cep-data-loading]:animate-pulse">
+                <label for="neighborhood" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Bairro
+                </label>
+            </div>
+            <div class="flex flex-col-reverse md:col-span-2">
+                <input type="text" name="city" id="city" value="{{ if .Farm.City }}{{ .Farm.City }}{{ end }}"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 group-[.cep-data-loading]:animate-pulse">
+                <label for="city" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Cidade
+                </label>
+            </div>
+            <div class="flex flex-col-reverse md:col-span-1">
+                <input type="text" name="state" id="state" value="{{ if .Farm.State }}{{ .Farm.State }}{{ end }}"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 group-[.cep-data-loading]:animate-pulse">
+                <label for="state" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Estado
+                </label>
+            </div>
+        </div>
+    </fieldset>
+    <fieldset class="glass-panel rounded-xl p-6">
+        <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+            Contato
+        </legend>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="flex flex-col-reverse">
+                <input type="email" name="email" id="email" value="{{ if .Farm.Email }}{{ .Farm.Email }}{{ end }}" 
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                <label for="email" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Email
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <input type="tel" name="phoneNumber" id="phoneNumber"
+                    value="{{ if .Farm.PhoneNumber }}{{ .Farm.PhoneNumber }}{{ end }}" 
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                <label for="phoneNumber" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Telefone
+                </label>
+            </div>
+        </div>
+    </fieldset>
+    <div class="mt-6 flex justify-end">
+        <button type="submit" class="primary-glass-btn flex items-center gap-1">
+            <iconify-icon icon="mdi:content-save" width="20" height="20"></iconify-icon>
+            Salvar Alterações
+        </button>
+    </div>
+</form>
+{{ end }}

@@ -1,0 +1,22 @@
+{{ block "person-list-item" . }}
+<tr class="text-sm border-b border-sky-50/30 hover:bg-sky-50/10 whitespace-nowrap" id="person-{{ .Id }}">
+  <td class="py-3 px-4 text-left" data-label="TIPO">
+    {{ if eq .Type 0 }}Pessoa Física{{ else }}Pessoa Jurídica{{ end }}
+  </td>
+  <td class="py-3 px-4 text-left truncate max-w-64 font-bold" data-label="NOME" title="{{ .Name }}">
+    {{ .Name }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="DOCUMENTO">
+    {{ .Document }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="INSCRIÇÃO ESTADUAL">
+    {{ .IE }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="AÇÕES">
+    <button type="button" class="icon-btn edit-person-btn" data-person-id="{{ .Id }}" {{ if eq .Type 0 }}hx-get="/person/natural/form/{{ .Id }}"{{ else }}hx-get="/person/legal/form/{{ .Id }}"{{ end }} hx-target="body"
+      hx-swap="beforeend" title="Editar Pessoa">
+      <iconify-icon icon="mdi:pencil" class="text-xl"></iconify-icon>
+    </button>
+  </td>
+</tr>
+{{ end }}

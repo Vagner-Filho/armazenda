@@ -1,0 +1,493 @@
+package calculator_test
+
+import (
+	"armazenda/pkg/calculator"
+	"encoding/csv"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/shopspring/decimal"
+)
+
+// Test case structure for calculator tests
+type calculatorTestCase struct {
+	name              string
+	input             calculator.EntryCalculationInput
+	expectedNetWeight decimal.Decimal
+	expectedValid     bool
+	expectedErrorMsg  string
+}
+
+// Helper function to create decimal pointer
+func decimalPtr(d decimal.Decimal) *decimal.Decimal {
+	return &d
+}
+
+// Error Cases
+var errorCases []calculatorTestCase = []calculatorTestCase{
+	{
+		name: "Error - Negative net weight (tare > gross weight)",
+		input: calculator.EntryCalculationInput{
+			GrossWeight: decimal.NewFromInt(1000),
+			Tare:        decimal.NewFromInt(2000),
+		},
+		expectedValid:    false,
+		expectedErrorMsg: "O peso líquido não pode ser menor do que zero",
+	},
+}
+
+// Success Cases - adapted from service_test.go
+var successCases []calculatorTestCase = []calculatorTestCase{
+	{
+		name: "Success - Basic entry (no origin, no quality discounts, no service tax)",
+		input: calculator.EntryCalculationInput{
+			GrossWeight: decimal.NewFromInt(1000),
+			Tare:        decimal.NewFromInt(100),
+		},
+		expectedNetWeight: decimal.NewFromFloat(900.0),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with exceeding humidity limit by 2% and default discount for farm",
+		input: calculator.EntryCalculationInput{
+			GrossWeight:      decimal.NewFromFloat(50.000),
+			Tare:             decimal.NewFromFloat(25.000),
+			Humidity:         decimalPtr(decimal.NewFromInt(16)),
+			HumidityModifier: decimalPtr(decimal.NewFromFloat(1.15)),
+		},
+		expectedNetWeight: decimal.NewFromFloat(24.425),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with exceeding humidity limit by 2% and default discount for person",
+		input: calculator.EntryCalculationInput{
+			GrossWeight:      decimal.NewFromFloat(50.000),
+			Tare:             decimal.NewFromFloat(25.000),
+			Humidity:         decimalPtr(decimal.NewFromInt(16)),
+			HumidityModifier: decimalPtr(decimal.NewFromFloat(1.7)),
+		},
+		expectedNetWeight: decimal.NewFromFloat(24.150),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with damage exceeding limit by 2%",
+		input: calculator.EntryCalculationInput{
+			GrossWeight: decimal.NewFromFloat(50.000),
+			Tare:        decimal.NewFromFloat(25.000),
+			Damage:      decimalPtr(decimal.NewFromInt(10)),
+		},
+		expectedNetWeight: decimal.NewFromFloat(24.500),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with impurity exceeding limit by 2%",
+		input: calculator.EntryCalculationInput{
+			GrossWeight: decimal.NewFromFloat(50.000),
+			Tare:        decimal.NewFromFloat(25.000),
+			Impurity:    decimalPtr(decimal.NewFromInt(3)),
+		},
+		expectedNetWeight: decimal.NewFromFloat(24.500),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with damage > 8% threshold",
+		input: calculator.EntryCalculationInput{
+			GrossWeight: decimal.NewFromInt(1000),
+			Tare:        decimal.NewFromInt(100),
+			Damage:      decimalPtr(decimal.NewFromInt(10)),
+		},
+		expectedNetWeight: decimal.NewFromFloat(882.0),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with corn discount only",
+		input: calculator.EntryCalculationInput{
+			GrossWeight:        decimal.NewFromFloat(50.000),
+			Tare:               decimal.NewFromFloat(25.000),
+			StorageTaxModifier: decimalPtr(decimal.NewFromFloat(5.5)), // Corn discount
+		},
+		expectedNetWeight: decimal.NewFromFloat(23.625),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with humidity exceending 2% + hum modifier for farm + damage exceeding 2%",
+		input: calculator.EntryCalculationInput{
+			GrossWeight:      decimal.NewFromFloat(50.000),
+			Tare:             decimal.NewFromFloat(25.000),
+			Humidity:         decimalPtr(decimal.NewFromInt(16)),
+			Damage:           decimalPtr(decimal.NewFromInt(10)),
+			HumidityModifier: decimalPtr(decimal.NewFromFloat(1.15)),
+		},
+		expectedNetWeight: decimal.NewFromFloat(23.925),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with humidity exceending 2% + hum modifier for farm + impurity exceeding 2%",
+		input: calculator.EntryCalculationInput{
+			GrossWeight:      decimal.NewFromFloat(50.000),
+			Tare:             decimal.NewFromFloat(25.000),
+			Humidity:         decimalPtr(decimal.NewFromInt(16)),
+			Impurity:         decimalPtr(decimal.NewFromInt(3)),
+			HumidityModifier: decimalPtr(decimal.NewFromFloat(1.15)),
+		},
+		expectedNetWeight: decimal.NewFromFloat(23.925),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with humidity exceending 2% + hum modifier for farm + soy storage tax",
+		input: calculator.EntryCalculationInput{
+			GrossWeight:        decimal.NewFromFloat(50.000),
+			Tare:               decimal.NewFromFloat(25.000),
+			Humidity:           decimalPtr(decimal.NewFromInt(16)),
+			HumidityModifier:   decimalPtr(decimal.NewFromFloat(1.15)),
+			StorageTaxModifier: decimalPtr(decimal.NewFromFloat(3.5)), // Soy discount
+		},
+		expectedNetWeight: decimal.NewFromFloat(23.570125),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with humidity exceending 2% + hum modifier for farm + corn storage tax",
+		input: calculator.EntryCalculationInput{
+			GrossWeight:        decimal.NewFromFloat(50.000),
+			Tare:               decimal.NewFromFloat(25.000),
+			Humidity:           decimalPtr(decimal.NewFromInt(16)),
+			HumidityModifier:   decimalPtr(decimal.NewFromFloat(1.15)),
+			StorageTaxModifier: decimalPtr(decimal.NewFromFloat(5.5)), // Corn discount
+		},
+		expectedNetWeight: decimal.NewFromFloat(23.081625),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with humidity exceending 2% + hum modifier for person + damage exceeding 2%",
+		input: calculator.EntryCalculationInput{
+			GrossWeight:      decimal.NewFromFloat(50.000),
+			Tare:             decimal.NewFromFloat(25.000),
+			Humidity:         decimalPtr(decimal.NewFromInt(16)),
+			Damage:           decimalPtr(decimal.NewFromInt(10)),
+			HumidityModifier: decimalPtr(decimal.NewFromFloat(1.7)),
+		},
+		expectedNetWeight: decimal.NewFromFloat(23.650),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with humidity exceending 2% + hum modifier for person + impurity exceeding 2%",
+		input: calculator.EntryCalculationInput{
+			GrossWeight:      decimal.NewFromFloat(50.000),
+			Tare:             decimal.NewFromFloat(25.000),
+			Humidity:         decimalPtr(decimal.NewFromInt(16)),
+			Impurity:         decimalPtr(decimal.NewFromInt(3)),
+			HumidityModifier: decimalPtr(decimal.NewFromFloat(1.7)),
+		},
+		expectedNetWeight: decimal.NewFromFloat(23.650),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with humidity exceending 2% + hum modifier for person + soy storage tax",
+		input: calculator.EntryCalculationInput{
+			GrossWeight:        decimal.NewFromFloat(50.000),
+			Tare:               decimal.NewFromFloat(25.000),
+			Humidity:           decimalPtr(decimal.NewFromInt(16)),
+			HumidityModifier:   decimalPtr(decimal.NewFromFloat(1.7)),
+			StorageTaxModifier: decimalPtr(decimal.NewFromFloat(3.5)), // Soy discount
+		},
+		expectedNetWeight: decimal.NewFromFloat(23.304750),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with humidity exceending 2% + hum modifier for person + corn storage tax",
+		input: calculator.EntryCalculationInput{
+			GrossWeight:        decimal.NewFromFloat(50.000),
+			Tare:               decimal.NewFromFloat(25.000),
+			Humidity:           decimalPtr(decimal.NewFromInt(16)),
+			HumidityModifier:   decimalPtr(decimal.NewFromFloat(1.7)),
+			StorageTaxModifier: decimalPtr(decimal.NewFromFloat(5.5)), // Corn discount
+		},
+		expectedNetWeight: decimal.NewFromFloat(22.821750),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with impurity > 1% threshold",
+		input: calculator.EntryCalculationInput{
+			GrossWeight: decimal.NewFromInt(1000),
+			Tare:        decimal.NewFromInt(100),
+			Impurity:    decimalPtr(decimal.NewFromInt(2)),
+		},
+		expectedNetWeight: decimal.NewFromFloat(891.0),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with humidity > 14% threshold",
+		input: calculator.EntryCalculationInput{
+			GrossWeight:      decimal.NewFromInt(1000),
+			Tare:             decimal.NewFromInt(100),
+			Humidity:         decimalPtr(decimal.NewFromInt(16)),
+			HumidityModifier: decimalPtr(decimal.NewFromFloat(1.15)),
+		},
+		expectedNetWeight: decimal.NewFromFloat(879.3),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - Entry with origin and soy storage tax",
+		input: calculator.EntryCalculationInput{
+			GrossWeight:        decimal.NewFromInt(1000),
+			Tare:               decimal.NewFromInt(100),
+			StorageTaxModifier: decimalPtr(decimal.NewFromFloat(3.5)), // Soy discount
+		},
+		expectedNetWeight: decimal.NewFromFloat(868.5),
+		expectedValid:     true,
+	},
+	{
+		name: "Success - All quality discounts combined",
+		input: calculator.EntryCalculationInput{
+			GrossWeight:      decimal.NewFromInt(1000),
+			Tare:             decimal.NewFromInt(100),
+			Humidity:         decimalPtr(decimal.NewFromInt(16)),
+			Damage:           decimalPtr(decimal.NewFromInt(10)),
+			Impurity:         decimalPtr(decimal.NewFromInt(2)),
+			HumidityModifier: decimalPtr(decimal.NewFromFloat(1.15)),
+		},
+		expectedNetWeight: decimal.NewFromFloat(852.3),
+		expectedValid:     true,
+	},
+}
+
+func TestCalculateEntry(t *testing.T) {
+	testCases := append(successCases, errorCases...)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := calculator.CalculateEntry(tc.input)
+
+			if result.IsValid != tc.expectedValid {
+				t.Errorf("Expected IsValid=%v, got %v", tc.expectedValid, result.IsValid)
+			}
+
+			if !tc.expectedValid {
+				if result.ErrorMessage != tc.expectedErrorMsg {
+					t.Errorf("Expected error message '%s', got '%s'", tc.expectedErrorMsg, result.ErrorMessage)
+				}
+				return
+			}
+
+			if !result.NetWeight.Equal(tc.expectedNetWeight) {
+				t.Errorf("Expected NetWeight %s, got %s", tc.expectedNetWeight.String(), result.NetWeight.String())
+			}
+		})
+	}
+}
+
+func TestCalculateDiscounts(t *testing.T) {
+	tests := []struct {
+		name             string
+		humidity         *decimal.Decimal
+		damage           *decimal.Decimal
+		impurity         *decimal.Decimal
+		grossWeight      decimal.Decimal
+		tare             decimal.Decimal
+		humidityModifier *decimal.Decimal
+		expectedHumidity decimal.Decimal
+		expectedDamage   decimal.Decimal
+		expectedImpurity decimal.Decimal
+		expectedTotal    decimal.Decimal
+	}{
+		{
+			name:             "No discounts - all within thresholds",
+			humidity:         nil,
+			damage:           nil,
+			impurity:         nil,
+			grossWeight:      decimal.NewFromInt(1000),
+			tare:             decimal.NewFromInt(100),
+			humidityModifier: nil,
+			expectedHumidity: decimal.Zero,
+			expectedDamage:   decimal.Zero,
+			expectedImpurity: decimal.Zero,
+			expectedTotal:    decimal.Zero,
+		},
+		{
+			name:             "Humidity exceeding by 2% with modifier 1.15",
+			humidity:         decimalPtr(decimal.NewFromInt(16)),
+			damage:           nil,
+			impurity:         nil,
+			grossWeight:      decimal.NewFromFloat(50),
+			tare:             decimal.NewFromFloat(25),
+			humidityModifier: decimalPtr(decimal.NewFromFloat(1.15)),
+			expectedHumidity: decimal.NewFromFloat(0.575),
+			expectedDamage:   decimal.Zero,
+			expectedImpurity: decimal.Zero,
+			expectedTotal:    decimal.NewFromFloat(0.575),
+		},
+		{
+			name:             "Damage exceeding by 2%",
+			humidity:         nil,
+			damage:           decimalPtr(decimal.NewFromInt(10)),
+			impurity:         nil,
+			grossWeight:      decimal.NewFromFloat(50),
+			tare:             decimal.NewFromFloat(25),
+			humidityModifier: nil,
+			expectedHumidity: decimal.Zero,
+			expectedDamage:   decimal.NewFromFloat(0.5),
+			expectedImpurity: decimal.Zero,
+			expectedTotal:    decimal.NewFromFloat(0.5),
+		},
+		{
+			name:             "Impurity exceeding by 2%",
+			humidity:         nil,
+			damage:           nil,
+			impurity:         decimalPtr(decimal.NewFromInt(3)),
+			grossWeight:      decimal.NewFromFloat(50),
+			tare:             decimal.NewFromFloat(25),
+			humidityModifier: nil,
+			expectedHumidity: decimal.Zero,
+			expectedDamage:   decimal.Zero,
+			expectedImpurity: decimal.NewFromFloat(0.5),
+			expectedTotal:    decimal.NewFromFloat(0.5),
+		},
+		{
+			name:             "All discounts combined",
+			humidity:         decimalPtr(decimal.NewFromInt(16)),
+			damage:           decimalPtr(decimal.NewFromInt(10)),
+			impurity:         decimalPtr(decimal.NewFromInt(2)),
+			grossWeight:      decimal.NewFromInt(1000),
+			tare:             decimal.NewFromInt(100),
+			humidityModifier: decimalPtr(decimal.NewFromFloat(1.15)),
+			expectedHumidity: decimal.NewFromFloat(20.7),
+			expectedDamage:   decimal.NewFromInt(18),
+			expectedImpurity: decimal.NewFromInt(9),
+			expectedTotal:    decimal.NewFromFloat(47.7),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := calculator.CalculateDiscounts(tt.humidity, tt.damage, tt.impurity, tt.grossWeight, tt.tare, tt.humidityModifier, nil)
+
+			if !result.HumidityDiscount.Equal(tt.expectedHumidity) {
+				t.Errorf("HumidityDiscount = %v, want %v", result.HumidityDiscount, tt.expectedHumidity)
+			}
+			if !result.DamageDiscount.Equal(tt.expectedDamage) {
+				t.Errorf("DamageDiscount = %v, want %v", result.DamageDiscount, tt.expectedDamage)
+			}
+			if !result.ImpurityDiscount.Equal(tt.expectedImpurity) {
+				t.Errorf("ImpurityDiscount = %v, want %v", result.ImpurityDiscount, tt.expectedImpurity)
+			}
+			if !result.TotalDiscount.Equal(tt.expectedTotal) {
+				t.Errorf("TotalDiscount = %v, want %v", result.TotalDiscount, tt.expectedTotal)
+			}
+		})
+	}
+}
+
+// parseDecimal parses a string to decimal.Decimal, returning nil for empty strings
+func parseDecimal(s string) *decimal.Decimal {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	// Remove percentage sign if present
+	s = strings.TrimSuffix(s, "%")
+	d, err := decimal.NewFromString(s)
+	if err != nil {
+		return nil
+	}
+	return &d
+}
+
+// parseRequiredDecimal parses a string that must contain a valid decimal
+func parseRequiredDecimal(s string) decimal.Decimal {
+	s = strings.TrimSpace(s)
+	s = strings.TrimSuffix(s, "%")
+	d, _ := decimal.NewFromString(s)
+	return d
+}
+
+// TestCalculateEntryFromCSV reads test cases from CSV and validates calculator
+func TestCalculateEntryFromCSV(t *testing.T) {
+	// Find the CSV file path
+	csvPath := filepath.Join("test", "entry_calc_tests.csv")
+
+	// If not found relative to current dir, try to find it
+	if _, err := os.Stat(csvPath); os.IsNotExist(err) {
+		// Try from package directory
+		csvPath = filepath.Join("pkg", "calculator", "test", "entry_calc_tests.csv")
+	}
+
+	file, err := os.Open(csvPath)
+	if err != nil {
+		t.Fatalf("Failed to open CSV file: %v", err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		t.Fatalf("Failed to read CSV: %v", err)
+	}
+
+	if len(records) < 2 {
+		t.Fatal("CSV file has no data rows")
+	}
+
+	// Skip header row (index 0)
+	for i, record := range records[1:] {
+		rowNum := i + 2 // CSV row number (1-indexed, plus header)
+
+		// Skip empty rows
+		if len(record) == 0 || (len(record) == 1 && strings.TrimSpace(record[0]) == "") {
+			continue
+		}
+
+		// Ensure we have enough columns
+		if len(record) < 10 {
+			t.Errorf("Row %d: insufficient columns (got %d, expected 10)", rowNum, len(record))
+			continue
+		}
+
+		// Parse inputs
+		grossWeight := parseRequiredDecimal(record[0])       // Bruto
+		tare := parseRequiredDecimal(record[1])              // Tara
+		humidity := parseDecimal(record[3])                  // Umidade
+		humidityModifier := parseDecimal(record[4])          // Desconto Umidade
+		damage := parseDecimal(record[5])                    // Avaria
+		impurity := parseDecimal(record[6])                  // Impureza
+		storageTaxModifier := parseDecimal(record[8])        // Taxa de Serviço
+		expectedNetWeight := parseRequiredDecimal(record[9]) // Entrada Final
+
+		t.Run(fmt.Sprintf("Row_%d", rowNum), func(t *testing.T) {
+			// Create input
+			input := calculator.EntryCalculationInput{
+				GrossWeight:        grossWeight,
+				Tare:               tare,
+				Humidity:           humidity,
+				HumidityModifier:   humidityModifier,
+				Damage:             damage,
+				Impurity:           impurity,
+				StorageTaxModifier: storageTaxModifier,
+			}
+
+			// Calculate
+			result := calculator.CalculateEntry(input)
+
+			// Validate
+			if !result.IsValid {
+				t.Errorf("Calculation returned invalid result with error: %s", result.ErrorMessage)
+				return
+			}
+
+			if !result.NetWeight.Equal(expectedNetWeight) {
+				t.Errorf("Expected NetWeight=%s, got %s (input: gross=%s, tare=%s, humidity=%v, mod=%v, damage=%v, impurity=%v, tax=%v)",
+					expectedNetWeight.String(),
+					result.NetWeight.String(),
+					grossWeight.String(),
+					tare.String(),
+					humidity,
+					humidityModifier,
+					damage,
+					impurity,
+					storageTaxModifier,
+				)
+			}
+		})
+	}
+}

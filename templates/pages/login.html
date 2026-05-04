@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a5f">
+    <meta name="description" content="Entre no sistema para controlar entrada e saída de grãos em silagem com relatórios e análises">
+    <title>Armazenda - Sistema de Controle para Silos</title>
+    <!--<link rel="icon" type="image/x-icon" href="/public/assets/favicon.ico">-->
+    <link rel="icon" type="image/png" href="/public/assets/favicon-96x96.png" sizes="96x96" >
+    <link rel="icon" type="image/svg+xml" href="/public/assets/favicon.svg" >
+    <link rel="shortcut icon" href="/public/assets/favicon.ico" >
+    <link rel="apple-touch-icon" sizes="180x180" href="/public/assets/apple-touch-icon.png" >
+    <meta name="apple-mobile-web-app-title" content="Armazenda" >
+    <link rel="manifest" href="/public/assets/site.webmanifest" >
+    <link rel="manifest" href="/public/assets/manifest.json">
+    <link rel="preload" href="/public/assets/static/fonts/noto-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <style>
+      @font-face {
+        font-family: 'Noto Sans';
+        font-style: normal;
+        font-weight: 600 800;
+        src: url(/public/assets/static/fonts/noto-sans-latin.woff2) format('woff2');
+        font-display: swap;
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+    </style>
+    <script nonce="{{ .CSPNonce }}" src="/public/assets/static/htmx.min.js.gz" defer></script>
+    <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/toast.js" async></script>
+  </head>
+  <body class="login-container">
+    <div class="liquid-bg">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
+    </div>
+    <main class="login-card-wrapper">
+      <h2 class="login-title">Login</h2>
+      <form hx-post="/login" hx-target="#error-indicator-space" class="login-form">
+        {{ template "login-cpf-field" . }}
+        <div class="login-field">
+          <label for="password" class="login-label">Senha</label>
+          <input type="password" id="password" name="passwd" required aria-placeholder="senha" placeholder="*********" class="login-input">
+        </div>
+        <button type="submit" class="login-btn-primary">Entrar</button>
+      </form>
+      <div class="login-social-container">
+        <a href="/auth/google/login" class="login-btn-social">
+          <svg style="width: 1.25rem; height: 1.25rem;" viewBox="0 0 24 24">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          Entrar com Google
+        </a>
+        <a href="/auth/microsoft/login" class="login-btn-social">
+          <svg style="width: 1.25rem; height: 1.25rem;" viewBox="0 0 21 21">
+            <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+            <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+            <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+            <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+          </svg>
+          Entrar com Microsoft
+        </a>
+      </div>
+      <p class="login-footer-text">
+        Novo por aqui?
+        <button type="button" class="login-btn-create" hx-trigger="click" hx-get="/user/form" hx-headers='{"X-nonce": "{{ .CSPNonce }}"}' hx-target="body" hx-swap="beforeend">Crie uma conta!</button>
+      </p>
+      <div id="error-indicator-space" class="login-error-space">
+        <!-- Message error login -->
+      </div>
+    </main>
+  </body>
+  <script nonce="{{ .CSPNonce }}">
+    document.querySelectorAll('input').forEach(input => {
+    input.addEventListener('focus', function () {
+      const errorMsg = document.getElementById('error-msg');
+      if (errorMsg) {
+        errorMsg.remove();
+      }
+    });
+  });
+  </script>
+  <style nonce="{{ .CSPNonce }}">
+    body {
+    background-color: #7dd3fc;
+    color: white;
+    overflow-x: hidden;
+  }
+
+  * {
+    font-family: "Noto Sans", sans-serif;
+  }
+
+  .liquid-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    z-index: -1;
+    background: linear-gradient(180deg, #38bdf8 0%, #7dd3fc 40%, #a3e635 100%);
+  }
+
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.7;
+  }
+
+  .blob-1 {
+    top: -10%;
+    left: -10%;
+    width: 60vmax;
+    height: 60vmax;
+    background: #0ea5e9;
+  }
+
+  .blob-2 {
+    bottom: -5%;
+    right: -5%;
+    width: 55vmax;
+    height: 55vmax;
+    background: #22c55e;
+  }
+
+  .blob-3 {
+    bottom: 10%;
+    left: 10%;
+    width: 45vmax;
+    height: 40vmax;
+    background: #92400e;
+    opacity: 0.5;
+  }
+
+  .blob-4 {
+    position: absolute;
+    height: 70vmax;
+    width: 50px;
+    background-color: brown;
+    bottom: -30px;
+    right: 30%;
+    filter: blur(35px);
+    opacity: 1;
+    border-radius: 0;
+    transform: rotate(35deg);
+    transform-origin: bottom;
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    border-radius: 24px;
+  }
+
+  .glass-input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+  }
+
+  .glass-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .glass-input:focus {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.5);
+    outline: none;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.15), inset 0 0 20px rgba(255, 255, 255, 0.05);
+  }
+
+  .glass-input:-webkit-autofill,
+  .glass-input:-webkit-autofill:hover,
+  .glass-input:-webkit-autofill:focus,
+  .glass-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px rgba(255, 255, 255, 0.1) inset !important;
+    -webkit-text-fill-color: white !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  .glass-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+  }
+
+  /* Login page custom classes replacing TailwindCSS utilities */
+  
+  .login-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .login-card-wrapper {
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    border-radius: 24px;
+    width: 100%;
+    max-width: 28rem;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    z-index: 10;
+    position: relative;
+  }
+
+  @media (min-width: 768px) {
+    .login-card-wrapper {
+      padding: 3rem;
+    }
+  }
+
+  .login-title {
+    font-size: 1.875rem;
+    font-weight: 800;
+    color: white;
+    letter-spacing: 0.025em;
+    text-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-family: "Noto Sans", sans-serif;
+    margin: 0;
+  }
+
+  .login-form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .login-form > :first-child {
+    margin-bottom: 0.5rem;
+  }
+
+  .login-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .login-label {
+    padding: 0 0.5rem;
+    color: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .login-input {
+    font-size: 1rem;
+    padding: 0 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+    height: 3rem;
+  }
+
+  .login-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .login-input:focus {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.5);
+    outline: none;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.15), inset 0 0 20px rgba(255, 255, 255, 0.05);
+  }
+
+  .login-input:-webkit-autofill,
+  .login-input:-webkit-autofill:hover,
+  .login-input:-webkit-autofill:focus,
+  .login-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px rgba(255, 255, 255, 0.1) inset !important;
+    -webkit-text-fill-color: white !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  .login-btn-primary {
+    width: 100%;
+    padding: 0.75rem 0;
+    background: #059669;
+    border: 1px solid rgba(5, 150, 105, 0.4);
+    color: white;
+    border-radius: 9999px;
+    font-size: 1.125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .login-btn-primary:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    color: #065f46;
+    background: #d1fae5;
+  }
+
+  .login-social-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .login-btn-social {
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    background: rgba(241, 245, 249, 0.15);
+    backdrop-filter: blur(4px);
+    text-decoration: none;
+    border: 1px solid rgba(241, 245, 249, 0.15);
+  }
+
+  .login-btn-social:hover {
+    background: rgba(241, 245, 249, 0.3);
+    box-shadow: 0 10px 15px -1px rgba(255, 255, 255, 0.3);
+    border-color: rgba(241, 245, 249, 0.6);
+    transform: translateY(-2px);
+  }
+
+  .login-footer-text {
+    font-size: 0.875rem;
+    text-align: center;
+    padding-top: 1rem;
+  }
+
+  .login-btn-create {
+    font-weight: 700;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    color: white;
+  }
+
+  .login-btn-create:hover,
+  .login-btn-create:focus {
+    text-decoration: underline;
+  }
+
+  .login-error-space {
+    display: flex;
+    justify-content: center;
+  }
+  </style>
+</html>

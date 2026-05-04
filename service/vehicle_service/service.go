@@ -1,16 +1,36 @@
 package vehicle_service
 
-import "armazenda/model/vehicle_model"
+import (
+	entity_public "armazenda/entity/public"
+	"armazenda/model/vehicle_model"
+)
 
-func GetVehicles() []vehicle_model.Vehicle {
-    return vehicle_model.GetVehicles()
+func GetVehiclesByFarm(farm uint32) ([]entity_public.Vehicle, *entity_public.Toast) {
+	vModel, _ := vehicle_model.GetVehicleModel()
+
+	vehicles, err := vModel.GetVehiclesByFarm(farm)
+	if err != nil {
+		toast := entity_public.GetErrorToast(err.Error(), "")
+		return []entity_public.Vehicle{}, &toast
+	}
+
+	return vehicles, nil
 }
 
-func AddVehicle(v vehicle_model.Vehicle) (vehicle_model.Vehicle, *string) {
-    var vehicle, contains = vehicle_model.AddVehicle(v)
-    if contains {
-        var containsMessage string = "Veículo com a placa " + vehicle.Plate + " já existe."
-        return vehicle, &containsMessage
-    }
-    return vehicle, nil
+func GetVehicle(id uint16) (entity_public.Vehicle, error) {
+	vModel, _ := vehicle_model.GetVehicleModel()
+	return vModel.GetVehicle(id)
+}
+
+func AddVehicle(v entity_public.Vehicle) (entity_public.Vehicle, error) {
+	vModel, modelErr := vehicle_model.GetVehicleModel()
+	if modelErr != nil {
+		return entity_public.Vehicle{}, modelErr
+	}
+
+	vehicle, addErr := vModel.AddVehicle(v)
+	if addErr != nil {
+		return entity_public.Vehicle{}, addErr
+	}
+	return vehicle, nil
 }

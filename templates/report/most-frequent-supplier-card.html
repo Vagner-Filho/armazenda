@@ -1,0 +1,11 @@
+{{ define "most-frequent-supplier-card.html" }}
+<div class="glass-panel rounded-xl p-4" data-stat-type="{{ .Type }}">
+  <h3 class="text-sm font-medium text-white/80">{{ .Title }}</h3>
+  {{ if .IsWeight }}
+  <p class="text-2xl font-semibold text-white mt-1 weight-value">{{ .Value }}</p>
+  {{ else }}
+  <p class="text-2xl font-semibold text-white mt-1">{{ .Value }}</p>
+  {{ end }}
+  <p class="text-xs text-white/70 mt-1">{{ .PersonName }}</p>
+</div>
+{{ end }}

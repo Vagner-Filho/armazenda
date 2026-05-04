@@ -1,0 +1,31 @@
+{{ block "progression-table" . }}
+<div id="progression-table" class="mt-4">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-white/90 uppercase tracking-wider">Progressões Cadastradas</h3>
+        <button type="button" class="add-btn flex items-center gap-2" hx-get="/progressao/form" hx-target="body" hx-swap="beforeend">
+            <iconify-icon icon="ic:baseline-add" width="24" height="24"></iconify-icon>
+            Nova Progressão
+        </button>
+    </div>
+    {{ if .Progressions }}
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+            <thead class="text-xs uppercase text-white/60 border-b border-white/10">
+                <tr>
+                    <th class="px-3 py-2">Nome</th>
+                    <th class="px-3 py-2">Faixas</th>
+                    <th class="px-3 py-2 text-right">Ações</th>
+                </tr>
+            </thead>
+            <tbody id="progression-rows">
+                {{ range .Progressions }}
+                    {{ template "progression-row" (dict "Progression" . "CurrentFarmProgressionId" $.CurrentFarmProgressionId) }}
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
+    {{ else }}
+    <p class="text-white/50 text-sm text-center py-4">Nenhuma progressão cadastrada. Utilize o botão acima para criar uma.</p>
+    {{ end }}
+</div>
+{{ end }}

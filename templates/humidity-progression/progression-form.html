@@ -1,0 +1,119 @@
+{{ block "progression-form" . }}
+<dialog id="progressionFormDialog" class="glass-panel rounded-xl w-full max-w-2xl">
+    <div class="p-4 relative">
+        {{ template "close-dialog-btn" (dict "selector" "dialog#progressionFormDialog" "CSPNonce" .CSPNonce) }}
+        <header class="text-center mb-4">
+            <h1 class="text-xl lg:text-2xl font-bold text-white/95">
+                {{ if .Id }}Editar Progressão{{ else }}Nova Progressão{{ end }}
+            </h1>
+            <p class="text-sm text-white/90 mt-2">
+                Defina as faixas de desconto por umidade.
+            </p>
+        </header>
+        <form id="progression-form"
+            {{ if .Id }}
+            hx-put="/progressao/{{ .Id }}" hx-target="#progression-{{ .Id }}" hx-swap="outerHTML"
+            {{ else }}
+            hx-post="/progressao" hx-target="#progression-rows" hx-swap="beforeend"
+            {{ end }}
+            class="flex flex-col gap-4">
+            <div class="flex flex-col-reverse">
+                <input type="text" name="name" id="progression-name" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required value="{{ .Name }}">
+                <label for="progression-name" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Nome da Progressão
+                </label>
+            </div>
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <label class="text-xs lg:text-sm font-medium uppercase tracking-wider text-white/70">Faixas de Desconto</label>
+                    <button type="button" id="add-tier-btn" class="add-btn flex items-center gap-2">
+                        <iconify-icon icon="ic:baseline-add" width="24" height="24"></iconify-icon>
+                        Adicionar Faixa
+                    </button>
+                </div>
+                <div id="tiers-container" class="flex flex-col gap-2">
+                    {{ if .Tiers }}
+                        {{ range $i, $tier := .Tiers }}
+                        <div class="tier-row flex items-center gap-2">
+                            <div class="flex-1 flex flex-col-reverse">
+                                <input type="number" step="0.01" name="tiers[{{ $i }}].thresholdHumidity" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required value="{{ $tier.ThresholdHumidity }}">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs font-medium uppercase tracking-wider">Umidade (%)</label>
+                            </div>
+                            <div class="flex-1 flex flex-col-reverse">
+                                <input type="number" step="0.01" name="tiers[{{ $i }}].discountValue" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required value="{{ $tier.DiscountValue }}">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs font-medium uppercase tracking-wider">Desconto</label>
+                            </div>
+                            <button type="button" class="remove-tier-btn icon-btn text-red-400/70 hover:text-red-400 mt-4" title="Remover faixa">
+                                <iconify-icon icon="ic:baseline-remove-circle" width="20" height="20"></iconify-icon>
+                            </button>
+                        </div>
+                        {{ end }}
+                    {{ else }}
+                        <div class="tier-row flex items-center gap-2">
+                            <div class="flex-1 flex flex-col-reverse">
+                                <input type="number" step="0.01" name="tiers[0].thresholdHumidity" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required placeholder="14">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs font-medium uppercase tracking-wider">Umidade (%)</label>
+                            </div>
+                            <div class="flex-1 flex flex-col-reverse">
+                                <input type="number" step="0.01" name="tiers[0].discountValue" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required placeholder="1.7">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs font-medium uppercase tracking-wider">Desconto</label>
+                            </div>
+                            <button type="button" class="remove-tier-btn icon-btn text-red-400/70 hover:text-red-400 mt-4" title="Remover faixa">
+                                <iconify-icon icon="ic:baseline-remove-circle" width="20" height="20"></iconify-icon>
+                            </button>
+                        </div>
+                    {{ end }}
+                </div>
+            </div>
+            <!-- Visual tier representation -->
+            <div id="tier-visualization" class="bg-white/5 rounded-lg p-4 border border-white/10">
+                <!-- Explanation text -->
+                <div class="flex items-start gap-2 mb-3 text-white/80 text-sm">
+                    <iconify-icon icon="mdi:information" class="text-blue-400 mt-0.5 flex-shrink-0"></iconify-icon>
+                    <p>
+                        <strong>Como funciona:</strong> O desconto é aplicado quando a umidade atinge ou ultrapassa cada limite.
+                        Abaixo do primeiro limite, não há desconto.
+                    </p>
+                </div>
+                <!-- Visual bar with fixed 0-100 range -->
+                <div class="progression-visual-wrapper">
+                    <!-- Discount labels (above bar) -->
+                    <div class="progression-discount-labels">
+                        <!-- Injected by JS -->
+                    </div>
+                    <!-- Segmented bar -->
+                    <div class="progression-bar">
+                        <div class="progression-segments">
+                            <!-- Segments injected by JS -->
+                        </div>
+                        <!-- Leader lines overlay -->
+                        <div class="progression-leader-lines">
+                            <!-- Lines injected by JS -->
+                        </div>
+                    </div>
+                    <!-- Threshold labels (below bar) -->
+                    <div class="progression-threshold-labels">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+            </div>
+            <!-- Dynamic explanation text -->
+            <div id="progression-explanation" class="text-white/80 text-sm px-4 py-3 bg-white/5 rounded-lg border border-white/10 hidden">
+                <!-- Injected by JS -->
+            </div>
+            <div class="flex items-center justify-around mt-4 w-52 mx-auto">
+                <button type="button" class="cancel-btn">
+                    Cancelar
+                </button>
+                <button class="primary-glass-btn" type="submit">
+                    {{ if .Id }}Salvar{{ else }}Adicionar{{ end }}
+                </button>
+            </div>
+        </form>
+    </div>
+    <script nonce="{{ .CSPNonce }}" type="module">
+        import { progressionDialogSetup } from "/public/assets/js/progressionDialog.js"
+        progressionDialogSetup()
+    </script>
+</dialog>
+{{ end }}

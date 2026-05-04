@@ -1,16 +1,25 @@
-{{ block "vehicle-selector" . }}
-<div class="flex items-center gap-2 w-full">
-    <select name="vehiclePlate" id="vehicle-selector" class="w-full">
-        {{ range . }}
-        {{ template "vehicle-option" . }}
+{{ block "vehicle-selector" $ }}
+<div class="flex flex-wrap w-full gap-2">
+  <label for="vehicle-selector" class="peer-focus:text-white px-2 w-full text-white/70 transition-all duration-300 ease-linear text-xs lg:text-sm font-medium uppercase tracking-wider">
+    Veículo
+  </label>
+  <select name="vehiclePlate" id="vehicle-selector" class="bg-white/10 border-white/20 text-white peer grow" required>
+    {{ range $.Vehicles }}
+            {{ if eq .Id $.SelectedVehicle }}
+    <option value="{{ .Id }}" selected>
+      {{ .Plate }} | {{ .Name }}
+    </option>
+    {{ else }}
+                {{ template "vehicle-option" . }}
+    {{ end }}
         {{ else }}
-        <option value="-1">
-            Nenhum veículo encontrado
-        </option>
-        {{ end }}
-    </select>
-    <button class="stroke-green-500 rounded-full text-transparent text-[24px] h-6 leading-6 focus:text-green-500 focus:stroke-white hover:text-green-500 hover:stroke-white transition-colors duration-300 ease-linear !outline-0" type="button" hx-trigger="click" hx-get="/vehicle/form">
-        <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
-    </button>
+    <option value="-1">
+      Nenhum veículo encontrado
+    </option>
+    {{ end }}
+  </select>
+  <button class="icon-btn text-[24px] flex items-center" type="button" hx-get="/vehicle/form" hx-target="body" hx-swap="beforeend">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m5 11h-4v4h-2v-4H7v-2h4V7h2v4h4z"/></svg>
+  </button>
 </div>
 {{ end }}

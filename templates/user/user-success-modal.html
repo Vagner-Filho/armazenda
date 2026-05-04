@@ -1,0 +1,99 @@
+{{ block "user-success-modal" . }}
+<style nonce="{{ .CSPNonce }}">
+  .success-modal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+    gap: 1rem;
+  }
+
+  .success-icon-circle {
+    border-radius: 50%;
+    background-color: rgba(16, 185, 129, 0.15);
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+
+  .success-icon {
+    width: 48px;
+    height: 48px;
+    fill: currentColor;
+    color: #10b981;
+  }
+
+  .success-header {
+    text-align: center;
+  }
+
+  .success-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+    line-height: 2rem;
+  }
+
+  .success-description {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: 0.5rem;
+    line-height: 1.5rem;
+  }
+
+  .success-actions {
+    margin-top: 1rem;
+  }
+
+  .success-button {
+    background: #059669;
+    border: 1px solid rgba(5, 150, 105, 0.4);
+    color: white;
+    border-radius: 9999px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1.125rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .success-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    color: #065f46;
+    background: #d1fae5;
+  }
+
+  .success-button:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 2px;
+  }
+</style>
+<div class="success-modal">
+  <div class="success-icon-circle">
+    <svg xmlns="http://www.w3.org/2000/svg" class="success-icon" viewBox="0 0 16 16">
+      <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+    </svg>
+  </div>
+  <header class="success-header">
+    <h1 class="success-title">
+      {{ .Title }}
+    </h1>
+    <p class="success-description">
+      {{ .Body }}
+    </p>
+  </header>
+  <div class="success-actions">
+    <button type="button" class="success-button">
+      Ir para Login
+    </button>
+  </div>
+</div>
+{{ end }}

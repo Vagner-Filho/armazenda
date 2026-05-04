@@ -1,99 +1,115 @@
 package departure_router
 
 import (
-	"armazenda/model/departure_model"
-	"armazenda/model/entry_model"
-	"armazenda/model/vehicle_model"
-	"armazenda/router/entry_router"
-	"armazenda/router/vehicle_router"
+	entity_public "armazenda/entity/public"
 	"armazenda/service/departure_service"
-	"fmt"
+	"armazenda/service/user_service"
+	"armazenda/view"
+	departure_view "armazenda/view/departure"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-func GetDepartures(c *gin.Context) {
-	c.HTML(http.StatusOK, "departure-table", departure_service.GetDepartures())
-}
-
-func GetDepartureForm(c *gin.Context) {
-	var vehicles []entry_router.Vehicle
-	for _, vehicle := range vehicle_router.GetVehicles() {
-		newV := entry_router.Vehicle{}
-		newV.Name = vehicle.Name
-		newV.Plate = vehicle.Plate
-		vehicles = append(vehicles, newV)
+func getDepartureContent(c *gin.Context) {
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	page, _ := strconv.Atoi(c.Query("page"))
+	if page < 1 {
+		page = 1
 	}
-	c.HTML(http.StatusOK, "departure-form", gin.H{
-		"Vehicles": vehicles,
-	})
+	content, toasts := departure_view.GetDepartureContent(farm, page)
+	for _, toast := range toasts {
+		if toast != nil {
+			c.Header("HX-Trigger", string(toast.ToJson()))
+		}
+	}
+	nonce, _ := c.Get("csp_nonce")
+	content.CSPNonce = nonce.(string)
+	c.HTML(http.StatusOK, "departure-content", content)
 }
 
-type FilledDeparture struct {
-	departure_model.Departure
-	Vehicles []entry_router.Vehicle
+func getDepartureForm(c *gin.Context) {
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	form, toasts := departure_view.GetNewDepartureForm(farm)
+
+	for _, toast := range toasts {
+		if toast != nil {
+			c.Header("HX-Trigger", string(toast.ToJson()))
+		}
+	}
+
+	nonce, _ := c.Get("csp_nonce")
+	form.CSPNonce = nonce.(string)
+	c.HTML(http.StatusOK, "departure-form", form)
 }
 
-func GetFilledDepartureForm(c *gin.Context) {
+func getFilledDepartureForm(c *gin.Context) {
 	id := c.Param("id")
 	converted, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
 		c.String(http.StatusBadRequest, "", err.Error())
 	}
 
-	departure, notFound := departure_service.GetDeparture(uint32(converted))
-	if notFound {
-		c.HTML(http.StatusBadRequest, "toast", gin.H{})
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	form, toasts := departure_view.GetExistingDepartureForm(uint32(converted), farm)
+
+	for _, t := range toasts {
+		if t != nil {
+			c.Header("HX-Trigger", string(t.ToJson()))
+		}
 	}
 
-	var vehicles []entry_router.Vehicle
-	for _, vehicle := range vehicle_router.GetVehicles() {
-		vehicles = append(vehicles, entry_router.Vehicle{
-			Selected: departure.VehiclePlate == vehicle.Plate,
-			Vehicle: vehicle_model.Vehicle{
-				Plate: vehicle.Plate,
-				Name:  vehicle.Name,
-			},
-		})
-	}
-	filledDeparture := FilledDeparture{
-		Departure: departure,
-		Vehicles:  vehicles,
-	}
-
-	c.HTML(http.StatusOK, "departure-form", filledDeparture)
+	nonce, _ := c.Get("csp_nonce")
+	form.CSPNonce = nonce.(string)
+	c.HTML(http.StatusOK, "departure-form", form)
 }
 
-type DepartureForm struct {
-	Manifest      uint32            `form:"manifest"`
-	DepartureDate int64             `form:"departureDate" binding:"required"`
-	Product       entry_model.Grain `form:"product"  binding:"gte=0"`
-	VehiclePlate  string            `form:"vehiclePlate" binding:"required"`
-	Weight        float64           `form:"weight" binding:"required"`
+func getDepartureFormFromDraft(c *gin.Context) {
+	id := c.Param("id")
+	converted, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+	}
+
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	form, toasts := departure_view.GetDepartureFormFromDraft(uint32(converted), farm)
+
+	for _, t := range toasts {
+		if t != nil {
+			c.Header("HX-Trigger", string(t.ToJson()))
+		}
+	}
+
+	nonce, _ := c.Get("csp_nonce")
+	form.CSPNonce = nonce.(string)
+	c.HTML(http.StatusOK, "departure-form", form)
 }
 
-func AddDeparture(c *gin.Context) {
-	var df DepartureForm
+func addDeparture(c *gin.Context) {
+	var df entity_public.Departure
 	err := c.Bind(&df)
 	if err != nil {
 		c.String(http.StatusBadRequest, "", err.Error())
 		return
 	}
 
-	bd := departure_model.BaseDeparture{
-		Product:       df.Product,
-		Weight:        df.Weight,
-		VehiclePlate:  df.VehiclePlate,
-		DepartureDate: df.DepartureDate,
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	df.Farm = farm
+	departure, toast := departure_service.AddDeparture(df)
+	if toast != nil {
+		c.Header("HX-Trigger", toast.ToJsonStr())
 	}
 
-	var newDeparture = departure_service.AddDeparture(bd)
-	c.HTML(http.StatusOK, "departure-list-item", departure_service.MakeReadableDeparture(newDeparture))
+	c.HTML(http.StatusCreated, "departure-list-item", departure)
 }
 
-func PutDeparture(c *gin.Context) {
+func putDeparture(c *gin.Context) {
 	id := c.Param("id")
 	converted, parseErr := strconv.ParseUint(id, 10, 32)
 	if parseErr != nil {
@@ -101,29 +117,252 @@ func PutDeparture(c *gin.Context) {
 		return
 	}
 
-	var df DepartureForm
+	var df entity_public.Departure
 	err := c.Bind(&df)
 	if err != nil {
 		c.String(http.StatusBadRequest, "", err.Error())
 		return
 	}
-	df.Manifest = uint32(converted)
 
-	toUpdate := departure_model.Departure{
-		Manifest: df.Manifest,
-		BaseDeparture: departure_model.BaseDeparture{
-			Weight:        df.Weight,
-			Product:       df.Product,
-			VehiclePlate:  df.VehiclePlate,
-			DepartureDate: df.DepartureDate,
-		},
+	df.Id = uint32(converted)
+
+	updatedDeparture, toast := departure_service.PutDeparture(df)
+	c.Header("HX-Trigger", string(toast.ToJson()))
+
+	c.HTML(http.StatusOK, "departure-list-item", updatedDeparture)
+}
+
+func deleteDeparture(c *gin.Context) {
+	id := c.Param("id")
+	converted, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
 	}
 
-	updatedDeparture, notFound := departure_service.PutDeparture(toUpdate)
-    fmt.Printf("%+v\n", updatedDeparture)
-    if notFound {
-        // handle not found
-    }
+	toast := departure_service.DeleteDeparture(uint32(converted))
+	c.Header("HX-Trigger", string(toast.ToJson()))
+	c.Status(http.StatusOK)
+}
 
-    c.HTML(http.StatusOK, "departure-list-item", departure_service.MakeReadableDeparture(updatedDeparture))
+func filterDepartures(c *gin.Context) {
+	var departureFilter entity_public.DepartureFilter
+	err := c.Bind(&departureFilter)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+
+	page, _ := strconv.Atoi(c.Query("page"))
+	if page < 1 {
+		page = 1
+	}
+
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	departures, total, toast := departure_service.FilterDepartures(departureFilter, page, farm)
+	if toast != nil {
+		c.Header("HX-Trigger", string(toast.ToJson()))
+	}
+
+	if len(departures) == 0 {
+		c.HTML(http.StatusOK, "no-departure-found-for-filter", gin.H{})
+		return
+	}
+
+	pageSize := 10
+	totalPages := (total + pageSize - 1) / pageSize
+
+	c.HTML(http.StatusOK, "departure-table", gin.H{
+		"Departures":  departures,
+		"TotalPages":  totalPages,
+		"CurrentPage": page,
+		"HasPrev":     page > 1,
+		"PrevPage":    page - 1,
+		"HasNext":     page < totalPages,
+		"NextPage":    page + 1,
+	})
+}
+
+func getDeparturePdf(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+
+	departurePdf, t := departure_service.GetDeparturePdf(uint32(id))
+	if t != nil {
+		c.Header("HX-Trigger", string(t.ToJson()))
+		return
+	}
+	if departurePdf == nil {
+		notFoundToast := entity_public.GetInfoToast("Romaneio de saída não encontrado", "")
+		c.Header("HX-Trigger", string(notFoundToast.ToJson()))
+		c.Status(http.StatusNoContent)
+		return
+	}
+	c.HTML(200, "departure-pdf", departurePdf)
+}
+
+func getDepartureDraftForm(c *gin.Context) {
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	formFields, toasts := departure_view.GetDepartureDraftForm(farm)
+
+	draftIdStr := c.Param("id")
+	if draftIdStr != "" {
+		draftId, err := strconv.ParseUint(draftIdStr, 10, 32)
+		if err != nil {
+			toast := entity_public.GetWarningToast("Rascunho não encontrado", "")
+			c.Header("HX-Trigger", string(toast.ToJson()))
+			c.Status(http.StatusBadRequest)
+			return
+		}
+		draft, toast := departure_service.GetDepartureDraft(uint32(draftId))
+		if draft.Id != 0 {
+			formFields.SelectedCrop = uint8(draft.Crop)
+			formFields.SelectedVehicle = draft.Vehicle
+			if draft.Recipient != nil {
+				for i, p := range formFields.People {
+					if p.Id != nil && *p.Id == *draft.Recipient {
+						formFields.SelectedRecipient = formFields.People[i].Id
+						break
+					}
+				}
+			}
+			if draft.Origin != nil {
+				for i, p := range formFields.People {
+					if p.Id != nil && *p.Id == *draft.Origin {
+						formFields.SelectedOrigin = formFields.People[i].Id
+						break
+					}
+				}
+			}
+
+			formFields.Draft.Tare = draft.Tare
+		}
+
+		if toast != nil {
+			toasts = append(toasts, toast)
+		}
+		formFields.Draft = draft
+	}
+
+	for _, toast := range toasts {
+		if toast != nil {
+			c.Header("HX-Trigger", string(toast.ToJson()))
+		}
+	}
+	nonce, _ := c.Get("csp_nonce")
+	formFields.CSPNonce = nonce.(string)
+	c.HTML(http.StatusOK, "departure-draft-form", formFields)
+}
+
+func addDepartureDraft(c *gin.Context) {
+	var newDraft entity_public.DepartureDraft
+	err := c.Bind(&newDraft)
+	if err != nil {
+		toast := entity_public.GetWarningToast(err.Error(), "")
+		c.Header("HX-Trigger", string(toast.ToJson()))
+		return
+	}
+
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	newDraft.Farm = farm
+	draft, toast := departure_service.CreateDepartureDraft(newDraft)
+	c.Header("HX-Trigger", string(toast.ToJson()))
+
+	if toast.Type == entity_public.WarningToast {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if toast.Type == entity_public.ErrorToast {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusCreated, "departure-draft-list-item", departure_view.DepartureDraftListItemView{
+		Draft:            draft,
+		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
+	})
+}
+
+func putDepartureDraft(c *gin.Context) {
+	id := c.Param("id")
+	converted, parseErr := strconv.ParseUint(id, 10, 32)
+	if parseErr != nil {
+		c.String(http.StatusBadRequest, "", parseErr.Error())
+		return
+	}
+
+	var draft entity_public.DepartureDraft
+	err := c.Bind(&draft)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+		return
+	}
+
+	draft.Id = uint32(converted)
+	updatedDraft, toast := departure_service.UpdateDepartureDraft(draft)
+	c.Header("HX-Trigger", string(toast.ToJson()))
+
+	if toast.Type == entity_public.WarningToast {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if toast.Type == entity_public.ErrorToast {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusOK, "departure-draft-list-item", departure_view.DepartureDraftListItemView{
+		Draft:            updatedDraft,
+		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
+	})
+}
+
+func deleteDepartureDraft(c *gin.Context) {
+	id := c.Param("id")
+	converted, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "", err.Error())
+	}
+
+	toast := departure_service.DeleteDepartureDraft(uint32(converted))
+	c.Header("HX-Trigger", string(toast.ToJson()))
+	c.Status(http.StatusOK)
+}
+
+func getDepartureDraftList(c *gin.Context) {
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	drafts, toast := departure_view.GetDepartureDrafts(farm)
+
+	if toast != nil {
+		c.Header("HX-Trigger", string(toast.ToJson()))
+	}
+
+	c.HTML(http.StatusOK, "departure-draft-table", drafts)
+}
+
+func UseDepartureRoutes(router *gin.Engine) {
+	router.POST("/departure/filter", filterDepartures)
+	router.GET("/departure/list", getDepartureContent)
+	router.GET("/departure/form", getDepartureForm)
+	router.GET("/departure/form/draft/:id", getDepartureFormFromDraft)
+	router.GET("/departure/form/:id", getFilledDepartureForm)
+	router.POST("/departure", addDeparture)
+	router.PUT("/departure/:id", putDeparture)
+	router.DELETE("/departure/:id", deleteDeparture)
+	router.GET("/departure/pdf/:id", getDeparturePdf)
+
+	router.GET("/departure/draft/list", getDepartureDraftList)
+	router.GET("/departure/draft/form", getDepartureDraftForm)
+	router.GET("/departure/draft/form/:id", getDepartureDraftForm)
+	router.POST("/departure/draft", addDepartureDraft)
+	router.PUT("/departure/draft/:id", putDepartureDraft)
+	router.DELETE("/departure/draft/:id", deleteDepartureDraft)
 }

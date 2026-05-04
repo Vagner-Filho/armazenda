@@ -1,0 +1,34 @@
+{{ block "entry-draft-table" . }}
+<table class="w-full">
+    <thead class="border-b border-white/10 text-xs text-gray-400 uppercase tracking-wider *:font-medium">
+        <tr>
+            <th class="py-3 px-4 text-left">
+                Nome
+            </th>
+            <th class="py-3 px-4 text-left">
+                Talhão
+            </th>
+            <th class="py-3 px-4 text-left">
+                Origem
+            </th>
+            <th class="py-3 px-4 text-left">
+                Safra
+            </th>
+            <th class="py-3 px-4 text-left">
+                Placa
+            </th>
+            <th class="py-3 px-4 text-left">
+                Tara
+            </th>
+            <th class="py-3 px-4 text-left">
+                Ações
+            </th>
+        </tr>
+    </thead>
+    <tbody id="entries-draft-table-body" class="text-white/80">
+        {{ range . }}
+        {{ template "entry-draft-list-item" . }}
+        {{ end }}
+    </tbody>
+</table>
+{{ end }}

@@ -1,47 +1,326 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer components {
-    .add-btn {
-        @apply btn-shape text-green-500 hover:text-white hover:bg-green-500 focus:text-white focus:bg-green-500 ring ring-inset ring-green-500 transition-colors duration-300 ease-in-out
-    }
+.noto-serif-font {
+    font-family: "Noto Serif", serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+    font-variation-settings:
+        "wdth" 100;
+}
 
-    .cancel-btn {
-        @apply btn-shape text-orange-500 ring ring-inset ring-orange-500 transition-shadow duration-300 ease-in-out hover:text-white hover:bg-orange-500 focus:text-white focus:bg-orange-500
-    }
+.noto-sans-font {
+    font-family: "Noto Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+    font-variation-settings:
+        "wdth" 100;
+}
 
-    .close-dialog-btn {
-        @apply absolute top-0 right-3 text-[2.5em] w-8 h-8 flex items-center justify-center text-stone-400 hover:text-orange-700 transition-colors duration-300
-    }
+.main-bg {
+    width: 100vw;
+    height: 100vh;
+    /*overflow: hidden;*/
+    z-index: -1;
+    background: linear-gradient(180deg, #0ea5e9 0%, #64b5dc 40%, #30b60b 100%);
+    background-image: url(/public/assets/static/inside_bg_3.jpg);
+    background-size: cover;
+    overflow: hidden;
+    display: flex;
+}
+
+@theme {
+    --font-noto-sans: "Noto Sans", sans-serif;
+    --font-noto-serif: "Noto Serif", serif;
+}
+
+@utility add-btn {
+    @apply btn-shape text-green-500 hover:text-white hover:bg-green-500 focus:text-white focus:bg-green-500 ring ring-inset ring-green-500 transition-colors duration-300 ease-in-out
+}
+
+@utility glass-btn {
+    @apply btn-shape shadow-lg bg-sky-50/15 text-white/80 hover:text-white hover:bg-sky-50/30 focus:text-white focus:bg-sky-50/30 transition-all duration-300 ease-in-out backdrop-blur-xs
+}
+
+@utility primary-glass-btn {
+    @apply btn-shape shadow border bg-emerald-600 border-emerald-600/40 text-white hover:scale-105 hover:shadow-lg hover:text-emerald-800 hover:bg-emerald-100 transition-all duration-300 ease-in-out backdrop-blur-xs
+}
+
+@utility icon-btn {
+    @apply text-green-500 hover:scale-125 hover:text-green-700 focus:scale-125 focus:text-green-700 transition-all duration-300 ease-in-out
+}
+
+@utility cancel-btn {
+    @apply btn-shape text-orange-500 ring ring-inset ring-orange-500 transition-shadow duration-300 ease-in-out hover:text-white hover:bg-orange-500 focus:text-white focus:bg-orange-500
+}
+
+@utility close-dialog-btn {
+    @apply absolute top-0 right-3 text-[2.5em] w-8 h-8 flex items-center justify-center text-stone-400 hover:text-orange-700 transition-colors duration-300
+}
+
+@utility glass-panel {
+    background: rgba(30, 41, 59, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+@utility menu-item {
+    @apply flex items-center gap-3 px-4 py-3 bg-white/10 text-white rounded-xl font-medium border-l-4 border-emerald-500 transition-all
+}
+
+@utility content-container {
+    @apply mt-6 2xl:mt-20 mb-4 px-2 max-w-screen-lg 2xl:max-w-screen-xl mx-auto w-full flex flex-col
 }
 
 @layer base {
+    label {
+        @apply text-gray-500
+    }
+
+    label>i {
+        @apply text-xs font-normal text-gray-500 normal-case
+    }
 
     input,
     select {
-        @apply transition-all duration-300 ease-linear outline-transparent focus-visible:outline-green-400 bg-stone-200 rounded-sm h-7 px-2 text-gray-700
-    }
-
-    tr {
-        @apply w-full
-    }
-
-    th, td {
-        @apply w-1/6
+        @apply transition-all duration-300 ease-linear outline-0 rounded-md h-8 lg:h-10 px-2 py-2 text-gray-700 focus:ring-green-600 focus:ring-2 focus:ring-inset bg-stone-100 focus-visible:outline-0 focus-visible:outline-none text-sm lg:text-base
     }
 
     button {
-        @apply outline-0
+        @apply outline-0 cursor-pointer
+    }
+
+    dialog {
+        @apply backdrop:bg-black/50 m-auto
+    }
+
+    * {
+        font-family: "Noto Sans";
+        scrollbar-color: white;
+    }
+
+    h1,
+    h2 {
+        font-family: "Noto Serif";
+    }
+
+    option {
+        @apply bg-gray-900;
     }
 }
 
-@layer utilities {
-    .text-xs {
-        font-size: 12px;
+@utility label-peer {
+    @apply peer-focus:text-green-600 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider
+}
+
+@utility btn-shape {
+    @apply text-center font-semibold rounded-xl py-1 px-2
+}
+
+@utility required-star {
+    @apply after:content-['*'] after:ml-0.5 after:text-red-500
+}
+
+@utility filter-card {
+    @apply flex flex-col gap-1 p-2 rounded-xl;
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+@utility fieldset-legend {
+    @apply text-base lg:text-lg font-semibold text-slate-700 border-b border-slate-200 pb-2
+}
+
+/* Responsive table - transforms to cards on mobile */
+.responsive-table {
+    width: 100%;
+}
+
+@media screen and (max-width: 600px) {
+    .responsive-table {
+        border: 0;
     }
 
-    .btn-shape {
-        @apply text-center font-semibold rounded-md py-1 px-2
+    .responsive-table thead {
+        border: none;
+        clip: rect(0 0 0 0);
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
     }
+
+    .responsive-table tr {
+        border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+        display: block;
+        margin-bottom: .625em;
+    }
+
+    .responsive-table td {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: block;
+        font-size: .8em;
+        text-align: right;
+    }
+
+    .responsive-table td::before {
+        content: attr(data-label);
+        float: left;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .responsive-table td:last-child {
+        border-bottom: 0;
+    }
+}
+
+/* Progression visualization styles - fixed 0-100 range with segmented bar */
+.progression-visual-wrapper {
+    @apply relative py-2;
+}
+
+.progression-bar {
+    @apply relative h-10 rounded-lg overflow-hidden;
+    /* Blue gradient from weak (0%) to strong (100%) representing humidity */
+    background: linear-gradient(to right, hsl(210, 60%, 85%) 0%, hsl(210, 90%, 35%) 100%);
+}
+
+.progression-segments {
+    @apply absolute inset-0 flex;
+}
+
+.progression-segment {
+    @apply relative h-full flex items-center justify-center border-r border-white/30 last:border-r-0 transition-all duration-300;
+    /* No background color - segments are transparent to show the gradient */
+    flex: none;
+    /* Use exact pixel width, don't grow or shrink */
+}
+
+.progression-segment:last-child {
+    border-right: none;
+}
+
+/* Labels above bar (discount values) */
+.progression-discount-labels {
+    @apply relative h-6 flex items-end mb-1;
+}
+
+.progression-discount-label {
+    @apply absolute text-xs font-semibold text-white/90 transform -translate-x-1/2 transition-all duration-300;
+}
+
+/* Leader lines container (overlays the bar) */
+.progression-leader-lines {
+    @apply absolute inset-0 pointer-events-none;
+}
+
+.progression-leader-line {
+    @apply absolute top-0 w-px bg-white;
+    height: 2.5rem;
+    /* Medium length - extends below the bar */
+}
+
+.progression-leader-line.stretched {
+    height: 4rem;
+    /* Extended length for crowded labels */
+}
+
+/* Labels below bar (threshold values) */
+.progression-threshold-labels {
+    @apply relative flex items-start mt-1;
+    height: 2.5rem;
+    /* Extra space for rotated labels */
+}
+
+.progression-threshold-labels.has-stretched {
+    height: 4rem;
+    /* Extra space when labels are stretched */
+}
+
+.progression-threshold-label {
+    @apply absolute text-xs font-medium text-white/70;
+    white-space: nowrap;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+/* Link line inside label - connects to leader line above */
+.label-link-line {
+    @apply bg-white/70;
+    width: 1px;
+    height: 1rem;
+    margin-bottom: 0.25rem;
+    margin: auto;
+}
+
+/* Default label: positioned left of leader line */
+.progression-threshold-label {
+    margin-left: -0.8rem;
+    /* Shift left of leader */
+}
+
+.progression-threshold-label .label-text {
+    display: inline-block;
+}
+
+/* Swing right variant: label positioned right of leader line */
+.progression-threshold-label.swing-right {
+    margin-left: 0.5rem;
+    /* Shift right of leader */
+}
+
+.progression-threshold-label.swing-right .label-link-line {
+    transform: rotate(30deg);
+    /* Points up-right to leader line */
+    transform-origin: 10px -20px;
+}
+
+.progression-threshold-label.swing-right .label-text {
+    transform: rotate(30deg);
+    transform-origin: 20px 20px;
+}
+
+/* Stretched variant: pushed down, no diagonal link */
+.progression-threshold-label.stretched {
+    margin-top: 1.8rem;
+    /* Push down */
+}
+
+.progression-threshold-label.stretched .label-link-line {
+    display: none;
+    /* No diagonal link */
+}
+
+.progression-threshold-label.stretched .label-text {
+    transform: none;
+    /* No rotation */
+}
+
+/* First and last labels (0% and 100%) - keep horizontal */
+.progression-threshold-label.first,
+.progression-threshold-label.last {
+    margin-top: 0.5rem;
+    margin-left: 0;
+}
+
+.progression-threshold-label.first .label-text,
+.progression-threshold-label.last .label-text {
+    transform: none;
+}
+
+.progression-threshold-label.first {
+    @apply left-0;
+}
+
+.progression-threshold-label.last {
+    @apply left-auto right-0;
 }

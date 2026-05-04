@@ -1,0 +1,17 @@
+{{ define "navbar" }}
+<nav class="fixed top-2 right-2 w-fit px-4 py-1 rounded-xl glass-panel text-center leading-10">
+  <div class="ml-auto flex items-center gap-3 w-fit h-full px-2">
+    {{ template "user-icon" "text-green-500 size-6 lg:size-7" }}
+    <h3 id="username" class="text-white text-lg">...</h3>
+  </div>
+  <script nonce="{{ .CSPNonce }}" type="module">
+    cookieStore.get('username')
+      .then((username) => {
+        const usernameEl = document.querySelector('nav h3')
+        if (usernameEl && username) {
+          usernameEl.textContent = username.value.replaceAll("+", " ")
+        }
+      })
+  </script>
+</nav>
+{{ end }}

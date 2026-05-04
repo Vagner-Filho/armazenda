@@ -1,0 +1,37 @@
+{{ block "departure-content" . }}
+{{ if .NoContent }}
+{{ template "no-departure" . }}
+{{ end }}
+<div class="{{ if .NoContent }} hidden {{ end }} glass-panel rounded-xl p-4" id="departure-content">
+    <div class="flex justify-between items-end gap-2 mb-4">
+        {{ template "departure-filters" .Filters }}
+        <button id="form" type="button" class="primary-glass-btn w-36 flex items-center gap-1 whitespace-nowrap" hx-get="/departure/form" hx-target="body"
+            hx-swap="beforeend">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m5 11h-4v4h-2v-4H7v-2h4V7h2v4h4z"/></svg>
+            Nova Saída
+        </button>
+    </div>
+    <main id="list" class="overflow-hidden">
+        {{ template "departure-table" . }}
+    </main>
+</div>
+<h2 class="text-xl lg:text-2xl font-bold text-white/95 text-center mt-8">Rascunhos</h2>
+<p class="text-center text-sm text-white/90 mt-2">
+  Acelere o lançamento de saídas a partir de um rascunho
+</p>
+<div class="mt-2 glass-panel rounded-xl p-4">
+    <div class="flex justify-end items-center mb-4">
+        <button id="form" type="button"
+            class="glass-btn flex items-center gap-1"
+            hx-get="/departure/draft/form" hx-target="body" hx-swap="beforeend">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m5 11h-4v4h-2v-4H7v-2h4V7h2v4h4z"/></svg>
+            Novo Rascunho
+        </button>
+    </div>
+    <main id="draft-list" class="rounded-xl overflow-hidden" hx-get="/departure/draft/list" hx-trigger="load" hx-swap="innerHTML">
+        <div class="flex justify-center items-center p-4">
+            <img src="/public/assets/static/spinner.svg" class="animate-spin h-8 w-8" alt="Carregando...">
+        </div>
+    </main>
+</div>
+{{ end }}

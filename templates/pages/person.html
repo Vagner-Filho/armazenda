@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1e3a5f">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <link href="/public/assets/static/css/output.css" rel="stylesheet">
+  <link rel="icon" type="image/x-icon" href="/public/assets/favicon.ico">
+  <link rel="manifest" href="/public/assets/manifest.json">
+  <title>Pessoa - Armazenda</title>
+  <script nonce="{{ .CSPNonce }}" src="/public/assets/static/htmx.min.js.gz" defer></script>
+  <script nonce="{{ .CSPNonce }}" src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
+  <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/toast.js"></script>
+</head>
+
+<body class="main-bg">
+  {{ template "navbar" . }}
+  {{ template "menu" (dict "page" "pessoa" "CSPNonce" .CSPNonce) }}
+  <section class="content-container">
+    <header class="text-center mb-4 2xl:mb-8">
+      <h1 class="text-xl 2xl:text-3xl font-bold text-white font-[Noto_Sans] drop-shadow-lg">
+        Cadastro de Pessoas
+      </h1>
+      <p class="text-sm text-white/90 mt-2">
+        Gerencie as pessoas cadastradas no sistema.
+      </p>
+    </header>
+    {{ if .NoContent }}
+    {{ template "no-person" . }}
+    {{ end }}
+    <div class="{{ if .NoContent }}hidden {{ end }}glass-panel rounded-xl p-4 overflow-y-auto">
+      <div class="flex justify-end mb-4">
+        <button id="form" type="button" class="primary-glass-btn flex items-center gap-1" hx-get="/person/form" hx-target="body"
+          hx-swap="beforeend">
+          <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
+          Nova Pessoa
+        </button>
+      </div>
+      {{ block "people-table" . }}
+      <div id="people-table">
+        <div class="overflow-hidden">
+          <table class="responsive-table">
+            <thead
+              class="border-b border-white/10 text-xs text-gray-400 uppercase tracking-wider *:font-medium whitespace-nowrap hidden md:table-header-group"
+              id="people-header">
+              <tr>
+                <th class="py-3 px-4 text-left">TIPO</th>
+                <th class="py-3 px-4 text-left">NOME</th>
+                <th class="py-3 px-4 text-left">DOCUMENTO</th>
+                <th class="py-3 px-4 text-left">INSCRIÇÃO ESTADUAL</th>
+                <th class="py-3 px-4 text-left">AÇÕES</th>
+              </tr>
+            </thead>
+            <tbody class="overflow-x-auto text-white/80" id="people-rows">
+              {{ range .People }}
+              {{ template "person-list-item" . }}
+              {{ else }}
+              <tr>
+                <td colspan="5" class="text-center py-4">Nenhuma pessoa encontrada.</td>
+              </tr>
+              {{ end }}
+            </tbody>
+          </table>
+        </div>
+        {{ if gt .TotalPages 1 }}
+        <div class="flex justify-center items-center mt-4" id="pagination-controls">
+          {{ if .HasPrevPage }}
+          <button hx-get="/pessoa?page={{ .PrevPage }}" hx-target="#people-table" hx-swap="outerHTML"
+            class="px-4 py-2 mx-1 text-gray-700 capitalize bg-white rounded-md border border-gray-200 hover:bg-gray-100">
+            Anterior
+          </button>
+          {{ else }}
+          <button
+            class="px-4 py-2 mx-1 text-gray-500 capitalize bg-gray-100 rounded-md border border-gray-200 cursor-not-allowed"
+            disabled>
+            Anterior
+          </button>
+          {{ end }}
+          <span class="px-4 py-2 mx-1 text-gray-700">
+            Página {{ .CurrentPage }} de {{ .TotalPages }}
+          </span>
+          {{ if .HasNextPage }}
+          <button hx-get="/pessoa?page={{ .NextPage }}" hx-target="#people-table" hx-swap="outerHTML"
+            class="px-4 py-2 mx-1 text-gray-700 capitalize bg-white rounded-md border border-gray-200 hover:bg-gray-100">
+            Próxima
+          </button>
+          {{ else }}
+          <button
+            class="px-4 py-2 mx-1 text-gray-500 capitalize bg-gray-100 rounded-md border border-gray-200 cursor-not-allowed"
+            disabled>
+            Próxima
+          </button>
+          {{ end }}
+        </div>
+        {{ end }}
+      </div>
+      {{ end }}
+    </div>
+  </section>
+  <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/offlineManager.js"></script>
+  <script nonce="{{ .CSPNonce }}" type="module">
+    import {formatDocument} from "/public/assets/js/document.js"
+    async function formatPersonListItem(selector) {
+      if (!selector) {
+        for (const row of document.querySelector("#people-rows").children) {
+          const docEl = row.querySelector("td:nth-child(3)")
+          if (docEl) {
+           docEl.textContent = formatDocument(docEl.textContent)
+          }
+        }
+        return
+      }
+
+      const itemRow = document.querySelector(selector);
+      if (itemRow) {
+          const docEl = row.querySelector("td:nth-child(3)")
+          if (docEl) {
+           docEl.textContent = formatDocument(docEl.textContent)
+          }
+      }
+    }
+    formatPersonListItem();
+    window.formatPersonListItem = formatPersonListItem;
+  </script>
+</body>
+
+</html>

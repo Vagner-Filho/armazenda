@@ -1,0 +1,20 @@
+{{ block "recipient-selector" $ }}
+<div class="flex flex-col w-full relative gap-2">
+  <label for="recipient-selector" class="peer-focus:text-white px-2 text-white/70 transition-all duration-300 ease-linear text-xs lg:text-sm font-medium uppercase tracking-wider">
+    Destino
+  </label>
+  <select name="recipient" id="recipient-selector" class="w-full bg-white/10 border-white/20 text-white peer">
+    {{ range $.People }}
+    <option
+      {{ if eq .Id nil }} value="" {{ else }} value="{{ .Id }}" {{ end }} {{ if eq .Id $.SelectedRecipient }} selected {{ end }}
+    >
+      {{ .Name }}
+    </option>
+    {{ else }}
+    <option value="-1">
+      Nenhuma pessoa encontrada
+    </option>
+    {{ end }}
+  </select>
+</div>
+{{ end }}

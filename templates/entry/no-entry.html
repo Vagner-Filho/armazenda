@@ -1,0 +1,35 @@
+{{ define "no-entry" }}
+<div class="w-fit mx-auto text-center my-[10vh]" id="no-entry-helper">
+    <span class="block text-8xl size-[130px] mx-auto relative">
+        &#128230;
+        <span class="absolute -top-1 -right-4 text-6xl text-red-500 drop-shadow-lg">
+            &#128711;
+        </span>
+    </span>
+    <strong class="text-orange-500 text-xl md:text-2xl">
+        Nenhuma entrada cadastrada :(
+    </strong>
+    <button id="form" type="button" class="primary-glass-btn flex items-center gap-1 mx-auto text-xl cursor-pointer mt-2"
+        hx-get="/entry/form" hx-target="body" hx-swap="beforeend">
+        <iconify-icon icon="ic:baseline-add-circle"></iconify-icon>
+        Começar agora
+    </button>
+    <script nonce="{{ .CSPNonce }}" type="module">
+        function handleAddFirstEntry(evt) {
+            if (evt.detail.requestConfig.path === '/entry' && evt.detail.requestConfig.verb === 'post' && evt.detail.xhr.status === 201) {
+                const entryContent = document.querySelector('#entry-content');
+                if (entryContent) {
+                    entryContent.classList.remove('hidden')
+
+                    const helper = document.querySelector('#no-entry-helper');
+                    if (helper) {
+                        document.body.removeEventListener('htmx:afterRequest', handleAddFirstEntry);
+                        helper.remove()
+                    }
+                }
+            }
+        }
+        document.body.addEventListener('htmx:afterRequest', handleAddFirstEntry);
+    </script>
+</div>
+{{ end }}
