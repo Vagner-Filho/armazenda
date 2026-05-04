@@ -17,7 +17,7 @@ var errorCases []addEntryTestCase = []addEntryTestCase{
 			entry.CargoWeight.Tare = decimal.NewFromInt(2000)
 			return entry
 		}(),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
 				return entity_public.DisplayEntry{}, &model_error.ModelError{
 					Message:     "Connection failed",
@@ -41,8 +41,8 @@ var errorCases []addEntryTestCase = []addEntryTestCase{
 			entry.Humidity = &humidity
 			return entry
 		}(),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
-			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
 				return decimal.Zero, &model_error.ModelError{Message: "Database error", IsServerErr: true}
 			}
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
@@ -66,7 +66,7 @@ var errorCases []addEntryTestCase = []addEntryTestCase{
 	{
 		name:  "Error - AddEntry returns server error",
 		entry: CreateBasicTestEntry(),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
 				return entity_public.DisplayEntry{}, &model_error.ModelError{
 					Message:     "Connection failed",
@@ -80,7 +80,7 @@ var errorCases []addEntryTestCase = []addEntryTestCase{
 	{
 		name:  "Error - AddEntry returns user error",
 		entry: CreateBasicTestEntry(),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
 				return entity_public.DisplayEntry{}, &model_error.ModelError{
 					Message:     "Field not found",
@@ -98,13 +98,13 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 		name:              "Success - Basic entry (no origin, no quality discounts, no service tax)",
 		entry:             CreateBasicTestEntry(),
 		expectedNetWeight: decimal.NewFromFloat(900.0),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), nil
 			}
 			discountModifier := decimal.NewFromFloat(1.15)
-			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
-				return discountModifier, (*model_error.ModelError)(nil)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
+				return discountModifier, nil
 			}
 		},
 		expectedToastType:    entity_public.SuccessToast,
@@ -130,13 +130,13 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(24.425),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			discountModifier := decimal.NewFromFloat(1.15)
-			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
-				return discountModifier, (*model_error.ModelError)(nil)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
+				return discountModifier, nil
 			}
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), nil
 			}
 		},
 		expectedToastType:    entity_public.SuccessToast,
@@ -165,13 +165,13 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(24.150),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			discountModifier := decimal.NewFromFloat(1.7)
-			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
-				return discountModifier, (*model_error.ModelError)(nil)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
+				return discountModifier, nil
 			}
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), nil
 			}
 		},
 		expectedToastType:    entity_public.SuccessToast,
@@ -200,13 +200,13 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(24.500),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			discountModifier := decimal.NewFromFloat(1.7)
-			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
-				return discountModifier, (*model_error.ModelError)(nil)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
+				return discountModifier, nil
 			}
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), nil
 			}
 		},
 		expectedToastType:    entity_public.SuccessToast,
@@ -232,13 +232,13 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(24.500),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), nil
 			}
 			discountModifier := decimal.NewFromFloat(1.7)
-			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
-				return discountModifier, (*model_error.ModelError)(nil)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
+				return discountModifier, nil
 			}
 		},
 		expectedToastType:    entity_public.SuccessToast,
@@ -262,9 +262,9 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(882.0),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(456, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(456, ge.NetWeight), nil
 			}
 		},
 		expectedToastType:    entity_public.SuccessToast,
@@ -287,9 +287,9 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(23.625),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), nil
 			}
 
 			crop := CreateTestCrop(1, 1, 1)
@@ -303,8 +303,8 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			}
 
 			personConfig := CreateTestPersonConfig()
-			pm.GetPersonConfigFunc = func(person uint32) (entity_public.PersonConfig, *model_error.ModelError) {
-				return personConfig, (*model_error.ModelError)(nil)
+			pm.GetPersonConfigFunc = func(person uint32) (entity_public.PersonConfig, error) {
+				return personConfig, nil
 			}
 
 			em.AddEntryTaxFunc = func(id uint32, tax decimal.Decimal, appliedTax decimal.Decimal) error {
@@ -336,14 +336,14 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(23.925),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), nil
 			}
 
 			discountModifier := decimal.NewFromFloat(1.15)
-			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
-				return discountModifier, (*model_error.ModelError)(nil)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
+				return discountModifier, nil
 			}
 
 			em.AddEntryTaxFunc = func(id uint32, tax decimal.Decimal, appliedTax decimal.Decimal) error {
@@ -369,14 +369,14 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(23.925),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), nil
 			}
 
 			discountModifier := decimal.NewFromFloat(1.15)
-			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
-				return discountModifier, (*model_error.ModelError)(nil)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
+				return discountModifier, nil
 			}
 
 			em.AddEntryTaxFunc = func(id uint32, tax decimal.Decimal, appliedTax decimal.Decimal) error {
@@ -402,7 +402,7 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(23.570125),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			crop := CreateTestCrop(1, 2, 1)
 			cm.GetCropByIdFunc = func(id uint8) (entity_public.Crop, error) {
 				return crop, nil
@@ -414,17 +414,17 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			}
 
 			personConfig := CreateTestPersonConfig()
-			pm.GetPersonConfigFunc = func(person uint32) (entity_public.PersonConfig, *model_error.ModelError) {
-				return personConfig, (*model_error.ModelError)(nil)
+			pm.GetPersonConfigFunc = func(person uint32) (entity_public.PersonConfig, error) {
+				return personConfig, nil
 			}
 
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), nil
 			}
 
 			discountModifier := decimal.NewFromFloat(1.15)
-			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
-				return discountModifier, (*model_error.ModelError)(nil)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
+				return discountModifier, nil
 			}
 
 			em.AddEntryTaxFunc = func(id uint32, tax decimal.Decimal, appliedTax decimal.Decimal) error {
@@ -450,7 +450,7 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(23.081625),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			crop := CreateTestCrop(1, 1, 1)
 			cm.GetCropByIdFunc = func(id uint8) (entity_public.Crop, error) {
 				return crop, nil
@@ -462,17 +462,17 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			}
 
 			personConfig := CreateTestPersonConfig()
-			pm.GetPersonConfigFunc = func(person uint32) (entity_public.PersonConfig, *model_error.ModelError) {
-				return personConfig, (*model_error.ModelError)(nil)
+			pm.GetPersonConfigFunc = func(person uint32) (entity_public.PersonConfig, error) {
+				return personConfig, nil
 			}
 
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), nil
 			}
 
 			discountModifier := decimal.NewFromFloat(1.15)
-			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
-				return discountModifier, (*model_error.ModelError)(nil)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
+				return discountModifier, nil
 			}
 
 			em.AddEntryTaxFunc = func(id uint32, tax decimal.Decimal, appliedTax decimal.Decimal) error {
@@ -498,14 +498,14 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(23.650),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), nil
 			}
 
 			discountModifier := decimal.NewFromFloat(1.7)
-			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
-				return discountModifier, (*model_error.ModelError)(nil)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
+				return discountModifier, nil
 			}
 
 			em.AddEntryTaxFunc = func(id uint32, tax decimal.Decimal, appliedTax decimal.Decimal) error {
@@ -531,14 +531,14 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(23.650),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), nil
 			}
 
 			discountModifier := decimal.NewFromFloat(1.7)
-			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
-				return discountModifier, (*model_error.ModelError)(nil)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
+				return discountModifier, nil
 			}
 
 			em.AddEntryTaxFunc = func(id uint32, tax decimal.Decimal, appliedTax decimal.Decimal) error {
@@ -564,7 +564,7 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(23.304750),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			crop := CreateTestCrop(1, 2, 1)
 			cm.GetCropByIdFunc = func(id uint8) (entity_public.Crop, error) {
 				return crop, nil
@@ -576,17 +576,17 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			}
 
 			personConfig := CreateTestPersonConfig()
-			pm.GetPersonConfigFunc = func(person uint32) (entity_public.PersonConfig, *model_error.ModelError) {
-				return personConfig, (*model_error.ModelError)(nil)
+			pm.GetPersonConfigFunc = func(person uint32) (entity_public.PersonConfig, error) {
+				return personConfig, nil
 			}
 
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), nil
 			}
 
 			discountModifier := decimal.NewFromFloat(1.7)
-			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
-				return discountModifier, (*model_error.ModelError)(nil)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
+				return discountModifier, nil
 			}
 
 			em.AddEntryTaxFunc = func(id uint32, tax decimal.Decimal, appliedTax decimal.Decimal) error {
@@ -612,7 +612,7 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(22.821750),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			crop := CreateTestCrop(1, 1, 1)
 			cm.GetCropByIdFunc = func(id uint8) (entity_public.Crop, error) {
 				return crop, nil
@@ -624,17 +624,17 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			}
 
 			personConfig := CreateTestPersonConfig()
-			pm.GetPersonConfigFunc = func(person uint32) (entity_public.PersonConfig, *model_error.ModelError) {
-				return personConfig, (*model_error.ModelError)(nil)
+			pm.GetPersonConfigFunc = func(person uint32) (entity_public.PersonConfig, error) {
+				return personConfig, nil
 			}
 
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(123, ge.NetWeight), nil
 			}
 
 			discountModifier := decimal.NewFromFloat(1.7)
-			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
-				return discountModifier, (*model_error.ModelError)(nil)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
+				return discountModifier, nil
 			}
 
 			em.AddEntryTaxFunc = func(id uint32, tax decimal.Decimal, appliedTax decimal.Decimal) error {
@@ -656,9 +656,9 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(891.0),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(789, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(789, ge.NetWeight), nil
 			}
 		},
 		expectedToastType:    entity_public.SuccessToast,
@@ -679,13 +679,13 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(879.3),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			discountModifier := decimal.NewFromFloat(1.15)
-			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
-				return discountModifier, (*model_error.ModelError)(nil)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
+				return discountModifier, nil
 			}
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(321, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(321, ge.NetWeight), nil
 			}
 		},
 		expectedToastType:    entity_public.SuccessToast,
@@ -706,7 +706,7 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(868.5),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			crop := CreateTestCrop(1, 2, 1)
 			cm.GetCropByIdFunc = func(id uint8) (entity_public.Crop, error) {
 				return crop, nil
@@ -718,12 +718,12 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			}
 
 			personConfig := CreateTestPersonConfig()
-			pm.GetPersonConfigFunc = func(person uint32) (entity_public.PersonConfig, *model_error.ModelError) {
-				return personConfig, (*model_error.ModelError)(nil)
+			pm.GetPersonConfigFunc = func(person uint32) (entity_public.PersonConfig, error) {
+				return personConfig, nil
 			}
 
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(555, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(555, ge.NetWeight), nil
 			}
 
 			em.AddEntryTaxFunc = func(id uint32, tax decimal.Decimal, appliedTax decimal.Decimal) error {
@@ -761,13 +761,13 @@ var successCases []addEntryTestCase = []addEntryTestCase{
 			return entry
 		}(),
 		expectedNetWeight: decimal.NewFromFloat(852.3),
-		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel) {
+		setupMocks: func(em *MockEntryModel, pm *MockPersonModel, prodM *MockProductModel, cm *MockCropModel, hpm *MockHumidityProgressionModel, fcm *MockFarmConfigModel) {
 			discountModifier := decimal.NewFromFloat(1.15)
-			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
-				return discountModifier, (*model_error.ModelError)(nil)
+			pm.GetHumidityDiscountFunc = func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
+				return discountModifier, nil
 			}
 			em.AddEntryFunc = func(ge entity_public.Entry) (entity_public.DisplayEntry, *model_error.ModelError) {
-				return CreateTestDisplayEntryWithNetWeight(999, ge.NetWeight), (*model_error.ModelError)(nil)
+				return CreateTestDisplayEntryWithNetWeight(999, ge.NetWeight), nil
 			}
 		},
 		expectedToastType:    entity_public.SuccessToast,
@@ -790,14 +790,19 @@ func TestAddEntry(t *testing.T) {
 			mockProdM := &MockProductModel{}
 			mockCM := &MockCropModel{}
 			mockHPM := &MockHumidityProgressionModel{
-				GetFirstTierThresholdFunc: func(progressionId *uint32) (decimal.Decimal, *model_error.ModelError) {
+				GetFirstTierThresholdFunc: func(progressionId *uint32) (decimal.Decimal, error) {
 					return decimal.NewFromInt(14), nil // Default threshold
 				},
 			}
+			mockFCM := &MockFarmConfigModel{
+				GetFarmConfigFunc: func(farm uint32) (*entity_public.Farm, error) {
+					return &entity_public.Farm{}, nil
+				},
+			}
 
-			tc.setupMocks(mockEM, mockPM, mockProdM, mockCM, mockHPM)
+			tc.setupMocks(mockEM, mockPM, mockProdM, mockCM, mockHPM, mockFCM)
 
-			result, toast := entry_service.AddEntry(tc.entry, mockEM, mockPM, mockProdM, mockCM, mockHPM)
+			result, toast := entry_service.AddEntry(tc.entry, mockEM, mockPM, mockProdM, mockCM, mockHPM, mockFCM)
 
 			if toast.Type != tc.expectedToastType {
 				t.Errorf("Expected toast type %v, got %v", tc.expectedToastType, toast.Type)

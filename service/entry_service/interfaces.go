@@ -14,8 +14,8 @@ type EntryModelInterface interface {
 
 // PersonModelInterface defines person-related operations
 type PersonModelInterface interface {
-	GetHumidityDiscount(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError)
-	GetPersonConfig(person uint32) (entity_public.PersonConfig, *model_error.ModelError)
+	GetHumidityDiscount(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error)
+	GetPersonConfig(person uint32) (entity_public.PersonConfig, error)
 }
 
 // ProductModelInterface defines product-related operations
@@ -30,5 +30,9 @@ type CropModelInterface interface {
 
 // HumidityProgressionModelInterface defines humidity progression operations
 type HumidityProgressionModelInterface interface {
-	GetFirstTierThreshold(progressionId *uint32) (decimal.Decimal, *model_error.ModelError)
+	GetFirstTierThreshold(progressionId *uint32) (decimal.Decimal, error)
+}
+
+type FarmConfigModelInterface interface {
+	GetFarmConfig(farm uint32) (*entity_public.Farm, error)
 }

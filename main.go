@@ -79,6 +79,11 @@ func authenticate(c *gin.Context) {
 
 	sessionCookie, cookieErr := c.Request.Cookie("session_id")
 	if cookieErr != nil {
+		if c.GetHeader("HX-Request") == "true" {
+			c.Header("HX-Redirect", "/")
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
 		c.HTML(http.StatusUnauthorized, "401", gin.H{})
 		c.Abort()
 		return
@@ -87,6 +92,11 @@ func authenticate(c *gin.Context) {
 	// Validate token and session
 	valid, err := user_service.ValidateTokenAndSession(sessionCookie.Value)
 	if err != nil || !valid {
+		if c.GetHeader("HX-Request") == "true" {
+			c.Header("HX-Redirect", "/")
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
 		c.HTML(http.StatusUnauthorized, "401", gin.H{})
 		c.Abort()
 		return
@@ -142,6 +152,11 @@ func adminOnlyMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		sessionCookie, cookieErr := c.Request.Cookie("session_id")
 		if cookieErr != nil {
+			if c.GetHeader("HX-Request") == "true" {
+				c.Header("HX-Redirect", "/")
+				c.AbortWithStatus(http.StatusUnauthorized)
+				return
+			}
 			c.HTML(http.StatusUnauthorized, "401", gin.H{})
 			c.Abort()
 			return
@@ -150,6 +165,11 @@ func adminOnlyMiddleware() gin.HandlerFunc {
 		// Validate token and session
 		valid, err := user_service.ValidateTokenAndSession(sessionCookie.Value)
 		if err != nil || !valid {
+			if c.GetHeader("HX-Request") == "true" {
+				c.Header("HX-Redirect", "/")
+				c.AbortWithStatus(http.StatusUnauthorized)
+				return
+			}
 			c.HTML(http.StatusUnauthorized, "401", gin.H{})
 			c.Abort()
 			return

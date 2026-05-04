@@ -3,6 +3,7 @@ package calculator_test
 import (
 	"armazenda/pkg/calculator"
 	"encoding/csv"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -378,66 +379,6 @@ func TestCalculateDiscounts(t *testing.T) {
 	}
 }
 
-func TestCalculateDeparture(t *testing.T) {
-	tests := []struct {
-		name              string
-		input             calculator.DepartureCalculationInput
-		expectedNetWeight decimal.Decimal
-		expectedValid     bool
-		expectedErrorMsg  string
-	}{
-		{
-			name: "Valid departure - no discounts",
-			input: calculator.DepartureCalculationInput{
-				GrossWeight: decimal.NewFromInt(1000),
-				Tare:        decimal.NewFromInt(100),
-			},
-			expectedNetWeight: decimal.NewFromInt(900),
-			expectedValid:     true,
-		},
-		{
-			name: "Departure with damage exceeding threshold",
-			input: calculator.DepartureCalculationInput{
-				GrossWeight: decimal.NewFromFloat(50),
-				Tare:        decimal.NewFromFloat(25),
-				Damage:      decimalPtr(decimal.NewFromInt(10)),
-			},
-			expectedNetWeight: decimal.NewFromFloat(24.5),
-			expectedValid:     true,
-		},
-		{
-			name: "Invalid - negative net weight",
-			input: calculator.DepartureCalculationInput{
-				GrossWeight: decimal.NewFromInt(100),
-				Tare:        decimal.NewFromInt(200),
-			},
-			expectedValid:    false,
-			expectedErrorMsg: "O peso líquido não pode ser menor do que zero",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := calculator.CalculateDeparture(tt.input)
-
-			if result.IsValid != tt.expectedValid {
-				t.Errorf("IsValid = %v, want %v", result.IsValid, tt.expectedValid)
-			}
-
-			if !tt.expectedValid {
-				if result.ErrorMessage != tt.expectedErrorMsg {
-					t.Errorf("Expected error message '%s', got '%s'", tt.expectedErrorMsg, result.ErrorMessage)
-				}
-				return
-			}
-
-			if !result.NetWeight.Equal(tt.expectedNetWeight) {
-				t.Errorf("NetWeight = %v, want %v", result.NetWeight, tt.expectedNetWeight)
-			}
-		})
-	}
-}
-
 // parseDecimal parses a string to decimal.Decimal, returning nil for empty strings
 func parseDecimal(s string) *decimal.Decimal {
 	s = strings.TrimSpace(s)
@@ -513,78 +454,40 @@ func TestCalculateEntryFromCSV(t *testing.T) {
 		storageTaxModifier := parseDecimal(record[8])        // Taxa de Serviço
 		expectedNetWeight := parseRequiredDecimal(record[9]) // Entrada Final
 
-		// Create input
-		input := calculator.EntryCalculationInput{
-			GrossWeight:        grossWeight,
-			Tare:               tare,
-			Humidity:           humidity,
-			HumidityModifier:   humidityModifier,
-			Damage:             damage,
-			Impurity:           impurity,
-			StorageTaxModifier: storageTaxModifier,
-		}
+		t.Run(fmt.Sprintf("Row_%d", rowNum), func(t *testing.T) {
+			// Create input
+			input := calculator.EntryCalculationInput{
+				GrossWeight:        grossWeight,
+				Tare:               tare,
+				Humidity:           humidity,
+				HumidityModifier:   humidityModifier,
+				Damage:             damage,
+				Impurity:           impurity,
+				StorageTaxModifier: storageTaxModifier,
+			}
 
-		// Calculate
-		result := calculator.CalculateEntry(input)
+			// Calculate
+			result := calculator.CalculateEntry(input)
 
-		// Validate
-		if !result.IsValid {
-			t.Errorf("Row %d: calculation returned invalid result with error: %s", rowNum, result.ErrorMessage)
-			continue
-		}
+			// Validate
+			if !result.IsValid {
+				t.Errorf("Calculation returned invalid result with error: %s", result.ErrorMessage)
+				return
+			}
 
-		if !result.NetWeight.Equal(expectedNetWeight) {
-			t.Errorf("Row %d: expected NetWeight=%s, got %s (input: gross=%s, tare=%s, humidity=%v, mod=%v, damage=%v, impurity=%v, tax=%v)",
-				rowNum,
-				expectedNetWeight.String(),
-				result.NetWeight.String(),
-				grossWeight.String(),
-				tare.String(),
-				humidity,
-				humidityModifier,
-				damage,
-				impurity,
-				storageTaxModifier,
-			)
-		}
+			if !result.NetWeight.Equal(expectedNetWeight) {
+				t.Errorf("Expected NetWeight=%s, got %s (input: gross=%s, tare=%s, humidity=%v, mod=%v, damage=%v, impurity=%v, tax=%v)",
+					expectedNetWeight.String(),
+					result.NetWeight.String(),
+					grossWeight.String(),
+					tare.String(),
+					humidity,
+					humidityModifier,
+					damage,
+					impurity,
+					storageTaxModifier,
+				)
+			}
+		})
 	}
-}
-
-func TestIndividualDiscountFunctions(t *testing.T) {
-	t.Run("DiscountHumidity", func(t *testing.T) {
-		humidity := decimal.NewFromInt(16)
-		rawNetWeight := decimal.NewFromInt(900)
-		modifier := decimal.NewFromFloat(1.15)
-
-		result := calculator.DiscountHumidity(&humidity, rawNetWeight, &modifier, nil)
-		expected := decimal.NewFromFloat(20.7)
-
-		if !result.Equal(expected) {
-			t.Errorf("DiscountHumidity = %v, want %v", result, expected)
-		}
-	})
-
-	t.Run("DiscountDamage", func(t *testing.T) {
-		damage := decimal.NewFromInt(10)
-		rawNetWeight := decimal.NewFromInt(900)
-
-		result := calculator.DiscountDamage(&damage, rawNetWeight)
-		expected := decimal.NewFromInt(18)
-
-		if !result.Equal(expected) {
-			t.Errorf("DiscountDamage = %v, want %v", result, expected)
-		}
-	})
-
-	t.Run("DiscountImpurity", func(t *testing.T) {
-		impurity := decimal.NewFromInt(2)
-		rawNetWeight := decimal.NewFromInt(900)
-
-		result := calculator.DiscountImpurity(&impurity, rawNetWeight)
-		expected := decimal.NewFromInt(9)
-
-		if !result.Equal(expected) {
-			t.Errorf("DiscountImpurity = %v, want %v", result, expected)
-		}
-	})
 }

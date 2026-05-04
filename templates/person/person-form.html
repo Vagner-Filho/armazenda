@@ -13,41 +13,41 @@
     </header>
     {{ if and (eq .Legal nil) (eq .Natural nil) }}
       <div class="glass-panel rounded-2xl p-1 flex max-w-md mx-auto mb-4" id="type-toggler">
-        <button type="button" id="pessoa-juridica-btn" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 bg-blue-500/70 text-white shadow-sm transition-colors duration-300">
+        <button type="button" id="pessoa-juridica-btn" data-test_id="person-type-legal-btn" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 bg-blue-500/70 text-white shadow-sm transition-colors duration-300">
           <span class="font-semibold">Pessoa Jurídica</span>
         </button>
-        <button type="button" id="pessoa-fisica-btn" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 text-white/70 hover:bg-sky-50/10 transition-colors duration-300">
+        <button type="button" id="pessoa-fisica-btn" data-test_id="person-type-natural-btn" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 text-white/70 hover:bg-sky-50/10 transition-colors duration-300">
           <span class="font-semibold">Pessoa Física</span>
         </button>
       </div>
     {{ end }}
-    <form id="pessoa-juridica-form" {{ with .Legal }}{{ if .Person.Id }}hx-put="/person/legal/{{ .Person.Id }}" hx-target="#person-{{ .Person.Id }}" hx-swap="outerHTML"{{ else }}hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend"{{ end }}{{ else }}hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend"{{ end }} class="gap-4 {{ if ne .Natural nil }} hidden {{ end }}">
+    <form id="pessoa-juridica-form" data-test_id="person-legal-form" {{ with .Legal }}{{ if .Person.Id }}hx-put="/person/legal/{{ .Person.Id }}" hx-target="#person-{{ .Person.Id }}" hx-swap="outerHTML"{{ else }}hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend"{{ end }}{{ else }}hx-post="/person/legal" hx-target="#people-rows" hx-swap="beforeend"{{ end }} class="gap-4 {{ if ne .Natural nil }} hidden {{ end }}">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2" id="pessoa-juridica-fieldset">
           <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
             Identificação
           </legend>
           <div class="flex flex-col-reverse">
-            <input type="text" name="companyName" id="person-name-pj" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Legal }} value="{{ .CompanyName }}" {{ end }}>
+            <input type="text" name="companyName" id="person-name-pj" data-test_id="person-legal-name" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Legal }} value="{{ .CompanyName }}" {{ end }}>
             <label for="person-name-pj" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
               Razão Social
             </label>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="text" name="fantasyName" id="fantasy-name" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ with .Legal }} {{ with .FantasyName }}value="{{ . }}"{{ end }} {{ end }}>
+            <input type="text" name="fantasyName" id="fantasy-name" data-test_id="person-legal-fantasy-name" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ with .Legal }} {{ with .FantasyName }}value="{{ . }}"{{ end }} {{ end }}>
             <label for="fantasy-name" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
               Nome Fantasia
               <i class="text-xs font-normal text-white/60 normal-case">(opcional) - Aparece como opção de pessoa</i>
             </label>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="text" name="cnpj" id="document-pj" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required maxlength="18" {{ with .Legal }} value="{{ .Cnpj }}" {{ end }} pattern="\d{2}\.\d{3}\.\d{3}/\\d{4}-\d{2}">
+            <input type="text" name="cnpj" id="document-pj" data-test_id="person-legal-document" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required maxlength="18" {{ with .Legal }} value="{{ .Cnpj }}" {{ end }} pattern="\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}">
             <label for="document-pj" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
               CNPJ
             </label>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="text" name="inscricaoEstadual" id="ie-pj" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Legal }} value="{{ .Person.Ie }}" {{ end }}>
+            <input type="text" name="inscricaoEstadual" id="ie-pj" data-test_id="person-legal-ie" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Legal }} value="{{ .Person.Ie }}" {{ end }}>
             <label for="ie-pj" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
               Inscrição Estadual
             </label>
@@ -56,7 +56,7 @@
             <label for="desconto-umidade-pj" class="peer-focus:text-white px-2 text-white/70 transition-all duration-300 ease-linear text-xs lg:text-sm font-medium uppercase tracking-wider">
               Progressão de Umidade
             </label>
-            <select name="humidityProgressionId" id="desconto-umidade-pj" class="w-full bg-white/10 border-white/20 text-white peer">
+            <select name="humidityProgressionId" id="desconto-umidade-pj" data-test_id="person-legal-humidity" class="w-full bg-white/10 border-white/20 text-white peer">
               {{ range .Progressions }}
                 {{ if $.Legal }}
                   {{ $personHumidity := (deref $.Legal.Person.HumidityProgressionId) }}
@@ -81,13 +81,13 @@
             </button>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="number" step="0.1" name="entrySoyDiscount" id="desconto-soja-pj" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Legal }} value="{{ .Person.EntrySoyDiscount }}" {{ end }} {{ if eq .Legal nil}} value="3.5" {{ end }}>
+            <input type="number" step="0.1" name="entrySoyDiscount" id="desconto-soja-pj" data-test_id="person-legal-soy-discount" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Legal }} value="{{ .Person.EntrySoyDiscount }}" {{ end }} {{ if eq .Legal nil}} value="3.5" {{ end }}>
             <label for="desconto-soja-pj" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
               Taxa Entrada de Soja
             </label>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="number" step="0.1" name="entryCornDiscount" id="desconto-corn-pj" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Legal }} value="{{ .Person.EntryCornDiscount }}" {{ end }} {{ if eq .Legal nil}} value="5.5" {{ end }}>
+            <input type="number" step="0.1" name="entryCornDiscount" id="desconto-corn-pj" data-test_id="person-legal-corn-discount" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Legal }} value="{{ .Person.EntryCornDiscount }}" {{ end }} {{ if eq .Legal nil}} value="5.5" {{ end }}>
             <label for="desconto-corn-pj" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
               Taxa Entrada de Milho
             </label>
@@ -103,31 +103,31 @@
         <button type="button" class="cancel-btn">
           Cancelar
         </button>
-        <button class="primary-glass-btn" type="submit">
+        <button class="primary-glass-btn" type="submit" data-test_id="submit-legal-btn">
           {{ with .Legal }}{{ if .Person.Id }}Salvar{{ else }}Adicionar{{ end }}{{ else }}Adicionar{{ end }}
         </button>
       </div>
     </form>
-    <form id="pessoa-fisica-form" {{ with .Natural }}{{ if .Person.Id }}hx-put="/person/natural/{{ .Person.Id }}" hx-target="#person-{{ .Person.Id }}" hx-swap="outerHTML"{{ else }}hx-post="/person/natural" hx-target="#people-rows" hx-swap="beforeend"{{ end }}{{ else }}hx-post="/person/natural" hx-target="#people-rows" hx-swap="beforeend"{{ end }} class="gap-4 {{ if eq .Natural nil }} hidden {{ end }}">
+    <form id="pessoa-fisica-form" data-test_id="person-natural-form" {{ with .Natural }}{{ if .Person.Id }}hx-put="/person/natural/{{ .Person.Id }}" hx-target="#person-{{ .Person.Id }}" hx-swap="outerHTML"{{ else }}hx-post="/person/natural" hx-target="#people-rows" hx-swap="beforeend"{{ end }}{{ else }}hx-post="/person/natural" hx-target="#people-rows" hx-swap="beforeend"{{ end }} class="gap-4 {{ if eq .Natural nil }} hidden {{ end }}">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2" id="pessoa-fisica-fieldset">
           <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
             Identificação
           </legend>
           <div class="flex flex-col-reverse">
-            <input type="text" name="name" id="person-name-pf" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Natural }} value="{{ .Name }}" {{ end }}>
+            <input type="text" name="name" id="person-name-pf" data-test_id="person-natural-name" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Natural }} value="{{ .Name }}" {{ end }}>
             <label for="person-name-pf" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
               Nome
             </label>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="text" name="cpf" id="document-pf" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required maxlength="14" {{ with .Natural }} value="{{ .Cpf }}" {{ end }} pattern="\d{3}\.\d{3}\.\d{3}-\d{2}">
+            <input type="text" name="cpf" id="document-pf" data-test_id="person-natural-document" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required maxlength="14" {{ with .Natural }} value="{{ .Cpf }}" {{ end }} pattern="\d{3}\.\d{3}\.\d{3}-\d{2}">
             <label for="document-pf" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
               CPF
             </label>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="text" name="inscricaoEstadual" id="ie-pf" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Natural }} value="{{ .Person.Ie }}" {{ end }}>
+            <input type="text" name="inscricaoEstadual" id="ie-pf" data-test_id="person-natural-ie" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Natural }} value="{{ .Person.Ie }}" {{ end }}>
             <label for="ie-pf" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
               Inscrição Estadual
             </label>
@@ -136,7 +136,7 @@
             <label for="desconto-umidade-pf" class="peer-focus:text-white px-2 text-white/70 transition-all duration-300 ease-linear text-xs lg:text-sm font-medium uppercase tracking-wider">
               Progressão de Umidade
             </label>
-            <select name="humidityProgressionId" id="desconto-umidade-pf" class="w-full bg-white/10 border-white/20 text-white peer">
+            <select name="humidityProgressionId" id="desconto-umidade-pf" data-test_id="person-natural-humidity" class="w-full bg-white/10 border-white/20 text-white peer">
               {{ range .Progressions }}
                 {{ if $.Natural }}
                   {{ $personHumidity := (deref $.Natural.Person.HumidityProgressionId) }}
@@ -161,13 +161,13 @@
             </button>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="number" step="0.1" name="entrySoyDiscount" id="desconto-soja-pf" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Natural }} value="{{ .Person.EntrySoyDiscount }}" {{ end }} {{ if eq .Natural nil}} value="3.5" {{ end }}>
+            <input type="number" step="0.1" name="entrySoyDiscount" id="desconto-soja-pf" data-test_id="person-natural-soy-discount" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Natural }} value="{{ .Person.EntrySoyDiscount }}" {{ end }} {{ if eq .Natural nil}} value="3.5" {{ end }}>
             <label for="desconto-soja-pf" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
               Taxa Entrada de Soja
             </label>
           </div>
           <div class="flex flex-col-reverse">
-            <input type="number" step="0.1" name="entryCornDiscount" id="desconto-corn-pf" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Natural }} value="{{ .Person.EntryCornDiscount }}" {{ end }} {{ if eq .Natural nil}} value="5.5" {{ end }}>
+            <input type="number" step="0.1" name="entryCornDiscount" id="desconto-corn-pf" data-test_id="person-natural-corn-discount" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ with .Natural }} value="{{ .Person.EntryCornDiscount }}" {{ end }} {{ if eq .Natural nil}} value="5.5" {{ end }}>
             <label for="desconto-corn-pf" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
               Taxa Entrada de Milho
             </label>
@@ -183,7 +183,7 @@
         <button type="button" class="cancel-btn">
           Cancelar
         </button>
-        <button class="primary-glass-btn" type="submit">
+        <button class="primary-glass-btn" type="submit" data-test_id="submit-natural-btn">
           {{ with .Natural }}{{ if .Person.Id }}Salvar{{ else }}Adicionar{{ end }}{{ else }}Adicionar{{ end }}
         </button>
       </div>
@@ -256,6 +256,13 @@
         pessoaFisicaBtn.addEventListener('click', toggleForm, { signal });
         window.toggleForm = toggleForm
       {{ end }}
+
+      const personPattern = new RegExp(/\/person\/(natural|legal)/gm);
+      document.addEventListener('htmx:afterSwap', function closeForm(evt) {
+        if (evt.detail.successful && personPattern.test(evt.detail.requestConfig.path) && (evt.detail.requestConfig.verb === 'post' || evt.detail.requestConfig.verb === 'put')) {
+          closePersonForm();
+        }
+      }, { signal })
     }
   </script>
 </dialog>

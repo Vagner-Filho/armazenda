@@ -10,12 +10,13 @@ const { readFileSync, unlinkSync, existsSync } = require('fs');
 const path = require('path');
 
 const PID_FILE = path.join(__dirname, '.go-server.pid');
+const BINARY_FILE = path.join(__dirname, '.test-server');
 
 async function globalTeardown() {
   const composeFile = path.join(__dirname, 'docker-compose.test.yml');
-  
+
   console.log('\n🧹 Stopping Go application...');
-  
+
   if (existsSync(PID_FILE)) {
     try {
       const pid = parseInt(readFileSync(PID_FILE, 'utf8').trim(), 10);
@@ -28,9 +29,15 @@ async function globalTeardown() {
       unlinkSync(PID_FILE);
     } catch (e) { }
   }
-  
+
+  if (existsSync(BINARY_FILE)) {
+    try {
+      unlinkSync(BINARY_FILE);
+    } catch (e) { }
+  }
+
   console.log('\n🧹 Stopping test database...');
-  
+
   try {
     execSync(`docker compose -f "${composeFile}" down -v`, {
       stdio: 'inherit',
@@ -38,17 +45,6 @@ async function globalTeardown() {
     console.log('✅ Test database stopped\n');
   } catch (error) {
     console.error('⚠️ Failed to stop test database cleanly');
-  }
-
-  console.log('\n🧹 Removing node_modules...');
-
-  try {
-    execSync(`rm -rf "${path.join(__dirname, 'node_modules')}"`, {
-      stdio: 'inherit',
-    });
-    console.log('✅ node_modules removed\n');
-  } catch (error) {
-    console.warn('⚠️ Failed to remove node_modules:', error.message);
   }
 }
 

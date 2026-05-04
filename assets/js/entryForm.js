@@ -12,11 +12,11 @@ async function applyDiscountsAsync() {
     await applyDiscounts();
 }
 
-export async function setupEntryForm(payload, entry_id) {
+export async function setupEntryForm(arrival_date, entry_id) {
     const controller = new AbortController()
     const signal = controller.signal
 
-    const dateVal = formatDateToInput(payload && typeof payload === "object" ? payload.arrivalDate : null)
+    const dateVal = formatDateToInput(arrival_date)
 
     const dialogEl = document.querySelector("#addEntryDialog")
     if (dialogEl) {
@@ -26,13 +26,65 @@ export async function setupEntryForm(payload, entry_id) {
             arrivalDateEl.setAttribute("value", dateVal)
         }
         const cropSelector = dialogEl.querySelector("select#crop-selector")
-        const lastUsedCrop = localStorage.getItem("last_used_crop");
-        if (cropSelector && lastUsedCrop && !entry_id) {
-            for (const option of cropSelector.options) {
-                if (option.value === lastUsedCrop) {
-                    option.selected = true;
-                    break;
+        const lastUsedCrop = localStorage.getItem("last_used_crop")
+        if (cropSelector) {
+            if (lastUsedCrop && !entry_id) {
+                for (const option of cropSelector.options) {
+                    if (option.value === lastUsedCrop) {
+                        option.selected = true;
+                        break;
+                    }
                 }
+            }
+            cropSelector.addEventListener('change', function setProduct(ev) {
+                const selectedOption = ev.target.options[ev.target.selectedIndex]
+                sessionStorage.setItem('product', selectedOption.dataset.productId)
+            }, { signal })
+            const selectedOption = cropSelector.options[cropSelector.selectedIndex]
+            sessionStorage.setItem('product', selectedOption.dataset.productId)
+        }
+
+        // Origin selector
+        const selector = dialogEl.querySelector('#origin-selector');
+        const fieldSelector = dialogEl.querySelector('select#field-selector')
+        if (selector) {
+            selector.addEventListener('change', function origemHandler(evt) {
+                setPersonConfig(evt.target);
+                // INFO: se origem não é própria fazenda
+                if (evt.target.value && fieldSelector) {
+                    for (const fieldOpt of fieldSelector.options) {
+                        if (fieldOpt.text === 'Externo') {
+                            fieldOpt.selected = true;
+                            break;
+                        }
+                    }
+                }
+            }, { signal });
+            const option = selector.querySelector('option[selected]')
+
+            if (option && option.dataset.humidityProgressionId) {
+                // Fetch progression and get first tier threshold
+                let humidityThreshold = 14; // Default
+                const progressionId = option.dataset.humidityProgressionId;
+                if (progressionId) {
+                    try {
+                        const progression = await progressionSync.getProgression(parseInt(progressionId));
+                        if (progression && progression.tiers && progression.tiers.length > 0) {
+                            // Get the minimum threshold from all tiers
+                            const thresholds = progression.tiers.map(t => parseFloat(t.thresholdHumidity));
+                            humidityThreshold = Math.min(...thresholds);
+                        }
+                    } catch (error) {
+                        console.error('[EntryForm] Failed to get progression threshold:', error);
+                    }
+                }
+
+                sessionStorage.setItem('personConfig', JSON.stringify({
+                    humidityProgressionId: progressionId,
+                    entrySoyDiscount: option.dataset.entrySoyDiscount,
+                    entryCornDiscount: option.dataset.entryCornDiscount,
+                    humidityThreshold: humidityThreshold
+                }));
             }
         }
 
@@ -132,61 +184,6 @@ export async function setupEntryForm(payload, entry_id) {
                 }
             }
         }, { signal });
-
-        // Crop selector
-        const cropInput = dialogEl.querySelector('select#crop-selector')
-        if (cropInput) {
-            cropInput.addEventListener('change', function setProduct(ev) {
-                const selectedOption = ev.target.options[ev.target.selectedIndex]
-                sessionStorage.setItem('product', selectedOption.dataset.productId)
-            }, { signal })
-            const selectedOption = cropInput.options[cropInput.selectedIndex]
-            sessionStorage.setItem('product', selectedOption.dataset.productId)
-        }
-
-        // Origin selector
-        const selector = dialogEl.querySelector('#origin-selector');
-        const fieldSelector = dialogEl.querySelector('select#field-selector')
-        if (selector) {
-            selector.addEventListener('change', function(evt) {
-                setPersonConfig(evt.target);
-                // INFO: se origem não é própria fazenda
-                if (evt.target.value && fieldSelector) {
-                    for (const fieldOpt of fieldSelector.options) {
-                        if (fieldOpt.text === 'Externo') {
-                            fieldOpt.selected = true;
-                            break;
-                        }
-                    }
-                }
-            }, { signal });
-            const option = selector.querySelector('option[selected]')
-
-            if (option && option.dataset.humidityProgressionId) {
-                // Fetch progression and get first tier threshold
-                let humidityThreshold = 14; // Default
-                const progressionId = option.dataset.humidityProgressionId;
-                if (progressionId) {
-                    try {
-                        const progression = await progressionSync.getProgression(parseInt(progressionId));
-                        if (progression && progression.tiers && progression.tiers.length > 0) {
-                            // Get the minimum threshold from all tiers
-                            const thresholds = progression.tiers.map(t => parseFloat(t.thresholdHumidity));
-                            humidityThreshold = Math.min(...thresholds);
-                        }
-                    } catch (error) {
-                        console.error('[EntryForm] Failed to get progression threshold:', error);
-                    }
-                }
-
-                sessionStorage.setItem('personConfig', JSON.stringify({
-                    humidityProgressionId: progressionId,
-                    entrySoyDiscount: option.dataset.entrySoyDiscount,
-                    entryCornDiscount: option.dataset.entryCornDiscount,
-                    humidityThreshold: humidityThreshold
-                }));
-            }
-        }
 
         async function setPersonConfig(el) {
             const selectedOption = el.options[el.selectedIndex];

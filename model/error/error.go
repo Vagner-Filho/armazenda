@@ -45,12 +45,16 @@ func InitLoggerModel(pool *pgxpool.Pool) (*loggerModel, error) {
 
 func GetLoggerModel() *loggerModel {
 	if loggerModelImpl == nil {
-		panic("\nlogger model hasnt been initialized\n")
+		return &loggerModel{}
 	}
 	return loggerModelImpl
 }
 
 func (lm *loggerModel) Log(content string) {
+	if lm.pool == nil {
+		return
+	}
+
 	_, logErr := lm.pool.Exec(context.Background(), `INSERT INTO sys_log (content, at) VALUES (@content, @at)`, pgx.NamedArgs{"content": content, "at": time.Now()})
 
 	if logErr != nil {

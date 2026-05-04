@@ -179,7 +179,7 @@ func (bm *PersonModel) AddLegalPerson(lp entity_public.LegalPerson) (entity_publ
 		displayName = *lp.FantasyName
 	}
 	return entity_public.PersonDisplay{
-		Type:     0, // Natural Person
+		Type:     1, // Legal Person
 		Name:     displayName,
 		Document: lp.Cnpj,
 		IE:       lp.Person.Ie,
@@ -434,7 +434,7 @@ func (bm *PersonModel) CpfExistsInFarm(cpf string, farmId uint32) (bool, *model_
 	return exists, nil
 }
 
-func (bm *PersonModel) GetHumidityDiscount(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
+func (bm *PersonModel) GetHumidityDiscount(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
 	hpm := humidity_progression_model.GetHumidityProgressionModel()
 
 	var progressionId *uint32
@@ -449,14 +449,25 @@ func (bm *PersonModel) GetHumidityDiscount(person *uint32, farm uint32, humidity
 			return decimal.Zero, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
 		}
 
-		// If no person progression, try default_person_config
+		// INFO: default da fazenda
+		if progressionId == nil {
+			err := bm.pool.QueryRow(context.Background(), `
+			SELECT humidity_progression_id FROM farm_config WHERE farm_id = @farm
+			`, pgx.NamedArgs{"farm": farm}).Scan(&progressionId)
+
+			if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+				return decimal.Zero, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+			}
+
+		}
+
+		// INFO: default do sistema
 		if progressionId == nil {
 			err = bm.pool.QueryRow(context.Background(), `
 				SELECT humidity_progression_id FROM default_person_config WHERE id = 1
 			`).Scan(&progressionId)
 
 			if err != nil {
-				// Fall back to system default
 				sysDefault, err := hpm.GetSystemDefaultProgression()
 				if err != nil {
 					return decimal.Zero, err
@@ -465,9 +476,9 @@ func (bm *PersonModel) GetHumidityDiscount(person *uint32, farm uint32, humidity
 			}
 		}
 	} else {
-		// No origin (Própria) - use farm's progression
+		// INFO: selecionado para a fazenda (farm_used) ou o geral da fazenda
 		err := bm.pool.QueryRow(context.Background(), `
-			SELECT humidity_progression_id FROM farm_config WHERE farm_id = @farm
+			SELECT COALESCE(farm_used_humidity_progression_id, humidity_progression_id) AS progression_id FROM farm_config WHERE farm_id = @farm
 		`, pgx.NamedArgs{"farm": farm}).Scan(&progressionId)
 
 		if err != nil || progressionId == nil {
@@ -625,7 +636,7 @@ func (bm *PersonModel) getDefaultPersonConfig(ctx context.Context) (entity_publi
 	return config, err
 }
 
-func (bm *PersonModel) GetPersonConfig(person uint32) (entity_public.PersonConfig, *model_error.ModelError) {
+func (bm *PersonModel) GetPersonConfig(person uint32) (entity_public.PersonConfig, error) {
 	rows, err := bm.pool.Query(context.Background(), `
 		SELECT COALESCE(pc.humidity_progression_id, dpc.humidity_progression_id), COALESCE(pc.entry_soy_discount, dpc.entry_soy_discount), COALESCE(pc.entry_corn_discount, dpc.entry_corn_discount)
 			FROM person_config pc

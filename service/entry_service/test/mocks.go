@@ -35,8 +35,8 @@ func (m *MockEntryModel) AddEntryTax(id uint32, tax decimal.Decimal, appliedTax 
 
 // MockPersonModel mocks PersonModelInterface for testing
 type MockPersonModel struct {
-	GetHumidityDiscountFunc   func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError)
-	GetPersonConfigFunc       func(person uint32) (entity_public.PersonConfig, *model_error.ModelError)
+	GetHumidityDiscountFunc   func(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error)
+	GetPersonConfigFunc       func(person uint32) (entity_public.PersonConfig, error)
 	GetHumidityDiscountCalled bool
 	GetPersonConfigCalled     bool
 	GetHumidityDiscountArgs   struct {
@@ -49,7 +49,7 @@ type MockPersonModel struct {
 	}
 }
 
-func (m *MockPersonModel) GetHumidityDiscount(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
+func (m *MockPersonModel) GetHumidityDiscount(person *uint32, farm uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
 	m.GetHumidityDiscountCalled = true
 	m.GetHumidityDiscountArgs.Person = person
 	m.GetHumidityDiscountArgs.Farm = farm
@@ -57,7 +57,7 @@ func (m *MockPersonModel) GetHumidityDiscount(person *uint32, farm uint32, humid
 	return m.GetHumidityDiscountFunc(person, farm, humidity)
 }
 
-func (m *MockPersonModel) GetPersonConfig(person uint32) (entity_public.PersonConfig, *model_error.ModelError) {
+func (m *MockPersonModel) GetPersonConfig(person uint32) (entity_public.PersonConfig, error) {
 	m.GetPersonConfigCalled = true
 	m.GetPersonConfigArgs.Person = person
 	return m.GetPersonConfigFunc(person)
@@ -91,13 +91,25 @@ func (m *MockCropModel) GetCropById(id uint8) (entity_public.Crop, error) {
 
 // MockHumidityProgressionModel mocks HumidityProgressionModelInterface for testing
 type MockHumidityProgressionModel struct {
-	GetFirstTierThresholdFunc   func(progressionId *uint32) (decimal.Decimal, *model_error.ModelError)
+	GetFirstTierThresholdFunc   func(progressionId *uint32) (decimal.Decimal, error)
 	GetFirstTierThresholdCalled bool
 	GetFirstTierThresholdArgs   *uint32
 }
 
-func (m *MockHumidityProgressionModel) GetFirstTierThreshold(progressionId *uint32) (decimal.Decimal, *model_error.ModelError) {
+func (m *MockHumidityProgressionModel) GetFirstTierThreshold(progressionId *uint32) (decimal.Decimal, error) {
 	m.GetFirstTierThresholdCalled = true
 	m.GetFirstTierThresholdArgs = progressionId
 	return m.GetFirstTierThresholdFunc(progressionId)
+}
+
+type MockFarmConfigModel struct {
+	GetFarmConfigFunc   func(farm uint32) (*entity_public.Farm, error)
+	GetFarmConfigCalled bool
+	GetFarmConfigArgs   uint32
+}
+
+func (m *MockFarmConfigModel) GetFarmConfig(farm uint32) (*entity_public.Farm, error) {
+	m.GetFarmConfigCalled = true
+	m.GetFarmConfigArgs = farm
+	return m.GetFarmConfigFunc(farm)
 }

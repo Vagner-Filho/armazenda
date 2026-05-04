@@ -315,7 +315,8 @@ export async function applyDiscounts() {
 	const netWeightAfterQualityDiscount = rawNetWeight - totalDiscount;
 
 	const productType = Number(sessionStorage.getItem("product"));
-	const getEntryDiscount = productTypeDiscountHandler[productType]
+	// INFO: entry discount refere-se à taxa de serviço, aplicada apenas quando a entrada não é própria e após os descontos de qualidade.
+	const getEntryDiscount = productTypeDiscountHandler[productType];
 	const entryProductDiscount = getEntryDiscount ? getEntryDiscount(netWeightAfterQualityDiscount) : 0;
 
 	const finalNetWeight = netWeightAfterQualityDiscount - entryProductDiscount;
@@ -324,10 +325,10 @@ export async function applyDiscounts() {
 		netWeightInput.value = '0';
 		rawNetWeightInput.value = '0';
 	} else {
-		rawNetWeightInput.value = formatWeight(rawNetWeight.toFixed(2));
-		netWeightInput.value = formatWeight(finalNetWeight.toFixed(2));
+		rawNetWeightInput.value = formatWeight(rawNetWeight.toFixed(3));
+		netWeightInput.value = formatWeight(finalNetWeight.toFixed(3));
 	}
 
 	const entryTaxField = document.querySelector('input#entryTax')
-	entryTaxField.value = formatWeight(entryProductDiscount.toFixed(2));
+	entryTaxField.value = formatWeight(entryProductDiscount.toFixed(3));
 }

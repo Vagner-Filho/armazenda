@@ -4,6 +4,7 @@ import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/crop_model"
 	"armazenda/model/entry_model"
+	"armazenda/model/farm_config_model"
 	"armazenda/model/humidity_progression_model"
 	"armazenda/model/person_model"
 	"armazenda/model/product_model"
@@ -132,7 +133,8 @@ func addEntry(c *gin.Context) {
 	cm := crop_model.GetCropModel()
 	em := entry_model.GetEntryModel()
 	hpm := humidity_progression_model.GetHumidityProgressionModel()
-	entry, toast := entry_service.AddEntry(newEntry, em, pm, prod_m, cm, hpm)
+	fcm := farm_config_model.GetFarmConfigModel()
+	entry, toast := entry_service.AddEntry(newEntry, em, pm, prod_m, cm, hpm, fcm)
 	c.Header("HX-Trigger", toast.ToJsonStr())
 
 	if toast.Type == entity_public.WarningToast {

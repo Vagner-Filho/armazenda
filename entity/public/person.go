@@ -38,7 +38,7 @@ func (pc PersonConfig) GetProductEntryDiscount(product uint8) decimal.Decimal {
 		return pc.EntrySoyDiscount
 	}
 
-	return decimal.NewFromInt(0)
+	return decimal.Zero
 }
 
 type Person struct {

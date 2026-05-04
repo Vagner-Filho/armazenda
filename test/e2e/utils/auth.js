@@ -20,9 +20,9 @@ function parseSetCookieHeader(setCookieHeader, url) {
   const parts = setCookieHeader.split(';').map(p => p.trim());
   const [nameValue, ...attributes] = parts;
   const [name, value] = nameValue.split('=');
-  
+
   const cookie = { name, value, url };
-  
+
   for (const attr of attributes) {
     const lowerAttr = attr.toLowerCase();
     if (lowerAttr === 'httponly') {
@@ -35,7 +35,7 @@ function parseSetCookieHeader(setCookieHeader, url) {
     }
     // Note: path and domain are ignored when url is set
   }
-  
+
   return cookie;
 }
 
@@ -51,35 +51,54 @@ async function loginViaApi(page) {
   const baseUrl = process.env.BASE_URL || 'http://localhost:8100';
   // Use 127.0.0.1 for API request to avoid IPv6 resolution issues
   const apiUrl = baseUrl.replace('localhost', '127.0.0.1');
-  
+
   const response = await page.request.post(`${apiUrl}/login`, {
     form: {
       cpf: TEST_ADMIN.cpf,
       passwd: TEST_ADMIN.password,
     },
   });
-  
+
   if (!response.ok()) {
     throw new Error(`Login failed with status ${response.status()}`);
   }
-  
+
   const setCookieHeaders = response.headersArray().filter(
     h => h.name.toLowerCase() === 'set-cookie'
   );
-  
+
   if (setCookieHeaders.length === 0) {
     throw new Error('No cookies received from login');
   }
-  
+
   // Use the original baseUrl (localhost) for cookies, not apiUrl (127.0.0.1)
   const cookies = setCookieHeaders.map(h => parseSetCookieHeader(h.value, baseUrl));
-  
+
   // Set cookies on the browser context with secure: false for localhost
   await page.context().addCookies(cookies);
-  
+
   // Navigate to the main page
-  await page.goto('/romaneio');
+  await page.goto('/romaneio', { waitUntil: 'domcontentloaded' });
   await expect(page).toHaveURL(/.*romaneio/);
+}
+
+async function visitHome(page) {
+  const baseUrl = (process.env.BASE_URL || 'http://localhost:8100')
+    .replace('localhost', '127.0.0.1');
+
+  const doGoto = () =>
+    page.goto(baseUrl + '/', { waitUntil: 'domcontentloaded', timeout: 10000 });
+
+  try {
+    await doGoto();
+  } catch (err) {
+    if (err.message?.includes('Timeout') || err.message?.includes('timeout')) {
+      // Retry once on navigation stall
+      await doGoto();
+    } else {
+      throw err;
+    }
+  }
 }
 
 /**
@@ -92,9 +111,9 @@ async function login(page, browserName) {
   if (browserName === 'webkit') {
     return loginViaApi(page);
   }
-  
-  // Standard form login for Chromium/Firefox
-  await page.goto('/');
+
+  await visitHome(page);
+
   await expect(page.locator('form')).toBeVisible();
   await page.fill('input[name="cpf"]', TEST_ADMIN.cpf);
   await page.fill('input[name="passwd"]', TEST_ADMIN.password);
@@ -108,7 +127,7 @@ async function login(page, browserName) {
  */
 async function logout(page) {
   await page.context().clearCookies();
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('form')).toBeVisible();
 }
 
@@ -119,7 +138,7 @@ async function logout(page) {
  */
 async function isLoggedIn(page) {
   try {
-    await page.goto('/romaneio');
+    await page.goto('/romaneio', { waitUntil: 'domcontentloaded' });
     const url = page.url();
     return url.includes('romaneio');
   } catch {
@@ -133,4 +152,5 @@ module.exports = {
   loginViaApi,
   logout,
   isLoggedIn,
+  visitHome
 };

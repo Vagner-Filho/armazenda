@@ -12,7 +12,6 @@
  */
 export function formatWeight(value) {
   const numericValue = parseFloat(value);
-
   if (isNaN(numericValue)) {
     return 'N/A';
   }

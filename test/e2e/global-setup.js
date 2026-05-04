@@ -57,8 +57,41 @@ function waitForApp(url, timeout) {
   });
 }
 
+function waitForTable(dbConfig, timeout) {
+  return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+    const checkQuery = `SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'farm' LIMIT 1;`;
+
+    function check() {
+      if (Date.now() - startTime > timeout) {
+        reject(new Error(`Database schema was not ready within ${timeout}ms`));
+        return;
+      }
+
+      try {
+        execSync(
+          `PGPASSWORD=${dbConfig.password} psql ` +
+          `-h ${dbConfig.host} ` +
+          `-p ${dbConfig.port} ` +
+          `-U ${dbConfig.user} ` +
+          `-d ${dbConfig.database} ` +
+          `-c "${checkQuery}"`,
+          { stdio: 'pipe' }
+        );
+        resolve();
+      } catch {
+        setTimeout(check, 500);
+      }
+    }
+
+    check();
+  });
+}
+
 async function globalSetup() {
   const composeFile = path.join(__dirname, 'docker-compose.test.yml');
+  const projectRoot = path.join(__dirname, '../..');
+  const binaryPath = path.join(__dirname, '.test-server');
 
   console.log('\n📦 Starting test database...');
 
@@ -71,10 +104,23 @@ async function globalSetup() {
     throw error;
   }
 
+  console.log('\n🔨 Building Go application...');
+
+  try {
+    execSync(`go build -o "${binaryPath}" .`, {
+      cwd: projectRoot,
+      stdio: 'inherit',
+    });
+  } catch (error) {
+    console.error('❌ Failed to build Go application');
+    execSync(`docker compose -f "${composeFile}" down -v`, { stdio: 'inherit' });
+    throw error;
+  }
+
   console.log('\n🚀 Starting Go application...');
 
-  const goApp = spawn('go', ['run', '.'], {
-    cwd: path.join(__dirname, '../..'),
+  const goApp = spawn(binaryPath, [], {
+    cwd: projectRoot,
     env: {
       ...process.env,
       DB_HOST: DB_CONFIG.host,
@@ -95,11 +141,26 @@ async function globalSetup() {
 
   try {
     await waitForApp(APP_URL, APP_TIMEOUT);
-    console.log('✅ Go application started');
+    console.log('✅ Go application responding');
   } catch (error) {
     console.error('❌ Go app failed to start:', error.message);
     try { process.kill(-goApp.pid); } catch (e) { }
     if (existsSync(PID_FILE)) unlinkSync(PID_FILE);
+    if (existsSync(binaryPath)) unlinkSync(binaryPath);
+    execSync(`docker compose -f "${composeFile}" down -v`, { stdio: 'inherit' });
+    throw error;
+  }
+
+  console.log('\n⏳ Waiting for database schema...');
+
+  try {
+    await waitForTable(DB_CONFIG, APP_TIMEOUT);
+    console.log('✅ Database schema ready');
+  } catch (error) {
+    console.error('❌ Database schema not ready:', error.message);
+    try { process.kill(-goApp.pid); } catch (e) { }
+    if (existsSync(PID_FILE)) unlinkSync(PID_FILE);
+    if (existsSync(binaryPath)) unlinkSync(binaryPath);
     execSync(`docker compose -f "${composeFile}" down -v`, { stdio: 'inherit' });
     throw error;
   }
@@ -122,6 +183,7 @@ async function globalSetup() {
     console.error('❌ Failed to seed test data');
     try { process.kill(-goApp.pid); } catch (e) { }
     if (existsSync(PID_FILE)) unlinkSync(PID_FILE);
+    if (existsSync(binaryPath)) unlinkSync(binaryPath);
     execSync(`docker compose -f "${composeFile}" down -v`, { stdio: 'inherit' });
     throw error;
   }

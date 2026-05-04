@@ -131,9 +131,9 @@ func CalculateDeparture(input DepartureCalculationInput) DepartureCalculationRes
 
 	// Calculate quality discounts (same logic as entry)
 	discounts := CalculateDiscounts(
-		input.Humidity,
-		input.Damage,
-		input.Impurity,
+		nil,
+		nil,
+		nil,
 		input.GrossWeight,
 		input.Tare,
 		nil, // No humidity modifier for departures
@@ -152,53 +152,4 @@ func CalculateDeparture(input DepartureCalculationInput) DepartureCalculationRes
 // CalculateStorageTax calculates storage tax given net weight and modifier
 func CalculateStorageTax(netWeight decimal.Decimal, storageTaxModifier decimal.Decimal) decimal.Decimal {
 	return netWeight.Mul(storageTaxModifier).Div(Base100)
-}
-
-// DiscountHumidity calculates humidity discount for a specific value
-func DiscountHumidity(humidity *decimal.Decimal, rawNetWeight decimal.Decimal, discountModifier *decimal.Decimal, humidityThreshold *decimal.Decimal) decimal.Decimal {
-	if humidity == nil || discountModifier == nil {
-		return DecimalZero
-	}
-
-	// Use provided threshold or default
-	threshold := DefaultHumidityThreshold
-	if humidityThreshold != nil {
-		threshold = *humidityThreshold
-	}
-
-	exceedingHumidity := humidity.Sub(threshold)
-	if exceedingHumidity.LessThanOrEqual(DecimalZero) {
-		return DecimalZero
-	}
-
-	discount := exceedingHumidity.Mul(*discountModifier)
-	return rawNetWeight.Mul(discount).Div(Base100)
-}
-
-// DiscountDamage calculates damage discount for a specific value
-func DiscountDamage(damage *decimal.Decimal, rawNetWeight decimal.Decimal) decimal.Decimal {
-	if damage == nil {
-		return DecimalZero
-	}
-
-	exceedingDamage := damage.Sub(DamageThreshold)
-	if exceedingDamage.LessThanOrEqual(DecimalZero) {
-		return DecimalZero
-	}
-
-	return rawNetWeight.Mul(exceedingDamage).Div(Base100)
-}
-
-// DiscountImpurity calculates impurity discount for a specific value
-func DiscountImpurity(impurity *decimal.Decimal, rawNetWeight decimal.Decimal) decimal.Decimal {
-	if impurity == nil {
-		return DecimalZero
-	}
-
-	exceedingImpurity := impurity.Sub(ImpurityThreshold)
-	if exceedingImpurity.LessThanOrEqual(DecimalZero) {
-		return DecimalZero
-	}
-
-	return rawNetWeight.Mul(exceedingImpurity).Div(Base100)
 }

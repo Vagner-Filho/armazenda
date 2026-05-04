@@ -16,9 +16,9 @@ export function setupCpfFormatter(cpf_selector) {
 	if (!cpfInput) {
 		throw Error("input de cpf não encontrado");
 	}
-	cpfInput.addEventListener('input', function handleCpfInput() {
+	function formatCpf() {
 		// 1. Get the raw value and remove non-digit characters
-		let baseValue = this.value.replace(/\D/g, '');
+		let baseValue = cpfInput.value.replace(/\D/g, '');
 
 		// 2. Limit to 11 digits (maximum length of a CPF without formatting)
 		baseValue = baseValue.substring(0, 11);
@@ -40,10 +40,13 @@ export function setupCpfFormatter(cpf_selector) {
 		}
 
 		// 4. Update the input field's value
-		this.value = formattedValue;
-	})
+		cpfInput.value = formattedValue;
+	}
+
+	cpfInput.addEventListener('input', formatCpf);
+	formatCpf(); // Format initial value if present
 	document.body.addEventListener('htmx:configRequest', function(evt) {
-		if (evt.detail.parameters.has('cpf')) {
+		if (evt.detail.parameters['cpf']) {
 			evt.detail.parameters['cpf'] = evt.detail.parameters['cpf'].replace(/\D/g, '');
 		}
 	});
@@ -59,9 +62,9 @@ export function setupCnpjFormatter(cpf_selector) {
 	if (!cpfInput) {
 		throw Error("input de cnpj não encontrado");
 	}
-	cpfInput.addEventListener('input', function handleCpfInput() {
+	function formatCnpj() {
 		// 1. Get the raw value and remove non-digit characters
-		let baseValue = this.value.replace(/\D/g, '');
+		let baseValue = cpfInput.value.replace(/\D/g, '');
 
 		// 2. Limit to 11 digits (maximum length of a CNPJ without formatting)
 		baseValue = baseValue.substring(0, 14);
@@ -83,10 +86,13 @@ export function setupCnpjFormatter(cpf_selector) {
 		}
 
 		// 4. Update the input field's value
-		this.value = formattedValue;
-	})
+		cpfInput.value = formattedValue;
+	}
+
+	cpfInput.addEventListener('input', formatCnpj);
+	formatCnpj(); // Format initial value if present
 	document.body.addEventListener('htmx:configRequest', function(evt) {
-		if (evt.detail.parameters.has('cnpj')) {
+		if (evt.detail.parameters['cnpj']) {
 			evt.detail.parameters['cnpj'] = evt.detail.parameters['cnpj'].replace(/\D/g, '');
 		}
 	});

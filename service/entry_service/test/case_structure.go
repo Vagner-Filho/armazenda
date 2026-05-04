@@ -10,7 +10,7 @@ import (
 type addEntryTestCase struct {
 	name                 string
 	entry                entity_public.Entry
-	setupMocks           func(*MockEntryModel, *MockPersonModel, *MockProductModel, *MockCropModel, *MockHumidityProgressionModel)
+	setupMocks           func(*MockEntryModel, *MockPersonModel, *MockProductModel, *MockCropModel, *MockHumidityProgressionModel, *MockFarmConfigModel)
 	expectedToastType    entity_public.ToastType
 	expectedToastMessage string
 	expectedNetWeight    decimal.Decimal

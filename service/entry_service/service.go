@@ -1,12 +1,17 @@
 package entry_service
 
 import (
+	"fmt"
 	"time"
 
 	entity_public "armazenda/entity/public"
+	"armazenda/model/crop_model"
 	"armazenda/model/entry_model"
+	model_error "armazenda/model/error"
+	"armazenda/model/farm_config_model"
 	"armazenda/model/humidity_progression_model"
 	"armazenda/model/person_model"
+	"armazenda/model/product_model"
 	"armazenda/pkg/calculator"
 
 	"github.com/shopspring/decimal"
@@ -40,53 +45,114 @@ func GetEntryDraft(id uint32) (entity_public.EntryDraft, *entity_public.Toast) {
 	return newEntry, nil
 }
 
-func AddEntry(ge entity_public.Entry, em EntryModelInterface, pm PersonModelInterface, prod_m ProductModelInterface, cm CropModelInterface, hpm HumidityProgressionModelInterface) (entity_public.DisplayEntry, entity_public.Toast) {
+func getStorageTaxModifier(e entity_public.Entry, cm CropModelInterface, prod_m ProductModelInterface, pm PersonModelInterface) (decimal.Decimal, error) {
 	var storageTaxModifier decimal.Decimal
-	if ge.Origin != nil {
-		crop, err := cm.GetCropById(ge.Crop)
+	if e.Origin != nil {
+		crop, err := cm.GetCropById(e.Crop)
 		if err != nil {
-
+			model_error.GetLoggerModel().Log(fmt.Sprintf("(storage tax) GetCropById: %v", err.Error()))
+			return storageTaxModifier, err
 		}
 
 		product, err := prod_m.GetProductById(crop.Product)
 		if err != nil {
-
+			model_error.GetLoggerModel().Log(fmt.Sprintf("(storage tax) GetProductById: %v", err.Error()))
+			return storageTaxModifier, err
 		}
 
-		personConfig, err := pm.GetPersonConfig(*ge.Origin)
+		personConfig, err := pm.GetPersonConfig(*e.Origin)
+		if err != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("(storage tax) GetPersonConfig: %v", err.Error()))
+			return storageTaxModifier, err
+		}
 
 		storageTaxModifier = personConfig.GetProductEntryDiscount(product.Id)
 	}
+	return storageTaxModifier, nil
+}
 
-	// Fetch the humidity threshold from the progression
+func getProgressionId(e entity_public.Entry, pm PersonModelInterface, fcm FarmConfigModelInterface) (*uint32, error) {
 	var progressionId *uint32
-	if ge.Origin != nil {
-		config, _ := pm.GetPersonConfig(*ge.Origin)
-		progressionId = config.HumidityProgressionId
-	}
-	threshold, _ := hpm.GetFirstTierThreshold(progressionId)
-
-	var discountModifier decimal.Decimal
-	if ge.Humidity != nil && ge.Humidity.GreaterThan(threshold) {
-		discountModifierTmp, humErr := pm.GetHumidityDiscount(ge.Origin, ge.Farm, *ge.Humidity)
-		if humErr != nil {
-			return entity_public.DisplayEntry{}, entity_public.GetErrorToast("Falha ao calcular desconto de humidade", "")
+	if e.Origin != nil {
+		config, err := pm.GetPersonConfig(*e.Origin)
+		if err != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("(progression id) GetPersonConfig: %v", err.Error()))
+			return progressionId, err
 		}
-		discountModifier = discountModifierTmp
+		progressionId = config.HumidityProgressionId
+	} else {
+		fc, err := fcm.GetFarmConfig(e.Farm)
+		if err == nil {
+			progressionId = fc.FarmUsedHumidityProgressionId
+		} else {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("(progression id) GetFarmConfig: %v", err.Error()))
+		}
+	}
+	return progressionId, nil
+}
+
+func getEntryCalculationInput(e entity_public.Entry, pm PersonModelInterface, fcm FarmConfigModelInterface, hpm HumidityProgressionModelInterface, cm CropModelInterface, prod_m ProductModelInterface) (calculator.EntryCalculationInput, *entity_public.Toast) {
+	var progressionId *uint32
+	var storageTaxModifier decimal.Decimal
+	var discountModifier decimal.Decimal
+	var threshold decimal.Decimal
+	var err error
+
+	if e.Humidity != nil && e.Humidity.GreaterThan(decimal.Zero) {
+		progressionId, err = getProgressionId(e, pm, fcm)
+		if err != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("(entry calculation input) progressionId: %v", err.Error()))
+			toast := entity_public.GetErrorToast("Falha ao calcular desconto de humidade", "entrada não adicionada")
+			return calculator.EntryCalculationInput{}, &toast
+		}
+		threshold, err = hpm.GetFirstTierThreshold(progressionId)
+		if err != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("(entry calculation input) threshold: %v", err.Error()))
+			toast := entity_public.GetErrorToast("Falha ao calcular desconto de humidade", "entrada não adicionada")
+			return calculator.EntryCalculationInput{}, &toast
+		}
+
+		if e.Humidity.GreaterThan(threshold) {
+			discountModifier, err = pm.GetHumidityDiscount(e.Origin, e.Farm, *e.Humidity)
+			if err != nil {
+				model_error.GetLoggerModel().Log(fmt.Sprintf("(entry calculation input) discountModifier: %v", err.Error()))
+				toast := entity_public.GetErrorToast("Falha ao calcular desconto de humidade", "entrada não adicionada")
+				return calculator.EntryCalculationInput{}, &toast
+			}
+		}
+
+		e.HumidityDiscountModifier = &discountModifier
 	}
 
-	ge.HumidityDiscountModifier = &discountModifier
+	if e.Origin != nil {
+		storageTaxModifier, err = getStorageTaxModifier(e, cm, prod_m, pm)
+		if err != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("(entry calculation input) storageTaxModifier: %v", err.Error()))
+			toast := entity_public.GetErrorToast("Falha ao calcular taxa de serviço", "entrada não adicionada")
+			return calculator.EntryCalculationInput{}, &toast
+		}
+	}
 
-	result := calculator.CalculateEntry(calculator.EntryCalculationInput{
-		GrossWeight:        ge.GrossWeight,
-		Tare:               ge.Tare,
-		Humidity:           ge.Humidity,
-		Damage:             ge.Damage,
-		Impurity:           ge.Impurity,
+	return calculator.EntryCalculationInput{
+		GrossWeight:        e.GrossWeight,
+		Tare:               e.Tare,
+		Humidity:           e.Humidity,
+		Damage:             e.Damage,
+		Impurity:           e.Impurity,
 		HumidityModifier:   &discountModifier,
 		StorageTaxModifier: &storageTaxModifier,
 		HumidityThreshold:  &threshold,
-	})
+	}, nil
+}
+
+func AddEntry(ge entity_public.Entry, em EntryModelInterface, pm PersonModelInterface, prod_m ProductModelInterface, cm CropModelInterface, hpm HumidityProgressionModelInterface, fcm FarmConfigModelInterface) (entity_public.DisplayEntry, entity_public.Toast) {
+	calcInput, toast := getEntryCalculationInput(ge, pm, fcm, hpm, cm, prod_m)
+
+	if toast != nil {
+		return entity_public.DisplayEntry{}, *toast
+	}
+
+	result := calculator.CalculateEntry(calcInput)
 
 	if result.IsValid == false {
 		return entity_public.DisplayEntry{}, entity_public.GetErrorToast(result.ErrorMessage, "")
@@ -103,9 +169,9 @@ func AddEntry(ge entity_public.Entry, em EntryModelInterface, pm PersonModelInte
 	}
 
 	if ge.Origin != nil {
-		err := em.AddEntryTax(newEntry.Id, result.StorageTax, storageTaxModifier)
+		err := em.AddEntryTax(newEntry.Id, result.StorageTax, *calcInput.StorageTaxModifier)
 		if err != nil {
-
+			model_error.GetLoggerModel().Log(fmt.Sprintf("(entry tax) error from AddEntryTax: %v", err.Error()))
 		}
 	}
 	return newEntry, entity_public.GetSuccessToast("Entrada adicionada", "")
@@ -172,55 +238,25 @@ func GetEntryPdf(id uint32) (*entity_public.EntryPdf, *entity_public.Toast) {
 
 func PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public.Toast) {
 	eModel := entry_model.GetEntryModel()
-
-	damageThreshold := decimal.NewFromInt(8)
-	impurityThreshold := decimal.NewFromInt(1)
-	base100 := decimal.NewFromInt(100)
-	var totalDiscount decimal.Decimal
-
-	rawNetWeight := ge.CargoWeight.GrossWeight.Sub(ge.Tare)
-	if rawNetWeight.LessThan(decimal.Zero) {
-		t := entity_public.GetWarningToast("O peso líquido não pode ser menor do que zero", "confira o peso bruto e a tara")
-		return entity_public.DisplayEntry{}, t
-	}
-	if ge.Damage != nil {
-		exceedingDamage := ge.Damage.Sub(damageThreshold)
-		if exceedingDamage.GreaterThan(decimal.Zero) {
-			totalDiscount = totalDiscount.Add(rawNetWeight.Mul(exceedingDamage).Div(base100))
-		}
-	}
-	if ge.Impurity != nil {
-		exceedingImpurity := ge.Impurity.Sub(impurityThreshold)
-		if exceedingImpurity.GreaterThan(decimal.Zero) {
-			totalDiscount = totalDiscount.Add(rawNetWeight.Mul(exceedingImpurity).Div(base100))
-		}
-	}
-
-	// Fetch the humidity threshold from the progression
-	hpm := humidity_progression_model.GetHumidityProgressionModel()
 	pm := person_model.GetPersonModel()
-	var progressionId *uint32
-	if ge.Origin != nil {
-		config, _ := pm.GetPersonConfig(*ge.Origin)
-		progressionId = config.HumidityProgressionId
-	}
-	humidityThreshold, _ := hpm.GetFirstTierThreshold(progressionId)
+	fcm := farm_config_model.GetFarmConfigModel()
+	hpm := humidity_progression_model.GetHumidityProgressionModel()
+	cm := crop_model.GetCropModel()
+	prod_m := product_model.GetProductModel()
 
-	if ge.Humidity != nil {
-		exceedingHumidty := ge.Humidity.Sub(humidityThreshold)
-		if exceedingHumidty.GreaterThan(decimal.Zero) {
-			discountModifier, humErr := pm.GetHumidityDiscount(ge.Origin, ge.Farm, *ge.Humidity)
-			if humErr != nil {
-				toast := entity_public.GetWarningToast("Falha ao calcular desconto de humidade", "")
-				return entity_public.DisplayEntry{}, toast
-			} else {
-				discount := exceedingHumidty.Mul(discountModifier)
-				totalDiscount = totalDiscount.Add(rawNetWeight.Mul(discount).Div(base100))
-			}
-		}
-	}
-	ge.NetWeight = rawNetWeight.Sub(totalDiscount)
+	calcInput, toast := getEntryCalculationInput(ge, pm, fcm, hpm, cm, prod_m)
 
+	if toast != nil {
+		return entity_public.DisplayEntry{}, *toast
+	}
+
+	result := calculator.CalculateEntry(calcInput)
+
+	if result.IsValid == false {
+		return entity_public.DisplayEntry{}, entity_public.GetErrorToast(result.ErrorMessage, "")
+	}
+
+	ge.NetWeight = result.NetWeight
 	entry, putErr := eModel.PutEntry(ge)
 	if putErr != nil {
 		if putErr.IsServerErr == true {

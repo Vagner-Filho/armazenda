@@ -1,7 +1,6 @@
 package calculator
 
 import (
-	entity_public "armazenda/entity/public"
 	"github.com/shopspring/decimal"
 )
 
@@ -63,12 +62,4 @@ type DepartureCalculationResult struct {
 	RawNetWeight decimal.Decimal
 	IsValid      bool
 	ErrorMessage string
-}
-
-// Helper function to create test display entry with specific net weight
-func CreateTestDisplayEntryWithNetWeight(id uint32, netWeight decimal.Decimal) entity_public.DisplayEntry {
-	return entity_public.DisplayEntry{
-		Id:        id,
-		NetWeight: netWeight,
-	}
 }

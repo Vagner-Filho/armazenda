@@ -1,9 +1,9 @@
-const { test, expect } = require('@playwright/test');
-const { login, TEST_ADMIN } = require('../utils/auth');
+import { test, expect } from '@playwright/test';
+import { login, TEST_ADMIN, visitHome } from '../utils/auth';
 
 test.describe('Login Flow', () => {
   test('should display login page', async ({ page }) => {
-    await page.goto('/');
+    await visitHome(page);
 
     // Check if login form is visible
     await expect(page.locator('form')).toBeVisible();
@@ -28,7 +28,7 @@ test.describe('Login Flow', () => {
   });
 
   test('should show error with invalid credentials', async ({ page }) => {
-    await page.goto('/');
+    await visitHome(page);
 
     // Fill in invalid credentials
     await page.fill('input[name="cpf"]', '00000000000');
@@ -37,8 +37,8 @@ test.describe('Login Flow', () => {
     // Submit form
     await page.click('button[type="submit"]');
 
-    // Should stay on login page
-    await expect(page).toHaveURL('/');
+    // INFO: localhost replaced by 127 on visitHome func
+    await expect(page).toHaveURL('http://127.0.0.1:8100/');
 
     // Check for error message (this might vary based on your app's error handling)
     // Common patterns: toast notification, error div, or form validation
@@ -54,25 +54,25 @@ test.describe('Login Flow', () => {
   });
 
   test('should require CPF field', async ({ page }) => {
-    await page.goto('/');
+    await visitHome(page);
 
     // Try to submit without CPF
     await page.fill('input[name="passwd"]', TEST_ADMIN.password);
     await page.click('button[type="submit"]');
 
-    // Should still be on login page
-    await expect(page).toHaveURL('/');
+    // INFO: localhost replaced by 127 on visitHome func
+    await expect(page).toHaveURL('http://127.0.0.1:8100/');
   });
 
   test('should require password field', async ({ page }) => {
-    await page.goto('/');
+    await visitHome(page);
 
     // Try to submit without password
     await page.fill('input[name="cpf"]', TEST_ADMIN.cpf);
     await page.click('button[type="submit"]');
 
-    // Should still be on login page
-    await expect(page).toHaveURL('/');
+    // INFO: localhost replaced by 127 on visitHome func
+    await expect(page).toHaveURL('http://127.0.0.1:8100/');
   });
 });
 

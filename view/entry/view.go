@@ -115,6 +115,7 @@ type EntryForm struct {
 	Entry           entity_public.EntryDTO
 	People          []entity_public.PersonOption
 	SelectedOrigin  *uint32
+	Farm            uint32
 }
 
 func GetEntryForm(farm uint32) (EntryForm, []*entity_public.Toast) {
@@ -130,6 +131,7 @@ func GetEntryForm(farm uint32) (EntryForm, []*entity_public.Toast) {
 		Fields:   fields,
 		Products: products,
 		People:   people,
+		Farm:     farm,
 	}, []*entity_public.Toast{vToast, cToast, fToast, pToast, pepToast}
 }
 

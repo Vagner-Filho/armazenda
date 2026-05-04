@@ -82,7 +82,7 @@ func (hm *HumidityProgressionModel) GetProgression(id uint32) (entity_public.Hum
 // GetDiscountForHumidity finds the appropriate discount value for a given humidity
 // Returns the discount_value from the tier with highest threshold <= humidity
 // If the specified progression is inactive, falls back to system default
-func (hm *HumidityProgressionModel) GetDiscountForHumidity(progressionId *uint32, humidity decimal.Decimal) (decimal.Decimal, *model_error.ModelError) {
+func (hm *HumidityProgressionModel) GetDiscountForHumidity(progressionId *uint32, humidity decimal.Decimal) (decimal.Decimal, error) {
 	// If progressionId is nil, get system default
 	var pid uint32
 	if progressionId == nil {
@@ -160,7 +160,7 @@ func (hm *HumidityProgressionModel) GetSystemDefaultProgression() (uint32, *mode
 
 // GetFirstTierThreshold returns the lowest threshold humidity from a progression
 // This represents the point at which humidity discounts begin
-func (hm *HumidityProgressionModel) GetFirstTierThreshold(progressionId *uint32) (decimal.Decimal, *model_error.ModelError) {
+func (hm *HumidityProgressionModel) GetFirstTierThreshold(progressionId *uint32) (decimal.Decimal, error) {
 	// If progressionId is nil, get system default
 	var pid uint32
 	if progressionId == nil {

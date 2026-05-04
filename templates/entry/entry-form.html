@@ -21,6 +21,7 @@
         <form id="entry-form" class="flex flex-col gap-4" {{ if .Entry.Id }} hx-put="/entry/{{ .Entry.Id }}"
             hx-target="#entry-{{ .Entry.Id }}" hx-swap="outerHTML" {{ else }} hx-post="/entry"
             hx-target="#entries-table-body" hx-swap="afterbegin" {{ end }} hx-indicator="#btns-container">
+            <input type="hidden" value="{{ .Farm }}" data-test_id="farm_id" name="farm" />
             <fieldset class="flex flex-col p-4 glass-panel rounded-xl">
                 <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
                     Identificação

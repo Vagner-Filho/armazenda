@@ -8,10 +8,9 @@
  */
 
 import { faker } from '@faker-js/faker';
-
-const { test, expect } = require('@playwright/test');
-const { login } = require('../utils/auth');
-const {
+import { test, expect } from '@playwright/test';
+import { login } from '../utils/auth';
+import {
   openEntryForm,
   ensureCropExists,
   ensureFieldExists,
@@ -19,46 +18,44 @@ const {
   fillEntryForm,
   submitEntryForm,
   getEntryRows,
-  entryExistsInTable,
-} = require('../utils/entry-helpers');
+  getEntryDependencies,
+} from '../utils/entry-helpers';
 
 test.describe('Entry Creation - Basic Flow', () => {
   test.beforeEach(async ({ page, browserName }) => {
     // Login before each test
     await login(page, browserName);
-
-    // Navigate to romaneio page
-    await page.goto('/romaneio');
-    await expect(page).toHaveURL(/.*romaneio/);
   });
 
-  test('should create a basic entry with crop, field, vehicle, gross weight and tare', async ({ page }) => {
+  test('should create a basic entry with default dependencies, gross weight and tare', async ({ page }) => {
     // Open the entry form
     await openEntryForm(page);
 
-    // Ensure required dependencies exist (create if not)
-    const cropValue = await ensureCropExists(page, 'Safra 2024', 'Milho');
-    const fieldValue = await ensureFieldExists(page, 'Talhão A', 10);
-    const vehicleValue = await ensureVehicleExists(page, 'ABC1234', 'Caminhão Teste');
-
+    const { crop, field, vehicle } = await getEntryDependencies(page, true);
     // Fill the entry form with basic data
     const grossWeight = 50000;
     const tare = 15000;
     const expectedNetWeight = grossWeight - tare;
+    const expectedNetWeightDisplay = "35.000 kg";
 
     await fillEntryForm(page, {
-      crop: cropValue,
-      field: fieldValue,
-      vehicle: vehicleValue,
+      crop: crop.value,
+      field: field.value,
+      vehicle: vehicle.value,
       grossWeight: grossWeight,
       tare: tare,
     });
 
-    // Submit the form
-    await submitEntryForm(page);
+    const netWeightInput = page.locator('#net_weight');
+    expect(netWeightInput).toHaveAttribute('data-raw', expectedNetWeight.toString());
 
-    // Wait for the entry to appear in the table
-    await page.waitForTimeout(1000); // Allow HTMX to update
+    const rowsBefore = await getEntryRows(page);
+    await submitEntryForm(page);
+    // Wait for HTMX to prepend the new row (hx-swap="afterbegin")
+    await expect.poll(
+      async () => (await getEntryRows(page)).length,
+      { message: 'waiting for new table row after HTMX swap' }
+    ).toBe(rowsBefore.length + 1);
 
     // Verify the entry was created by checking the table
     const rows = await getEntryRows(page);
@@ -66,12 +63,14 @@ test.describe('Entry Creation - Basic Flow', () => {
 
     // Verify the entry contains expected data
     // The table should show the vehicle plate and calculated net weight
-    const tableContent = await page.locator('#entries-table-body').textContent();
-    expect(tableContent).toContain('ABC1234');
+    const tableRow = page.locator('#entries-table-body tr').first();
+    const displayPlate = await tableRow.locator('td[data-test_id="plate"]').textContent();
+    expect(displayPlate.trim()).toBe(vehicle.label);
 
     // Verify gross - tare calculation (35000 kg)
     // Note: The exact format may vary, so we check for the presence of the value
-    expect(tableContent).toContain(expectedNetWeight.toString());
+    const displayNetWeight = await tableRow.locator('td[data-test_id="net_weight"]').textContent();
+    expect(displayNetWeight.trim()).toBe(expectedNetWeightDisplay);
   });
 
   test('should validate required fields', async ({ page }) => {
@@ -80,16 +79,17 @@ test.describe('Entry Creation - Basic Flow', () => {
 
     // Try to submit without filling required fields
     // First, ensure we have at least one option in each selector
-    await ensureCropExists(page, 'Safra Teste', 'Milho');
-    await ensureFieldExists(page, 'Talhão Teste', 5);
-    await ensureVehicleExists(page, 'TEST0001');
+    const { crop, field, vehicle } = await getEntryDependencies(page, true)
+    await ensureCropExists(page, crop.label);
+    await ensureFieldExists(page, field.label);
+    await ensureVehicleExists(page, vehicle.label);
 
     // Clear the weight fields to test validation
     await page.fill('input#grossWeight', '');
     await page.fill('input#tare', '');
 
     // Try to submit
-    await page.click('dialog#addEntryDialog button[type="submit"]');
+    await page.locator('dialog#addEntryDialog button[type="submit"]').evaluate(el => el.click());
 
     // The form should still be visible (validation failed)
     await expect(page.locator('dialog#addEntryDialog')).toBeVisible();
@@ -106,10 +106,10 @@ test.describe('Entry Creation - Basic Flow', () => {
     // Open the entry form
     await openEntryForm(page);
 
-    // Ensure dependencies exist
-    await ensureCropExists(page, 'Safra Calc', 'Soja');
-    await ensureFieldExists(page, 'Talhão Calc', 15);
-    await ensureVehicleExists(page, 'CALC0001');
+    const { crop, field, vehicle } = await getEntryDependencies(page, true)
+    await ensureCropExists(page, crop.label);
+    await ensureFieldExists(page, field.label);
+    await ensureVehicleExists(page, vehicle.label);
 
     // Fill in weights
     await page.fill('input#grossWeight', '45000');
@@ -119,7 +119,7 @@ test.describe('Entry Creation - Basic Flow', () => {
     await page.waitForTimeout(500);
 
     // Check if net weight is calculated correctly (33000)
-    const netWeightInput = page.locator('input#netWeight');
+    const netWeightInput = page.locator('input#net_weight');
     expect(netWeightInput).toHaveValue('33.000 kg');
     expect(netWeightInput).toHaveAttribute('data-raw', '33000');
   });
@@ -128,8 +128,6 @@ test.describe('Entry Creation - Basic Flow', () => {
 test.describe('Entry Creation - Dependencies', () => {
   test.beforeEach(async ({ page, browserName }) => {
     await login(page, browserName);
-    await page.goto('/romaneio');
-    await expect(page).toHaveURL(/.*romaneio/);
   });
 
   test('should allow creating crop from entry form', async ({ page }) => {
@@ -137,18 +135,24 @@ test.describe('Entry Creation - Dependencies', () => {
     await openEntryForm(page);
 
     // Click the add button for crop
-    await page.click('button[hx-get="/crop/form"]');
+    await page.locator('button[hx-get="/crop/form"]').evaluate(el => el.click());
 
     // Verify the crop form dialog opens
     await expect(page.locator('dialog#cropFormDialog')).toBeVisible();
 
     // Fill and submit the crop form
-
-    const safraName = faker.lorem.word()
+    const safraName = faker.lorem.word();
     await page.fill('input#crop-name', safraName);
     await page.selectOption('select#grain-selector', { label: 'Soja' });
     await page.fill('input#start-date', '2024-01-01');
-    await page.click('dialog#cropFormDialog button[type="submit"]');
+
+    // Submit and wait for HTMX request to finish
+    // Using evaluate to bypass WebKit's stacked dialog backdrop issue
+    const cropResponse = page.waitForResponse(response =>
+      response.url().includes('/crop') && response.request().method() === 'POST'
+    );
+    await page.locator('dialog#cropFormDialog button[type="submit"]').evaluate(el => el.click());
+    await cropResponse;
 
     // Wait for dialog to close
     await expect(page.locator('dialog#cropFormDialog')).not.toBeVisible();
@@ -166,7 +170,7 @@ test.describe('Entry Creation - Dependencies', () => {
     await openEntryForm(page);
 
     // Click the add button for field
-    await page.click('button[hx-get="/entry/field/form"]');
+    await page.locator('button[hx-get="/entry/field/form"]').evaluate(el => el.click());
 
     // Verify the field form dialog opens
     await expect(page.locator('dialog#fieldFormDialog')).toBeVisible();
@@ -175,7 +179,14 @@ test.describe('Entry Creation - Dependencies', () => {
     const fieldName = faker.lorem.word();
     await page.fill('input#field-name', fieldName);
     await page.fill('input#hectares', '25.5');
-    await page.click('dialog#fieldFormDialog button[type="submit"]');
+
+    // Submit and wait for HTMX request to finish
+    // Using evaluate to bypass WebKit's stacked dialog backdrop issue
+    const fieldResponse = page.waitForResponse(response =>
+      response.url().includes('/field') && response.request().method() === 'POST'
+    );
+    await page.locator('dialog#fieldFormDialog button[type="submit"]').evaluate(el => el.click());
+    await fieldResponse;
 
     // Wait for dialog to close
     await expect(page.locator('dialog#fieldFormDialog')).not.toBeVisible();
@@ -193,7 +204,7 @@ test.describe('Entry Creation - Dependencies', () => {
     await openEntryForm(page);
 
     // Click the add button for vehicle
-    await page.click('button[hx-get="/vehicle/form"]');
+    await page.locator('button[hx-get="/vehicle/form"]').evaluate(el => el.click());
 
     // Verify the vehicle form dialog opens
     await expect(page.locator('dialog#vehicleFormDialog')).toBeVisible();
@@ -202,7 +213,14 @@ test.describe('Entry Creation - Dependencies', () => {
     const vehiclePlate = faker.vehicle.vrm();
     await page.fill('input#vehicle-plate', vehiclePlate);
     await page.fill('input#vehicle-name', 'Novo Veículo');
-    await page.click('dialog#vehicleFormDialog button[type="submit"]');
+
+    // Submit and wait for HTMX request to finish
+    // Using evaluate to bypass WebKit's stacked dialog backdrop issue
+    const vehicleResponse = page.waitForResponse(response =>
+      response.url().includes('/vehicle') && response.request().method() === 'POST'
+    );
+    await page.locator('dialog#vehicleFormDialog button[type="submit"]').evaluate(el => el.click());
+    await vehicleResponse;
 
     // Wait for dialog to close
     await expect(page.locator('dialog#vehicleFormDialog')).not.toBeVisible();
@@ -219,65 +237,69 @@ test.describe('Entry Creation - Dependencies', () => {
 test.describe('Entry Creation - Edge Cases', () => {
   test.beforeEach(async ({ page, browserName }) => {
     await login(page, browserName);
-    await page.goto('/romaneio');
-    await expect(page).toHaveURL(/.*romaneio/);
   });
 
   test('should handle zero tare weight', async ({ page }) => {
     // Open the entry form
     await openEntryForm(page);
 
-    // Ensure dependencies exist
-    const cropValue = await ensureCropExists(page, 'Safra Zero', 'Milho');
-    const fieldValue = await ensureFieldExists(page, 'Talhão Zero', 5);
-    const vehicleValue = await ensureVehicleExists(page, 'ZERO0001');
+    const { crop, field, vehicle } = await getEntryDependencies(page, true)
+    await ensureCropExists(page, crop.label);
+    await ensureFieldExists(page, field.label);
+    await ensureVehicleExists(page, vehicle.label);
 
     // Fill with zero tare
     await fillEntryForm(page, {
-      crop: cropValue,
-      field: fieldValue,
-      vehicle: vehicleValue,
+      crop: crop.label,
+      field: field.label,
+      vehicle: vehicle.label,
       grossWeight: 30000,
       tare: 0,
     });
 
-    // Submit
+    const rowsBefore = await getEntryRows(page);
     await submitEntryForm(page);
+    // Wait for HTMX to prepend the new row (hx-swap="afterbegin")
+    await expect.poll(
+      async () => (await getEntryRows(page)).length,
+      { message: 'waiting for new table row after HTMX swap' }
+    ).toBe(rowsBefore.length + 1);
 
-    // Verify entry was created
-    await page.waitForTimeout(1000);
-    const tableContent = await page.locator('#entries-table-body').textContent();
-    expect(tableContent).toContain('30000');
+    const tableRow = page.locator('#entries-table-body tr').first();
+    const weight = await tableRow.locator('td[data-test_id="net_weight"]').textContent();
+    expect(weight).toContain('30.000 kg');
   });
 
-  test.only('should handle large weight values', async ({ page }) => {
+  test('should handle large weight values', async ({ page }) => {
     // Open the entry form
     await openEntryForm(page);
 
-    // Ensure dependencies exist
-    const cropName = faker.lorem.word();
-    const fieldName = faker.lorem.word();
-    const vehicleName = faker.vehicle.vrm() + ' LARGE';
+    const { crop, field, vehicle } = await getEntryDependencies(page, true)
+    await ensureCropExists(page, crop.label);
+    await ensureFieldExists(page, field.label);
+    await ensureVehicleExists(page, vehicle.label);
 
-    const cropValue = await ensureCropExists(page, cropName, 'Milho');
-    const fieldValue = await ensureFieldExists(page, fieldName, 100);
-    const vehicleValue = await ensureVehicleExists(page, vehicleName);
-
-    // Fill with large values
+    // Fill with zero tare
     await fillEntryForm(page, {
-      crop: cropValue,
-      field: fieldValue,
-      vehicle: vehicleValue,
+      crop: crop.label,
+      field: field.label,
+      vehicle: vehicle.label,
       grossWeight: 999999,
       tare: 100000,
     });
 
-    // Submit
+    const rowsBefore = await getEntryRows(page);
     await submitEntryForm(page);
+    // Wait for HTMX to prepend the new row (hx-swap="afterbegin")
+    await expect.poll(
+      async () => (await getEntryRows(page)).length,
+      { message: 'waiting for new table row after HTMX swap' }
+    ).toBe(rowsBefore.length + 1);
 
-    // Verify entry was created
-    await page.waitForTimeout(1000);
-    const tableContent = await page.locator('#entries-table-body').textContent();
-    expect(tableContent).toContain(vehicleName);
+    const tableRow = page.locator('#entries-table-body tr').first();
+    const plate = await tableRow.locator('td[data-test_id="plate"]').textContent();
+    const weight = await tableRow.locator('td[data-test_id="net_weight"]').textContent();
+    expect(plate.trim()).toBe(vehicle.label);
+    expect(weight.trim()).toBe('899.999 kg');
   });
 });

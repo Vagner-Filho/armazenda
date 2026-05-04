@@ -3,8 +3,8 @@
  * Provides reusable functions for creating crops, fields, vehicles, and entries
  */
 
-const { expect } = require('@playwright/test');
-
+import { expect } from '@playwright/test';
+import { faker } from '@faker-js/faker';
 /**
  * Check if a select element has any valid options (excluding placeholder/error options)
  * @param {import('@playwright/test').Page} page - Playwright page object
@@ -12,15 +12,16 @@ const { expect } = require('@playwright/test');
  * @returns {Promise<[boolean, string[]]>}
  */
 async function hasValidOptions(page, selector) {
-  const options = await page.locator(`${selector} option`).allTextContents();
-  // Filter out placeholder options like "Nenhuma safra encontrada" or "-1"
-  const validOptions = options.filter(text =>
-    text &&
-    !text.includes('Nenhum') &&
-    !text.includes('Nenhuma') &&
-    text !== '-1'
-  );
-  return [validOptions.length > 0, options];
+	const options = await page.locator(`${selector} option`).allTextContents();
+
+	const validOptions = options.filter(text =>
+		text &&
+		!text.includes('Nenhum') &&
+		!text.includes('Nenhuma') &&
+		text !== '-1'
+	);
+
+	return [validOptions.length > 0, options.map(op => op.trim())];
 }
 
 /**
@@ -30,15 +31,37 @@ async function hasValidOptions(page, selector) {
  * @returns {Promise<string|null>}
  */
 async function getFirstValidOptionValue(page, selector) {
-  const options = await page.locator(`${selector} option`).all();
-  for (const option of options) {
-    const value = await option.getAttribute('value');
-    const text = await option.textContent();
-    if (value && value !== '-1' && text && !text.includes('Nenhum') && !text.includes('Nenhuma')) {
-      return value;
-    }
-  }
-  return null;
+	const options = await page.locator(`${selector} option`).all();
+	for (const option of options) {
+		const value = await option.getAttribute('value');
+		const text = await option.textContent();
+		if (value && value !== '-1' && text && !text.includes('Nenhum') && !text.includes('Nenhuma')) {
+			return value;
+		}
+	}
+	return null;
+}
+
+/**
+ * Get the option value from a select element that matches the name parameter
+ * @param {import('@playwright/test').Page} page - Playwright page object
+ * @param {string} selector - The select element selector
+ * @param {string} name - The rendered name of the option
+ * @returns {Promise<string|null>}
+ */
+async function getValidOptionValue(page, selector, name) {
+	if (name) {
+		const options = await page.locator(`${selector} option`).all();
+		for (const option of options) {
+			const value = await option.getAttribute('value');
+			const text = await option.textContent();
+			if (name === text.trim()) {
+				return value;
+			}
+		}
+
+	}
+	return getFirstValidOptionValue(page, selector);
 }
 
 /**
@@ -49,36 +72,38 @@ async function getFirstValidOptionValue(page, selector) {
  * @param {string} startDate - Start date in YYYY-MM-DD format
  */
 async function createCrop(page, name, product = 'Milho', startDate = null) {
-  // Wait for any existing dialogs to close first
-  await page.waitForTimeout(300);
+	// Wait for any existing dialogs to close first
+	await page.waitForTimeout(300);
 
-  // Click the add button next to crop selector
-  await page.click('button[hx-get="/crop/form"]');
+	// Click the add button next to crop selector
+	await page.click('button[hx-get="/crop/form"]');
 
-  // Wait for the crop form dialog to appear
-  await expect(page.locator('dialog#cropFormDialog')).toBeVisible();
+	// Wait for the crop form dialog to appear
+	await expect(page.locator('dialog#cropFormDialog')).toBeVisible();
 
-  // Fill in the crop name
-  await page.fill('input#crop-name', name);
+	// Fill in the crop name
+	await page.fill('input#crop-name', name);
 
-  // Select the product (grain)
-  await page.selectOption('select#grain-selector', { label: product });
+	// Select the product (grain)
+	await page.selectOption('select#grain-selector', { label: product });
 
-  // Fill in the start date (default to today if not provided)
-  const date = startDate || new Date().toISOString().split('T')[0];
-  await page.fill('input#start-date', date);
+	// Fill in the start date (default to today if not provided)
+	const date = startDate || new Date().toISOString().split('T')[0];
+	await page.fill('input#start-date', date);
 
-  // Submit the form and wait for HTMX request to complete
-  await Promise.all([
-    page.waitForResponse(response => response.url().includes('/crop') && response.request().method() === 'POST'),
-    page.click('dialog#cropFormDialog button[type="submit"]')
-  ]);
+	// Submit and wait for HTMX request to finish
+	// Using evaluate to bypass WebKit's stacked dialog backdrop issue
+	const cropResponse = page.waitForResponse(
+		response => response.url().includes('/crop') && response.request().method() === 'POST'
+	);
+	await page.locator('dialog#cropFormDialog button[type="submit"]').evaluate(el => el.click());
+	await cropResponse;
 
-  // Wait for the dialog to close
-  await expect(page.locator('dialog#cropFormDialog')).not.toBeVisible();
+	// Wait for the dialog to close
+	await expect(page.locator('dialog#cropFormDialog')).not.toBeVisible();
 
-  // Wait for HTMX to update the selector and stabilize
-  await page.waitForTimeout(800);
+	// Wait for HTMX to update the selector and stabilize
+	await page.waitForTimeout(800);
 }
 
 /**
@@ -88,32 +113,34 @@ async function createCrop(page, name, product = 'Milho', startDate = null) {
  * @param {number} hectares - Field size in hectares
  */
 async function createField(page, name, hectares = 10) {
-  // Wait for any existing dialogs to close first
-  await page.waitForTimeout(300);
+	// Wait for any existing dialogs to close first
+	await page.waitForTimeout(300);
 
-  // Click the add button next to field selector
-  await page.click('button[hx-get="/entry/field/form"]');
+	// Click the add button next to field selector
+	await page.click('button[hx-get="/entry/field/form"]');
 
-  // Wait for the field form dialog to appear
-  await expect(page.locator('dialog#fieldFormDialog')).toBeVisible();
+	// Wait for the field form dialog to appear
+	await expect(page.locator('dialog#fieldFormDialog')).toBeVisible();
 
-  // Fill in the field name
-  await page.fill('input#field-name', name);
+	// Fill in the field name
+	await page.fill('input#field-name', name);
 
-  // Fill in the hectares
-  await page.fill('input#hectares', hectares.toString());
+	// Fill in the hectares
+	await page.fill('input#hectares', hectares.toString());
 
-  // Submit the form and wait for HTMX request to complete
-  await Promise.all([
-    page.waitForResponse(response => response.url().includes('/field') && response.request().method() === 'POST'),
-    page.click('dialog#fieldFormDialog button[type="submit"]')
-  ]);
+	// Submit and wait for HTMX request to finish
+	// Using evaluate to bypass WebKit's stacked dialog backdrop issue
+	const fieldResponse = page.waitForResponse(
+		response => response.url().includes('/field') && response.request().method() === 'POST'
+	);
+	await page.locator('dialog#fieldFormDialog button[type="submit"]').evaluate(el => el.click());
+	await fieldResponse;
 
-  // Wait for the dialog to close
-  await expect(page.locator('dialog#fieldFormDialog')).not.toBeVisible();
+	// Wait for the dialog to close
+	await expect(page.locator('dialog#fieldFormDialog')).not.toBeVisible();
 
-  // Wait for HTMX to update the selector and stabilize
-  await page.waitForTimeout(800);
+	// Wait for HTMX to update the selector and stabilize
+	await page.waitForTimeout(800);
 }
 
 /**
@@ -123,34 +150,36 @@ async function createField(page, name, hectares = 10) {
  * @param {string} [name] - Optional vehicle name
  */
 async function createVehicle(page, plate, name = null) {
-  // Wait for any existing dialogs to close first
-  await page.waitForTimeout(300);
+	// Wait for any existing dialogs to close first
+	await page.waitForTimeout(300);
 
-  // Click the add button next to vehicle selector
-  await page.click('button[hx-get="/vehicle/form"]');
+	// Click the add button next to vehicle selector
+	await page.click('button[hx-get="/vehicle/form"]');
 
-  // Wait for the vehicle form dialog to appear
-  await expect(page.locator('dialog#vehicleFormDialog')).toBeVisible();
+	// Wait for the vehicle form dialog to appear
+	await expect(page.locator('dialog#vehicleFormDialog')).toBeVisible();
 
-  // Fill in the plate
-  await page.fill('input#vehicle-plate', plate);
+	// Fill in the plate
+	await page.fill('input#vehicle-plate', plate);
 
-  // Fill in the name if provided
-  if (name) {
-    await page.fill('input#vehicle-name', name);
-  }
+	// Fill in the name if provided
+	if (name) {
+		await page.fill('input#vehicle-name', name);
+	}
 
-  // Submit the form and wait for HTMX request to complete
-  await Promise.all([
-    page.waitForResponse(response => response.url().includes('/vehicle') && response.request().method() === 'POST'),
-    page.click('dialog#vehicleFormDialog button[type="submit"]')
-  ]);
+	// Submit and wait for HTMX request to finish
+	// Using evaluate to bypass WebKit's stacked dialog backdrop issue
+	const vehicleResponse = page.waitForResponse(
+		response => response.url().includes('/vehicle') && response.request().method() === 'POST'
+	);
+	await page.locator('dialog#vehicleFormDialog button[type="submit"]').evaluate(el => el.click());
+	await vehicleResponse;
 
-  // Wait for the dialog to close
-  await expect(page.locator('dialog#vehicleFormDialog')).not.toBeVisible();
+	// Wait for the dialog to close
+	await expect(page.locator('dialog#vehicleFormDialog')).not.toBeVisible();
 
-  // Wait for HTMX to update the selector and stabilize
-  await page.waitForTimeout(800);
+	// Wait for HTMX to update the selector and stabilize
+	await page.waitForTimeout(800);
 }
 
 /**
@@ -159,20 +188,22 @@ async function createVehicle(page, plate, name = null) {
  * @param {import('@playwright/test').Page} page - Playwright page object
  */
 async function openEntryForm(page) {
-  // Try "Nova Entrada" button first (when entries exist)
-  const novaEntradaBtn = page.locator('button:has-text("Nova Entrada")');
-  const começarBtn = page.locator('button:has-text("Começar agora")');
+	// Try "Nova Entrada" button first (when entries exist)
+	const novaEntradaBtn = page.locator('button:has-text("Nova Entrada")');
+	const comecarBtn = page.locator('button:has-text("Começar agora")');
 
-  if (await novaEntradaBtn.isVisible().catch(() => false)) {
-    await novaEntradaBtn.click();
-  } else if (await começarBtn.isVisible().catch(() => false)) {
-    await começarBtn.click();
-  } else {
-    throw new Error('Neither "Nova Entrada" nor "Começar agora" button found');
-  }
+	await expect(novaEntradaBtn.or(comecarBtn).first()).toBeVisible({ timeout: 10000 });
 
-  // Wait for the entry form dialog to appear
-  await expect(page.locator('dialog#addEntryDialog')).toBeVisible();
+	if (await novaEntradaBtn.isVisible()) {
+		await novaEntradaBtn.click({ force: true });
+	} else if (await comecarBtn.isVisible()) {
+		await comecarBtn.click({ force: true });
+	} else {
+		throw new Error('Neither "Nova Entrada" nor "Começar agora" button found');
+	}
+
+	// Wait for the entry form dialog to appear
+	await expect(page.locator('dialog#addEntryDialog')).toBeVisible();
 }
 
 /**
@@ -183,17 +214,17 @@ async function openEntryForm(page) {
  * @returns {Promise<string>} The selected crop value
  */
 async function ensureCropExists(page, name = 'Safra Teste', product = 'Milho') {
-  const [hasCrops, cropOptions] = await hasValidOptions(page, 'select#crop-selector');
+	const [hasCrops, cropOptions] = await hasValidOptions(page, 'select#crop-selector');
 
-  if (!hasCrops || !cropOptions.includes(name)) {
-    await createCrop(page, name, product);
-  }
+	if (!hasCrops || !cropOptions.includes(name)) {
+		await createCrop(page, name, product);
+	}
 
-  // Wait for HTMX to finish updating the selector
-  await page.waitForTimeout(500);
+	// Wait for HTMX to finish updating the selector
+	await page.waitForTimeout(500);
 
-  // Return the first valid crop option value
-  return await getFirstValidOptionValue(page, 'select#crop-selector');
+	// Return the first valid crop option value
+	return await getValidOptionValue(page, 'select#crop-selector');
 }
 
 /**
@@ -204,17 +235,17 @@ async function ensureCropExists(page, name = 'Safra Teste', product = 'Milho') {
  * @returns {Promise<string>} The selected field value
  */
 async function ensureFieldExists(page, name = 'Talhão Teste', hectares = 10) {
-  const [hasFields, fieldOptions] = await hasValidOptions(page, 'select#field-selector');
+	const [hasFields, fieldOptions] = await hasValidOptions(page, 'select#field-selector');
 
-  if (!hasFields || !fieldOptions.includes(name)) {
-    await createField(page, name, hectares);
-  }
+	if (!hasFields || !fieldOptions.includes(name)) {
+		await createField(page, name, hectares);
+	}
 
-  // Wait for HTMX to finish updating the selector
-  await page.waitForTimeout(500);
+	// Wait for HTMX to finish updating the selector
+	await page.waitForTimeout(500);
 
-  // Return the first valid field option value
-  return await getFirstValidOptionValue(page, 'select#field-selector');
+	// Return the first valid field option value
+	return await getValidOptionValue(page, 'select#field-selector');
 }
 
 /**
@@ -225,17 +256,17 @@ async function ensureFieldExists(page, name = 'Talhão Teste', hectares = 10) {
  * @returns {Promise<string>} The selected vehicle value
  */
 async function ensureVehicleExists(page, plate = 'TEST1234', name = null) {
-  const [hasVehicles, vehicleOptions] = await hasValidOptions(page, 'select#vehicle-selector');
+	const [hasVehicles, vehicleOptions] = await hasValidOptions(page, 'select#vehicle-selector');
 
-  if (!hasVehicles || !vehicleOptions.includes(name)) {
-    await createVehicle(page, plate, name);
-  }
+	if (!hasVehicles || !vehicleOptions.includes(plate)) {
+		await createVehicle(page, plate, name);
+	}
 
-  // Wait for HTMX to finish updating the selector
-  await page.waitForTimeout(500);
+	// Wait for HTMX to finish updating the selector
+	await page.waitForTimeout(500);
 
-  // Return the first valid vehicle option value
-  return await getFirstValidOptionValue(page, 'select#vehicle-selector');
+	// Return the first valid vehicle option value
+	return await getValidOptionValue(page, 'select#vehicle-selector', plate);
 }
 
 /**
@@ -248,36 +279,56 @@ async function ensureVehicleExists(page, plate = 'TEST1234', name = null) {
  * @param {number} data.grossWeight - Gross weight in kg
  * @param {number} data.tare - Tare weight in kg
  * @param {string} [data.arrivalDate] - Arrival date in datetime-local format
+ * @param {number} data.humidity - Humidity percentage
+ * @param {number} data.impurity - Impurity percentage
+ * @param {number} data.damage - Damage percentage
  */
 async function fillEntryForm(page, data) {
-  // Select crop if provided
-  if (data.crop) {
-    await page.locator('select#crop-selector').selectOption(data.crop);
-    await page.waitForTimeout(200);
-  }
+	// Select crop if provided
+	if (data.crop) {
+		await page.locator('select#crop-selector').selectOption(data.crop);
+		await page.waitForTimeout(200);
+	}
 
-  // Select field if provided
-  if (data.field) {
-    await page.locator('select#field-selector').selectOption(data.field);
-    await page.waitForTimeout(200);
-  }
+	// Select field if provided
+	if (data.field) {
+		await page.locator('select#field-selector').selectOption(data.field);
+		await page.waitForTimeout(200);
+	}
 
-  // Select vehicle if provided
-  if (data.vehicle) {
-    await page.locator('select#vehicle-selector').selectOption(data.vehicle);
-    await page.waitForTimeout(200);
-  }
+	if (data.person) {
+		await page.locator('select#origin-selector').selectOption(data.person);
+		await page.waitForTimeout(200);
+	}
 
-  // Fill gross weight
-  await page.fill('input#grossWeight', data.grossWeight.toString());
+	// Select vehicle if provided
+	if (data.vehicle) {
+		await page.locator('select#vehicle-selector').selectOption(data.vehicle);
+		await page.waitForTimeout(200);
+	}
 
-  // Fill tare
-  await page.fill('input#tare', data.tare.toString());
+	// Fill gross weight
+	await page.fill('input#grossWeight', data.grossWeight.toString());
 
-  // Fill arrival date if provided, otherwise use current date/time
-  if (data.arrivalDate) {
-    await page.fill('input#arrival-date', data.arrivalDate);
-  }
+	// Fill tare
+	await page.fill('input#tare', data.tare.toString());
+
+	// Fill arrival date if provided, otherwise use current date/time
+	if (data.arrivalDate) {
+		await page.fill('input#arrival-date', data.arrivalDate);
+	}
+
+	if (data.humidity) {
+		await page.fill('input#humidity', data.humidity.toString());
+	}
+
+	if (data.impurity) {
+		await page.fill('input#impurity', data.impurity.toString());
+	}
+
+	if (data.damage) {
+		await page.fill('input#damage', data.damage.toString());
+	}
 }
 
 /**
@@ -285,14 +336,15 @@ async function fillEntryForm(page, data) {
  * @param {import('@playwright/test').Page} page - Playwright page object
  */
 async function submitEntryForm(page) {
-  // Click the submit button and wait for HTMX request to complete
-  await Promise.all([
-    page.waitForResponse(response => response.url().includes('/entry') && response.request().method() === 'POST'),
-    page.click('dialog#addEntryDialog button[type="submit"]')
-  ]);
+	const responsePromise = page.waitForResponse(
+		response => response.url().includes('/entry') && response.request().method() === 'POST'
+	);
 
-  // Wait for the dialog to close (successful submission)
-  await expect(page.locator('dialog#addEntryDialog')).not.toBeVisible();
+	//INFO: bypass webkit backdrop issue
+	await page.locator('dialog#addEntryDialog button[type="submit"]').evaluate(el => el.click());
+	await responsePromise;
+
+	await expect(page.locator('dialog#addEntryDialog')).not.toBeVisible();
 }
 
 /**
@@ -301,7 +353,7 @@ async function submitEntryForm(page) {
  * @returns {Promise<Array>}
  */
 async function getEntryRows(page) {
-  return await page.locator('#entries-table-body tr').all();
+	return await page.locator('#entries-table-body tr').all();
 }
 
 /**
@@ -311,35 +363,142 @@ async function getEntryRows(page) {
  * @returns {Promise<boolean>}
  */
 async function entryExistsInTable(page, expectedData) {
-  const rows = await getEntryRows(page);
+	const rows = await getEntryRows(page);
 
-  for (const row of rows) {
-    const rowText = await row.textContent();
+	for (const row of rows) {
+		const rowText = await row.textContent();
 
-    // Check if all expected data is present in the row
-    let matches = true;
-    if (expectedData.field && !rowText.includes(expectedData.field)) matches = false;
-    if (expectedData.vehicle && !rowText.includes(expectedData.vehicle)) matches = false;
-    if (expectedData.netWeight && !rowText.includes(expectedData.netWeight.toString())) matches = false;
+		// Check if all expected data is present in the row
+		let matches = true;
+		if (expectedData.field && !rowText.includes(expectedData.field)) matches = false;
+		if (expectedData.vehicle && !rowText.includes(expectedData.vehicle)) matches = false;
+		if (expectedData.netWeight && !rowText.includes(expectedData.netWeight.toString())) matches = false;
 
-    if (matches) return true;
-  }
+		if (matches) return true;
+	}
 
-  return false;
+	return false;
 }
 
-module.exports = {
-  hasValidOptions,
-  getFirstValidOptionValue,
-  createCrop,
-  createField,
-  createVehicle,
-  openEntryForm,
-  ensureCropExists,
-  ensureFieldExists,
-  ensureVehicleExists,
-  fillEntryForm,
-  submitEntryForm,
-  getEntryRows,
-  entryExistsInTable,
+/**
+ * Ensures entry form dependencies exist and returns their selected values.
+ * Creates crops, fields, and vehicles as needed using faker for default names.
+ * @param {import('@playwright/test').Page} page - Playwright page object
+ * @param {Object} args - Dependency options
+ * @param {string} [args.cropName] - Crop name (uses faker if not provided)
+ * @param {string} [args.cropProduct] - Product name (default: 'Milho')
+ * @param {string} [args.fieldName] - Field name (uses faker if not provided)
+ * @param {number} [args.fieldHectares] - Field size in hectares (uses faker if not provided)
+ * @param {string} [args.vehiclePlate] - Vehicle plate (uses faker if not provided)
+ * @param {string} [args.vehicleName] - Optional vehicle name
+ * @returns {Promise<{crop: {value: string, label: string}, field: {value: string, label: string}, vehicle: {value: string, label: string}}>}
+ */
+async function getEntryDependencies(page, args = { cropName: faker.lorem.word(), cropProduct: 'Milho', fieldName: faker.lorem.word(), fieldHectares: faker.number.int(20), vehiclePlate: faker.vehicle.vrm(), vehicleName: null }) {
+	const dependencies = {}
+	if (typeof args === 'boolean' && args === true) {
+		dependencies.cName = 'Milho Default'
+		dependencies.cProd = 1
+		dependencies.fName = 'Talhão Default'
+		dependencies.vPlate = 'ABC123'
+	} else {
+		dependencies.cName = args.cropName
+		dependencies.cProd = args.cropProduct
+		dependencies.fName = args.fieldName
+		dependencies.fHectares = args.fieldName
+		dependencies.vPlate = args.vehiclePlate
+	}
+
+	const cropValue = await ensureCropExists(page, dependencies.cName, dependencies.cProd);
+	const fieldValue = await ensureFieldExists(page, dependencies.fName, dependencies.fHectares);
+	const vehicleValue = await ensureVehicleExists(page, dependencies.vPlate, args.vehicleName);
+
+	return {
+		crop: { value: cropValue, label: dependencies.cName },
+		field: { value: fieldValue, label: dependencies.fName },
+		vehicle: { value: vehicleValue, label: dependencies.vPlate }
+	};
+}
+/**
+ * Ensures entry form dependencies exist and returns their selected values.
+ * Creates crops, fields, and vehicles as needed using faker for default names.
+ * @param {import('@playwright/test').Page} page - Playwright page object
+ * @param {Object} data - Entry data
+ * @param {string} [data.crop] - Crop ID (if null, will use first available)
+ * @param {string} [data.field] - Field ID (if null, will use first available)
+ * @param {string} [data.vehicle] - Vehicle ID (if null, will use first available)
+ * @param {number} data.grossWeight - Gross weight in kg
+ * @param {number} data.tare - Tare weight in kg
+ * @param {string} [data.arrivalDate] - Arrival date in datetime-local format
+ * @param {number} data.humidity - Humidity percentage
+ * @param {number} data.impurity - Impurity percentage
+ * @param {number} data.damage - Damage percentage
+ * @param {string} [data.expectedNetWeightDisplay] - Displayed net weight
+ * @returns {Promise<{crop: {value: string, label: string}, field: {value: string, label: string}, vehicle: {value: string, label: string}}>}
+ */
+async function createEntryWithDiscount(page, data) {
+	if (!data.expectedNetWeightDisplay) {
+		throw Error("make sure that expectedNetWeightDisplay is provided")
+	}
+	const config = {
+		gross: data.grossWeight ?? 50000,
+		tare: data.tare ?? 25000,
+		humidity: data.humidity,
+		expectedNetWeightDisplay: data.expectedNetWeightDisplay,
+		impurity: data.impurity,
+		damage: data.damage,
+		person: data.person
+	}
+
+	await openEntryForm(page);
+
+	const { crop, field, vehicle } = await getEntryDependencies(page, true);
+
+	await fillEntryForm(page, {
+		crop: crop.value,
+		field: field.value,
+		vehicle: vehicle.value,
+		grossWeight: config.gross,
+		tare: config.tare,
+		humidity: config.humidity,
+		damage: config.damage,
+		impurity: config.impurity,
+		person: config.person
+	});
+
+	const netWeightInput = page.locator('#net_weight');
+	await expect(netWeightInput).toHaveValue(config.expectedNetWeightDisplay);
+
+	const rowsBefore = await getEntryRows(page);
+	await submitEntryForm(page);
+	// Wait for HTMX to prepend the new row (hx-swap="afterbegin")
+	await expect.poll(
+		async () => (await getEntryRows(page)).length,
+		{ message: 'waiting for new table row after HTMX swap' }
+	).toBe(rowsBefore.length + 1);
+
+	// Verify the entry was created by checking the table
+	const rows = await getEntryRows(page);
+	expect(rows.length).toBeGreaterThan(0);
+
+	const tableRow = page.locator('#entries-table-body tr').first();
+	const displayNetWeight = await tableRow.locator('td[data-test_id="net_weight"]').textContent();
+	expect(displayNetWeight.trim()).toBe(config.expectedNetWeightDisplay);
+}
+
+export {
+	hasValidOptions,
+	getFirstValidOptionValue,
+	createCrop,
+	createField,
+	createVehicle,
+	openEntryForm,
+	ensureCropExists,
+	ensureFieldExists,
+	ensureVehicleExists,
+	fillEntryForm,
+	submitEntryForm,
+	getEntryRows,
+	entryExistsInTable,
+	getEntryDependencies,
+	createEntryWithDiscount
 };

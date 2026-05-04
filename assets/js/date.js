@@ -29,6 +29,10 @@ export function formatDateToInput(date, dateOnly) {
 
 export function formatDateToDisplay(date) {
 	const isZeroValue = isTimeZeroValue(date)
+	if (!isZeroValue && date.includes('+0000 UTC')) {
+		const parts = date.trim().split(' ')
+		date = parts[0] + 'T' + parts[1] + 'Z'
+	}
 	return Intl.DateTimeFormat(
 		'pt-BR', {
 		day: '2-digit',

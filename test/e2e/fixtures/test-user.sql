@@ -55,3 +55,17 @@ INSERT INTO crop (name, product, startDate, farm)
     '2026-02-19',
     id
   FROM farm WHERE inscricao_estadual = '123456789';
+
+INSERT INTO field (name, farm, hectares)
+  SELECT
+    'Talhão Default',
+    id,
+    10.0
+  FROM farm WHERE inscricao_estadual = '123456789';
+
+INSERT INTO vehicle (plate, name, farm)
+  SELECT
+    'ABC123',
+    '',
+    id
+  FROM farm WHERE inscricao_estadual = '123456789';
