@@ -1,3 +1,5 @@
+import { formatWeightElements } from "/public/assets/js/weight.js";
+
 document.addEventListener("DOMContentLoaded", function() {
   const statCards = document.querySelectorAll("[data-stat-type]");
 
@@ -23,4 +25,12 @@ document.addEventListener("DOMContentLoaded", function() {
       card.querySelector("h3").insertAdjacentElement("beforebegin", iconElement);
     }
   });
+
+  formatWeightElements();
+});
+
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+  if (evt.detail.elt) {
+    formatWeightElements(evt.detail.elt);
+  }
 });

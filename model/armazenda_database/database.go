@@ -491,7 +491,7 @@ func initDepartureOrigin(c *pgx.Conn) {
 	);
 	`)
 
-	handleStmtExec(c, stmt, err, "create departure_recipient")
+	handleStmtExec(c, stmt, err, "create departure_origin")
 }
 
 func initAddrress(c *pgx.Conn) {

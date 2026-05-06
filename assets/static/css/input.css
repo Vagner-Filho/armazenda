@@ -21,13 +21,40 @@
 .main-bg {
     width: 100vw;
     height: 100vh;
-    /*overflow: hidden;*/
     z-index: -1;
-    background: linear-gradient(180deg, #0ea5e9 0%, #64b5dc 40%, #30b60b 100%);
-    background-image: url(/public/assets/static/inside_bg_3.jpg);
-    background-size: cover;
+    background:
+        radial-gradient(circle at 50% 110%, rgba(251, 191, 36, 0.6) 0%, transparent 40%),
+        linear-gradient(180deg, #0ea5e9 0%, #64b5dc 40%, #30b60b 100%);
     overflow: hidden;
     display: flex;
+    position: relative;
+}
+
+.main-bg::before,
+.main-bg::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.main-bg::before {
+    top: -10%;
+    left: -10%;
+    width: 60vmax;
+    height: 60vmax;
+    background: #0ea5e9;
+}
+
+.main-bg::after {
+    bottom: -5%;
+    right: -5%;
+    width: 55vmax;
+    height: 55vmax;
+    background: #22c55e;
 }
 
 @theme {
@@ -127,7 +154,6 @@
 @utility filter-card {
     @apply flex flex-col gap-1 p-2 rounded-xl;
     background: rgba(30, 41, 59, 0.6);
-    backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.15);
 }

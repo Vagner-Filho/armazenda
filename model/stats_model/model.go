@@ -52,7 +52,8 @@ func (sm *StatsModel) GetTopSupplier(farmId uint32) (entity_public.StatCard, *mo
 		LEFT JOIN natural_person np ON p.id = np.personid
 		LEFT JOIN legal_person lp ON p.id = lp.personid
 		LEFT JOIN farm_config fc ON e.farm = fc.farm_id
-		WHERE e.farm = @farmId
+		LEFT JOIN inactive_entry ie ON ie.entry_id = e.id
+		WHERE e.farm = @farmId AND ie.entry_id IS NULL
 		GROUP BY COALESCE(np.name, lp.companyname, fc.name, 'Própria')
 		ORDER BY total_weight DESC
 		LIMIT 1;
@@ -93,7 +94,8 @@ func (sm *StatsModel) GetTopBuyer(farmId uint32) (entity_public.StatCard, *model
 		LEFT JOIN natural_person np ON p.id = np.personid
 		LEFT JOIN legal_person lp ON p.id = lp.personid
 		LEFT JOIN farm_config fc ON fc.farm_id = d.farm
-		WHERE d.farm = @farmId
+		LEFT JOIN inactive_departure id ON id.departure_id = d.id
+		WHERE d.farm = @farmId AND id.departure_id IS NULL
 		GROUP BY COALESCE(np.name, lp.companyname, fc.name, 'Própria')
 		ORDER BY total_weight DESC
 		LIMIT 1;
@@ -134,7 +136,8 @@ func (sm *StatsModel) GetMostFrequentSupplier(farmId uint32) (entity_public.Stat
 		LEFT JOIN natural_person np ON p.id = np.personid
 		LEFT JOIN legal_person lp ON p.id = lp.personid
 		LEFT JOIN farm_config fc ON e.farm = fc.farm_id
-		WHERE e.farm = @farmId
+		LEFT JOIN inactive_entry ie ON ie.entry_id = e.id
+		WHERE e.farm = @farmId AND ie.id IS NULL
 		GROUP BY COALESCE(np.name, lp.companyname, fc.name, 'Própria')
 		ORDER BY delivery_count DESC
 		LIMIT 1;
@@ -289,7 +292,7 @@ func (sm *StatsModel) GetRelativeMostProductiveField(farmID uint32) ([]entity_pu
 		LEFT JOIN
 			inactive_entry ie ON e.id = ie.entry_id
 		WHERE
-			e.farm = @farm AND ie.entry_id IS NULL
+			e.farm = @farm AND ie.entry_id IS NULL AND f.hectares > 0
 		GROUP BY
 			f.name, f.hectares
 		ORDER BY

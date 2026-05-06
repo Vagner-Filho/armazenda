@@ -6,6 +6,7 @@
         <th class="py-3 px-4 text-left">Romaneio</th>
         <th class="py-3 px-4 text-left">Operação</th>
         <th class="py-3 px-4 text-left">Origem</th>
+        <th class="py-3 px-4 text-left">Destino</th>
         <th class="py-3 px-4 text-left">Produto</th>
         <th class="py-3 px-4 text-left">Veículo</th>
         <th class="py-3 px-4 text-left">Peso Líquido</th>
@@ -16,22 +17,24 @@
       {{ range .Operations }}
       {{ template "report-list-item" . }}
       {{ end }}
-      <tr class="text-sm font-semibold text-white bg-white/10">
-        <td class="py-3 px-4 text-left" colspan="3" data-label="Balanço">
+      <tr class="text-sm font-semibold text-white bg-white/10 rounded-b-xl">
+        <td class="py-3 px-4 text-left" colspan="2" data-label="Balanço">
           Balanço:
         </td>
-        <td class="py-3 px-4 text-left" data-label="Entradas">
-          Entradas:
-          <strong class="text-blue-400" id="entryTotal">{{ .EntryTotal }}</strong>
-        </td>
-        <td class="py-3 px-4 text-left" data-label="Saídas">
-          Saídas:
-          <strong class="text-amber-400" id="departureTotal">{{ .DepartureTotal }}</strong>
-        </td>
-        <td class="py-3 px-4 text-left" colspan="2" data-label="Saldo">
-          Saldo:
-          <strong class="{{ if lt .Balance 0.0 }} text-red-400{{ else }}text-green-400{{ end }}" id="balance">{{ .Balance
-            }}</strong>
+        <td class="py-3 px-4 text-left" colspan="6" data-label="Entradas">
+          <div class="inline-block">
+            Entradas:
+            <strong class="text-blue-400" id="entryTotal">{{ .EntryTotal }}</strong>
+          </div>
+          <div class="mx-4 inline-block">
+            Saídas:
+            <strong class="text-amber-400" id="departureTotal">{{ .DepartureTotal }}</strong>
+          </div>
+          <div class="inline-block">
+            Saldo:
+            <strong class="{{ if lt .Balance 0.0 }} text-red-400{{ else }}text-green-400{{ end }}" id="balance">{{ .Balance
+              }}</strong>
+          </div>
         </td>
       </tr>
     </tbody>

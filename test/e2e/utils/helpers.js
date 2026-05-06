@@ -114,15 +114,19 @@ async function openForm(page, locators) {
 async function fillPersonForm(page, type, data) {
 	const isLegal = type === 'legal';
 	const formTestId = isLegal ? 'person-legal-form' : 'person-natural-form';
+	const formLocator = page.locator(`[data-test_id="${formTestId}"]`);
 
-	// Toggle type if the toggler is present (new person mode)
+	// Toggle type only if the target form is not already visible
 	const toggler = page.locator('#type-toggler');
 	if (await toggler.isVisible().catch(() => false)) {
-		const toggleBtn = page.locator(`[data-test_id="person-type-${type}-btn"]`);
-		await toggleBtn.click();
+		const isHidden = await formLocator.isHidden().catch(() => true);
+		if (isHidden) {
+			const toggleBtn = page.locator(`[data-test_id="person-type-${type}-btn"]`);
+			await toggleBtn.click();
+		}
 	}
 
-	const formLocator = page.locator(`[data-test_id="${formTestId}"]`);
+	// Wait for the correct form to be visible before filling it
 	await expect(formLocator).toBeVisible();
 
 	// Fill identification fields

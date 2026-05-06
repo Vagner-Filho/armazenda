@@ -171,9 +171,13 @@ func GetFullReport(rf entity_public.ReportFilter, farm uint32) (FullReportView, 
 				appliedFilters["Peso Mínimo"] = strconv.FormatFloat(fieldValue.Float(), 'f', -1, 64)
 			case "NetWeightMax":
 				appliedFilters["Peso Máximo"] = strconv.FormatFloat(fieldValue.Float(), 'f', -1, 64)
-			case "PersonId":
-				if len(report) > 0 {
-					appliedFilters["Pessoa"] = report[0].Person
+			case "OriginId":
+				if len(report) > 0 && report[0].OriginId != nil {
+					appliedFilters["Origem"] = report[0].OriginName
+				}
+			case "RecipientId":
+				if len(report) > 0 && report[0].RecipientId != nil {
+					appliedFilters["Destino"] = report[0].RecipientName
 				}
 			}
 		}

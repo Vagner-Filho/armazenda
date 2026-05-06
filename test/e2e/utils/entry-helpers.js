@@ -454,9 +454,9 @@ async function createEntryWithDiscount(page, data) {
 	const { crop, field, vehicle } = await getEntryDependencies(page, true);
 
 	await fillEntryForm(page, {
-		crop: crop.value,
-		field: field.value,
-		vehicle: vehicle.value,
+		crop: data.crop ?? crop.value,
+		field: data.field ?? field.value,
+		vehicle: data.vehicle ?? vehicle.value,
 		grossWeight: config.gross,
 		tare: config.tare,
 		humidity: config.humidity,

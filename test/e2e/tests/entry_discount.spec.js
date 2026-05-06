@@ -109,4 +109,22 @@ test.describe('Entry With Default Storage Tax', () => {
     await expect(page).toHaveURL(/.*romaneio/);
     await createEntryWithDiscount(page, { person: nPerson.name, expectedNetWeightDisplay: "23.625 kg" });
   });
+
+  test('should create entry with default dependencies and external origin for soy', async ({ page }) => {
+    const lPerson = generatePersonFormData('legal', {
+      entrySoyDiscount: 3.5,
+    });
+    await fillPersonForm(page, 'legal', lPerson);
+    const responsePromise = page.waitForResponse(
+      response => response.url().includes('/person/legal') && response.request().method() === 'POST'
+    );
+    await page.locator('[data-test_id="submit-legal-btn"]').click({ force: true });
+    const response = await responsePromise;
+    expect(response.ok()).toBeTruthy();
+    await expect(page.locator('dialog#personFormDialog')).not.toBeVisible();
+
+    await page.locator('[data-test_id="romaneio-menu-option"]').click()
+    await expect(page).toHaveURL(/.*romaneio/);
+    await createEntryWithDiscount(page, { person: lPerson.fantasyName, expectedNetWeightDisplay: "24.125 kg", crop: '2' });
+  });
 });

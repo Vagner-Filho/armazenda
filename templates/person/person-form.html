@@ -192,10 +192,15 @@
   <script nonce="{{ .CSPNonce }}" type="module">
     import {removeEmptyFields} from "/public/assets/js/form.js"
     import {setupCepListener} from "/public/assets/js/address.js";
-    import {setupCpfFormatter, setupCnpjFormatter} from "/public/assets/js/utils.js";
+    import {setupCpfFormatter, setupCnpjFormatter, setupCepFormatter, setupPhoneFormatter} from "/public/assets/js/utils.js";
 
     setupCepListener('pessoa-juridica-form', 'cep-input', 'street-input', 'neighborhood-input', 'city-input', 'state-input');
     setupCepListener('pessoa-fisica-form', 'cep-input', 'street-input', 'neighborhood-input', 'city-input', 'state-input');
+
+    setupCepFormatter('#pessoa-juridica-form #cep-input');
+    setupCepFormatter('#pessoa-fisica-form #cep-input');
+    setupPhoneFormatter('#pessoa-juridica-form #phoneNumber-input');
+    setupPhoneFormatter('#pessoa-fisica-form #phoneNumber-input');
 
     const dialogEl = document.querySelector("dialog#personFormDialog")
     if (dialogEl) {
