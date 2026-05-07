@@ -119,15 +119,16 @@ async function fillPersonForm(page, type, data) {
 	// Toggle type only if the target form is not already visible
 	const toggler = page.locator('#type-toggler');
 	if (await toggler.isVisible().catch(() => false)) {
-		const isHidden = await formLocator.isHidden().catch(() => true);
-		if (isHidden) {
+		const isVisible = await formLocator.isVisible().catch(() => false);
+		if (!isVisible) {
 			const toggleBtn = page.locator(`[data-test_id="person-type-${type}-btn"]`);
 			await toggleBtn.click();
+
+			// WebKit fix: wait for the outgoing form to disappear so the transition settles
+			const otherFormTestId = isLegal ? 'person-natural-form' : 'person-legal-form';
+			await expect(page.locator(`[data-test_id="${otherFormTestId}"]`)).toBeHidden({ timeout: 5000 });
 		}
 	}
-
-	// Wait for the correct form to be visible before filling it
-	await expect(formLocator).toBeVisible();
 
 	// Fill identification fields
 	if (isLegal) {

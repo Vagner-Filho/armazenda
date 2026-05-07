@@ -167,13 +167,13 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 
 	stmt := `
 	WITH people AS (SELECT np.name, np.personid FROM natural_person np UNION ALL SELECT COALESCE(lp.fantasyname, lp.companyname) AS name, lp.personid FROM legal_person lp)
-	SELECT r.id, r.operation_type, r.name, r.vehicle, r.netweight, r.date, r.origin_name, r.origin_id, r.recipient_name, r.recipient_id, r.grossweight, r.tare, r.city, r.state, r.humidity, r.damage, r.impurity, r.humidity_discount FROM
+	SELECT r.id, r.operation_type, r.name, r.vehicle, r.netweight, r.date, r.origin_name, r.origin_id, r.recipient_name, r.recipient_id, r.grossweight, r.tare, r.city, r.state, r.humidity, r.damage, r.impurity, r.humidity_discount, r.service_tax, r.tax_weight FROM
 	(SELECT e.id, 1 AS operation_type,
 			p.name, v.plate AS vehicle, e.netweight, e.arrivaldate AS date,
 			COALESCE(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, '-' AS recipient_name, NULL AS recipient_id, e.grossweight, e.tare, COALESCE(a.city, 'N/A') AS city,
 			COALESCE(a.state, 'N/A') AS state, COALESCE(ea.humidity, 0) AS humidity,
 			COALESCE(ea.damage, 0) AS damage, COALESCE(ea.impurity, 0) AS impurity, p.id AS product_id,
-			COALESCE(ea.humidity_discount_modifier, 1.15) AS humidity_discount
+			COALESCE(ea.humidity_discount_modifier, 1.15) AS humidity_discount, COALESCE(et.applied_tax, 0.0) AS service_tax, COALESCE(et.weight, 0.0) AS tax_weight
 			FROM entry e
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
@@ -182,6 +182,7 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 			AS prs_origin ON prs_origin.personid = eo.person_id
 			LEFT JOIN address a ON a.person_id = eo.person_id
 			LEFT JOIN entry_analysis ea ON ea.entryid = e.id
+			LEFT JOIN entry_tax et ON et.entry_id = e.id
 			LEFT JOIN person_config pc ON pc.person_id = eo.person_id
 			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
 			JOIN vehicle v ON v.id = e.vehicle
@@ -192,7 +193,7 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 			COALESCE(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, COALESCE(prs_recipient.name, 'Pŕopria') AS recipient_name, prs_recipient.personid AS recipient_id, d.grossweight, d.tare, COALESCE(a.city, 'N/A') AS city,
 			COALESCE(a.state, 'N/A') AS state, 0 AS humidity,
 			0 AS damage, 0 AS impurity, p.id AS product_id,
-			1 AS humidity_discount
+			1 AS humidity_discount, 0.0 AS service_tax, 0.0 AS tax_weight
 			FROM departure d
 			JOIN crop c ON d.crop = c.id
 			JOIN product p ON c.product = p.id

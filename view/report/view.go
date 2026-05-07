@@ -12,6 +12,8 @@ import (
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type reportView struct {
@@ -129,9 +131,26 @@ func FilterReport(rf entity_public.ReportFilter, farm uint32, page int) (reportC
 	}, nil
 }
 
+type FullReportRow struct {
+	entity_public.ReportDisplay
+	GrossWeight        decimal.Decimal
+	Tare               decimal.Decimal
+	City               string
+	State              string
+	Humidity           decimal.Decimal
+	Damage             decimal.Decimal
+	Impurity           decimal.Decimal
+	HumidityDiscount   decimal.Decimal
+	DiscountedHumidity string
+	DiscountedDamage   string
+	DiscountedImpurity string
+	ServiceTax         *decimal.Decimal
+	WeightTax          string
+}
+
 type FullReportView struct {
 	view.BaseTemplateData
-	FullOperations []entity_public.FullReport
+	FullOperations []FullReportRow
 	EntryTotal     float64
 	DepartureTotal float64
 	Balance        float64
@@ -140,8 +159,39 @@ type FullReportView struct {
 	FarmConfig     *entity_public.Farm
 }
 
+func formatDec(d decimal.Decimal, places int32) string {
+	return d.StringFixed(places)
+}
+
+func formatDecPtr(d *decimal.Decimal, places int32) string {
+	if d == nil {
+		return decimal.Zero.StringFixed(places)
+	}
+	return d.StringFixed(places)
+}
+
 func GetFullReport(rf entity_public.ReportFilter, farm uint32) (FullReportView, *entity_public.Toast) {
 	report, toast := report_service.GetFullReport(rf, farm)
+
+	rows := make([]FullReportRow, len(report))
+	for i, r := range report {
+		rows[i] = FullReportRow{
+			ReportDisplay:      r.ReportDisplay,
+			GrossWeight:        r.GrossWeight,
+			Tare:               r.Tare,
+			City:               r.City,
+			State:              r.State,
+			Humidity:           r.Humidity,
+			Damage:             r.Damage,
+			Impurity:           r.Impurity,
+			HumidityDiscount:   r.HumidityDiscount,
+			DiscountedHumidity: formatDec(r.DiscountedHumidity, 2),
+			DiscountedDamage:   formatDec(r.DiscountedDamage, 2),
+			DiscountedImpurity: formatDec(r.DiscountedImpurity, 2),
+			ServiceTax:         r.ServiceTax,
+			WeightTax:          formatDecPtr(r.WeightTax, 2),
+		}
+	}
 
 	reportDisplay := make([]entity_public.ReportDisplay, 0, len(report))
 	for _, r := range report {
@@ -188,7 +238,7 @@ func GetFullReport(rf entity_public.ReportFilter, farm uint32) (FullReportView, 
 	if errConfig != nil {
 		toast := entity_public.GetInfoToast("Falha ao obter configuração da fazenda", "")
 		return FullReportView{
-			FullOperations: report,
+			FullOperations: rows,
 			EntryTotal:     entry,
 			DepartureTotal: departure,
 			Balance:        balance,
@@ -198,7 +248,7 @@ func GetFullReport(rf entity_public.ReportFilter, farm uint32) (FullReportView, 
 	}
 
 	return FullReportView{
-		FullOperations: report,
+		FullOperations: rows,
 		EntryTotal:     entry,
 		DepartureTotal: departure,
 		Balance:        balance,

@@ -15,21 +15,21 @@
     Começar agora
   </button>
   <script nonce="{{ .CSPNonce }}" type="module">
-    function handleAddFirstDeparture(evt) {
-      if (evt.detail.requestConfig.path === '/person' && evt.detail.requestConfig.verb === 'post' && evt.detail.xhr.status === 201) {
-        const departureContent = document.querySelector('#departure-content');
-        if (departureContent) {
-          departureContent.classList.remove('hidden')
+    function handleAddFirstPerson(evt) {
+      if ((evt.detail.requestConfig.path === '/person/legal' || evt.detail.requestConfig.path === '/person/natural') && evt.detail.requestConfig.verb === 'post' && evt.detail.xhr.status === 201) {
+        const personContent = document.querySelector('#person-content');
+        if (personContent) {
+          personContent.classList.remove('hidden')
 
-          const helper = document.querySelector('#no-departure-helper');
+          const helper = document.querySelector('#no-person-helper');
           if (helper) {
-            document.body.removeEventListener('htmx:afterRequest', handleAddFirstDeparture);
+            document.body.removeEventListener('htmx:afterRequest', handleAddFirstPerson);
             helper.remove()
           }
         }
       }
     }
-    document.body.addEventListener('htmx:afterRequest', handleAddFirstDeparture);
+    document.body.addEventListener('htmx:afterRequest', handleAddFirstPerson);
   </script>
 </div>
 {{ end }}

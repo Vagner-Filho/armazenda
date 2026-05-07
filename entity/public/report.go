@@ -64,4 +64,6 @@ type FullReport struct {
 	DiscountedHumidity decimal.Decimal `db:"-"`
 	DiscountedDamage   decimal.Decimal `db:"-"`
 	DiscountedImpurity decimal.Decimal `db:"-"`
+	ServiceTax         *decimal.Decimal
+	WeightTax          *decimal.Decimal
 }

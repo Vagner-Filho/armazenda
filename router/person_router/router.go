@@ -68,7 +68,7 @@ func addNaturalPerson(c *gin.Context) {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}
 	nonce, _ := c.Get("csp_nonce")
-	c.HTML(http.StatusOK, "person-list-item", person_view.PersonListItemView{
+	c.HTML(http.StatusCreated, "person-list-item", person_view.PersonListItemView{
 		PersonDisplay:    person,
 		BaseTemplateData: view.BaseTemplateData{CSPNonce: nonce.(string)},
 	})

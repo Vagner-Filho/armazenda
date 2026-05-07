@@ -32,7 +32,7 @@
     {{ if .NoContent }}
     {{ template "no-person" . }}
     {{ end }}
-    <div class="{{ if .NoContent }}hidden {{ end }}glass-panel rounded-xl p-4 overflow-y-auto">
+    <div class="{{ if .NoContent }}hidden {{ end }}glass-panel rounded-xl p-4 overflow-y-auto" id="person-content">
       <div class="flex justify-end mb-4">
         <button id="form" type="button" class="primary-glass-btn flex items-center gap-1" hx-get="/person/form" hx-target="body"
           hx-swap="beforeend">
@@ -58,10 +58,6 @@
             <tbody class="overflow-x-auto text-white/80" id="people-rows">
               {{ range .People }}
               {{ template "person-list-item" . }}
-              {{ else }}
-              <tr>
-                <td colspan="5" class="text-center py-4">Nenhuma pessoa encontrada.</td>
-              </tr>
               {{ end }}
             </tbody>
           </table>
@@ -117,13 +113,37 @@
 
       const itemRow = document.querySelector(selector);
       if (itemRow) {
-          const docEl = row.querySelector("td:nth-child(3)")
+          const docEl = itemRow.querySelector("td:nth-child(3)")
           if (docEl) {
            docEl.textContent = formatDocument(docEl.textContent)
           }
       }
     }
     formatPersonListItem();
+
+    const personCreatePattern = new RegExp(/\/person\/(legal|natural)$/);
+    const personUpdatePattern = new RegExp(/\/person\/(legal|natural)\/\d+$/);
+    const personListPattern = new RegExp(/\/pessoa(\?.*)?$/);
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+      if (!evt.detail.successful) return;
+      const path = evt.detail.requestConfig.path;
+      const verb = evt.detail.requestConfig.verb;
+
+      if (personCreatePattern.test(path) && verb === 'post') {
+        const rows = document.querySelector("#people-rows").children;
+        if (rows.length > 0) {
+          const lastRow = rows[rows.length - 1];
+          formatPersonListItem("#" + lastRow.id);
+        }
+      } else if (personUpdatePattern.test(path) && verb === 'put') {
+        const targetId = evt.detail.target.id;
+        if (targetId) {
+          formatPersonListItem("#" + targetId);
+        }
+      } else if (personListPattern.test(path) && verb === 'get') {
+        formatPersonListItem();
+      }
+    });
     window.formatPersonListItem = formatPersonListItem;
   </script>
 </body>
