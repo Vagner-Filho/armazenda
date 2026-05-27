@@ -58,11 +58,17 @@ var availableReportFilters = map[string]func(ef entity_public.ReportFilter) stri
 	"NetWeightMax": func(ef entity_public.ReportFilter) string {
 		return "r.netweight <= " + strconv.FormatFloat(ef.NetWeightMax, 'f', -1, 64)
 	},
-	"PersonId": func(ef entity_public.ReportFilter) string {
-		if ef.PersonId == "NULL" {
-			return "r.personid IS NULL"
+	"OriginId": func(ef entity_public.ReportFilter) string {
+		if ef.OriginId == "NULL" {
+			return "r.origin_id IS NULL"
 		}
-		return fmt.Sprintf("r.personid = %s", ef.PersonId)
+		return fmt.Sprintf("r.origin_id = %s", ef.OriginId)
+	},
+	"RecipientId": func(ef entity_public.ReportFilter) string {
+		if ef.RecipientId == "NULL" {
+			return "r.recipient_id IS NULL"
+		}
+		return fmt.Sprintf("r.recipient_id = %s", ef.RecipientId)
 	},
 	"Type": func(rf entity_public.ReportFilter) string {
 		return fmt.Sprintf("r.operation_type = %v", rf.Type)
@@ -90,24 +96,25 @@ func buildReportWhereClause(rf entity_public.ReportFilter) string {
 
 func getReportSubquery() string {
 	return `
-	FROM (SELECT e.id, 1 AS operation_type, p.name, v.plate AS vehicle, e.netweight, e.arrivaldate AS date, coalesce(prs.name, 'Própria') AS pessoa, prs.personid, p.id AS product_id
+	FROM (SELECT e.id, 1 AS operation_type, p.name, v.plate AS vehicle, e.netweight, e.arrivaldate AS date, coalesce(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, p.id AS product_id, '-' AS recipient_name, NULL AS recipient_id
 		FROM entry e
 		JOIN crop c ON e.crop = c.id
 		JOIN product p ON c.product = p.id
 		LEFT JOIN entry_origin eo ON eo.entry_id = e.id
 		LEFT JOIN people
-		AS prs ON prs.personid = eo.person_id
+		AS prs_origin ON prs_origin.personid = eo.person_id
 		LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
 		JOIN vehicle v ON v.id = e.vehicle
 		WHERE e.farm = @userFarm AND ie.entry_id IS NULL
 		UNION ALL
-	SELECT d.id, 2 AS operation_type, p.name, v.plate AS vehicle, d.netweight , d.departuredate AS date, coalesce(prs.name, 'Própria') AS pessoa, prs.personid, p.id AS product_id
+	SELECT d.id, 2 AS operation_type, p.name, v.plate AS vehicle, d.netweight , d.departuredate AS date, coalesce(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, p.id AS product_id, COALESCE(prs_recipient.name, 'Própria') AS recipient_name, prs_recipient.personid AS recipient_id
 		FROM departure d
 		JOIN crop c ON d.crop = c.id
 		JOIN product p ON c.product = p.id
 		LEFT JOIN departure_origin dor ON dor.departure_id = d.id
-		LEFT JOIN people
-		AS prs ON prs.personid = dor.person_id
+		LEFT JOIN people AS prs_origin ON prs_origin.personid = dor.person_id
+		LEFT JOIN departure_recipient dre ON dre.departure_id = d.id
+		LEFT JOIN people AS prs_recipient ON prs_recipient.personid = dre.person_id
 		LEFT OUTER JOIN inactive_departure id ON id.departure_id = d.id
 		JOIN vehicle v ON v.id = d.vehicle
 		WHERE d.farm = @userFarm AND id.departure_id IS NULL) AS r`
@@ -140,7 +147,7 @@ func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32, 
 	pageSize := 10
 	offset := (page - 1) * pageSize
 
-	dataStmt := cte + "SELECT r.id, r.operation_type, r.name, r.vehicle, r.netweight, r.date, r.pessoa " + subquery + whereClause + " ORDER BY r.date DESC LIMIT @pageSize OFFSET @offset"
+	dataStmt := cte + "SELECT r.id, r.operation_type, r.name, r.vehicle, r.netweight, r.date, r.origin_name, r.origin_id, r.recipient_name, r.recipient_id " + subquery + whereClause + " ORDER BY r.date DESC LIMIT @pageSize OFFSET @offset"
 
 	rows, queryErr := rm.pool.Query(context.Background(), dataStmt, pgx.NamedArgs{"userFarm": farm, "pageSize": pageSize, "offset": offset})
 	if queryErr != nil {
@@ -160,21 +167,22 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 
 	stmt := `
 	WITH people AS (SELECT np.name, np.personid FROM natural_person np UNION ALL SELECT COALESCE(lp.fantasyname, lp.companyname) AS name, lp.personid FROM legal_person lp)
-	SELECT r.id, r.operation_type, r.name, r.vehicle, r.netweight, r.date, r.pessoa, r.grossweight, r.tare, r.city, r.state, r.humidity, r.damage, r.impurity, r.humidity_discount FROM
+	SELECT r.id, r.operation_type, r.name, r.vehicle, r.netweight, r.date, r.origin_name, r.origin_id, r.recipient_name, r.recipient_id, r.grossweight, r.tare, r.city, r.state, r.humidity, r.damage, r.impurity, r.humidity_discount, r.service_tax, r.tax_weight FROM
 	(SELECT e.id, 1 AS operation_type,
 			p.name, v.plate AS vehicle, e.netweight, e.arrivaldate AS date,
-			COALESCE(prs.name, 'Própria') AS pessoa, prs.personid, e.grossweight, e.tare, COALESCE(a.city, 'N/A') AS city,
+			COALESCE(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, '-' AS recipient_name, NULL AS recipient_id, e.grossweight, e.tare, COALESCE(a.city, 'N/A') AS city,
 			COALESCE(a.state, 'N/A') AS state, COALESCE(ea.humidity, 0) AS humidity,
 			COALESCE(ea.damage, 0) AS damage, COALESCE(ea.impurity, 0) AS impurity, p.id AS product_id,
-			COALESCE(ea.humidity_discount_modifier, 1.15) AS humidity_discount
+			COALESCE(ea.humidity_discount_modifier, 1.15) AS humidity_discount, COALESCE(et.applied_tax, 0.0) AS service_tax, COALESCE(et.weight, 0.0) AS tax_weight
 			FROM entry e
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
 			LEFT JOIN entry_origin eo ON eo.entry_id = e.id
 			LEFT JOIN people
-			AS prs ON prs.personid = eo.person_id
+			AS prs_origin ON prs_origin.personid = eo.person_id
 			LEFT JOIN address a ON a.person_id = eo.person_id
 			LEFT JOIN entry_analysis ea ON ea.entryid = e.id
+			LEFT JOIN entry_tax et ON et.entry_id = e.id
 			LEFT JOIN person_config pc ON pc.person_id = eo.person_id
 			LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
 			JOIN vehicle v ON v.id = e.vehicle
@@ -182,16 +190,18 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 			UNION ALL
 		SELECT d.id, 2 AS operation_type,
 			p.name, v.plate AS vehicle, d.netweight, d.departuredate AS date,
-			COALESCE(prs.name, 'Própria') AS pessoa, prs.personid, d.grossweight, d.tare, COALESCE(a.city, 'N/A') AS city,
+			COALESCE(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, COALESCE(prs_recipient.name, 'Pŕopria') AS recipient_name, prs_recipient.personid AS recipient_id, d.grossweight, d.tare, COALESCE(a.city, 'N/A') AS city,
 			COALESCE(a.state, 'N/A') AS state, 0 AS humidity,
 			0 AS damage, 0 AS impurity, p.id AS product_id,
-			1 AS humidity_discount
+			1 AS humidity_discount, 0.0 AS service_tax, 0.0 AS tax_weight
 			FROM departure d
 			JOIN crop c ON d.crop = c.id
 			JOIN product p ON c.product = p.id
 			LEFT JOIN departure_origin dor ON dor.departure_id = d.id
 			LEFT JOIN people
-			AS prs ON prs.personid = dor.person_id
+			AS prs_origin ON prs_origin.personid = dor.person_id
+			LEFT JOIN departure_recipient dre ON dre.departure_id = d.id
+			LEFT JOIN people AS prs_recipient ON prs_recipient.personid = dre.person_id
 			LEFT JOIN address a ON a.person_id = dor.person_id
 			LEFT JOIN person_config pc ON pc.person_id = dor.person_id
 			LEFT OUTER JOIN inactive_departure id ON id.departure_id = d.id

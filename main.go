@@ -13,10 +13,12 @@ import (
 	"armazenda/model/product_model"
 	"armazenda/model/report_model"
 	"armazenda/model/stats_model"
+	"armazenda/model/subscription_model"
 	"armazenda/model/user_approval_model"
 	"armazenda/model/user_model"
 
 	"armazenda/model/vehicle_model"
+	"armazenda/router/billing_router"
 	"armazenda/router/crop_router"
 	"armazenda/router/departure_router"
 	"armazenda/router/entry_router"
@@ -31,6 +33,7 @@ import (
 	"armazenda/router/user_approval_router"
 	"armazenda/router/user_router"
 	"armazenda/router/vehicle_router"
+	"armazenda/service/billing_service"
 	"armazenda/service/user_service"
 	"context"
 	"crypto/rand"
@@ -72,7 +75,12 @@ func dict(values ...interface{}) (map[string]interface{}, error) {
 
 func authenticate(c *gin.Context) {
 	path := c.FullPath()
-	if path == "/" || path == "/user" || path == "/login" || strings.Contains(path, "/public") || path == "/user/form" || path == "/auth/google/login" || path == "/auth/google/callback" || path == "/auth/microsoft/login" || path == "/auth/microsoft/callback" || path == "/user/microsoft-register" || path == "/user/google-register" {
+	if path == "/" || path == "/user" || path == "/login" || strings.Contains(path, "/public") || path == "/user/form" ||
+		path == "/auth/google/login" || path == "/auth/google/callback" ||
+		path == "/auth/microsoft/login" || path == "/auth/microsoft/callback" ||
+		path == "/user/microsoft-register" || path == "/user/google-register" ||
+		path == "/pricing" || path == "/payment/success" || path == "/payment/cancel" ||
+		path == "/stripe/webhook" {
 		c.Next()
 		return
 	}
@@ -100,6 +108,15 @@ func authenticate(c *gin.Context) {
 		c.HTML(http.StatusUnauthorized, "401", gin.H{})
 		c.Abort()
 		return
+	}
+
+	// Check subscription status (non-blocking - allows login to resolve payment)
+	claims := user_service.GetClaimsFromToken(sessionCookie.Value)
+	if claims != nil {
+		status, _ := billing_service.GetSubscriptionStatus(claims.Farm)
+		if status != "active" && status != "" {
+			c.Set("subscription_status", status)
+		}
 	}
 
 	// Also check user role from database for admin routes
@@ -209,7 +226,14 @@ func main() {
 	armazenda_database.InitDb(conn.Conn())
 	conn.Release()
 
+	migrateErr := armazenda_database.RunMigrations(pool)
+	if migrateErr != nil {
+		fmt.Printf("migration error: %v\n", migrateErr.Error())
+		return
+	}
+
 	user_model.InitUserModel(pool)
+	subscription_model.InitSubscriptionModel(pool)
 	crop_model.InitCropModel(pool)
 	field_model.InitFieldModel(pool)
 	vehicle_model.InitVehicleModel(pool)
@@ -279,6 +303,7 @@ func main() {
 	})
 
 	user_router.UserRoutes(router)
+	billing_router.BillingRoutes(router)
 	entry_router.UseEntryRoutes(router)
 	departure_router.UseDepartureRoutes(router)
 	crop_router.UseCropRoutes(router)

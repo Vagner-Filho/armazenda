@@ -158,6 +158,9 @@ func AddEntry(ge entity_public.Entry, em EntryModelInterface, pm PersonModelInte
 		return entity_public.DisplayEntry{}, entity_public.GetErrorToast(result.ErrorMessage, "")
 	}
 
+	if result.DiscountedHumidity.GreaterThan(decimal.Zero) && result.HumidityDiscountModifier.GreaterThan(decimal.Zero) {
+		ge.HumidityDiscountModifier = &result.HumidityDiscountModifier
+	}
 	ge.NetWeight = result.NetWeight
 	newEntry, addErr := em.AddEntry(ge)
 
@@ -256,6 +259,9 @@ func PutEntry(ge entity_public.Entry) (entity_public.DisplayEntry, entity_public
 		return entity_public.DisplayEntry{}, entity_public.GetErrorToast(result.ErrorMessage, "")
 	}
 
+	if result.DiscountedHumidity.GreaterThan(decimal.Zero) && result.HumidityDiscountModifier.GreaterThan(decimal.Zero) {
+		ge.HumidityDiscountModifier = &result.HumidityDiscountModifier
+	}
 	ge.NetWeight = result.NetWeight
 	entry, putErr := eModel.PutEntry(ge)
 	if putErr != nil {

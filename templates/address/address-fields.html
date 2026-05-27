@@ -4,7 +4,7 @@
     Endereço e Contato
   </legend>
   <div class="flex flex-col-reverse">
-    <input type="number" name="cep" id="cep-input" class="peer bg-white/10 border-white/20 text-white placeholder-white/50 group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse" required {{ with .Cep }} value="{{ . }}" {{ end }}>
+    <input type="text" name="cep" inputmode="numeric" id="cep-input" class="peer bg-white/10 border-white/20 text-white placeholder-white/50 group-[.cep-data-loading]:ring-stone-400 group-[.cep-data-loading]:text-stone-300 group-[.cep-data-loading]:animate-pulse" required maxlength="9" pattern="\d{5}-\d{3}" {{ with .Cep }} value="{{ . }}" {{ end }}>
     <label for="cep-input" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">CEP</label>
   </div>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -40,11 +40,11 @@
   </div>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
     <div class="flex flex-col-reverse">
-      <input type="email" name="email" id="email-input" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ with .Email }} value="{{ . }}" {{ end }}>
+      <input type="email" inputmode="email" name="email" id="email-input" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ with .Email }} value="{{ . }}" {{ end }}>
       <label for="email-input" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">E-mail (opcional)</label>
     </div>
     <div class="flex flex-col-reverse">
-      <input type="number" name="phoneNumber" id="phoneNumber-input" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ with .PhoneNumber }} value="{{ . }}" {{ end }}>
+      <input type="text" name="phoneNumber" inputmode="tel" id="phoneNumber-input" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" maxlength="15" pattern="\(\d{2}\) \d{5}-\d{4}" {{ with .PhoneNumber }} value="{{ . }}" {{ end }}>
       <label for="phoneNumber-input" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Celular (opcional)</label>
     </div>
   </div>

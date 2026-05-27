@@ -239,3 +239,18 @@ export function setupWeightInput(input, signal) {
   input.addEventListener('focus', handleFocus, { signal });
   input.addEventListener('keydown', handleKeydown, { signal });
 }
+
+/**
+ * Formats all elements with class 'weight-value' inside a container.
+ *
+ * @param {HTMLElement} [container=document] - The container to search within.
+ */
+export function formatWeightElements(container = document) {
+  const elements = container.querySelectorAll('.weight-value');
+  elements.forEach(el => {
+    const rawValue = el.textContent.trim();
+    if (rawValue) {
+      el.textContent = formatWeight(rawValue);
+    }
+  });
+}

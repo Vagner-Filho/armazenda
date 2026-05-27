@@ -9,16 +9,18 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { login } from '../utils/auth';
+import { loginViaApi } from '../utils/auth';
 import {
   createEntryWithDiscount,
 } from '../utils/entry-helpers';
 import { fillPersonForm, openForm, generatePersonFormData } from '../utils/helpers';
 
+test.setTimeout(45000);
+
 test.describe('Entry With Humidity Discount - System Wide Progression', () => {
-  test.beforeEach(async ({ page, browserName }) => {
+  test.beforeEach(async ({ page }) => {
     // Login before each test
-    await login(page, browserName);
+    await loginViaApi(page);
   });
 
   test('should create entry with default dependencies, gross weight, tare and humidity 14.01', async ({ page }) => {
@@ -39,9 +41,9 @@ test.describe('Entry With Humidity Discount - System Wide Progression', () => {
 });
 
 test.describe('Entry With Damage Discount', () => {
-  test.beforeEach(async ({ page, browserName }) => {
+  test.beforeEach(async ({ page }) => {
     // Login before each test
-    await login(page, browserName);
+    await loginViaApi(page);
   });
 
   test('should create entry with default dependencies, gross weight, tare and damage 10', async ({ page }) => {
@@ -54,9 +56,9 @@ test.describe('Entry With Damage Discount', () => {
 });
 
 test.describe('Entry With Impurity Discount', () => {
-  test.beforeEach(async ({ page, browserName }) => {
+  test.beforeEach(async ({ page }) => {
     // Login before each test
-    await login(page, browserName);
+    await loginViaApi(page);
   });
 
   test('should create entry with default dependencies, gross weight, tare and damage 3', async ({ page }) => {
@@ -69,9 +71,9 @@ test.describe('Entry With Impurity Discount', () => {
 });
 
 test.describe('Entry With All Discounts', () => {
-  test.beforeEach(async ({ page, browserName }) => {
+  test.beforeEach(async ({ page }) => {
     // Login before each test
-    await login(page, browserName);
+    await loginViaApi(page);
   });
 
   test('should create entry with default dependencies, gross weight, tare, damage 8.01, impurity 1.01, humidity 14.01', async ({ page }) => {
@@ -84,9 +86,11 @@ test.describe('Entry With All Discounts', () => {
 });
 
 test.describe('Entry With Default Storage Tax', () => {
-  test.beforeEach(async ({ page, browserName }) => {
+  test.setTimeout(60000);
+
+  test.beforeEach(async ({ page }) => {
     // Login before each test
-    await login(page, browserName);
+    await loginViaApi(page);
     await page.locator('[data-test_id="pessoa-menu-option"]').click()
     await expect(page).toHaveURL(/.*pessoa/);
     await openForm(page, { novaTxt: "Nova Pessoa", comecarTxt: "Começar Agora", formId: "personFormDialog" });
@@ -105,8 +109,30 @@ test.describe('Entry With Default Storage Tax', () => {
     expect(response.ok()).toBeTruthy();
     await expect(page.locator('dialog#personFormDialog')).not.toBeVisible();
 
+    await page.waitForTimeout(500);
+
     await page.locator('[data-test_id="romaneio-menu-option"]').click()
     await expect(page).toHaveURL(/.*romaneio/);
     await createEntryWithDiscount(page, { person: nPerson.name, expectedNetWeightDisplay: "23.625 kg" });
+  });
+
+  test('should create entry with default dependencies and external origin for soy', async ({ page }) => {
+    const lPerson = generatePersonFormData('legal', {
+      entrySoyDiscount: 3.5,
+    });
+    await fillPersonForm(page, 'legal', lPerson);
+    const responsePromise = page.waitForResponse(
+      response => response.url().includes('/person/legal') && response.request().method() === 'POST'
+    );
+    await page.locator('[data-test_id="submit-legal-btn"]').click({ force: true });
+    const response = await responsePromise;
+    expect(response.ok()).toBeTruthy();
+    await expect(page.locator('dialog#personFormDialog')).not.toBeVisible();
+
+    await page.waitForTimeout(500);
+
+    await page.locator('[data-test_id="romaneio-menu-option"]').click()
+    await expect(page).toHaveURL(/.*romaneio/);
+    await createEntryWithDiscount(page, { person: lPerson.fantasyName, expectedNetWeightDisplay: "24.125 kg", crop: '2' });
   });
 });

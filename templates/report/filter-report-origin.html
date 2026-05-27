@@ -1,0 +1,23 @@
+{{ block "filter-report-origin" . }}
+<fieldset class="filter-card">
+    <legend class="w-full text-center">
+        <label for="origin-filter" class="font-medium text-sm text-white/90">
+            Origem
+        </label>
+    </legend>
+    <select name="origin" id="origin-filter" class="w-full text-sm peer bg-slate-800/80 text-white/90 border-white/20">
+        <option value="" selected>
+            Nenhuma
+        </option>
+        {{ range .People }}
+        <option {{ if eq .Id nil }} value="NULL" {{ else }} value="{{ .Id }}" {{ end }}>
+            {{ .Name }}
+        </option>
+        {{ else }}
+        <option value="-1">
+            Nenhuma pessoa encontrada
+        </option>
+        {{ end }}
+    </select>
+</fieldset>
+{{ end }}

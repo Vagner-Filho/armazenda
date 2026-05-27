@@ -97,6 +97,7 @@ async function createCrop(page, name, product = 'Milho', startDate = null) {
 		response => response.url().includes('/crop') && response.request().method() === 'POST'
 	);
 	await page.locator('dialog#cropFormDialog button[type="submit"]').evaluate(el => el.click());
+	await page.locator('.swal2-confirm').click();
 	await cropResponse;
 
 	// Wait for the dialog to close
@@ -134,6 +135,7 @@ async function createField(page, name, hectares = 10) {
 		response => response.url().includes('/field') && response.request().method() === 'POST'
 	);
 	await page.locator('dialog#fieldFormDialog button[type="submit"]').evaluate(el => el.click());
+	await page.locator('.swal2-confirm').click();
 	await fieldResponse;
 
 	// Wait for the dialog to close
@@ -173,6 +175,7 @@ async function createVehicle(page, plate, name = null) {
 		response => response.url().includes('/vehicle') && response.request().method() === 'POST'
 	);
 	await page.locator('dialog#vehicleFormDialog button[type="submit"]').evaluate(el => el.click());
+	await page.locator('.swal2-confirm').click();
 	await vehicleResponse;
 
 	// Wait for the dialog to close
@@ -454,9 +457,9 @@ async function createEntryWithDiscount(page, data) {
 	const { crop, field, vehicle } = await getEntryDependencies(page, true);
 
 	await fillEntryForm(page, {
-		crop: crop.value,
-		field: field.value,
-		vehicle: vehicle.value,
+		crop: data.crop ?? crop.value,
+		field: data.field ?? field.value,
+		vehicle: data.vehicle ?? vehicle.value,
 		grossWeight: config.gross,
 		tare: config.tare,
 		humidity: config.humidity,

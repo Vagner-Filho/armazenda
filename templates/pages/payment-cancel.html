@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Armazenda - Pagamento Cancelado</title>
+    <link rel="icon" type="image/png" href="/public/assets/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/svg+xml" href="/public/assets/favicon.svg">
+    <link rel="shortcut icon" href="/public/assets/favicon.ico">
+    <link rel="preload" href="/public/assets/static/fonts/noto-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <style>
+      @font-face {
+        font-family: 'Noto Sans';
+        font-style: normal;
+        font-weight: 600 800;
+        src: url(/public/assets/static/fonts/noto-sans-latin.woff2) format('woff2');
+        font-display: swap;
+      }
+    </style>
+</head>
+<body class="payment-container">
+    <div class="liquid-bg">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
+    </div>
+    <main class="payment-card">
+      <div class="cancel-icon">✕</div>
+      <h1 class="payment-title">Pagamento Cancelado</h1>
+      <p class="payment-message">
+        O pagamento não foi concluído. Não se preocupe, nenhuma cobrança foi realizada.
+      </p>
+      <a href="/pricing" class="payment-btn secondary">Voltar para Preços</a>
+      <a href="/" class="payment-link">Já tem uma conta? Entrar</a>
+    </main>
+</body>
+<style>
+  body {
+    background-color: #7dd3fc;
+    color: white;
+    overflow-x: hidden;
+    font-family: "Noto Sans", sans-serif;
+    margin: 0;
+  }
+
+  .liquid-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    z-index: -1;
+    background: linear-gradient(180deg, #38bdf8 0%, #7dd3fc 40%, #a3e635 100%);
+  }
+
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.7;
+  }
+
+  .blob-1 {
+    top: -10%;
+    left: -10%;
+    width: 60vmax;
+    height: 60vmax;
+    background: #0ea5e9;
+  }
+
+  .blob-2 {
+    bottom: -5%;
+    right: -5%;
+    width: 55vmax;
+    height: 55vmax;
+    background: #22c55e;
+  }
+
+  .blob-3 {
+    bottom: 10%;
+    left: 10%;
+    width: 45vmax;
+    height: 40vmax;
+    background: #92400e;
+    opacity: 0.5;
+  }
+
+  .payment-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+  }
+
+  .payment-card {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    border-radius: 24px;
+    width: 100%;
+    max-width: 28rem;
+    padding: 3rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+    text-align: center;
+    z-index: 10;
+  }
+
+  .cancel-icon {
+    width: 4rem;
+    height: 4rem;
+    background: #dc2626;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
+  }
+
+  .payment-title {
+    font-size: 1.875rem;
+    font-weight: 800;
+    margin: 0;
+    text-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .payment-message {
+    font-size: 1rem;
+    opacity: 0.9;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .payment-btn {
+    width: 100%;
+    padding: 0.75rem 0;
+    background: #059669;
+    border: 1px solid rgba(5, 150, 105, 0.4);
+    color: white;
+    border-radius: 9999px;
+    font-size: 1.125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    text-align: center;
+    margin-top: 0.5rem;
+  }
+
+  .payment-btn.secondary {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  .payment-btn:hover {
+    transform: scale(1.05);
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .payment-link {
+    font-size: 0.875rem;
+    color: white;
+    text-decoration: underline;
+    margin-top: 0.5rem;
+  }
+</style>
+</html>

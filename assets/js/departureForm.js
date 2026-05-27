@@ -18,6 +18,7 @@ export function setupDepartureForm(payload) {
         const signal = controller.signal
 
         function closeDepartureForm() {
+            if (dialogEl.isPaused) return
             controller.abort()
             dialogEl.close()
             dialogEl.remove()

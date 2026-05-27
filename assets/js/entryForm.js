@@ -89,6 +89,7 @@ export async function setupEntryForm(arrival_date, entry_id) {
         }
 
         function closeEntryFormDialog() {
+            if (dialogEl.isPaused) return
             controller.abort()
             dialogEl.close()
             dialogEl.remove()

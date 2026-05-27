@@ -14,7 +14,8 @@ type ReportFilter struct {
 	NetWeightMax float64   `form:"netWeightMax"`
 	StartDate    time.Time `form:"startDate" time_format:"2006-01-02T15:04"`
 	EndDate      time.Time `form:"endDate" time_format:"2006-01-02T15:04"`
-	PersonId     string    `form:"person"`
+	OriginId     string    `form:"origin"`
+	RecipientId  string    `form:"recipient"`
 	Type         uint8     `form:"type"`
 }
 
@@ -44,8 +45,10 @@ type ReportDisplay struct {
 	Vehicle       string
 	NetWeight     float64
 	OperationDate time.Time `time_format:"2006-01-02T15:04"`
-	Person        string
-	// PersonId      *uint32
+	OriginName    string
+	OriginId      *uint32
+	RecipientName string
+	RecipientId   *uint32
 }
 
 type FullReport struct {
@@ -61,4 +64,6 @@ type FullReport struct {
 	DiscountedHumidity decimal.Decimal `db:"-"`
 	DiscountedDamage   decimal.Decimal `db:"-"`
 	DiscountedImpurity decimal.Decimal `db:"-"`
+	ServiceTax         *decimal.Decimal
+	WeightTax          *decimal.Decimal
 }

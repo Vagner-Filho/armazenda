@@ -114,16 +114,21 @@ async function openForm(page, locators) {
 async function fillPersonForm(page, type, data) {
 	const isLegal = type === 'legal';
 	const formTestId = isLegal ? 'person-legal-form' : 'person-natural-form';
+	const formLocator = page.locator(`[data-test_id="${formTestId}"]`);
 
-	// Toggle type if the toggler is present (new person mode)
+	// Toggle type only if the target form is not already visible
 	const toggler = page.locator('#type-toggler');
 	if (await toggler.isVisible().catch(() => false)) {
-		const toggleBtn = page.locator(`[data-test_id="person-type-${type}-btn"]`);
-		await toggleBtn.click();
-	}
+		const isVisible = await formLocator.isVisible().catch(() => false);
+		if (!isVisible) {
+			const toggleBtn = page.locator(`[data-test_id="person-type-${type}-btn"]`);
+			await toggleBtn.click();
 
-	const formLocator = page.locator(`[data-test_id="${formTestId}"]`);
-	await expect(formLocator).toBeVisible();
+			// WebKit fix: wait for the outgoing form to disappear so the transition settles
+			const otherFormTestId = isLegal ? 'person-natural-form' : 'person-legal-form';
+			await expect(page.locator(`[data-test_id="${otherFormTestId}"]`)).toBeHidden({ timeout: 5000 });
+		}
+	}
 
 	// Fill identification fields
 	if (isLegal) {

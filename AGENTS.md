@@ -220,6 +220,27 @@ armazenda/
 └── assets/                 # Static files, JS, CSS, WASM
 ```
 
+### Database Migrations
+
+The project uses a lightweight, custom migration system with raw SQL files.
+
+**How it works:**
+- Migration files live in `model/armazenda_database/migrations/`
+- Files are named `000001_description.sql` (6-digit version + snake_case description)
+- Migrations are embedded into the binary via `//go:embed` and applied on startup by `RunMigrations()`
+- Applied versions are tracked in the `schema_migrations` table
+- Each migration runs inside a transaction
+
+**Convention:**
+- **All new schema changes** (tables, columns, indexes, constraints) go into a new `.sql` migration file
+- **Existing `InitDb` in `database.go`** remains as the baseline for bootstrapping fresh databases — do not add new schema there
+- Stored procedures currently use `DROP IF EXISTS` + `CREATE OR REPLACE` in `InitDb`, which is acceptable since they refresh on every deploy
+
+**Creating a new migration:**
+1. Create `model/armazenda_database/migrations/000XXX_description.sql`
+2. Write idempotent SQL (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, etc.)
+3. The runner will automatically detect and apply it on the next startup
+
 ### Testing Patterns
 
 - Test files use `_test` suffix in package name: `package calculator_test`
