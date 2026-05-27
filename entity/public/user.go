@@ -14,6 +14,7 @@ type User struct {
 type NewUser struct {
 	User
 	PasswdConfirm string `form:"passwdConfirm" binding:"required"`
+	PriceID       string `form:"priceId"`
 }
 
 type SignInUser struct {

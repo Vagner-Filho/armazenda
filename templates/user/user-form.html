@@ -12,6 +12,7 @@
     </header>
     <div>
       <form hx-post="/user" hx-vals='{"role": "user"}' hx-target="#user-form-content" class="flex flex-col gap-4 mt-4">
+        <input type="hidden" name="priceId" value="{{ .PriceID }}">
       <fieldset class="flex flex-col gap-4 p-2 bg-fieldset rounded-lg">
         <legend class="fieldset-legend">
           Identificação

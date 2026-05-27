@@ -4,6 +4,7 @@ import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/farm_config_model"
 	"armazenda/model/user_model"
+	"armazenda/service/billing_service"
 	field_service "armazenda/service/field"
 	"context"
 	"crypto/rand"
@@ -511,27 +512,35 @@ func Login(cpf string, passwd string, ipAddress, userAgent string) (credentials,
 	return credentials{Token: token, Username: user.Name, Farm: user.Farm}, nil
 }
 
-func Create(newUser entity_public.NewUser) entity_public.Toast {
+func Create(newUser entity_public.NewUser) entity_public.CreateUserResult {
 	if newUser.Passwd != newUser.PasswdConfirm {
-		return entity_public.GetWarningToast("Confirmação de senha incorreta", "")
+		return entity_public.CreateUserResult{
+			Toast: entity_public.GetWarningToast("Confirmação de senha incorreta", ""),
+		}
 	}
 
 	fcm := farm_config_model.GetFarmConfigModel()
 	farm, err := fcm.GetFarmByInscricaoEstadual(newUser.InscricaoEstadual)
 	if err != nil {
-		return entity_public.GetErrorToast(err.Error(), "")
+		return entity_public.CreateUserResult{
+			Toast: entity_public.GetErrorToast(err.Error(), ""),
+		}
 	}
 
 	um := user_model.GetUserModel()
 	existsAndIsActive, err := um.ExistsAndIsActive(newUser.Cpf)
 	if existsAndIsActive == true {
-		return entity_public.GetWarningToast("CPF em uso em outro armazém", "Um adm precisa desativa-lo para cadastra-lo aqui")
+		return entity_public.CreateUserResult{
+			Toast: entity_public.GetWarningToast("CPF em uso em outro armazém", "Um adm precisa desativa-lo para cadastra-lo aqui"),
+		}
 	}
 
 	if farm != nil {
 		created, err := um.CreateUserApproval(newUser, farm.Id)
 		if !created || err != nil {
-			return entity_public.GetErrorToast(err.Error(), "")
+			return entity_public.CreateUserResult{
+				Toast: entity_public.GetErrorToast(err.Error(), ""),
+			}
 		}
 		field_service.AddField(entity_public.Field{
 			Name:     "Externo",
@@ -539,16 +548,17 @@ func Create(newUser entity_public.NewUser) entity_public.Toast {
 			Farm:     farm.Id,
 		})
 
-		return entity_public.GetSuccessToast("Usuário enviado para aprovação", "")
+		return entity_public.CreateUserResult{
+			Toast: entity_public.GetSuccessToast("Usuário enviado para aprovação", ""),
+		}
 	}
 
-	created, err := um.CreateUser(newUser)
-	if !created || err != nil {
-		fmt.Printf("%v", err.Error())
-		return entity_public.GetErrorToast(err.Error(), "")
+	// New farm: require payment upfront. Create pending registration + Stripe checkout.
+	checkoutURL, toast := billing_service.CreatePendingAndCheckout(newUser, newUser.PriceID)
+	return entity_public.CreateUserResult{
+		Toast:       toast,
+		CheckoutURL: checkoutURL,
 	}
-
-	return entity_public.GetSuccessToast("Usuário criado", "")
 }
 
 func GetRoleFromToken(sessionId string) string {

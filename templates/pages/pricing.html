@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Armazenda - Preços</title>
+    <link rel="icon" type="image/png" href="/public/assets/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/svg+xml" href="/public/assets/favicon.svg">
+    <link rel="shortcut icon" href="/public/assets/favicon.ico">
+    <link rel="preload" href="/public/assets/static/fonts/noto-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <script nonce="{{ .CSPNonce }}" src="/public/assets/static/htmx.min.js.gz" defer></script>
+    <style>
+      @font-face {
+        font-family: 'Noto Sans';
+        font-style: normal;
+        font-weight: 600 800;
+        src: url(/public/assets/static/fonts/noto-sans-latin.woff2) format('woff2');
+        font-display: swap;
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+    </style>
+</head>
+<body class="pricing-container">
+    <div class="liquid-bg">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
+    </div>
+    <main class="pricing-wrapper">
+      <h1 class="pricing-title">Armazenda</h1>
+      <p class="pricing-subtitle">Escolha o plano ideal para sua fazenda</p>
+
+      <div class="pricing-cards">
+        <div class="pricing-card">
+          <h2 class="plan-name">Mensal</h2>
+          <div class="plan-price">
+            <span class="currency">R$</span>
+            <span class="amount">{{ .MonthlyAmount }}</span>
+            <span class="period">/mês</span>
+          </div>
+          <ul class="plan-features">
+            <li>Acesso completo ao sistema</li>
+            <li>Usuários ilimitados</li>
+            <li>Relatórios e análises</li>
+            <li>Suporte por email</li>
+          </ul>
+          <button class="plan-btn" hx-get="/user/form" hx-vals='{"priceId": "{{ .MonthlyPriceID }}"}' hx-target="body" hx-swap="beforeend">Assinar Mensal</button>
+        </div>
+
+        <div class="pricing-card featured">
+          <div class="plan-badge">Mais popular</div>
+          <h2 class="plan-name">Anual</h2>
+          <div class="plan-price">
+            <span class="currency">R$</span>
+            <span class="amount">{{ .YearlyMonthlyEquivalent }}</span>
+            <span class="period">/mês</span>
+          </div>
+          <div class="plan-annual-total">R$ {{ .YearlyTotal }} cobrados anualmente</div>
+          <div class="plan-save">Economize {{ .SavingsPercent }}%</div>
+          <ul class="plan-features">
+            <li>Acesso completo ao sistema</li>
+            <li>Usuários ilimitados</li>
+            <li>Relatórios e análises</li>
+            <li>Suporte prioritário</li>
+          </ul>
+          <button class="plan-btn" hx-get="/user/form" hx-vals='{"priceId": "{{ .YearlyPriceID }}"}' hx-target="body" hx-swap="beforeend">Assinar Anual</button>
+        </div>
+      </div>
+
+      <p class="pricing-footer">
+        Já tem uma conta? <a href="/" class="pricing-link">Entrar</a>
+      </p>
+    </main>
+</body>
+<style>
+  body {
+    background-color: #7dd3fc;
+    color: white;
+    overflow-x: hidden;
+    font-family: "Noto Sans", sans-serif;
+    margin: 0;
+  }
+
+  .liquid-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    z-index: -1;
+    background: linear-gradient(180deg, #38bdf8 0%, #7dd3fc 40%, #a3e635 100%);
+  }
+
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.7;
+  }
+
+  .blob-1 {
+    top: -10%;
+    left: -10%;
+    width: 60vmax;
+    height: 60vmax;
+    background: #0ea5e9;
+  }
+
+  .blob-2 {
+    bottom: -5%;
+    right: -5%;
+    width: 55vmax;
+    height: 55vmax;
+    background: #22c55e;
+  }
+
+  .blob-3 {
+    bottom: 10%;
+    left: 10%;
+    width: 45vmax;
+    height: 40vmax;
+    background: #92400e;
+    opacity: 0.5;
+  }
+
+  .pricing-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  .pricing-wrapper {
+    width: 100%;
+    max-width: 64rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    z-index: 10;
+    position: relative;
+  }
+
+  .pricing-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    text-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin: 0;
+  }
+
+  .pricing-subtitle {
+    font-size: 1.25rem;
+    opacity: 0.9;
+    margin: 0;
+  }
+
+  .pricing-cards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    width: 100%;
+  }
+
+  .pricing-card {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    border-radius: 24px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 20rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    position: relative;
+  }
+
+  .pricing-card.featured {
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    transform: scale(1.05);
+  }
+
+  .plan-badge {
+    position: absolute;
+    top: -12px;
+    background: #f59e0b;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 1rem;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .plan-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .plan-price {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+  }
+
+  .currency {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .amount {
+    font-size: 3rem;
+    font-weight: 800;
+  }
+
+  .period {
+    font-size: 1rem;
+    opacity: 0.8;
+  }
+
+  .plan-annual-total {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.85);
+    margin-top: -0.5rem;
+  }
+
+  .plan-save {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #d1fae5;
+  }
+
+  .plan-features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .plan-features li {
+    padding-left: 1.5rem;
+    position: relative;
+    font-size: 0.95rem;
+  }
+
+  .plan-features li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    font-weight: 700;
+    color: #a3e635;
+  }
+
+  .plan-btn {
+    width: 100%;
+    padding: 0.75rem 0;
+    background: #059669;
+    border: 1px solid rgba(5, 150, 105, 0.4);
+    color: white;
+    border-radius: 9999px;
+    font-size: 1.125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    text-align: center;
+    display: block;
+  }
+
+  .plan-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    color: #065f46;
+    background: #d1fae5;
+  }
+
+  .pricing-footer {
+    font-size: 0.875rem;
+    text-align: center;
+    margin-top: 1rem;
+  }
+
+  .pricing-link {
+    font-weight: 700;
+    color: white;
+    text-decoration: underline;
+  }
+</style>
+</html>

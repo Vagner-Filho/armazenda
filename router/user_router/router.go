@@ -78,12 +78,17 @@ func UserRoutes(router *gin.Engine) {
 			return
 		}
 
-		toast := user_service.Create(newUser)
-		switch toast.Type {
+		result := user_service.Create(newUser)
+		if result.CheckoutURL != "" {
+			c.Header("HX-Redirect", result.CheckoutURL)
+			c.Status(http.StatusOK)
+			return
+		}
+		switch result.Toast.Type {
 		case 0:
 			var msg string
 			var title string
-			if strings.Contains(toast.Message, "criado") {
+			if strings.Contains(result.Toast.Message, "criado") {
 				title = "Conta criada com sucesso!"
 				msg = "Seu usuário foi criado e você já pode entrar no sistema"
 			} else {
@@ -95,7 +100,7 @@ func UserRoutes(router *gin.Engine) {
 				"Title": title,
 			})
 		case 1:
-			c.Header("HX-Trigger", string(toast.ToJson()))
+			c.Header("HX-Trigger", string(result.Toast.ToJson()))
 			c.Status(http.StatusBadRequest)
 		}
 	})
@@ -109,7 +114,11 @@ func UserRoutes(router *gin.Engine) {
 
 func getUserForm(c *gin.Context) {
 	nonce, _ := c.Get("csp_nonce")
-	c.HTML(http.StatusOK, "user-form", gin.H{"CSPNonce": nonce.(string)})
+	priceID := c.Query("priceId")
+	c.HTML(http.StatusOK, "user-form", gin.H{
+		"CSPNonce": nonce.(string),
+		"PriceID":  priceID,
+	})
 }
 
 func getUsers(c *gin.Context) {
@@ -485,14 +494,20 @@ func microsoftRegister(c *gin.Context) {
 		PasswdConfirm: form.PasswdConfirm,
 	}
 
-	toast := user_service.Create(newUser)
+	result := user_service.Create(newUser)
 
-	if toast.Type == 0 { // Success
+	if result.CheckoutURL != "" {
+		c.SetCookie("pre_reg_token", "", -1, "", "", true, true)
+		c.Header("HX-Redirect", result.CheckoutURL)
+		return
+	}
+
+	if result.Toast.Type == 0 { // Success
 		c.SetCookie("pre_reg_token", "", -1, "", "", true, true)
 		c.Header("HX-Redirect", "/")
 	}
 
-	c.Header("HX-Trigger", string(toast.ToJson()))
+	c.Header("HX-Trigger", string(result.Toast.ToJson()))
 }
 
 func googleRegister(c *gin.Context) {
@@ -542,26 +557,20 @@ func googleRegister(c *gin.Context) {
 		PasswdConfirm: form.PasswdConfirm,
 	}
 
-	toast := user_service.Create(newUser)
+	result := user_service.Create(newUser)
 
-	if toast.Type == 0 { // Success
+	if result.CheckoutURL != "" {
+		c.SetCookie("pre_reg_token", "", -1, "", "", true, true)
+		c.Header("HX-Redirect", result.CheckoutURL)
+		return
+	}
+
+	if result.Toast.Type == 0 { // Success
 		// Clear pre-reg token
 		c.SetCookie("pre_reg_token", "", -1, "", "", true, true)
 
 		c.Header("HX-Redirect", "/")
-
-		// Send a toast to appear on the login page (via session/cookie or just rely on them logging in)
-		// Since we redirect, HTMX won't show the toast on the current page.
-		// But the user will see the login page.
-		// We can add a query param to login page to show success message if we wanted,
-		// but standard toast flow might be tricky with full redirect.
-		// However, user_service.Create might return "User sent for approval".
-
-		// Let's pass the toast via header so if it was an HTMX request that followed redirect it might show?
-		// Actually hx-boost isn't used there.
-
-		// For now, let's just trigger the toast. HTMX will handle the redirect.
 	}
 
-	c.Header("HX-Trigger", string(toast.ToJson()))
+	c.Header("HX-Trigger", string(result.Toast.ToJson()))
 }

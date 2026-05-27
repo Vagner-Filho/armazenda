@@ -152,6 +152,7 @@ test.describe('Entry Creation - Dependencies', () => {
       response.url().includes('/crop') && response.request().method() === 'POST'
     );
     await page.locator('dialog#cropFormDialog button[type="submit"]').evaluate(el => el.click());
+    await page.locator('.swal2-confirm').click();
     await cropResponse;
 
     // Wait for dialog to close
@@ -186,6 +187,7 @@ test.describe('Entry Creation - Dependencies', () => {
       response.url().includes('/field') && response.request().method() === 'POST'
     );
     await page.locator('dialog#fieldFormDialog button[type="submit"]').evaluate(el => el.click());
+    await page.locator('.swal2-confirm').click();
     await fieldResponse;
 
     // Wait for dialog to close
@@ -220,6 +222,7 @@ test.describe('Entry Creation - Dependencies', () => {
       response.url().includes('/vehicle') && response.request().method() === 'POST'
     );
     await page.locator('dialog#vehicleFormDialog button[type="submit"]').evaluate(el => el.click());
+    await page.locator('.swal2-confirm').click();
     await vehicleResponse;
 
     // Wait for dialog to close
