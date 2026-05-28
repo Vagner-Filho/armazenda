@@ -1,0 +1,292 @@
+package nfe_model
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/shopspring/decimal"
+)
+
+type nfeModel struct {
+	pool *pgxpool.Pool
+}
+
+var nfeModelImpl *nfeModel
+
+func InitNFeModel(pool *pgxpool.Pool) (*nfeModel, error) {
+	if pool == nil {
+		return nil, errors.New("pool cant be null")
+	}
+
+	if nfeModelImpl == nil {
+		nfeModelImpl = &nfeModel{
+			pool: pool,
+		}
+	}
+
+	return nfeModelImpl, nil
+}
+
+func GetNFeModel() *nfeModel {
+	if nfeModelImpl == nil {
+		panic("nfe model hasnt been initialized")
+	}
+	return nfeModelImpl
+}
+
+// FarmConfig represents the NFe configuration for a farm.
+type FarmConfig struct {
+	ID                           int
+	FarmID                       int
+	CertificatePath              string
+	CertificatePasswordEncrypted string
+	Environment                  int
+	Serie                        int
+	NextNumber                   int
+	TaxRegime                    int
+	EmitterType                  int
+	CNPJEmitter                  *string
+	CPFEmitter                   *string
+	IEEmitter                    string
+	EmitterUF                    string
+	DefaultModFrete              int
+}
+
+// GetFarmConfig returns the NFe configuration for a farm.
+func (m *nfeModel) GetFarmConfig(farmID uint32) (*FarmConfig, error) {
+	query := `
+		SELECT id, farm_id, certificate_path, certificate_password_encrypted,
+		       environment, serie, next_number, tax_regime, emitter_type,
+		       cnpj_emitter, cpf_emitter, ie_emitter, emitter_uf, default_mod_frete
+		FROM nfe_farm_config
+		WHERE farm_id = $1
+	`
+	row := m.pool.QueryRow(context.Background(), query, farmID)
+
+	var cfg FarmConfig
+	var cnpj, cpf *string
+	err := row.Scan(&cfg.ID, &cfg.FarmID, &cfg.CertificatePath, &cfg.CertificatePasswordEncrypted,
+		&cfg.Environment, &cfg.Serie, &cfg.NextNumber, &cfg.TaxRegime, &cfg.EmitterType,
+		&cnpj, &cpf, &cfg.IEEmitter, &cfg.EmitterUF, &cfg.DefaultModFrete)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get farm config: %w", err)
+	}
+
+	cfg.CNPJEmitter = cnpj
+	cfg.CPFEmitter = cpf
+	return &cfg, nil
+}
+
+// UpsertFarmConfig inserts or updates the NFe configuration for a farm.
+func (m *nfeModel) UpsertFarmConfig(cfg FarmConfig) error {
+	query := `
+		INSERT INTO nfe_farm_config (
+			farm_id, certificate_path, certificate_password_encrypted, environment,
+			serie, next_number, tax_regime, emitter_type, cnpj_emitter, cpf_emitter,
+			ie_emitter, emitter_uf, default_mod_frete
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		ON CONFLICT (farm_id) DO UPDATE SET
+			certificate_path = EXCLUDED.certificate_path,
+			certificate_password_encrypted = EXCLUDED.certificate_password_encrypted,
+			environment = EXCLUDED.environment,
+			serie = EXCLUDED.serie,
+			next_number = EXCLUDED.next_number,
+			tax_regime = EXCLUDED.tax_regime,
+			emitter_type = EXCLUDED.emitter_type,
+			cnpj_emitter = EXCLUDED.cnpj_emitter,
+			cpf_emitter = EXCLUDED.cpf_emitter,
+			ie_emitter = EXCLUDED.ie_emitter,
+			emitter_uf = EXCLUDED.emitter_uf,
+			default_mod_frete = EXCLUDED.default_mod_frete,
+			modified_at = CURRENT_TIMESTAMP
+	`
+	_, err := m.pool.Exec(context.Background(), query,
+		cfg.FarmID, cfg.CertificatePath, cfg.CertificatePasswordEncrypted,
+		cfg.Environment, cfg.Serie, cfg.NextNumber, cfg.TaxRegime, cfg.EmitterType,
+		cfg.CNPJEmitter, cfg.CPFEmitter, cfg.IEEmitter, cfg.EmitterUF, cfg.DefaultModFrete)
+	return err
+}
+
+// ProductConfig represents the NFe product configuration.
+type ProductConfig struct {
+	ID          int
+	FarmID      int
+	ProductID   int
+	NCM         string
+	DefaultCFOP string
+	DefaultCEST *string
+	Unit        string
+	Description *string
+	ICMSCST     *string
+	PISCST      *string
+	COFINSCST   *string
+}
+
+// GetProductConfig returns the NFe configuration for a product.
+func (m *nfeModel) GetProductConfig(farmID uint32, productID uint8) (*ProductConfig, error) {
+	query := `
+		SELECT id, farm_id, product_id, ncm, default_cfop, default_cest,
+		       unit, description, default_icms_cst, default_pis_cst, default_cofins_cst
+		FROM nfe_product_config
+		WHERE farm_id = $1 AND product_id = $2
+	`
+	row := m.pool.QueryRow(context.Background(), query, farmID, productID)
+
+	var cfg ProductConfig
+	var cest, desc, icmsCst, pisCst, cofinsCst *string
+	err := row.Scan(&cfg.ID, &cfg.FarmID, &cfg.ProductID, &cfg.NCM, &cfg.DefaultCFOP,
+		&cest, &cfg.Unit, &desc, &icmsCst, &pisCst, &cofinsCst)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get product config: %w", err)
+	}
+
+	cfg.DefaultCEST = cest
+	cfg.Description = desc
+	cfg.ICMSCST = icmsCst
+	cfg.PISCST = pisCst
+	cfg.COFINSCST = cofinsCst
+	return &cfg, nil
+}
+
+// AllocateNumber atomically allocates a new invoice number for a farm/serie.
+func (m *nfeModel) AllocateNumber(farmID uint32, serie int) (int, error) {
+	var number int
+	err := m.pool.QueryRow(context.Background(), "SELECT nfe_allocate_number($1, $2)", farmID, serie).Scan(&number)
+	if err != nil {
+		return 0, fmt.Errorf("failed to allocate number: %w", err)
+	}
+	return number, nil
+}
+
+// Invoice represents a tracked NF-e invoice.
+type Invoice struct {
+	ID                 int
+	DepartureID        uint32
+	AccessKey          string
+	Serie              int
+	Number             int
+	Status             string
+	CFOP               string
+	NCM                string
+	QuantityKG         decimal.Decimal
+	UnitPrice          decimal.Decimal
+	TotalValue         decimal.Decimal
+	ICMSValue          *decimal.Decimal
+	XMLSigned          *string
+	XMLAuthorized      *string
+	Protocol           *string
+	SefazStatusCode    *string
+	SefazMotive        *string
+	RejectionReason    *string
+	CancellationReason *string
+	RetryCount         int
+	CreatedAt          interface{}
+	SignedAt           interface{}
+	SentAt             interface{}
+	AuthorizedAt       interface{}
+}
+
+// CreateInvoice creates a new invoice record.
+func (m *nfeModel) CreateInvoice(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal) (int, error) {
+	query := `
+		INSERT INTO nfe_invoice (departure_id, access_key, serie, number, status, cfop, ncm, quantity_kg, unit_price, total_value)
+		VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9)
+		RETURNING id
+	`
+	var id int
+	err := m.pool.QueryRow(context.Background(), query,
+		departureID, accessKey, serie, number, cfop, ncm, quantityKG, unitPrice, totalValue).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create invoice: %w", err)
+	}
+	return id, nil
+}
+
+// UpdateInvoiceXML updates the signed XML of an invoice.
+func (m *nfeModel) UpdateInvoiceXML(id int, xmlSigned string) error {
+	query := `
+		UPDATE nfe_invoice
+		SET xml_signed = $2, status = 'signed', signed_at = CURRENT_TIMESTAMP
+		WHERE id = $1
+	`
+	_, err := m.pool.Exec(context.Background(), query, id, xmlSigned)
+	return err
+}
+
+// UpdateInvoiceStatus updates the status of an invoice.
+func (m *nfeModel) UpdateInvoiceStatus(id int, status, protocol, sefazCode, sefazMotive string) error {
+	query := `
+		UPDATE nfe_invoice
+		SET status = $2, protocol = $3, sefaz_status_code = $4, sefaz_motive = $5,
+		    authorized_at = CASE WHEN $2 = 'authorized' THEN CURRENT_TIMESTAMP ELSE authorized_at END
+		WHERE id = $1
+	`
+	_, err := m.pool.Exec(context.Background(), query, id, status, protocol, sefazCode, sefazMotive)
+	return err
+}
+
+// GetInvoiceByDeparture returns the invoice for a departure.
+func (m *nfeModel) GetInvoiceByDeparture(departureID uint32) (*Invoice, error) {
+	query := `
+		SELECT id, departure_id, access_key, serie, number, status, cfop, ncm,
+		       quantity_kg, unit_price, total_value, icms_value, xml_signed, xml_authorized,
+		       protocol, sefaz_status_code, sefaz_motive, rejection_reason, cancellation_reason,
+		       retry_count, created_at, signed_at, sent_at, authorized_at
+		FROM nfe_invoice
+		WHERE departure_id = $1
+		ORDER BY id DESC
+		LIMIT 1
+	`
+	row := m.pool.QueryRow(context.Background(), query, departureID)
+
+	var inv Invoice
+	var icmsValue *decimal.Decimal
+	var xmlSigned, xmlAuthorized, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason *string
+	err := row.Scan(&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Serie, &inv.Number, &inv.Status,
+		&inv.CFOP, &inv.NCM, &inv.QuantityKG, &inv.UnitPrice, &inv.TotalValue, &icmsValue,
+		&xmlSigned, &xmlAuthorized, &protocol, &sefazCode, &sefazMotive, &rejectionReason,
+		&cancellationReason, &inv.RetryCount, &inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get invoice: %w", err)
+	}
+
+	inv.ICMSValue = icmsValue
+	inv.XMLSigned = xmlSigned
+	inv.XMLAuthorized = xmlAuthorized
+	inv.Protocol = protocol
+	inv.SefazStatusCode = sefazCode
+	inv.SefazMotive = sefazMotive
+	inv.RejectionReason = rejectionReason
+	inv.CancellationReason = cancellationReason
+	return &inv, nil
+}
+
+// GetMunicipio returns an IBGE municipality by name and UF.
+func (m *nfeModel) GetMunicipio(name, uf string) (string, error) {
+	query := `
+		SELECT code FROM ibge_municipio
+		WHERE name ILIKE $1 AND uf = $2
+		LIMIT 1
+	`
+	var code string
+	err := m.pool.QueryRow(context.Background(), query, name, uf).Scan(&code)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", nil
+		}
+		return "", err
+	}
+	return code, nil
+}

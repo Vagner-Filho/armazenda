@@ -705,6 +705,39 @@ func (bm *PersonModel) GetPeopleModifiedSince(since time.Time, farm uint32) ([]e
 	return people, nil
 }
 
+// GetPersonById returns a person (legal or natural) by ID.
+func (pm *PersonModel) GetPersonById(id uint32) (entity_public.PersonDisplay, *model_error.ModelError) {
+	// Try legal person first
+	legalPerson, legalErr := pm.GetLegalPersonById(id)
+	if legalErr == nil {
+		return entity_public.PersonDisplay{
+			Type:     2,
+			Name:     legalPerson.CompanyName,
+			Document: legalPerson.Cnpj,
+			IE:       legalPerson.Person.Ie,
+			Id:       legalPerson.Person.Id,
+		}, nil
+	}
+
+	// Try natural person
+	naturalPerson, naturalErr := pm.GetNaturalPersonById(id)
+	if naturalErr == nil {
+		return entity_public.PersonDisplay{
+			Type:     1,
+			Name:     naturalPerson.Name,
+			Document: naturalPerson.Cpf,
+			IE:       naturalPerson.Person.Ie,
+			Id:       naturalPerson.Person.Id,
+		}, nil
+	}
+
+	// Return the first error
+	if legalErr != nil {
+		return entity_public.PersonDisplay{}, legalErr
+	}
+	return entity_public.PersonDisplay{}, naturalErr
+}
+
 // GetModifiedCount returns the count of people modified since the given timestamp
 func (bm *PersonModel) GetModifiedCount(since time.Time, farm uint32) (int, error) {
 	query := `SELECT COUNT(*) FROM person WHERE farm = @farm AND modified_at > @since`

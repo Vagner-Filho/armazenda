@@ -39,6 +39,7 @@ func InitDb(c *pgx.Conn) {
 	seedProducts(c)
 	seedDefaultHumidityProgression(c)
 	seedDefaultPersonConfig(c)
+	seedMunicipios(c)
 
 	// 3. All procedures
 	execSchemaFile(c, "schema/procedures.sql")
