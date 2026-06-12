@@ -1,0 +1,22 @@
+{{ define "filter-chips" }}
+<div id="filter-chips"{{ if .OOB }} hx-swap-oob="true"{{ end }} class="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+{{ if .Items }}
+  {{ range .Items }}
+    <span class="inline-flex items-stretch rounded-lg bg-white/10 border border-white/15 text-xs text-white overflow-hidden hover:bg-white/15 transition-colors">
+      <span class="flex items-center px-2.5 py-1 bg-white/5 text-white/60 border-r border-white/10">{{ .Label }}</span>
+      <span class="flex items-center px-2.5 py-1 font-semibold max-w-48 truncate">{{ .Value }}</span>
+      <button type="button" data-remove-chip="{{ .Key }}" data-remove-chip-form="report-filters-form"
+        class="flex items-center justify-center px-1.5 text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-colors border-l border-white/10"
+        aria-label="Remover filtro {{ .Label }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </span>
+  {{ end }}
+{{ else }}
+  <span class="text-white/40 text-xs italic">Nenhum filtro aplicado</span>
+{{ end }}
+</div>
+{{ end }}

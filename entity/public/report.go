@@ -17,6 +17,7 @@ type ReportFilter struct {
 	OriginId     string    `form:"origin"`
 	RecipientId  string    `form:"recipient"`
 	Type         uint8     `form:"type"`
+	FieldId      uint16    `form:"field"`
 }
 
 type reportFilterCollection map[string]func(rf ReportFilter) string

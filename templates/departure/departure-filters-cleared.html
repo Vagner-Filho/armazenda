@@ -1,0 +1,7 @@
+{{ define "departure-filters-cleared" }}
+{{ template "departure-filter-form" .Form }}
+{{ template "departure-filter-chips" .Chips }}
+<main id="list" hx-swap-oob="true" class="overflow-hidden">
+  {{ template "departure-table" .Content }}
+</main>
+{{ end }}

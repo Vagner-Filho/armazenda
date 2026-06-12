@@ -55,6 +55,7 @@ func UserRoutes(router *gin.Engine) {
 		c.SetCookie("username", "", -1, "", "", true, false)
 		c.SetCookie("farmId", "", -1, "", "", true, false)
 
+		c.Header("HX-Redirect", "/")
 		c.Status(http.StatusOK)
 	})
 

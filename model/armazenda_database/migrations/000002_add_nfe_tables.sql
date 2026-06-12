@@ -159,9 +159,9 @@ CREATE TABLE IF NOT EXISTS nfe_invoice (
     cancelled_at TIMESTAMP WITHOUT TIME ZONE
 );
 
--- Unique constraint per farm: serie + number must be unique within the same farm
--- We derive farm from departure, so we use a partial unique index approach
--- or enforce at application level. For simplicity, we add a composite unique
--- that includes farm_id via a function index.
-CREATE UNIQUE INDEX IF NOT EXISTS idx_nfe_invoice_farm_serie_number
-ON nfe_invoice (serie, number, (SELECT farm FROM departure WHERE id = departure_id));
+-- Uniqueness of (farm, serie, number) is enforced at application level for now.
+-- (A subquery-based UNIQUE INDEX was attempted here but PostgreSQL does not
+-- allow subqueries inside CREATE INDEX. To enforce at DB level later, add a
+-- denormalized farm_id column on nfe_invoice and add UNIQUE (farm_id, serie, number).)
+CREATE INDEX IF NOT EXISTS idx_nfe_invoice_serie_number
+ON nfe_invoice (serie, number);

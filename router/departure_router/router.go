@@ -165,23 +165,14 @@ func filterDepartures(c *gin.Context) {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}
 
-	if len(departures) == 0 {
-		c.HTML(http.StatusOK, "no-departure-found-for-filter", gin.H{})
-		return
-	}
+	response := departure_view.BuildDepartureFilterApplyResponse(departureFilter, departures, total, page, farm)
+	c.HTML(http.StatusOK, "departure-filter-apply-response", response)
+}
 
-	pageSize := 10
-	totalPages := (total + pageSize - 1) / pageSize
-
-	c.HTML(http.StatusOK, "departure-table", gin.H{
-		"Departures":  departures,
-		"TotalPages":  totalPages,
-		"CurrentPage": page,
-		"HasPrev":     page > 1,
-		"PrevPage":    page - 1,
-		"HasNext":     page < totalPages,
-		"NextPage":    page + 1,
-	})
+func getDepartureFiltersForm(c *gin.Context) {
+	sid, _ := c.Cookie("session_id")
+	farm := user_service.GetFarmFromToken(sid)
+	c.HTML(http.StatusOK, "departure-filters-cleared", departure_view.GetClearedDepartureView(farm))
 }
 
 func getDeparturePdf(c *gin.Context) {
@@ -350,6 +341,7 @@ func getDepartureDraftList(c *gin.Context) {
 
 func UseDepartureRoutes(router *gin.Engine) {
 	router.POST("/departure/filter", filterDepartures)
+	router.GET("/departure/filters", getDepartureFiltersForm)
 	router.GET("/departure/list", getDepartureContent)
 	router.GET("/departure/form", getDepartureForm)
 	router.GET("/departure/form/draft/:id", getDepartureFormFromDraft)

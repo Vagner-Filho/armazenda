@@ -1,14 +1,14 @@
 {{ define "filter-report-date" }}
 <fieldset class="filter-card">
-    <legend class="w-full text-center font-medium text-sm text-white/90">
+    <legend class="w-full text-center text-xs font-medium uppercase tracking-wider text-white/70">
         Data da operação
     </legend>
     <div class="flex flex-col-reverse w-full sm:max-w-40 lg:max-w-44">
-        <input type="datetime-local" id="startDate" name="startDate" class="text-sm peer w-full bg-slate-800/80 text-white/90 border-white/20" aria-placeholder="Data de recebimento mínimo" />
+        <input type="datetime-local" id="startDate" name="startDate" class="text-sm peer w-full bg-white/10 text-white border-white/20" aria-placeholder="Data de recebimento mínimo" />
         <label for="startDate" class="px-2 text-xs text-white/80 peer-focus:text-green-400">de:</label>
     </div>
     <div class="flex flex-col-reverse w-full sm:max-w-40 lg:max-w-44">
-        <input type="datetime-local" id="endDate" name="endDate" class="text-sm peer w-full bg-slate-800/80 text-white/90 border-white/20" aria-placeholder="Data de recebimento máximo" />
+        <input type="datetime-local" id="endDate" name="endDate" class="text-sm peer w-full bg-white/10 text-white border-white/20" aria-placeholder="Data de recebimento máximo" />
         <label for="endDate" class="px-2 text-xs text-white/80 peer-focus:text-green-400">até:</label>
     </div>
 </fieldset>

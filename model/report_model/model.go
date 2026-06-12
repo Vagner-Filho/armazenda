@@ -47,7 +47,7 @@ var availableReportFilters = map[string]func(ef entity_public.ReportFilter) stri
 		return fmt.Sprintf("r.date <= '%v'", ef.EndDate.Format(utils.DBTimeWithoutTimeZone))
 	},
 	"Vehicle": func(ef entity_public.ReportFilter) string {
-		return fmt.Sprintf("r.vehicle = '%s'", ef.Vehicle)
+		return fmt.Sprintf("r.vehicle_id = %s::int", ef.Vehicle)
 	},
 	"Product": func(ef entity_public.ReportFilter) string {
 		return "r.product_id = " + strconv.FormatInt(int64(ef.Product), 10)
@@ -73,6 +73,9 @@ var availableReportFilters = map[string]func(ef entity_public.ReportFilter) stri
 	"Type": func(rf entity_public.ReportFilter) string {
 		return fmt.Sprintf("r.operation_type = %v", rf.Type)
 	},
+	"FieldId": func(ef entity_public.ReportFilter) string {
+		return fmt.Sprintf("r.field_id = %v", ef.FieldId)
+	},
 }
 
 func buildReportWhereClause(rf entity_public.ReportFilter) string {
@@ -96,7 +99,7 @@ func buildReportWhereClause(rf entity_public.ReportFilter) string {
 
 func getReportSubquery() string {
 	return `
-	FROM (SELECT e.id, 1 AS operation_type, p.name, v.plate AS vehicle, e.netweight, e.arrivaldate AS date, coalesce(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, p.id AS product_id, '-' AS recipient_name, NULL AS recipient_id
+	FROM (SELECT e.id, 1 AS operation_type, p.name, v.plate AS vehicle, e.netweight, e.arrivaldate AS date, coalesce(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, p.id AS product_id, '-' AS recipient_name, NULL AS recipient_id, e.field AS field_id, v.id AS vehicle_id
 		FROM entry e
 		JOIN crop c ON e.crop = c.id
 		JOIN product p ON c.product = p.id
@@ -107,7 +110,7 @@ func getReportSubquery() string {
 		JOIN vehicle v ON v.id = e.vehicle
 		WHERE e.farm = @userFarm AND ie.entry_id IS NULL
 		UNION ALL
-	SELECT d.id, 2 AS operation_type, p.name, v.plate AS vehicle, d.netweight , d.departuredate AS date, coalesce(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, p.id AS product_id, COALESCE(prs_recipient.name, 'Própria') AS recipient_name, prs_recipient.personid AS recipient_id
+	SELECT d.id, 2 AS operation_type, p.name, v.plate AS vehicle, d.netweight , d.departuredate AS date, coalesce(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, p.id AS product_id, COALESCE(prs_recipient.name, 'Própria') AS recipient_name, prs_recipient.personid AS recipient_id, NULL::SMALLINT AS field_id, v.id AS vehicle_id
 		FROM departure d
 		JOIN crop c ON d.crop = c.id
 		JOIN product p ON c.product = p.id
@@ -173,7 +176,7 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 			COALESCE(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, '-' AS recipient_name, NULL AS recipient_id, e.grossweight, e.tare, COALESCE(a.city, 'N/A') AS city,
 			COALESCE(a.state, 'N/A') AS state, COALESCE(ea.humidity, 0) AS humidity,
 			COALESCE(ea.damage, 0) AS damage, COALESCE(ea.impurity, 0) AS impurity, p.id AS product_id,
-			COALESCE(ea.humidity_discount_modifier, 1.15) AS humidity_discount, COALESCE(et.applied_tax, 0.0) AS service_tax, COALESCE(et.weight, 0.0) AS tax_weight
+			COALESCE(ea.humidity_discount_modifier, 1.15) AS humidity_discount, COALESCE(et.applied_tax, 0.0) AS service_tax, COALESCE(et.weight, 0.0) AS tax_weight, e.field AS field_id, v.id AS vehicle_id
 			FROM entry e
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
@@ -193,7 +196,7 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 			COALESCE(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, COALESCE(prs_recipient.name, 'Pŕopria') AS recipient_name, prs_recipient.personid AS recipient_id, d.grossweight, d.tare, COALESCE(a.city, 'N/A') AS city,
 			COALESCE(a.state, 'N/A') AS state, 0 AS humidity,
 			0 AS damage, 0 AS impurity, p.id AS product_id,
-			1 AS humidity_discount, 0.0 AS service_tax, 0.0 AS tax_weight
+			1 AS humidity_discount, 0.0 AS service_tax, 0.0 AS tax_weight, NULL::SMALLINT AS field_id, v.id AS vehicle_id
 			FROM departure d
 			JOIN crop c ON d.crop = c.id
 			JOIN product p ON c.product = p.id
