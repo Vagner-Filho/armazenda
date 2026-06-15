@@ -10,7 +10,69 @@ import (
 	product_service "armazenda/service/product"
 	"armazenda/service/vehicle_service"
 	"armazenda/view"
+	"armazenda/view/filters"
+	"fmt"
 )
+
+func BuildEntryChips(rf entity_public.EntryFilter, farm uint32) []filters.ChipEntry {
+	chips := []filters.ChipEntry{}
+
+	if rf.Product != 0 {
+		products, _ := product_service.GetProducts()
+		for _, p := range products {
+			if p.Id == rf.Product {
+				chips = append(chips, filters.ChipEntry{Key: "product", Label: "Grão", Value: p.Name})
+				break
+			}
+		}
+	}
+	if rf.Crop != 0 {
+		crops, _ := crop_service.GetCropsByFarm(farm)
+		for _, c := range crops {
+			if c.Id == rf.Crop {
+				chips = append(chips, filters.ChipEntry{Key: "crop", Label: "Safra", Value: c.Name})
+				break
+			}
+		}
+	}
+	if rf.Field != 0 {
+		fields, _ := field_service.GetFieldsByFarm(farm)
+		for _, f := range fields {
+			if f.Id == rf.Field {
+				chips = append(chips, filters.ChipEntry{Key: "field", Label: "Talhão", Value: f.Name})
+				break
+			}
+		}
+	}
+	if rf.Vehicle != "" {
+		vehicles, _ := vehicle_service.GetVehiclesByFarm(farm)
+		display := rf.Vehicle
+		for _, v := range vehicles {
+			if fmt.Sprintf("%v", v.Id) == rf.Vehicle {
+				display = v.Plate
+				if v.Name != "" {
+					display = v.Plate + " | " + v.Name
+				}
+				break
+			}
+		}
+		chips = append(chips, filters.ChipEntry{Key: "vehiclePlate", Label: "Veículo", Value: display})
+	}
+	if rf.NetWeightMin != 0 {
+		chips = append(chips, filters.ChipEntry{Key: "netWeightMin", Label: "Peso mín.", Value: fmt.Sprintf("%.0f kg", rf.NetWeightMin)})
+	}
+	if rf.NetWeightMax != 0 {
+		chips = append(chips, filters.ChipEntry{Key: "netWeightMax", Label: "Peso máx.", Value: fmt.Sprintf("%.0f kg", rf.NetWeightMax)})
+	}
+	if !rf.ArrivalDateMin.IsZero() {
+		chips = append(chips, filters.ChipEntry{Key: "arrivalDateMin", Label: "Início", Value: rf.ArrivalDateMin.Format("02/01/2006 15:04")})
+	}
+	if !rf.ArrivalDateMax.IsZero() {
+		chips = append(chips, filters.ChipEntry{Key: "arrivalDateMax", Label: "Fim", Value: rf.ArrivalDateMax.Format("02/01/2006 15:04")})
+	}
+
+	return chips
+}
 
 type entryFilters struct {
 	view.BaseTemplateData
@@ -21,16 +83,76 @@ type entryFilters struct {
 
 type entryContent struct {
 	view.BaseTemplateData
-	Entries     []entity_public.DisplayEntry
-	Drafts      []entity_public.DisplayEntryDraft
-	Filters     entryFilters
-	NoContent   bool
+	Entries      []entity_public.DisplayEntry
+	Drafts       []entity_public.DisplayEntryDraft
+	Filters      entryFilters
+	AppliedChips filters.FilterChips
+	NoContent    bool
+	CurrentPage  int
+	TotalPages   int
+	NextPage     int
+	PrevPage     int
+	HasNext      bool
+	HasPrev      bool
+}
+
+type EntryFilterApplyResponse struct {
+	view.BaseTemplateData
+	Chips      filters.FilterChips
+	Entries    []entity_public.DisplayEntry
+	TotalPages int
 	CurrentPage int
-	TotalPages  int
-	NextPage    int
-	PrevPage    int
-	HasNext     bool
-	HasPrev     bool
+	HasNext    bool
+	HasPrev    bool
+	NextPage   int
+	PrevPage   int
+	NoResults  bool
+}
+
+type EntryClearedView struct {
+	view.BaseTemplateData
+	Form    entryFilters
+	Chips   filters.FilterChips
+	Content entryContent
+}
+
+func BuildEntryFilterApplyResponse(filter entity_public.EntryFilter, entries []entity_public.DisplayEntry, total int, page int, farm uint32) EntryFilterApplyResponse {
+	pageSize := 10
+	totalPages := 0
+	if total > 0 {
+		totalPages = (total + pageSize - 1) / pageSize
+	}
+	hasNext := page < totalPages
+	hasPrev := page > 1
+	nextPage := page + 1
+	if !hasNext {
+		nextPage = page
+	}
+	prevPage := page - 1
+	if !hasPrev {
+		prevPage = page
+	}
+	return EntryFilterApplyResponse{
+		Chips:       filters.FilterChips{Items: BuildEntryChips(filter, farm), OOB: true},
+		Entries:     entries,
+		TotalPages:  totalPages,
+		CurrentPage: page,
+		HasNext:     hasNext,
+		HasPrev:     hasPrev,
+		NextPage:    nextPage,
+		PrevPage:    prevPage,
+		NoResults:   len(entries) == 0,
+	}
+}
+
+func GetClearedEntryView(farm uint32) EntryClearedView {
+	form := GetFiltersForm(farm)
+	content := GetEntryContent(farm, 1)
+	return EntryClearedView{
+		Form:    form,
+		Chips:   filters.FilterChips{Items: []filters.ChipEntry{}, OOB: true},
+		Content: content,
+	}
 }
 
 func GetAllEntryDisplay(farm uint32, page int) ([]entity_public.DisplayEntry, int) {
@@ -90,16 +212,17 @@ func GetEntryContent(farm uint32, page int) entryContent {
 	}
 
 	return entryContent{
-		Entries:     entries,
-		Drafts:      drafts,
-		NoContent:   len(entries) == 0 && len(drafts) == 0,
-		Filters:     GetFiltersForm(farm),
-		CurrentPage: page,
-		TotalPages:  totalPages,
-		NextPage:    nextPage,
-		PrevPage:    prevPage,
-		HasNext:     hasNext,
-		HasPrev:     hasPrev,
+		Entries:      entries,
+		Drafts:       drafts,
+		NoContent:    len(entries) == 0 && len(drafts) == 0,
+		Filters:      GetFiltersForm(farm),
+		AppliedChips: filters.FilterChips{Items: []filters.ChipEntry{}},
+		CurrentPage:  page,
+		TotalPages:   totalPages,
+		NextPage:     nextPage,
+		PrevPage:     prevPage,
+		HasNext:      hasNext,
+		HasPrev:      hasPrev,
 	}
 }
 

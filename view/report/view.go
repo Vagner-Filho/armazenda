@@ -9,6 +9,8 @@ import (
 	"armazenda/service/report_service"
 	"armazenda/service/vehicle_service"
 	"armazenda/view"
+	"armazenda/view/filters"
+	"fmt"
 	"reflect"
 	"strconv"
 	"time"
@@ -16,16 +18,105 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+func BuildAppliedChips(rf entity_public.ReportFilter, farm uint32) []filters.ChipEntry {
+	chips := []filters.ChipEntry{}
+
+	if rf.Type != 0 {
+		v := ""
+		if rf.Type == 1 {
+			v = "Entrada"
+		} else if rf.Type == 2 {
+			v = "Saída"
+		}
+		if v != "" {
+			chips = append(chips, filters.ChipEntry{Key: "type", Label: "Operação", Value: v})
+		}
+	}
+	if rf.Product != 0 {
+		products, _ := product_service.GetProducts()
+		for _, p := range products {
+			if p.Id == rf.Product {
+				chips = append(chips, filters.ChipEntry{Key: "product", Label: "Grão", Value: p.Name})
+				break
+			}
+		}
+	}
+	if rf.OriginId != "" {
+		if rf.OriginId == "NULL" {
+			chips = append(chips, filters.ChipEntry{Key: "origin", Label: "Origem", Value: "Própria"})
+		} else {
+			people, _ := person_service.GetPeopleByFarm(farm)
+			for _, p := range people {
+				if p.Id != nil && fmt.Sprintf("%v", *p.Id) == rf.OriginId {
+					chips = append(chips, filters.ChipEntry{Key: "origin", Label: "Origem", Value: p.Name})
+					break
+				}
+			}
+		}
+	}
+	if rf.RecipientId != "" {
+		if rf.RecipientId == "NULL" {
+			chips = append(chips, filters.ChipEntry{Key: "recipient", Label: "Destino", Value: "Própria"})
+		} else {
+			people, _ := person_service.GetPeopleByFarm(farm)
+			for _, p := range people {
+				if p.Id != nil && fmt.Sprintf("%v", *p.Id) == rf.RecipientId {
+					chips = append(chips, filters.ChipEntry{Key: "recipient", Label: "Destino", Value: p.Name})
+					break
+				}
+			}
+		}
+	}
+	if rf.FieldId != 0 {
+		fields, _ := field_service.GetFieldsByFarm(farm)
+		for _, f := range fields {
+			if f.Id == rf.FieldId {
+				chips = append(chips, filters.ChipEntry{Key: "field", Label: "Talhão", Value: f.Name})
+				break
+			}
+		}
+	}
+	if rf.Vehicle != "" {
+		vehicles, _ := vehicle_service.GetVehiclesByFarm(farm)
+		display := rf.Vehicle
+		for _, v := range vehicles {
+			if fmt.Sprintf("%v", v.Id) == rf.Vehicle {
+				display = v.Plate
+				if v.Name != "" {
+					display = v.Plate + " | " + v.Name
+				}
+				break
+			}
+		}
+		chips = append(chips, filters.ChipEntry{Key: "vehiclePlate", Label: "Veículo", Value: display})
+	}
+	if rf.NetWeightMin != 0 {
+		chips = append(chips, filters.ChipEntry{Key: "netWeightMin", Label: "Peso mín.", Value: fmt.Sprintf("%.0f kg", rf.NetWeightMin)})
+	}
+	if rf.NetWeightMax != 0 {
+		chips = append(chips, filters.ChipEntry{Key: "netWeightMax", Label: "Peso máx.", Value: fmt.Sprintf("%.0f kg", rf.NetWeightMax)})
+	}
+	if !rf.StartDate.IsZero() {
+		chips = append(chips, filters.ChipEntry{Key: "startDate", Label: "Início", Value: rf.StartDate.Format("02/01/2006 15:04")})
+	}
+	if !rf.EndDate.IsZero() {
+		chips = append(chips, filters.ChipEntry{Key: "endDate", Label: "Fim", Value: rf.EndDate.Format("02/01/2006 15:04")})
+	}
+
+	return chips
+}
+
 type reportView struct {
 	view.BaseTemplateData
 	Products []entity_public.Product
 	Vehicles []entity_public.Vehicle
 	Fields   map[string][]entity_public.Field
 	reportContent
-	StartDate time.Time `form:"initialDate" binding:"required" time_format:"2006-01-02T15:04"`
-	EndDate   time.Time `form:"endDate" binding:"required" time_format:"2006-01-02T15:04"`
-	People    []entity_public.PersonOption
-	Stats     []entity_public.StatCard
+	StartDate    time.Time `form:"initialDate" binding:"required" time_format:"2006-01-02T15:04"`
+	EndDate      time.Time `form:"endDate" binding:"required" time_format:"2006-01-02T15:04"`
+	People       []entity_public.PersonOption
+	Stats        []entity_public.StatCard
+	AppliedChips filters.FilterChips
 }
 
 type reportContent struct {
@@ -40,6 +131,7 @@ type reportContent struct {
 	PrevPage       int
 	HasNext        bool
 	HasPrev        bool
+	OOB            bool
 }
 
 func GetReportBalance(report []entity_public.ReportDisplay) (entry float64, departure float64, balance float64) {
@@ -108,16 +200,40 @@ func GetReportPage(farm uint32, page int) reportView {
 			HasNext:        hasNext,
 			HasPrev:        hasPrev,
 		},
+		AppliedChips: filters.FilterChips{Items: []filters.ChipEntry{}},
 	}
 }
 
-func FilterReport(rf entity_public.ReportFilter, farm uint32, page int) (reportContent, *entity_public.Toast) {
-	report, totalCount, entryAmount, departureAmount, balance, toast := report_service.FilterReport(rf, farm, page)
-	if toast != nil {
-		return reportContent{}, toast
+type ReportFiltersForm struct {
+	Vehicles []entity_public.Vehicle
+	Fields   map[string][]entity_public.Field
+	People   []entity_public.PersonOption
+}
+
+type ClearedReportView struct {
+	Form    ReportFiltersForm
+	Chips   filters.FilterChips
+	Content reportContent
+}
+
+func GetReportFiltersData(farm uint32) ReportFiltersForm {
+	vehicles, _ := vehicle_service.GetVehiclesByFarm(farm)
+	fields, _ := field_service.GetFieldsByFarm(farm)
+	people, _ := person_service.GetPeopleByFarm(farm)
+	return ReportFiltersForm{
+		Vehicles: vehicles,
+		Fields: map[string][]entity_public.Field{
+			"Fields": fields,
+		},
+		People: people,
 	}
-	currentPage, totalPages, nextPage, prevPage, hasNext, hasPrev := buildReportPagination(page, totalCount)
-	return reportContent{
+}
+
+func GetClearedReport(farm uint32, cspNonce string) ClearedReportView {
+	form := GetReportFiltersData(farm)
+	report, totalCount, entryAmount, departureAmount, balance, _ := report_service.GetReport(entity_public.ReportFilter{}, farm, 1)
+	currentPage, totalPages, nextPage, prevPage, hasNext, hasPrev := buildReportPagination(1, totalCount)
+	content := reportContent{
 		Operations:     report,
 		EntryTotal:     entryAmount,
 		DepartureTotal: departureAmount,
@@ -128,6 +244,44 @@ func FilterReport(rf entity_public.ReportFilter, farm uint32, page int) (reportC
 		PrevPage:       prevPage,
 		HasNext:        hasNext,
 		HasPrev:        hasPrev,
+		OOB:            true,
+	}
+	content.CSPNonce = cspNonce
+	return ClearedReportView{
+		Form:    form,
+		Chips:   filters.FilterChips{Items: []filters.ChipEntry{}, OOB: true},
+		Content: content,
+	}
+}
+
+type FilterApplyResponse struct {
+	Chips   filters.FilterChips
+	Content reportContent
+}
+
+func FilterReport(rf entity_public.ReportFilter, farm uint32, page int, cspNonce string) (FilterApplyResponse, *entity_public.Toast) {
+	report, totalCount, entryAmount, departureAmount, balance, toast := report_service.FilterReport(rf, farm, page)
+	if toast != nil {
+		return FilterApplyResponse{}, toast
+	}
+	currentPage, totalPages, nextPage, prevPage, hasNext, hasPrev := buildReportPagination(page, totalCount)
+	content := reportContent{
+		Operations:     report,
+		EntryTotal:     entryAmount,
+		DepartureTotal: departureAmount,
+		Balance:        balance,
+		CurrentPage:    currentPage,
+		TotalPages:     totalPages,
+		NextPage:       nextPage,
+		PrevPage:       prevPage,
+		HasNext:        hasNext,
+		HasPrev:        hasPrev,
+		OOB:            true,
+	}
+	content.CSPNonce = cspNonce
+	return FilterApplyResponse{
+		Chips:   filters.FilterChips{Items: BuildAppliedChips(rf, farm), OOB: true},
+		Content: content,
 	}, nil
 }
 
@@ -228,6 +382,14 @@ func GetFullReport(rf entity_public.ReportFilter, farm uint32) (FullReportView, 
 			case "RecipientId":
 				if len(report) > 0 && report[0].RecipientId != nil {
 					appliedFilters["Destino"] = report[0].RecipientName
+				}
+			case "FieldId":
+				fields, _ := field_service.GetFieldsByFarm(farm)
+				for _, f := range fields {
+					if f.Id == rf.FieldId {
+						appliedFilters["Talhão"] = f.Name
+						break
+					}
 				}
 			}
 		}
