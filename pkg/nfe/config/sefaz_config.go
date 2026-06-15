@@ -41,6 +41,8 @@ type CertificateConfig struct {
 // TLSConfig returns the TLS configuration for mTLS communication with SEFAZ.
 func (c SefazConfig) TLSConfig() *tls.Config {
 	return &tls.Config{
-		MinVersion: tls.VersionTLS12,
+		MinVersion:         tls.VersionTLS12,
+		InsecureSkipVerify: c.Environment == EnvironmentHomologation,
+		Renegotiation:      tls.RenegotiateFreelyAsClient,
 	}
 }

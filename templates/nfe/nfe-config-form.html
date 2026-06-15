@@ -1,0 +1,158 @@
+{{ block "nfe-config-form" . }}
+<form hx-put="/nfe/config" hx-swap="outerHTML" class="space-y-6" id="nfe-config-form" enctype="multipart/form-data">
+    <input type="hidden" name="farmID" value="{{ .FarmID }}">
+
+    <fieldset class="glass-panel rounded-xl p-6">
+        <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+            Certificado Digital (A1)
+        </legend>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="flex flex-col-reverse md:col-span-2">
+                <input type="file" name="certificate" id="certificate" accept=".pfx,.p12"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                <label for="certificate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Arquivo do Certificado (.pfx / .p12)
+                </label>
+                {{ if .Config.CertificatePath }}
+                <p class="text-sm text-green-400 mt-1">Certificado atual: {{ .Config.CertificatePath }}</p>
+                {{ end }}
+            </div>
+            <div class="flex flex-col-reverse">
+                <input type="password" name="certificatePassword" id="certificatePassword"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                    placeholder="{{ if .Config.CertificatePasswordEncrypted }}Senha criptografada salva{{ else }}Senha do certificado{{ end }}">
+                <label for="certificatePassword" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Senha do Certificado
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <select name="environment" id="environment" class="peer bg-white/10 border border-white/20 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                    <option value="2" {{ if eq .Config.Environment 2 }}selected{{ end }}>Homologação</option>
+                    <option value="1" {{ if eq .Config.Environment 1 }}selected{{ end }}>Produção</option>
+                </select>
+                <label for="environment" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Ambiente SEFAZ
+                </label>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="glass-panel rounded-xl p-6">
+        <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+            Dados do Emitente
+        </legend>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="flex flex-col-reverse">
+                <select name="emitterType" id="emitterType" class="peer bg-white/10 border border-white/20 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                    <option value="1" {{ if eq .Config.EmitterType 1 }}selected{{ end }}>CNPJ (Pessoa Jurídica)</option>
+                    <option value="2" {{ if eq .Config.EmitterType 2 }}selected{{ end }}>CPF (Produtor Rural)</option>
+                </select>
+                <label for="emitterType" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Tipo de Emitente
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <input type="text" name="ieEmitter" id="ieEmitter" value="{{ .Config.IEEmitter }}"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40" required>
+                <label for="ieEmitter" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Inscrição Estadual
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <input type="text" name="cnpjEmitter" id="cnpjEmitter" value="{{ if .Config.CNPJEmitter }}{{ .Config.CNPJEmitter }}{{ end }}"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                <label for="cnpjEmitter" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    CNPJ
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <input type="text" name="cpfEmitter" id="cpfEmitter" value="{{ if .Config.CPFEmitter }}{{ .Config.CPFEmitter }}{{ end }}"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                <label for="cpfEmitter" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    CPF
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <select name="taxRegime" id="taxRegime" class="peer bg-white/10 border border-white/20 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                    <option value="1" {{ if eq .Config.TaxRegime 1 }}selected{{ end }}>Simples Nacional</option>
+                    <option value="2" {{ if eq .Config.TaxRegime 2 }}selected{{ end }}>Lucro Real</option>
+                    <option value="3" {{ if eq .Config.TaxRegime 3 }}selected{{ end }}>Lucro Presumido</option>
+                </select>
+                <label for="taxRegime" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Regime Tributário
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <select name="defaultModFrete" id="defaultModFrete" class="peer bg-white/10 border border-white/20 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                    <option value="1" {{ if eq .Config.DefaultModFrete 1 }}selected{{ end }}>1 - Por conta do destinatário/remetente (FOB)</option>
+                    <option value="0" {{ if eq .Config.DefaultModFrete 0 }}selected{{ end }}>0 - Por conta do emitente (CIF)</option>
+                    <option value="2" {{ if eq .Config.DefaultModFrete 2 }}selected{{ end }}>2 - Por conta de terceiros</option>
+                    <option value="9" {{ if eq .Config.DefaultModFrete 9 }}selected{{ end }}>9 - Sem frete</option>
+                </select>
+                <label for="defaultModFrete" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Modalidade do Frete Padrão
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <input type="number" name="serie" id="serie" value="{{ .Config.Serie }}" min="0" max="969"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                    title="Série definida pelo emitente. Se não souber, mantenha o padrão sugerido e consulte seu contador.">
+                <label for="serie" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Série da Nota Fiscal
+                </label>
+                <p class="text-xs text-white/50 mt-1 px-2">Série padrão: CNPJ = 1, CPF = 920. Confirme com seu contador se necessário.</p>
+            </div>
+        </div>
+    </fieldset>
+
+    {{ if .Success }}
+    <div class="text-green-400 text-sm font-medium text-center">{{ .Success }}</div>
+    {{ end }}
+    {{ if .Error }}
+    <div class="text-red-400 text-sm font-medium text-center">{{ .Error }}</div>
+    {{ end }}
+
+    <div class="mt-6 flex justify-center">
+        <button type="submit" class="primary-glass-btn flex items-center gap-1 p-3">
+            <iconify-icon icon="mdi:content-save" width="20" height="20"></iconify-icon>
+            Salvar Configuração NF-e
+        </button>
+    </div>
+</form>
+
+<script>
+(function() {
+    const emitterType = document.getElementById('emitterType');
+    const serieInput = document.getElementById('serie');
+    const cnpjInput = document.getElementById('cnpjEmitter');
+    const cpfInput = document.getElementById('cpfEmitter');
+
+    function updateDefaults() {
+        const type = parseInt(emitterType.value, 10);
+        if (type === 2) {
+            // CPF emitter
+            if (!serieInput.value || serieInput.value === '1') {
+                serieInput.value = '920';
+            }
+            serieInput.min = '920';
+            serieInput.max = '969';
+            cnpjInput.value = '';
+        } else {
+            // CNPJ emitter
+            if (!serieInput.value || serieInput.value === '920') {
+                serieInput.value = '1';
+            }
+            serieInput.min = '0';
+            serieInput.max = '889';
+            cpfInput.value = '';
+        }
+    }
+
+    emitterType.addEventListener('change', updateDefaults);
+    // Set defaults on initial load if serie is empty
+    if (!serieInput.value) {
+        updateDefaults();
+    }
+})();
+</script>
+{{ end }}

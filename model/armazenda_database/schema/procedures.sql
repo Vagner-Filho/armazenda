@@ -302,7 +302,9 @@ CREATE OR REPLACE FUNCTION add_get_departure(
     IN in_damage NUMERIC(6, 3),
     IN in_impurity NUMERIC(6, 3),
     IN in_origin_id INTEGER,
-    OUT out_origin TEXT
+    OUT out_origin TEXT,
+    OUT out_recipient_id INTEGER,
+    OUT out_origin_id INTEGER
 )
 LANGUAGE plpgsql AS $$
 DECLARE departure_id INTEGER;
@@ -333,6 +335,9 @@ BEGIN
     IF out_origin IS NULL THEN
         out_origin := 'Própria';
     END IF;
+
+    out_recipient_id := recipient_id;
+    out_origin_id := in_origin_id;
 END;
 $$;
 
@@ -351,7 +356,9 @@ CREATE OR REPLACE FUNCTION update_get_departure(
     IN in_damage NUMERIC(6, 3),
     IN in_impurity NUMERIC(6, 3),
     IN in_origin_id INTEGER,
-    OUT out_origin TEXT
+    OUT out_origin TEXT,
+    OUT out_recipient_id INTEGER,
+    OUT out_origin_id INTEGER
 )
 LANGUAGE plpgsql AS $$
 DECLARE analysis_exists BOOLEAN;
@@ -411,6 +418,9 @@ BEGIN
 
     SELECT p.name INTO productName FROM departure d JOIN crop c ON d.crop = c.id JOIN product p ON c.product = p.id WHERE d.id = departureId;
     SELECT v.plate FROM vehicle v WHERE v.id = in_vehicle INTO out_vehicle;
+
+    out_recipient_id := in_recipient_id;
+    out_origin_id := in_origin_id;
 END;
 $$;
 

@@ -46,8 +46,8 @@ const (
 
 // NCM codes for agricultural products.
 const (
-	NCMMilho = "1005.90.00"
-	NCMSoja  = "1201.00.10"
+	NCMMilho = "10059010"
+	NCMSoja  = "12019000"
 )
 
 // CFOP codes for agricultural operations.
@@ -66,6 +66,7 @@ const (
 	CSOSSN101Tributada        = "101"
 	CSOSSN102SemTributacao    = "102"
 	CSOSSN500ICMSSubstituicao = "500"
+	CSOSNSemPermissaoCredito  = "102"
 )
 
 // ICMS origin codes.
@@ -131,7 +132,7 @@ func GetProductDefaults(productName string, regime TaxRegime) ProductDefaults {
 		return productDefaultsSoja(regime)
 	default:
 		return ProductDefaults{
-			NCM:         "0000.00.00",
+			NCM:         "00000000",
 			CFOP:        CFOPVendaCompra,
 			Unit:        "KG",
 			Description: productName,

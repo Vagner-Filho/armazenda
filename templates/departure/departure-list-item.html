@@ -14,6 +14,14 @@
       <button type="button" hx-get="/departure/form/{{ .Id }}" hx-target="body" hx-swap="beforeend" title="Editar Saída" class="icon-btn">
         <iconify-icon icon="mdi:pencil" class="text-xl"></iconify-icon>
       </button>
+      {{ $canEmitNFe := and (not .OriginID) .RecipientID }}
+      <button type="button"
+        {{ if $canEmitNFe }}hx-get="/nfe/modal/{{ .Id }}" hx-target="body" hx-swap="beforeend"{{ end }}
+        title="{{ if $canEmitNFe }}Emitir NF-e{{ else }}NF-e só pode ser emitida para saídas do tipo Próprio -> Terceiro{{ end }}"
+        class="icon-btn{{ if not $canEmitNFe }} opacity-50 cursor-not-allowed{{ end }}"
+        {{ if not $canEmitNFe }}disabled{{ end }}>
+        <iconify-icon icon="mdi:receipt-text" class="text-xl"></iconify-icon>
+      </button>
       <button type="button" hx-trigger="confirmed" hx-delete="/departure/{{ .Id }}" hx-target="#departure-{{ .Id }}" title="Excluir Saída" hx-swap="delete" class="icon-btn" data-delete-text="Deseja excluir o romaneio de saída {{ .Id }} ?">
         <iconify-icon icon="mdi:trash-can" class="text-xl"></iconify-icon>
       </button>

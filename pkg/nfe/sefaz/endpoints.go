@@ -17,6 +17,7 @@ const (
 type Endpoint struct {
 	Name         string
 	Namespace    string // SOAP namespace for this service
+	SOAPAction   string // SOAPAction header for Axis2 routing
 	Production   string
 	Homologation string
 }
@@ -36,44 +37,51 @@ var MTEndpointSet = &EndpointSet{
 		{
 			Name:         "NFeAutorizacao4",
 			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/NFeAutorizacao4",
-			Production:   "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NfeAutorizacao4?wsdl",
-			Homologation: "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/NfeAutorizacao4?wsdl",
+			SOAPAction:   "http://www.portalfiscal.inf.br/nfe/wsdl/NFeAutorizacao4/nfeAutorizacaoLote",
+			Production:   "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NfeAutorizacao4",
+			Homologation: "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/NfeAutorizacao4",
 		},
 		{
 			Name:         "NFeRetAutorizacao4",
 			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/NFeRetAutorizacao4",
-			Production:   "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NfeRetAutorizacao4?wsdl",
-			Homologation: "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/NfeRetAutorizacao4?wsdl",
+			SOAPAction:   "http://www.portalfiscal.inf.br/nfe/wsdl/NFeRetAutorizacao4/nfeRetAutorizacaoLote",
+			Production:   "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NfeRetAutorizacao4",
+			Homologation: "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/NfeRetAutorizacao4",
 		},
 		{
-			Name:         "NfeConsulta4",
-			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/NFeConsulta4",
-			Production:   "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NfeConsulta4?wsdl",
-			Homologation: "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/NfeConsulta4?wsdl",
+			Name:         "NFeConsultaProtocolo4",
+			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/NFeConsultaProtocolo4",
+			SOAPAction:   "http://www.portalfiscal.inf.br/nfe/wsdl/NFeConsultaProtocolo4/nfeConsultaNF",
+			Production:   "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NfeConsulta4",
+			Homologation: "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/NfeConsulta4",
 		},
 		{
 			Name:         "NfeStatusServico4",
 			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/NFeStatusServico4",
-			Production:   "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NfeStatusServico4?wsdl",
-			Homologation: "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/NfeStatusServico4?wsdl",
+			SOAPAction:   "http://www.portalfiscal.inf.br/nfe/wsdl/NFeStatusServico4/nfeStatusServicoNF",
+			Production:   "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NfeStatusServico4",
+			Homologation: "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/NfeStatusServico4",
 		},
 		{
 			Name:         "RecepcaoEvento4",
 			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/RecepcaoEvento4",
-			Production:   "https://nfe.sefaz.mt.gov.br/nfews/v2/services/RecepcaoEvento4?wsdl",
-			Homologation: "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/RecepcaoEvento4?wsdl",
+			SOAPAction:   "http://www.portalfiscal.inf.br/nfe/wsdl/RecepcaoEvento4/nfeRecepcaoEvento",
+			Production:   "https://nfe.sefaz.mt.gov.br/nfews/v2/services/RecepcaoEvento4",
+			Homologation: "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/RecepcaoEvento4",
 		},
 		{
 			Name:         "NfeInutilizacao4",
 			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/NFeInutilizacao4",
-			Production:   "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NfeInutilizacao4?wsdl",
-			Homologation: "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/NfeInutilizacao4?wsdl",
+			SOAPAction:   "http://www.portalfiscal.inf.br/nfe/wsdl/NFeInutilizacao4/nfeInutilizacaoNF",
+			Production:   "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NfeInutilizacao4",
+			Homologation: "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/NfeInutilizacao4",
 		},
 		{
 			Name:         "CadConsultaCadastro4",
 			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/CadConsultaCadastro4",
-			Production:   "https://nfe.sefaz.mt.gov.br/nfews/v2/services/CadConsultaCadastro4?wsdl",
-			Homologation: "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/CadConsultaCadastro4?wsdl",
+			SOAPAction:   "http://www.portalfiscal.inf.br/nfe/wsdl/CadConsultaCadastro4/consultaCadastro",
+			Production:   "https://nfe.sefaz.mt.gov.br/nfews/v2/services/CadConsultaCadastro4",
+			Homologation: "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/CadConsultaCadastro4",
 		},
 	},
 }
@@ -104,19 +112,25 @@ func GetEndpoint(uf, serviceName string, production bool) (string, error) {
 
 // GetEndpointWithNamespace returns the URL and SOAP namespace for a service.
 func GetEndpointWithNamespace(uf, serviceName string, production bool) (string, string, error) {
+	url, ns, _, err := GetEndpointWithSOAPAction(uf, serviceName, production)
+	return url, ns, err
+}
+
+// GetEndpointWithSOAPAction returns the URL, SOAP namespace, and SOAPAction for a service.
+func GetEndpointWithSOAPAction(uf, serviceName string, production bool) (string, string, string, error) {
 	set, ok := StateRegistry[uf]
 	if !ok {
-		return "", "", fmt.Errorf("state %s not registered in endpoint registry", uf)
+		return "", "", "", fmt.Errorf("state %s not registered in endpoint registry", uf)
 	}
 	for _, ep := range set.Endpoints {
 		if ep.Name == serviceName {
 			if production {
-				return ep.Production, ep.Namespace, nil
+				return ep.Production, ep.Namespace, ep.SOAPAction, nil
 			}
-			return ep.Homologation, ep.Namespace, nil
+			return ep.Homologation, ep.Namespace, ep.SOAPAction, nil
 		}
 	}
-	return "", "", fmt.Errorf("service %s not found for state %s", serviceName, uf)
+	return "", "", "", fmt.Errorf("service %s not found for state %s", serviceName, uf)
 }
 
 // GetInfraType returns the infrastructure type for a state.

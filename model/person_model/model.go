@@ -738,6 +738,57 @@ func (pm *PersonModel) GetPersonById(id uint32) (entity_public.PersonDisplay, *m
 	return entity_public.PersonDisplay{}, naturalErr
 }
 
+// GetFullPersonById returns a complete person record (legal or natural) with all address/contact data.
+func (pm *PersonModel) GetFullPersonById(id uint32) (entity_public.FullPerson, *model_error.ModelError) {
+	// Try legal person first
+	legalPerson, legalErr := pm.GetLegalPersonById(id)
+	if legalErr == nil {
+		return entity_public.FullPerson{
+			Type:         2,
+			Name:         legalPerson.CompanyName,
+			Document:     legalPerson.Cnpj,
+			IE:           legalPerson.Person.Ie,
+			Id:           legalPerson.Person.Id,
+			Street:       legalPerson.Street,
+			Cep:          legalPerson.Cep,
+			Number:       legalPerson.Number,
+			Complement:   legalPerson.Complement,
+			Neighborhood: legalPerson.Neighborhood,
+			City:         legalPerson.City,
+			State:        legalPerson.State,
+			Email:        legalPerson.Email,
+			PhoneNumber:  legalPerson.PhoneNumber,
+		}, nil
+	}
+
+	// Try natural person
+	naturalPerson, naturalErr := pm.GetNaturalPersonById(id)
+	if naturalErr == nil {
+		return entity_public.FullPerson{
+			Type:         1,
+			Name:         naturalPerson.Name,
+			Document:     naturalPerson.Cpf,
+			IE:           naturalPerson.Person.Ie,
+			Id:           naturalPerson.Person.Id,
+			Street:       naturalPerson.Street,
+			Cep:          naturalPerson.Cep,
+			Number:       naturalPerson.Number,
+			Complement:   naturalPerson.Complement,
+			Neighborhood: naturalPerson.Neighborhood,
+			City:         naturalPerson.City,
+			State:        naturalPerson.State,
+			Email:        naturalPerson.Email,
+			PhoneNumber:  naturalPerson.PhoneNumber,
+		}, nil
+	}
+
+	// Return the first error
+	if legalErr != nil {
+		return entity_public.FullPerson{}, legalErr
+	}
+	return entity_public.FullPerson{}, naturalErr
+}
+
 // GetModifiedCount returns the count of people modified since the given timestamp
 func (bm *PersonModel) GetModifiedCount(since time.Time, farm uint32) (int, error) {
 	query := `SELECT COUNT(*) FROM person WHERE farm = @farm AND modified_at > @since`

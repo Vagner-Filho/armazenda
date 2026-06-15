@@ -83,11 +83,11 @@ var municipiosSeedData = []municipioSeed{
 	{"3106705", "Betim", "MG"}, {"2919207", "Feira de Santana", "BA"}, {"5008006", "Três Lagoas", "MS"},
 }
 
-func seedMunicipios(c *pgx.Conn) {
+func SeedMunicipios(c *pgx.Conn) {
 	var count int
 	err := c.QueryRow(context.Background(), "SELECT COUNT(*) FROM ibge_municipio").Scan(&count)
 	if err != nil {
-		fmt.Printf("error counting ibge_municipio: %v\n", err.Error())
+		// Table doesn't exist yet (migration hasn't run) — skip silently
 		return
 	}
 	if count > 0 {

@@ -10,19 +10,19 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type nfeModel struct {
+type NFeModel struct {
 	pool *pgxpool.Pool
 }
 
-var nfeModelImpl *nfeModel
+var nfeModelImpl *NFeModel
 
-func InitNFeModel(pool *pgxpool.Pool) (*nfeModel, error) {
+func InitNFeModel(pool *pgxpool.Pool) (*NFeModel, error) {
 	if pool == nil {
 		return nil, errors.New("pool cant be null")
 	}
 
 	if nfeModelImpl == nil {
-		nfeModelImpl = &nfeModel{
+		nfeModelImpl = &NFeModel{
 			pool: pool,
 		}
 	}
@@ -30,7 +30,7 @@ func InitNFeModel(pool *pgxpool.Pool) (*nfeModel, error) {
 	return nfeModelImpl, nil
 }
 
-func GetNFeModel() *nfeModel {
+func GetNFeModel() *NFeModel {
 	if nfeModelImpl == nil {
 		panic("nfe model hasnt been initialized")
 	}
@@ -42,6 +42,7 @@ type FarmConfig struct {
 	ID                           int
 	FarmID                       int
 	CertificatePath              string
+	CertificateData              []byte
 	CertificatePasswordEncrypted string
 	Environment                  int
 	Serie                        int
@@ -56,9 +57,9 @@ type FarmConfig struct {
 }
 
 // GetFarmConfig returns the NFe configuration for a farm.
-func (m *nfeModel) GetFarmConfig(farmID uint32) (*FarmConfig, error) {
+func (m *NFeModel) GetFarmConfig(farmID uint32) (*FarmConfig, error) {
 	query := `
-		SELECT id, farm_id, certificate_path, certificate_password_encrypted,
+		SELECT id, farm_id, certificate_path, certificate_data, certificate_password_encrypted,
 		       environment, serie, next_number, tax_regime, emitter_type,
 		       cnpj_emitter, cpf_emitter, ie_emitter, emitter_uf, default_mod_frete
 		FROM nfe_farm_config
@@ -68,7 +69,7 @@ func (m *nfeModel) GetFarmConfig(farmID uint32) (*FarmConfig, error) {
 
 	var cfg FarmConfig
 	var cnpj, cpf *string
-	err := row.Scan(&cfg.ID, &cfg.FarmID, &cfg.CertificatePath, &cfg.CertificatePasswordEncrypted,
+	err := row.Scan(&cfg.ID, &cfg.FarmID, &cfg.CertificatePath, &cfg.CertificateData, &cfg.CertificatePasswordEncrypted,
 		&cfg.Environment, &cfg.Serie, &cfg.NextNumber, &cfg.TaxRegime, &cfg.EmitterType,
 		&cnpj, &cpf, &cfg.IEEmitter, &cfg.EmitterUF, &cfg.DefaultModFrete)
 	if err != nil {
@@ -84,15 +85,16 @@ func (m *nfeModel) GetFarmConfig(farmID uint32) (*FarmConfig, error) {
 }
 
 // UpsertFarmConfig inserts or updates the NFe configuration for a farm.
-func (m *nfeModel) UpsertFarmConfig(cfg FarmConfig) error {
+func (m *NFeModel) UpsertFarmConfig(cfg FarmConfig) error {
 	query := `
 		INSERT INTO nfe_farm_config (
-			farm_id, certificate_path, certificate_password_encrypted, environment,
+			farm_id, certificate_path, certificate_data, certificate_password_encrypted, environment,
 			serie, next_number, tax_regime, emitter_type, cnpj_emitter, cpf_emitter,
 			ie_emitter, emitter_uf, default_mod_frete
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		ON CONFLICT (farm_id) DO UPDATE SET
 			certificate_path = EXCLUDED.certificate_path,
+			certificate_data = EXCLUDED.certificate_data,
 			certificate_password_encrypted = EXCLUDED.certificate_password_encrypted,
 			environment = EXCLUDED.environment,
 			serie = EXCLUDED.serie,
@@ -107,7 +109,7 @@ func (m *nfeModel) UpsertFarmConfig(cfg FarmConfig) error {
 			modified_at = CURRENT_TIMESTAMP
 	`
 	_, err := m.pool.Exec(context.Background(), query,
-		cfg.FarmID, cfg.CertificatePath, cfg.CertificatePasswordEncrypted,
+		cfg.FarmID, cfg.CertificatePath, cfg.CertificateData, cfg.CertificatePasswordEncrypted,
 		cfg.Environment, cfg.Serie, cfg.NextNumber, cfg.TaxRegime, cfg.EmitterType,
 		cfg.CNPJEmitter, cfg.CPFEmitter, cfg.IEEmitter, cfg.EmitterUF, cfg.DefaultModFrete)
 	return err
@@ -129,7 +131,7 @@ type ProductConfig struct {
 }
 
 // GetProductConfig returns the NFe configuration for a product.
-func (m *nfeModel) GetProductConfig(farmID uint32, productID uint8) (*ProductConfig, error) {
+func (m *NFeModel) GetProductConfig(farmID uint32, productID uint8) (*ProductConfig, error) {
 	query := `
 		SELECT id, farm_id, product_id, ncm, default_cfop, default_cest,
 		       unit, description, default_icms_cst, default_pis_cst, default_cofins_cst
@@ -158,7 +160,7 @@ func (m *nfeModel) GetProductConfig(farmID uint32, productID uint8) (*ProductCon
 }
 
 // AllocateNumber atomically allocates a new invoice number for a farm/serie.
-func (m *nfeModel) AllocateNumber(farmID uint32, serie int) (int, error) {
+func (m *NFeModel) AllocateNumber(farmID uint32, serie int) (int, error) {
 	var number int
 	err := m.pool.QueryRow(context.Background(), "SELECT nfe_allocate_number($1, $2)", farmID, serie).Scan(&number)
 	if err != nil {
@@ -196,7 +198,7 @@ type Invoice struct {
 }
 
 // CreateInvoice creates a new invoice record.
-func (m *nfeModel) CreateInvoice(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal) (int, error) {
+func (m *NFeModel) CreateInvoice(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal) (int, error) {
 	query := `
 		INSERT INTO nfe_invoice (departure_id, access_key, serie, number, status, cfop, ncm, quantity_kg, unit_price, total_value)
 		VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9)
@@ -212,7 +214,7 @@ func (m *nfeModel) CreateInvoice(departureID uint32, accessKey string, serie, nu
 }
 
 // UpdateInvoiceXML updates the signed XML of an invoice.
-func (m *nfeModel) UpdateInvoiceXML(id int, xmlSigned string) error {
+func (m *NFeModel) UpdateInvoiceXML(id int, xmlSigned string) error {
 	query := `
 		UPDATE nfe_invoice
 		SET xml_signed = $2, status = 'signed', signed_at = CURRENT_TIMESTAMP
@@ -223,7 +225,7 @@ func (m *nfeModel) UpdateInvoiceXML(id int, xmlSigned string) error {
 }
 
 // UpdateInvoiceStatus updates the status of an invoice.
-func (m *nfeModel) UpdateInvoiceStatus(id int, status, protocol, sefazCode, sefazMotive string) error {
+func (m *NFeModel) UpdateInvoiceStatus(id int, status, protocol, sefazCode, sefazMotive string) error {
 	query := `
 		UPDATE nfe_invoice
 		SET status = $2, protocol = $3, sefaz_status_code = $4, sefaz_motive = $5,
@@ -235,7 +237,7 @@ func (m *nfeModel) UpdateInvoiceStatus(id int, status, protocol, sefazCode, sefa
 }
 
 // GetInvoiceByDeparture returns the invoice for a departure.
-func (m *nfeModel) GetInvoiceByDeparture(departureID uint32) (*Invoice, error) {
+func (m *NFeModel) GetInvoiceByDeparture(departureID uint32) (*Invoice, error) {
 	query := `
 		SELECT id, departure_id, access_key, serie, number, status, cfop, ncm,
 		       quantity_kg, unit_price, total_value, icms_value, xml_signed, xml_authorized,
@@ -274,7 +276,7 @@ func (m *nfeModel) GetInvoiceByDeparture(departureID uint32) (*Invoice, error) {
 }
 
 // GetMunicipio returns an IBGE municipality by name and UF.
-func (m *nfeModel) GetMunicipio(name, uf string) (string, error) {
+func (m *NFeModel) GetMunicipio(name, uf string) (string, error) {
 	query := `
 		SELECT code FROM ibge_municipio
 		WHERE name ILIKE $1 AND uf = $2
@@ -289,4 +291,174 @@ func (m *nfeModel) GetMunicipio(name, uf string) (string, error) {
 		return "", err
 	}
 	return code, nil
+}
+
+// InvoiceForRetry represents an invoice ready for retry processing.
+type InvoiceForRetry struct {
+	ID          int
+	DepartureID uint32
+	AccessKey   string
+	Status      string
+	XMLSigned   string
+	RetryCount  int
+	LastRetryAt interface{}
+}
+
+// GetPendingInvoicesForRetry returns invoices that need to be retried,
+// respecting capped exponential backoff: only return if enough time has passed.
+// Backoff is capped at 12 doublings (60 minutes max) to prevent unbounded waits.
+func (m *NFeModel) GetPendingInvoicesForRetry() ([]InvoiceForRetry, error) {
+	query := `
+		SELECT id, departure_id, access_key, status, xml_signed, retry_count, last_retry_at
+		FROM nfe_invoice
+		WHERE status IN ('pending', 'signed')
+		  AND retry_count < 10
+		  AND (
+		    last_retry_at IS NULL
+		    OR last_retry_at <= CURRENT_TIMESTAMP - (INTERVAL '5 minutes' * LEAST(POWER(2, retry_count), 12))
+		  )
+		ORDER BY created_at ASC
+		LIMIT 50
+	`
+	rows, err := m.pool.Query(context.Background(), query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pending invoices: %w", err)
+	}
+	defer rows.Close()
+
+	var invoices []InvoiceForRetry
+	for rows.Next() {
+		var inv InvoiceForRetry
+		var xmlSigned *string
+		var lastRetryAt interface{}
+		if err := rows.Scan(&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Status, &xmlSigned, &inv.RetryCount, &lastRetryAt); err != nil {
+			return nil, fmt.Errorf("failed to scan pending invoice: %w", err)
+		}
+		if xmlSigned != nil {
+			inv.XMLSigned = *xmlSigned
+		}
+		inv.LastRetryAt = lastRetryAt
+		invoices = append(invoices, inv)
+	}
+
+	return invoices, rows.Err()
+}
+
+// ResetPendingBackoff clears last_retry_at for all pending/signed invoices
+// so they become immediately eligible for retry on the next worker run.
+func (m *NFeModel) ResetPendingBackoff() error {
+	query := `
+		UPDATE nfe_invoice
+		SET last_retry_at = NULL
+		WHERE status IN ('pending', 'signed')
+	`
+	_, err := m.pool.Exec(context.Background(), query)
+	if err != nil {
+		return fmt.Errorf("failed to reset pending backoff: %w", err)
+	}
+	return nil
+}
+
+// IncrementRetryCount increments the retry count and sets last_retry_at.
+func (m *NFeModel) IncrementRetryCount(id int) error {
+	query := `
+		UPDATE nfe_invoice
+		SET retry_count = retry_count + 1, last_retry_at = CURRENT_TIMESTAMP
+		WHERE id = $1
+	`
+	_, err := m.pool.Exec(context.Background(), query, id)
+	return err
+}
+
+// UpdateInvoiceSent marks an invoice as sent and records the timestamp.
+func (m *NFeModel) UpdateInvoiceSent(id int) error {
+	query := `
+		UPDATE nfe_invoice
+		SET sent_at = CURRENT_TIMESTAMP
+		WHERE id = $1
+	`
+	_, err := m.pool.Exec(context.Background(), query, id)
+	return err
+}
+
+// GetInvoicesByFarm returns all invoices for a farm, ordered by creation date descending.
+func (m *NFeModel) GetInvoicesByFarm(farmID uint32) ([]Invoice, error) {
+	query := `
+		SELECT i.id, i.departure_id, i.access_key, i.serie, i.number, i.status, i.cfop, i.ncm,
+		       i.quantity_kg, i.unit_price, i.total_value, i.icms_value, i.xml_signed, i.xml_authorized,
+		       i.protocol, i.sefaz_status_code, i.sefaz_motive, i.rejection_reason, i.cancellation_reason,
+		       i.retry_count, i.created_at, i.signed_at, i.sent_at, i.authorized_at
+		FROM nfe_invoice i
+		JOIN departure d ON d.id = i.departure_id
+		WHERE d.farm = $1
+		ORDER BY i.created_at DESC
+	`
+	rows, err := m.pool.Query(context.Background(), query, farmID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get invoices: %w", err)
+	}
+	defer rows.Close()
+
+	var invoices []Invoice
+	for rows.Next() {
+		var inv Invoice
+		var icmsValue *decimal.Decimal
+		var xmlSigned, xmlAuthorized, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason *string
+		err := rows.Scan(&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Serie, &inv.Number, &inv.Status,
+			&inv.CFOP, &inv.NCM, &inv.QuantityKG, &inv.UnitPrice, &inv.TotalValue, &icmsValue,
+			&xmlSigned, &xmlAuthorized, &protocol, &sefazCode, &sefazMotive, &rejectionReason,
+			&cancellationReason, &inv.RetryCount, &inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan invoice: %w", err)
+		}
+		inv.ICMSValue = icmsValue
+		inv.XMLSigned = xmlSigned
+		inv.XMLAuthorized = xmlAuthorized
+		inv.Protocol = protocol
+		inv.SefazStatusCode = sefazCode
+		inv.SefazMotive = sefazMotive
+		inv.RejectionReason = rejectionReason
+		inv.CancellationReason = cancellationReason
+		invoices = append(invoices, inv)
+	}
+
+	return invoices, rows.Err()
+}
+
+// GetInvoiceByAccessKey returns an invoice by its access key.
+func (m *NFeModel) GetInvoiceByAccessKey(accessKey string) (*Invoice, error) {
+	query := `
+		SELECT id, departure_id, access_key, serie, number, status, cfop, ncm,
+		       quantity_kg, unit_price, total_value, icms_value, xml_signed, xml_authorized,
+		       protocol, sefaz_status_code, sefaz_motive, rejection_reason, cancellation_reason,
+		       retry_count, created_at, signed_at, sent_at, authorized_at
+		FROM nfe_invoice
+		WHERE access_key = $1
+		LIMIT 1
+	`
+	row := m.pool.QueryRow(context.Background(), query, accessKey)
+
+	var inv Invoice
+	var icmsValue *decimal.Decimal
+	var xmlSigned, xmlAuthorized, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason *string
+	err := row.Scan(&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Serie, &inv.Number, &inv.Status,
+		&inv.CFOP, &inv.NCM, &inv.QuantityKG, &inv.UnitPrice, &inv.TotalValue, &icmsValue,
+		&xmlSigned, &xmlAuthorized, &protocol, &sefazCode, &sefazMotive, &rejectionReason,
+		&cancellationReason, &inv.RetryCount, &inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get invoice: %w", err)
+	}
+
+	inv.ICMSValue = icmsValue
+	inv.XMLSigned = xmlSigned
+	inv.XMLAuthorized = xmlAuthorized
+	inv.Protocol = protocol
+	inv.SefazStatusCode = sefazCode
+	inv.SefazMotive = sefazMotive
+	inv.RejectionReason = rejectionReason
+	inv.CancellationReason = cancellationReason
+	return &inv, nil
 }

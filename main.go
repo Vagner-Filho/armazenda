@@ -36,6 +36,7 @@ import (
 	"armazenda/router/user_router"
 	"armazenda/router/vehicle_router"
 	"armazenda/service/billing_service"
+	"armazenda/service/nfe_service"
 	"armazenda/service/user_service"
 	"context"
 	"crypto/rand"
@@ -234,6 +235,8 @@ func main() {
 		return
 	}
 
+	armazenda_database.PostMigrationSeeds(pool)
+
 	user_model.InitUserModel(pool)
 	subscription_model.InitSubscriptionModel(pool)
 	crop_model.InitCropModel(pool)
@@ -249,6 +252,7 @@ func main() {
 	user_approval_model.InitUserApprovalModel(pool)
 	stats_model.InitStatsModel(pool)
 	nfe_model.InitNFeModel(pool)
+	nfe_service.StartRetryWorker()
 	model_error.InitLoggerModel(pool)
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {

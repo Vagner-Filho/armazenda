@@ -1,0 +1,31 @@
+{{ block "nfe-list" . }}
+<div class="glass-panel rounded-xl p-4" id="nfe-list-container">
+    <h2 class="text-lg font-bold text-white/95 border-b border-white/20 pb-2 mb-4">
+        Notas Fiscais Eletrônicas
+    </h2>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead>
+                <tr class="border-b border-white/20 text-white/70">
+                    <th class="py-2 px-3">Chave de Acesso</th>
+                    <th class="py-2 px-3">Série/Número</th>
+                    <th class="py-2 px-3">Valor Total</th>
+                    <th class="py-2 px-3">Status</th>
+                    <th class="py-2 px-3">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ range .Invoices }}
+                {{ template "nfe-list-item" . }}
+                {{ else }}
+                <tr>
+                    <td colspan="5" class="py-8 text-center text-white/50">
+                        Nenhuma NF-e emitida ainda.
+                    </td>
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
+</div>
+{{ end }}

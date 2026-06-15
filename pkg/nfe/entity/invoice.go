@@ -11,7 +11,11 @@ type InvoiceInput struct {
 	// Identification
 	Serie      int
 	Numero     int
+	CNF        string // Random 8-digit numeric code for access key
 	NaturezaOp string
+
+	// Environment: 1=production, 2=homologation
+	Environment int
 
 	// Emitter
 	Emitter EmitterData
@@ -106,9 +110,11 @@ type ImpostoData struct {
 }
 
 // ICMSData holds ICMS tax information.
+// For Simples Nacional, use CSOSN instead of CST, and leave VBC/PICMS/VICMS zero.
 type ICMSData struct {
 	Origem string // 0=Nacional
 	CST    string
+	CSOSN  string // Simples Nacional CSOSN code
 	ModBC  string
 	VBC    decimal.Decimal
 	PICMS  decimal.Decimal
@@ -182,36 +188,37 @@ type PagamentoDetalhe struct {
 
 // AccessKeyData holds the 44-digit NF-e access key components.
 type AccessKeyData struct {
-	CUF    string
-	AAMM   string
-	CNPJ   string
-	Mod    string
-	Serie  int
-	NNF    int
-	TpEmis string
-	CNF    string
+	CUF      string
+	AAMM     string
+	Document string // CNPJ or zero-padded CPF (always 14 digits)
+	Mod      string
+	Serie    int
+	NNF      int
+	TpEmis   string
+	CNF      string
 }
 
 // GenerateAccessKey generates the 44-digit access key (chave de acesso).
 func GenerateAccessKey(data AccessKeyData) string {
 	serieStr := fmt.Sprintf("%03d", data.Serie)
 	nnfStr := fmt.Sprintf("%09d", data.NNF)
-	key := data.CUF + data.AAMM + data.CNPJ + data.Mod + serieStr + nnfStr + data.TpEmis + data.CNF
+	key := data.CUF + data.AAMM + data.Document + data.Mod + serieStr + nnfStr + data.TpEmis + data.CNF
 	// Add check digit (DV)
 	dv := calculateDV(key)
 	return key + fmt.Sprintf("%01d", dv)
 }
 
 func calculateDV(key string) int {
-	weights := []int{4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2}
+	// SEFAZ DV algorithm: multiply digits from RIGHT to LEFT
+	// with weights [2,3,4,5,6,7,8,9] cycling.
 	sum := 0
-	weightIdx := 0
+	peso := 2
 	for i := len(key) - 1; i >= 0; i-- {
 		digit := int(key[i] - '0')
-		sum += digit * weights[weightIdx]
-		weightIdx++
-		if weightIdx >= len(weights) {
-			weightIdx = 0
+		sum += digit * peso
+		peso++
+		if peso > 9 {
+			peso = 2
 		}
 	}
 	remainder := sum % 11

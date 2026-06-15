@@ -31,7 +31,7 @@ func NewInvoiceService(pool *pgxpool.Pool, cfg config.SefazConfig) *InvoiceServi
 }
 
 // BuildAndSign builds and signs an NF-e from departure data.
-func (s *InvoiceService) BuildAndSign(input entity.InvoiceInput, certPath, certPassword string) (string, error) {
+func (s *InvoiceService) BuildAndSign(input entity.InvoiceInput, certData []byte, certPassword string) (string, error) {
 	// 1. Build XML
 	builder := xml.NewBuilder()
 	doc, err := builder.Build(input)
@@ -39,10 +39,25 @@ func (s *InvoiceService) BuildAndSign(input entity.InvoiceInput, certPath, certP
 		return "", fmt.Errorf("failed to build NF-e XML: %w", err)
 	}
 
-	// 2. Load certificate
-	cert, err := sign.LoadCertificate(certPath, certPassword)
+	// 2. Load certificate from bytes
+	cert, err := sign.LoadCertificateFromBytes(certData, certPassword)
 	if err != nil {
 		return "", fmt.Errorf("failed to load certificate: %w", err)
+	}
+
+	// 2a. Validate certificate belongs to the emitter
+	certDoc, docErr := cert.GetDocument()
+	if docErr != nil {
+		return "", fmt.Errorf("failed to extract document from certificate: %w", docErr)
+	}
+	var emitterDoc string
+	if input.Emitter.Type == 2 {
+		emitterDoc = input.Emitter.CPF
+	} else {
+		emitterDoc = input.Emitter.CNPJ
+	}
+	if certDoc != emitterDoc {
+		return "", fmt.Errorf("certificado digital não pertence ao emitente: certificado=%s, emitente=%s", certDoc, emitterDoc)
 	}
 
 	// 3. Sign XML
@@ -60,45 +75,50 @@ func (s *InvoiceService) BuildAndSign(input entity.InvoiceInput, certPath, certP
 	return str, nil
 }
 
-// SendToSefaz sends a signed NF-e to SEFAZ.
-func (s *InvoiceService) SendToSefaz(signedXML string, certPath, certPassword string) error {
-	cert, err := sign.LoadCertificate(certPath, certPassword)
+// SendToSefaz sends a signed NF-e to SEFAZ and returns the parsed response.
+func (s *InvoiceService) SendToSefaz(signedXML string, certData []byte, certPassword string) (*sefaz.AutorizacaoResponse, error) {
+	cert, err := sign.LoadCertificateFromBytes(certData, certPassword)
 	if err != nil {
-		return fmt.Errorf("failed to load certificate: %w", err)
+		return nil, fmt.Errorf("failed to load certificate: %w", err)
 	}
 
 	client, err := sefaz.NewClient(s.config, cert)
 	if err != nil {
-		return fmt.Errorf("failed to create SEFAZ client: %w", err)
+		return nil, fmt.Errorf("failed to create SEFAZ client: %w", err)
 	}
 
-	url, ns, err := sefaz.GetEndpointWithNamespace(s.config.StateUF, "NFeAutorizacao4", s.config.Environment == config.EnvironmentProduction)
+	url, ns, action, err := sefaz.GetEndpointWithSOAPAction(s.config.StateUF, "NFeAutorizacao4", s.config.Environment == config.EnvironmentProduction)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	cUF := defaults.UFCode(s.config.StateUF)
-	soapBody := xml.BuildSOAPEnvelope(cUF, ns, signedXML)
-	resp, err := client.Post(url, []byte(soapBody))
+	// Wrap the signed NF-e in <enviNFe> batch envelope as required by SEFAZ
+	batchXML := fmt.Sprintf(`<enviNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><idLote>1</idLote><indSinc>1</indSinc>%s</enviNFe>`, signedXML)
+
+	soapBody := xml.BuildSOAPEnvelope(ns, batchXML)
+	resp, err := client.Post(url, action, []byte(soapBody))
 	if err != nil {
-		return fmt.Errorf("failed to send to SEFAZ: %w", err)
+		return nil, fmt.Errorf("failed to send to SEFAZ: %w", err)
 	}
 
-	// TODO: Parse SEFAZ response and update invoice status
-	_ = resp
-	return nil
+	parsed, parseErr := sefaz.ParseAutorizacaoResponse(resp)
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse SEFAZ response: %w", parseErr)
+	}
+
+	return parsed, nil
 }
 
 // CheckSefazStatus checks if the configured SEFAZ is operational.
-func (s *InvoiceService) CheckSefazStatus(certPath, certPassword string) error {
-	cert, err := sign.LoadCertificate(certPath, certPassword)
+func (s *InvoiceService) CheckSefazStatus(certData []byte, certPassword string) (*sefaz.StatusResponse, error) {
+	cert, err := sign.LoadCertificateFromBytes(certData, certPassword)
 	if err != nil {
-		return fmt.Errorf("failed to load certificate: %w", err)
+		return nil, fmt.Errorf("failed to load certificate: %w", err)
 	}
 
 	client, err := sefaz.NewClient(s.config, cert)
 	if err != nil {
-		return fmt.Errorf("failed to create SEFAZ client: %w", err)
+		return nil, fmt.Errorf("failed to create SEFAZ client: %w", err)
 	}
 
 	return client.CheckStatus()
@@ -158,6 +178,44 @@ type PendingInvoice struct {
 	AccessKey   string
 	XMLSigned   string
 	RetryCount  int
+}
+
+// QueryInvoiceStatus queries the SEFAZ for the current status of an invoice by access key.
+func (s *InvoiceService) QueryInvoiceStatus(accessKey string, certData []byte, certPassword string) (*sefaz.ConsultaResponse, error) {
+	cert, err := sign.LoadCertificateFromBytes(certData, certPassword)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load certificate: %w", err)
+	}
+
+	client, err := sefaz.NewClient(s.config, cert)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create SEFAZ client: %w", err)
+	}
+
+	url, ns, action, err := sefaz.GetEndpointWithSOAPAction(s.config.StateUF, "NFeConsultaProtocolo4", s.config.Environment == config.EnvironmentProduction)
+	if err != nil {
+		return nil, err
+	}
+
+	tpAmb := "2"
+	if s.config.Environment == config.EnvironmentProduction {
+		tpAmb = "1"
+	}
+
+	payload := fmt.Sprintf(`<consSitNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><tpAmb>%s</tpAmb><xServ>CONSULTAR</xServ><chNFe>%s</chNFe></consSitNFe>`, tpAmb, accessKey)
+
+	soapBody := xml.BuildSOAPEnvelope(ns, payload)
+	resp, err := client.Post(url, action, []byte(soapBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to query SEFAZ: %w", err)
+	}
+
+	parsed, parseErr := sefaz.ParseConsultaResponse(resp)
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse SEFAZ query response: %w", parseErr)
+	}
+
+	return parsed, nil
 }
 
 // CalculateTaxes calculates the default taxes for a grain sale.

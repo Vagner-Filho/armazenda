@@ -35,17 +35,28 @@ func InitDb(c *pgx.Conn) {
 	// 1. All tables
 	execSchemaFile(c, "schema/tables.sql")
 
-	// 2. Seed data that requires conditional Go logic
+	// 2. All procedures
+	execSchemaFile(c, "schema/procedures.sql")
+
+	// 3. All triggers
+	execSchemaFile(c, "schema/triggers.sql")
+}
+
+// PostMigrationSeeds runs all data seeding that depends on migration-created tables.
+// This must be called AFTER RunMigrations completes successfully.
+func PostMigrationSeeds(pool *pgxpool.Pool) {
+	conn, err := pool.Acquire(context.Background())
+	if err != nil {
+		fmt.Printf("failed to acquire connection for seeding: %v\n", err)
+		return
+	}
+	defer conn.Release()
+
+	c := conn.Conn()
 	seedProducts(c)
 	seedDefaultHumidityProgression(c)
 	seedDefaultPersonConfig(c)
-	seedMunicipios(c)
-
-	// 3. All procedures
-	execSchemaFile(c, "schema/procedures.sql")
-
-	// 4. All triggers
-	execSchemaFile(c, "schema/triggers.sql")
+	SeedMunicipios(c)
 }
 
 func seedProducts(c *pgx.Conn) {

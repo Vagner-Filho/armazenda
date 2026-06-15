@@ -37,6 +37,10 @@
                 <iconify-icon icon="mdi:water-percent"></iconify-icon>
                 <span class="font-semibold">Umidade</span>
             </button>
+            <button class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 text-white/70 hover:bg-sky-50/10 tab-btn" data-tab="nfe">
+                <iconify-icon icon="mdi:receipt-text"></iconify-icon>
+                <span class="font-semibold">NF-e</span>
+            </button>
             <button class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 text-white/70 hover:bg-sky-50/10 tab-btn" data-tab="users">
                 <iconify-icon icon="mdi:account-group"></iconify-icon>
                 <span class="font-semibold">Usuários</span>
@@ -63,6 +67,18 @@
                         Configure as faixas de desconto por umidade. Na página Pessoa você pode associar uma prograssão a uma pessoa.
                     </p>
                     <div hx-get="/farm/config/progressions" hx-trigger="load" hx-swap="outerHTML">
+                        <p class="text-white/50 text-sm">Carregando...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NFe Config Tab -->
+            <div id="tab-nfe" class="tab-panel hidden">
+                <div class="glass-panel rounded-xl shadow-center p-4 mb-8">
+                    <h2 class="text-lg font-bold text-white/95 border-b border-white/20 pb-2 mb-4">
+                        Configuração de NF-e
+                    </h2>
+                    <div hx-get="/nfe/config/form" hx-trigger="load" hx-swap="outerHTML">
                         <p class="text-white/50 text-sm">Carregando...</p>
                     </div>
                 </div>

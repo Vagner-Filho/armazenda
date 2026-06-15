@@ -100,7 +100,7 @@ func (dm *departureModel) FilterDepartures(df entity_public.DepartureFilter, pag
 		return []entity_public.DisplayDeparture{}, 0, nil
 	}
 
-	query := `SELECT d.id, p.name, v.plate, d.departureDate, d.netWeight, COALESCE(np.name, lp.fantasyName, lp.companyName, 'Própria')
+	query := `SELECT d.id, p.name, v.plate, d.departureDate, d.netWeight, COALESCE(np.name, lp.fantasyName, lp.companyName, 'Própria'), dr.person_id, dor.person_id
 			FROM departure d
 			JOIN crop c ON d.crop = c.id
 			JOIN product p ON c.product = p.id
@@ -146,11 +146,12 @@ func (dm *departureModel) GetDisplayDepartures(farm uint32, page int) ([]entity_
 	}
 
 	rows, queryErr := dm.pool.Query(context.Background(), `
-		SELECT d.id, p.name, v.plate, d.departureDate, d.netWeight, COALESCE(origin_union.name, 'Própria')
+		SELECT d.id, p.name, v.plate, d.departureDate, d.netWeight, COALESCE(origin_union.name, 'Própria'), dr.person_id, dor.person_id
 		FROM departure d
 		JOIN crop c ON d.crop = c.id
 		JOIN product p ON c.product = p.id
 		JOIN vehicle v ON v.id = d.vehicle
+		LEFT JOIN departure_recipient dr ON dr.departure_id = d.id
 		LEFT JOIN departure_origin dor ON dor.departure_id = d.id
 		LEFT JOIN (
 			SELECT lp.personid, COALESCE(lp.fantasyname, lp.companyname) AS name FROM legal_person lp

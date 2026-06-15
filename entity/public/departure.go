@@ -71,6 +71,8 @@ type DisplayDeparture struct {
 	NetWeight     float64
 	Farm          uint32 `db:"-"`
 	Origin        string
+	RecipientID   *uint32
+	OriginID      *uint32
 }
 
 type DepartureFilter struct {

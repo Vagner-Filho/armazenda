@@ -26,6 +26,23 @@ func NewBuilder() *Builder {
 }
 
 // Build creates the NF-e XML document from the input data.
+func (b *Builder) documentForAccessKey(emit entity.EmitterData) string {
+	if emit.Type == 2 {
+		return padLeftZeros(emit.CPF, 14)
+	}
+	return padLeftZeros(emit.CNPJ, 14)
+}
+
+func padLeftZeros(s string, length int) string {
+	for len(s) < length {
+		s = "0" + s
+	}
+	if len(s) > length {
+		return s[:length]
+	}
+	return s
+}
+
 func (b *Builder) Build(input entity.InvoiceInput) (*etree.Document, error) {
 	doc := etree.NewDocument()
 	doc.WriteSettings.CanonicalEndTags = true
@@ -35,22 +52,22 @@ func (b *Builder) Build(input entity.InvoiceInput) (*etree.Document, error) {
 
 	infNFe := nfe.CreateElement("infNFe")
 	accessKey := entity.GenerateAccessKey(entity.AccessKeyData{
-		CUF:    defaults.UFCode(input.Emitter.UF),
-		AAMM:   time.Now().Format("0601"),
-		CNPJ:   input.Emitter.CNPJ,
-		Mod:    defaults.ModeloNFe,
-		Serie:  input.Serie,
-		NNF:    input.Numero,
-		TpEmis: "1",
-		CNF:    fmt.Sprintf("%08d", input.Numero),
+		CUF:      defaults.UFCode(input.Emitter.UF),
+		AAMM:     time.Now().Format("0601"),
+		Document: b.documentForAccessKey(input.Emitter),
+		Mod:      defaults.ModeloNFe,
+		Serie:    input.Serie,
+		NNF:      input.Numero,
+		TpEmis:   "1",
+		CNF:      input.CNF,
 	})
 	infNFe.CreateAttr("Id", "NFe"+accessKey)
 	infNFe.CreateAttr("versao", defaults.VersaoLayout)
 
 	// Build sections
-	b.buildIDE(infNFe, input)
+	b.buildIDE(infNFe, input, accessKey)
 	b.buildEmit(infNFe, input.Emitter)
-	b.buildDest(infNFe, input.Recipient)
+	b.buildDest(infNFe, input.Recipient, input.Environment)
 	for i, item := range input.Items {
 		b.buildDet(infNFe, item, i+1)
 	}
@@ -66,26 +83,58 @@ func (b *Builder) Build(input entity.InvoiceInput) (*etree.Document, error) {
 	return doc, nil
 }
 
-func (b *Builder) buildIDE(parent *etree.Element, input entity.InvoiceInput) {
+func (b *Builder) buildIDE(parent *etree.Element, input entity.InvoiceInput, accessKey string) {
 	ide := parent.CreateElement("ide")
 	ide.CreateElement("cUF").SetText(defaults.UFCode(input.Emitter.UF))
-	ide.CreateElement("cNF").SetText(fmt.Sprintf("%08d", input.Numero))
+	ide.CreateElement("cNF").SetText(input.CNF)
 	ide.CreateElement("natOp").SetText(input.NaturezaOp)
 	ide.CreateElement("mod").SetText(defaults.ModeloNFe)
 	ide.CreateElement("serie").SetText(strconv.Itoa(input.Serie))
 	ide.CreateElement("nNF").SetText(strconv.Itoa(input.Numero))
 	ide.CreateElement("dhEmi").SetText(time.Now().Format(time.RFC3339))
-	ide.CreateElement("tpNF").SetText("1")   // 1=Saida
-	ide.CreateElement("idDest").SetText("1") // 1=Operacao interna (same state)
+	ide.CreateElement("tpNF").SetText("1") // 1=Saida
+
+	// idDest: 1=Operacao interna, 2=Inter estadual
+	idDest := "1"
+	if input.Emitter.UF != input.Recipient.UF && input.Recipient.UF != "" {
+		idDest = "2"
+	}
+	ide.CreateElement("idDest").SetText(idDest)
+
 	ide.CreateElement("cMunFG").SetText(input.Emitter.CodigoMun)
-	ide.CreateElement("tpImp").SetText("1")    // 1=Retrato
-	ide.CreateElement("tpEmis").SetText("1")   // 1=Emissao normal
-	ide.CreateElement("cDV").SetText("0")      // Will be calculated later
-	ide.CreateElement("tpAmb").SetText("2")    // 2=Homologacao (override in production)
-	ide.CreateElement("finNFe").SetText("1")   // 1=NF-e normal
-	ide.CreateElement("indFinal").SetText("1") // 1=Consumidor final
-	ide.CreateElement("indPres").SetText("0")  // 0=Nao se aplica
-	ide.CreateElement("procEmi").SetText("0")  // 0=Emissao de NF-e com aplicativo do contribuinte
+	ide.CreateElement("tpImp").SetText("1")  // 1=Retrato
+	ide.CreateElement("tpEmis").SetText("1") // 1=Emissao normal
+
+	// DV is the last digit of the 44-digit access key
+	cDV := "0"
+	if len(accessKey) == 44 {
+		cDV = accessKey[43:]
+	}
+	ide.CreateElement("cDV").SetText(cDV)
+
+	// tpAmb from input environment
+	tpAmb := "2"
+	if input.Environment == 1 {
+		tpAmb = "1"
+	}
+	ide.CreateElement("tpAmb").SetText(tpAmb)
+
+	ide.CreateElement("finNFe").SetText("1") // 1=NF-e normal
+
+	// indFinal: 0=Normal (B2B), 1=Consumidor final
+	indFinal := "0"
+	if input.Recipient.IndIEDest == "9" {
+		indFinal = "1" // Non-contributor is typically a final consumer
+	}
+	ide.CreateElement("indFinal").SetText(indFinal)
+
+	// indPres: 9=Nao presencial (remote/online) for grain sales
+	ide.CreateElement("indPres").SetText("9")
+
+	// indIntermed: 0=Sem operacao com intermediador, 1=Com intermediador
+	ide.CreateElement("indIntermed").SetText("0")
+
+	ide.CreateElement("procEmi").SetText("0") // 0=Emissao de NF-e com aplicativo do contribuinte
 	ide.CreateElement("verProc").SetText("Armazenda-1.0")
 }
 
@@ -115,16 +164,25 @@ func (b *Builder) buildEmit(parent *etree.Element, emit entity.EmitterData) {
 	if emit.Fone != "" {
 		enderEmit.CreateElement("fone").SetText(emit.Fone)
 	}
-	e.CreateElement("IE").SetText(emit.IE)
+	e.CreateElement("IE").SetText(strings.Map(func(r rune) rune {
+		if r >= '0' && r <= '9' {
+			return r
+		}
+		return -1
+	}, emit.IE))
 	e.CreateElement("CRT").SetText(emit.CRT)
 }
 
-func (b *Builder) buildDest(parent *etree.Element, dest entity.RecipientData) {
+func (b *Builder) buildDest(parent *etree.Element, dest entity.RecipientData, environment int) {
 	d := parent.CreateElement("dest")
 	if dest.Type == 2 {
 		d.CreateElement("CPF").SetText(dest.CPF)
 	} else {
 		d.CreateElement("CNPJ").SetText(dest.CNPJ)
+	}
+	// Homologation environment requires fixed recipient name per SEFAZ rules
+	if environment == 2 {
+		dest.XNome = "NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL"
 	}
 	d.CreateElement("xNome").SetText(dest.XNome)
 	enderDest := d.CreateElement("enderDest")
@@ -142,10 +200,10 @@ func (b *Builder) buildDest(parent *etree.Element, dest entity.RecipientData) {
 	if dest.Fone != "" {
 		enderDest.CreateElement("fone").SetText(dest.Fone)
 	}
+	d.CreateElement("indIEDest").SetText(dest.IndIEDest)
 	if dest.IE != "" {
 		d.CreateElement("IE").SetText(dest.IE)
 	}
-	d.CreateElement("indIEDest").SetText(dest.IndIEDest)
 }
 
 func (b *Builder) buildDet(parent *etree.Element, item entity.ItemData, nItem int) {
@@ -182,6 +240,28 @@ func (b *Builder) buildDet(parent *etree.Element, item entity.ItemData, nItem in
 
 func (b *Builder) buildICMS(parent *etree.Element, icms entity.ICMSData) {
 	icmsElem := parent.CreateElement("ICMS")
+
+	// Simples Nacional: use CSOSN-based tags
+	if icms.CSOSN != "" {
+		switch icms.CSOSN {
+		case "101":
+			b.buildICMSSN101(icmsElem, icms)
+		case "201":
+			b.buildICMSSN201(icmsElem, icms)
+		case "202", "203":
+			b.buildICMSSN202(icmsElem, icms)
+		case "500":
+			b.buildICMSSN500(icmsElem, icms)
+		case "900":
+			b.buildICMSSN900(icmsElem, icms)
+		default:
+			// 102, 103, 300, 400 → ICMSSN102
+			b.buildICMSSN102(icmsElem, icms)
+		}
+		return
+	}
+
+	// Regime normal: use CST-based tags
 	icms00 := icmsElem.CreateElement("ICMS00")
 	icms00.CreateElement("orig").SetText(icms.Origem)
 	icms00.CreateElement("CST").SetText(icms.CST)
@@ -189,6 +269,42 @@ func (b *Builder) buildICMS(parent *etree.Element, icms entity.ICMSData) {
 	icms00.CreateElement("vBC").SetText(formatDecimal(icms.VBC, 2))
 	icms00.CreateElement("pICMS").SetText(formatDecimal(icms.PICMS, 4))
 	icms00.CreateElement("vICMS").SetText(formatDecimal(icms.VICMS, 2))
+}
+
+func (b *Builder) buildICMSSN101(parent *etree.Element, icms entity.ICMSData) {
+	elem := parent.CreateElement("ICMSSN101")
+	elem.CreateElement("orig").SetText(icms.Origem)
+	elem.CreateElement("CSOSN").SetText(icms.CSOSN)
+}
+
+func (b *Builder) buildICMSSN102(parent *etree.Element, icms entity.ICMSData) {
+	elem := parent.CreateElement("ICMSSN102")
+	elem.CreateElement("orig").SetText(icms.Origem)
+	elem.CreateElement("CSOSN").SetText(icms.CSOSN)
+}
+
+func (b *Builder) buildICMSSN201(parent *etree.Element, icms entity.ICMSData) {
+	elem := parent.CreateElement("ICMSSN201")
+	elem.CreateElement("orig").SetText(icms.Origem)
+	elem.CreateElement("CSOSN").SetText(icms.CSOSN)
+}
+
+func (b *Builder) buildICMSSN202(parent *etree.Element, icms entity.ICMSData) {
+	elem := parent.CreateElement("ICMSSN202")
+	elem.CreateElement("orig").SetText(icms.Origem)
+	elem.CreateElement("CSOSN").SetText(icms.CSOSN)
+}
+
+func (b *Builder) buildICMSSN500(parent *etree.Element, icms entity.ICMSData) {
+	elem := parent.CreateElement("ICMSSN500")
+	elem.CreateElement("orig").SetText(icms.Origem)
+	elem.CreateElement("CSOSN").SetText(icms.CSOSN)
+}
+
+func (b *Builder) buildICMSSN900(parent *etree.Element, icms entity.ICMSData) {
+	elem := parent.CreateElement("ICMSSN900")
+	elem.CreateElement("orig").SetText(icms.Origem)
+	elem.CreateElement("CSOSN").SetText(icms.CSOSN)
 }
 
 func (b *Builder) buildPIS(parent *etree.Element, pis entity.PISData) {
@@ -213,11 +329,13 @@ func (b *Builder) buildTotal(parent *etree.Element, input entity.InvoiceInput) {
 	total := parent.CreateElement("total")
 	icmsTot := total.CreateElement("ICMSTot")
 
-	var vBC, vICMS, vProd decimal.Decimal
+	var vBC, vICMS, vProd, vPIS, vCOFINS decimal.Decimal
 	for _, item := range input.Items {
 		vBC = vBC.Add(item.Imposto.ICMS.VBC)
 		vICMS = vICMS.Add(item.Imposto.ICMS.VICMS)
 		vProd = vProd.Add(item.Produto.VProd)
+		vPIS = vPIS.Add(item.Imposto.PIS.VPIS)
+		vCOFINS = vCOFINS.Add(item.Imposto.COFINS.VCOFINS)
 	}
 	vNF := input.TotalValue
 
@@ -236,8 +354,8 @@ func (b *Builder) buildTotal(parent *etree.Element, input entity.InvoiceInput) {
 	icmsTot.CreateElement("vII").SetText("0.00")
 	icmsTot.CreateElement("vIPI").SetText("0.00")
 	icmsTot.CreateElement("vIPIDevol").SetText("0.00")
-	icmsTot.CreateElement("vPIS").SetText("0.00")
-	icmsTot.CreateElement("vCOFINS").SetText("0.00")
+	icmsTot.CreateElement("vPIS").SetText(formatDecimal(vPIS, 2))
+	icmsTot.CreateElement("vCOFINS").SetText(formatDecimal(vCOFINS, 2))
 	icmsTot.CreateElement("vOutro").SetText("0.00")
 	icmsTot.CreateElement("vNF").SetText(formatDecimal(vNF, 2))
 }
@@ -307,7 +425,12 @@ func (b *Builder) buildPag(parent *etree.Element, pag entity.PaymentData) {
 	detPag.CreateElement("indPag").SetText(strconv.Itoa(pag.IndPag))
 	for _, det := range pag.Detalhes {
 		detPag.CreateElement("tPag").SetText(det.TPag)
-		detPag.CreateElement("vPag").SetText(formatDecimal(det.VPag, 2))
+		// SEFAZ requires vPag=0.00 when tPag=90 (Sem pagamento), actual value otherwise
+		if det.TPag == "90" {
+			detPag.CreateElement("vPag").SetText("0.00")
+		} else {
+			detPag.CreateElement("vPag").SetText(formatDecimal(det.VPag, 2))
+		}
 	}
 }
 

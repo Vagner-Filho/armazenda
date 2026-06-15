@@ -63,6 +63,24 @@ type PersonDisplay struct {
 	Id       uint32
 }
 
+// FullPerson represents a complete person record (legal or natural) with all data.
+type FullPerson struct {
+	Type         uint8 // 1 = natural, 2 = legal
+	Name         string
+	Document     string // CPF or CNPJ
+	IE           string
+	Id           uint32
+	Street       *string
+	Cep          *string
+	Number       *uint32
+	Complement   *string
+	Neighborhood *string
+	City         *string
+	State        *string
+	Email        *string
+	PhoneNumber  *string
+}
+
 type PersonFilter struct {
 	Id             uint32    `form:"id" json:"id"`
 	Product        uint8     `form:"product" json:"product"`

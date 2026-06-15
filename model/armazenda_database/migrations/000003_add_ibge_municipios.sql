@@ -1,6 +1,3 @@
--- Migration: Add IBGE municipalities static table
--- Includes all 141 municipalities of Mato Grosso + state capitals + major cities
-
 CREATE TABLE IF NOT EXISTS ibge_municipio (
     code TEXT PRIMARY KEY,
     name TEXT NOT NULL,

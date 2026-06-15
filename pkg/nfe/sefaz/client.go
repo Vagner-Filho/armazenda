@@ -3,7 +3,6 @@ package sefaz
 import (
 	"bytes"
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"armazenda/pkg/nfe/config"
 	"armazenda/pkg/nfe/defaults"
 	"armazenda/pkg/nfe/sign"
+	"armazenda/pkg/nfe/xml"
 )
 
 // Client handles HTTP communication with SEFAZ.
@@ -24,14 +24,7 @@ func NewClient(cfg config.SefazConfig, cert *sign.Certificate) (*Client, error) 
 	tlsConfig := cfg.TLSConfig()
 
 	if cert != nil {
-		// mTLS: add client certificate
-		certPool := x509.NewCertPool()
-		for _, c := range cert.Chain {
-			certPool.AddCert(c)
-		}
-		certPool.AddCert(cert.Leaf)
-
-		// Build certificate chain for TLS
+		// Build certificate chain for mTLS
 		certChain := [][]byte{cert.Leaf.Raw}
 		for _, c := range cert.Chain {
 			certChain = append(certChain, c.Raw)
@@ -44,7 +37,6 @@ func NewClient(cfg config.SefazConfig, cert *sign.Certificate) (*Client, error) 
 				Leaf:        cert.Leaf,
 			},
 		}
-		tlsConfig.RootCAs = certPool
 	}
 
 	transport := &http.Transport{
@@ -60,15 +52,15 @@ func NewClient(cfg config.SefazConfig, cert *sign.Certificate) (*Client, error) 
 	}, nil
 }
 
-// Post sends a SOAP request to the given endpoint.
-func (c *Client) Post(endpointURL string, soapBody []byte) ([]byte, error) {
+// Post sends a SOAP request to the given endpoint with the specified SOAPAction.
+func (c *Client) Post(endpointURL, soapAction string, soapBody []byte) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodPost, endpointURL, bytes.NewReader(soapBody))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/soap+xml; charset=utf-8")
-	req.Header.Set("SOAPAction", "")
+	req.Header.Set("SOAPAction", soapAction)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -88,11 +80,11 @@ func (c *Client) Post(endpointURL string, soapBody []byte) ([]byte, error) {
 	return body, nil
 }
 
-// CheckStatus checks if the SEFAZ service is available.
-func (c *Client) CheckStatus() error {
-	url, ns, err := GetEndpointWithNamespace(c.cfg.StateUF, "NfeStatusServico4", c.cfg.Environment == config.EnvironmentProduction)
+// CheckStatus checks if the SEFAZ service is available and returns the parsed response.
+func (c *Client) CheckStatus() (*StatusResponse, error) {
+	url, ns, action, err := GetEndpointWithSOAPAction(c.cfg.StateUF, "NfeStatusServico4", c.cfg.Environment == config.EnvironmentProduction)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	cUF := defaults.UFCode(c.cfg.StateUF)
@@ -101,31 +93,19 @@ func (c *Client) CheckStatus() error {
 		tpAmb = "1"
 	}
 
-	soapBody := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<soap12:Envelope xmlns:soap12="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <soap12:Header>
-    <nfeCabecMsg xmlns="%s">
-      <cUF>%s</cUF>
-      <versaoDados>4.00</versaoDados>
-    </nfeCabecMsg>
-  </soap12:Header>
-  <soap12:Body>
-    <nfeDadosMsg xmlns="%s">
-      <consStatServ xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
-        <tpAmb>%s</tpAmb>
-        <cUF>%s</cUF>
-        <xServ>STATUS</xServ>
-      </consStatServ>
-    </nfeDadosMsg>
-  </soap12:Body>
-</soap12:Envelope>`, ns, cUF, ns, tpAmb, cUF)
+	payload := fmt.Sprintf(`<consStatServ xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><tpAmb>%s</tpAmb><cUF>%s</cUF><xServ>STATUS</xServ></consStatServ>`, tpAmb, cUF)
 
-	resp, err := c.Post(url, []byte(soapBody))
+	soapBody := xml.BuildSOAPEnvelope(ns, payload)
+
+	resp, err := c.Post(url, action, []byte(soapBody))
 	if err != nil {
-		return fmt.Errorf("SEFAZ status check failed: %w", err)
+		return nil, fmt.Errorf("SEFAZ status check failed: %w", err)
 	}
 
-	// TODO: Parse response to check if service is operational
-	_ = resp
-	return nil
+	parsed, parseErr := ParseStatusResponse(resp)
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse SEFAZ status response: %w", parseErr)
+	}
+
+	return parsed, nil
 }
