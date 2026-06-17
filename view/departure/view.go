@@ -5,67 +5,9 @@ import (
 	"armazenda/service/crop"
 	"armazenda/service/departure_service"
 	"armazenda/service/person"
-	product_service "armazenda/service/product"
 	"armazenda/service/vehicle_service"
 	"armazenda/view"
-	"armazenda/view/filters"
-	"fmt"
 )
-
-func BuildDepartureChips(rf entity_public.DepartureFilter, farm uint32) []filters.ChipEntry {
-	chips := []filters.ChipEntry{}
-
-	if rf.Product != 0 {
-		products, _ := product_service.GetProducts()
-		for _, p := range products {
-			if p.Id == rf.Product {
-				chips = append(chips, filters.ChipEntry{Key: "product", Label: "Grão", Value: p.Name})
-				break
-			}
-		}
-	}
-	if rf.Person != "" {
-		if rf.Person == "NULL" {
-			chips = append(chips, filters.ChipEntry{Key: "person", Label: "Pessoa", Value: "Própria"})
-		} else {
-			people, _ := person_service.GetPeopleByFarm(farm)
-			for _, p := range people {
-				if p.Id != nil && fmt.Sprintf("%v", *p.Id) == rf.Person {
-					chips = append(chips, filters.ChipEntry{Key: "person", Label: "Pessoa", Value: p.Name})
-					break
-				}
-			}
-		}
-	}
-	if rf.VehiclePlate != "" {
-		vehicles, _ := vehicle_service.GetVehiclesByFarm(farm)
-		display := rf.VehiclePlate
-		for _, v := range vehicles {
-			if fmt.Sprintf("%v", v.Id) == rf.VehiclePlate {
-				display = v.Plate
-				if v.Name != "" {
-					display = v.Plate + " | " + v.Name
-				}
-				break
-			}
-		}
-		chips = append(chips, filters.ChipEntry{Key: "vehiclePlate", Label: "Veículo", Value: display})
-	}
-	if rf.NetWeightMin != 0 {
-		chips = append(chips, filters.ChipEntry{Key: "netWeightMin", Label: "Peso mín.", Value: fmt.Sprintf("%.0f kg", rf.NetWeightMin)})
-	}
-	if rf.NetWeightMax != 0 {
-		chips = append(chips, filters.ChipEntry{Key: "netWeightMax", Label: "Peso máx.", Value: fmt.Sprintf("%.0f kg", rf.NetWeightMax)})
-	}
-	if !rf.DepartureDateMin.IsZero() {
-		chips = append(chips, filters.ChipEntry{Key: "departureDateMin", Label: "Início", Value: rf.DepartureDateMin.Format("02/01/2006 15:04")})
-	}
-	if !rf.DepartureDateMax.IsZero() {
-		chips = append(chips, filters.ChipEntry{Key: "departureDateMax", Label: "Fim", Value: rf.DepartureDateMax.Format("02/01/2006 15:04")})
-	}
-
-	return chips
-}
 
 type departureFilters struct {
 	view.BaseTemplateData
@@ -76,76 +18,16 @@ type departureFilters struct {
 
 type DepartureContent struct {
 	view.BaseTemplateData
-	Departures   []entity_public.DisplayDeparture
-	Drafts       []entity_public.DisplayDepartureDraft
-	Filters      departureFilters
-	AppliedChips filters.FilterChips
-	NoContent    bool
-	CurrentPage  int
-	TotalPages   int
-	NextPage     int
-	PrevPage     int
-	HasNext      bool
-	HasPrev      bool
-}
-
-type DepartureFilterApplyResponse struct {
-	view.BaseTemplateData
-	Chips       filters.FilterChips
 	Departures  []entity_public.DisplayDeparture
-	TotalPages  int
+	Drafts      []entity_public.DisplayDepartureDraft
+	Filters     departureFilters
+	NoContent   bool
 	CurrentPage int
-	HasNext     bool
-	HasPrev     bool
+	TotalPages  int
 	NextPage    int
 	PrevPage    int
-	NoResults   bool
-}
-
-type DepartureClearedView struct {
-	view.BaseTemplateData
-	Form    departureFilters
-	Chips   filters.FilterChips
-	Content DepartureContent
-}
-
-func BuildDepartureFilterApplyResponse(filter entity_public.DepartureFilter, departures []entity_public.DisplayDeparture, total int, page int, farm uint32) DepartureFilterApplyResponse {
-	pageSize := 10
-	totalPages := 0
-	if total > 0 {
-		totalPages = (total + pageSize - 1) / pageSize
-	}
-	hasNext := page < totalPages
-	hasPrev := page > 1
-	nextPage := page + 1
-	if !hasNext {
-		nextPage = page
-	}
-	prevPage := page - 1
-	if !hasPrev {
-		prevPage = page
-	}
-	return DepartureFilterApplyResponse{
-		Chips:       filters.FilterChips{Items: BuildDepartureChips(filter, farm), OOB: true},
-		Departures:  departures,
-		TotalPages:  totalPages,
-		CurrentPage: page,
-		HasNext:     hasNext,
-		HasPrev:     hasPrev,
-		NextPage:    nextPage,
-		PrevPage:    prevPage,
-		NoResults:   len(departures) == 0,
-	}
-}
-
-func GetClearedDepartureView(farm uint32) DepartureClearedView {
-	form := GetFiltersForm(farm)
-	content, _ := GetDepartureContent(farm, 1)
-	return DepartureClearedView{
-		Form:    form,
-		Chips:   filters.FilterChips{Items: []filters.ChipEntry{}, OOB: true},
-		Content: content,
-	}
+	HasNext     bool
+	HasPrev     bool
 }
 
 func GetFiltersForm(farm uint32) departureFilters {
@@ -187,17 +69,16 @@ func GetDepartureContent(farmId uint32, page int) (DepartureContent, []*entity_p
 	}
 
 	return DepartureContent{
-		Departures:   departures,
-		Drafts:       drafts,
-		NoContent:    len(departures) == 0 && len(drafts) == 0,
-		Filters:      GetFiltersForm(farmId),
-		AppliedChips: filters.FilterChips{Items: []filters.ChipEntry{}},
-		CurrentPage:  page,
-		TotalPages:   totalPages,
-		NextPage:     nextPage,
-		PrevPage:     prevPage,
-		HasNext:      hasNext,
-		HasPrev:      hasPrev,
+		Departures:  departures,
+		Drafts:      drafts,
+		NoContent:   len(departures) == 0 && len(drafts) == 0,
+		Filters:     GetFiltersForm(farmId),
+		CurrentPage: page,
+		TotalPages:  totalPages,
+		NextPage:    nextPage,
+		PrevPage:    prevPage,
+		HasNext:     hasNext,
+		HasPrev:     hasPrev,
 	}, []*entity_public.Toast{toast, draftToast}
 }
 

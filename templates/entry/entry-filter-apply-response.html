@@ -1,8 +1,0 @@
-{{ define "entry-filter-apply-response" }}
-{{ template "entry-filter-chips" .Chips }}
-{{ if .NoResults }}
-{{ template "no-entry-found-for-filter" . }}
-{{ else }}
-{{ template "entry-table" . }}
-{{ end }}
-{{ end }}

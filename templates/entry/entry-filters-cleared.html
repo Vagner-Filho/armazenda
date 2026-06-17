@@ -1,7 +1,0 @@
-{{ define "entry-filters-cleared" }}
-{{ template "entry-filter-form" .Form }}
-{{ template "entry-filter-chips" .Chips }}
-<main id="list" hx-swap-oob="true" class="overflow-hidden">
-  {{ template "entry-table" .Content }}
-</main>
-{{ end }}

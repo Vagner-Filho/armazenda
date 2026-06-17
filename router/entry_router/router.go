@@ -240,14 +240,29 @@ func filterEntries(c *gin.Context) {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 	}
 
-	response := entry_view.BuildEntryFilterApplyResponse(entryFilter, entries, total, page, farm)
-	c.HTML(http.StatusOK, "entry-filter-apply-response", response)
+	if len(entries) == 0 {
+		c.HTML(http.StatusOK, "no-entry-found-for-filter", gin.H{})
+		return
+	}
+
+	pageSize := 10
+	totalPages := (total + pageSize - 1) / pageSize
+
+	c.HTML(http.StatusOK, "entry-table", gin.H{
+		"Entries":     entries,
+		"TotalPages":  totalPages,
+		"CurrentPage": page,
+		"HasPrev":     page > 1,
+		"PrevPage":    page - 1,
+		"HasNext":     page < totalPages,
+		"NextPage":    page + 1,
+	})
 }
 
 func getEntryFiltersForm(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
-	c.HTML(http.StatusOK, "entry-filters-cleared", entry_view.GetClearedEntryView(farm))
+	c.HTML(http.StatusOK, "entry-filter-form", entry_view.GetFiltersForm(farm))
 }
 
 func getEmptyEntryForm(c *gin.Context) {

@@ -1,8 +1,0 @@
-{{ define "departure-filter-apply-response" }}
-{{ template "departure-filter-chips" .Chips }}
-{{ if .NoResults }}
-{{ template "no-departure-found-for-filter" . }}
-{{ else }}
-{{ template "departure-table" . }}
-{{ end }}
-{{ end }}

@@ -13,7 +13,6 @@
     <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/toast.js"></script>
     <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/weight.js"></script>
     <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/stats.js"></script>
-    <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/filterModal.js" defer></script>
   </head>
   <body class="main-bg">
     {{ template "navbar" . }}
@@ -28,25 +27,19 @@
         </p>
       </header>
       <div class="glass-panel rounded-xl p-4 mb-8">
-        <div class="flex items-center gap-3 mb-4 flex-wrap">
-          <button data-opens="filterDialog" type="button" class="glass-btn text-sm flex items-center gap-1.5 shrink-0" aria-haspopup="dialog" aria-controls="filterDialog">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-            </svg>
-            <span>Filtros</span>
-          </button>
-          {{ template "filter-chips" .AppliedChips }}
-          <button class="primary-glass-btn text-xs md:text-base flex items-center gap-1 shrink-0" type="button" hx-trigger="click" hx-post="/report" hx-include="form#report-filters-form" hx-target="html" hx-swap="beforeend">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 32 32">
+        <div class="flex justify-between items-end gap-2 mb-4">
+          {{ template "report-filters" . }}
+          <button class="primary-glass-btn text-xs md:text-base flex items-center gap-1 w-52" type="button" hx-trigger="click" hx-post="/report" hx-include="form#report-filters-form" hx-target="html" hx-swap="beforeend">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32">
               <path fill="currentColor" d="M15 20h2v4h-2zm5-2h2v6h-2zm-10-4h2v10h-2z"></path>
-              <path fill="currentColor" d="M25 5h-3V4a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v1H7a2 2 0 0 0-2 2v21a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2M12 4h8v4h-8Zm13 24H7V7h3v3h12V7h3Z"></path>
+              <path fill="currentColor" d="M25 5h-3V4a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v1H7a2 2 0 0 0-2 2v21a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2M12 4h8v4h-8Zm13 24H7V7h3v3h12V7h3Z">
+              </path>
             </svg>
-            <span>Gerar Relatório</span>
+            Gerar Relatório
           </button>
         </div>
         {{ template "report-content" . }}
       </div>
     </section>
-    {{ template "filter-modal" . }}
   </body>
 </html>

@@ -1,14 +1,14 @@
 {{ define "filter-departure-weight" }}
 <fieldset class="filter-card">
-    <legend class="w-full text-center text-xs font-medium uppercase tracking-wider text-white/70">
+    <legend class="w-full text-center text-sm font-medium text-white/90">
         Peso
     </legend>
     <div class="flex flex-col-reverse w-full sm:max-w-20 lg:max-w-24">
-        <input type="number" name="weightMin" id="weight-min-filter" aria-placeholder="Peso mínimo em kilos" placeholder="em kg" class="w-full text-sm peer bg-white/10 text-white border-white/20 placeholder:text-white/40" />
+        <input type="number" name="weightMin" id="weight-min-filter" aria-placeholder="Peso mínimo em kilos" placeholder="em kg" class="w-full text-sm peer bg-slate-800/80 text-white/90 border-white/20 placeholder:text-white/40" />
         <label for="weight-min-filter" class="px-2 text-xs text-white/80 peer-focus:text-green-400">Mínimo</label>
     </div>
     <div class="flex flex-col-reverse w-full sm:max-w-20 lg:max-w-24">
-        <input type="number" name="weightMax" id="weight-max-filter" aria-placeholder="Peso máximo em kilos" class="w-full text-sm peer bg-white/10 text-white border-white/20 placeholder:text-white/40" placeholder="em kg" />
+        <input type="number" name="weightMax" id="weight-max-filter" aria-placeholder="Peso máximo em kilos" class="w-full text-sm peer bg-slate-800/80 text-white/90 border-white/20 placeholder:text-white/40" placeholder="em kg" />
         <label for="weight-max-filter" class="px-2 text-xs text-white/80 peer-focus:text-green-400">Máximo</label>
     </div>
 </fieldset>

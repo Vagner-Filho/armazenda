@@ -25,14 +25,6 @@ func getRelatorioPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "relatorio.html", pageData)
 }
 
-func getReportFilters(c *gin.Context) {
-	sid, _ := c.Cookie("session_id")
-	farm := user_service.GetFarmFromToken(sid)
-	nonce, _ := c.Get("csp_nonce")
-	data := report_view.GetClearedReport(farm, nonce.(string))
-	c.HTML(http.StatusOK, "report-filters-cleared", data)
-}
-
 func filterReport(c *gin.Context) {
 	var reportFilter entity_public.ReportFilter
 	err := c.Bind(&reportFilter)
@@ -48,13 +40,14 @@ func filterReport(c *gin.Context) {
 
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
-	nonce, _ := c.Get("csp_nonce")
-	response, toast := report_view.FilterReport(reportFilter, farm, page, nonce.(string))
+	report, toast := report_view.FilterReport(reportFilter, farm, page)
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 		return
 	}
-	c.HTML(http.StatusOK, "report-filter-apply-response", response)
+	nonce, _ := c.Get("csp_nonce")
+	report.CSPNonce = nonce.(string)
+	c.HTML(http.StatusOK, "report-content", report)
 }
 
 func getFullReport(c *gin.Context) {
@@ -79,7 +72,6 @@ func getFullReport(c *gin.Context) {
 
 func UseReportRoutes(router *gin.Engine) {
 	router.GET("/relatorio", getRelatorioPage)
-	router.GET("/report/filters", getReportFilters)
 	router.POST("/report/filter", filterReport)
 	router.POST("/report", getFullReport)
 }

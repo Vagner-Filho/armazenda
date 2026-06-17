@@ -1,11 +1,10 @@
 {{ block "entry-filter-form" . }}
-<form id="entry-filters-form" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"
-  hx-post="/entry/filter" hx-target="main#list">
-  {{ template "filter-entry-grain" }}
-  {{ template "filter-entry-crop" .Crops }}
-  {{ template "filter-entry-field" .Fields }}
-  {{ template "filter-entry-vehicle" .Vehicles }}
-  {{ template "filter-entry-netweight" }}
-  {{ template "filter-entry-date" }}
-</form>
+<form class="flex flex-col sm:flex-row flex-wrap items-start gap-1 justify-start" id="entry-filters-form" hx-post="/entry/filter" hx-target="main#list">
+        {{ template "filter-entry-date" }}
+        {{ template "filter-entry-crop" .Crops }}
+        {{ template "filter-entry-grain" }}
+        {{ template "filter-entry-field" .Fields }}
+        {{ template "filter-entry-vehicle" .Vehicles }}
+        {{ template "filter-entry-netweight" }}
+    </form>
 {{ end }}
