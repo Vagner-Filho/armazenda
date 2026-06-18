@@ -1,15 +1,15 @@
 {{ block "nfe-list-item" . }}
-<tr class="border-b border-white/10 hover:bg-white/5" id="nfe-{{ .ID }}">
-    <td class="py-2 px-3 font-mono text-xs truncate max-w-48" title="{{ .AccessKey }}">
+<tr class="text-sm border-b border-sky-50/30 hover:bg-sky-50/10 whitespace-nowrap" id="nfe-{{ .ID }}">
+    <td class="py-3 px-4 text-left font-mono text-xs truncate max-w-48" data-label="Chave de Acesso" title="{{ .AccessKey }}">
         {{ .AccessKey }}
     </td>
-    <td class="py-2 px-3">
+    <td class="py-3 px-4 text-left" data-label="Série/Número">
         {{ .Serie }}/{{ .Number }}
     </td>
-    <td class="py-2 px-3">
+    <td class="py-3 px-4 text-left font-bold" data-label="Valor Total">
         R$ {{ .TotalValue }}
     </td>
-    <td class="py-2 px-3">
+    <td class="py-3 px-4 text-left" data-label="Status">
         {{ if eq .Status "authorized" }}
         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
             Autorizada
@@ -36,16 +36,16 @@
         </span>
         {{ end }}
     </td>
-    <td class="py-2 px-3">
-        <div class="flex items-center gap-2">
+    <td class="py-3 px-4 text-left" data-label="Ações">
+        <div class="flex items-center justify-end lg:justify-start gap-2 *:size-5">
             {{ if .XMLSigned }}
-            <button type="button" hx-get="/nfe/download/xml/{{ .AccessKey }}" title="Baixar XML" class="icon-btn">
-                <iconify-icon icon="mdi:download" class="text-lg"></iconify-icon>
+            <button type="button" hx-get="/nfe/download/xml/{{ .AccessKey }}" title="Baixar XML" class="icon-btn size-5">
+                <iconify-icon icon="mdi:download" class="text-xl"></iconify-icon>
             </button>
             {{ end }}
             {{ if eq .Status "authorized" }}
-            <button type="button" hx-get="/nfe/download/danfe/{{ .AccessKey }}" title="Baixar DANFE" class="icon-btn">
-                <iconify-icon icon="mdi:file-pdf-box" class="text-lg"></iconify-icon>
+            <button type="button" hx-get="/nfe/download/danfe/{{ .AccessKey }}" title="Baixar DANFE" class="icon-btn size-5">
+                <iconify-icon icon="mdi:file-pdf-box" class="text-xl"></iconify-icon>
             </button>
             {{ end }}
         </div>

@@ -381,8 +381,25 @@ func (m *NFeModel) UpdateInvoiceSent(id int) error {
 	return err
 }
 
-// GetInvoicesByFarm returns all invoices for a farm, ordered by creation date descending.
-func (m *NFeModel) GetInvoicesByFarm(farmID uint32) ([]Invoice, error) {
+// GetInvoicesByFarm returns invoices for a farm with pagination, ordered by creation date descending.
+func (m *NFeModel) GetInvoicesByFarm(farmID uint32, page int) ([]Invoice, int, error) {
+	pageSize := 10
+	if page < 1 {
+		page = 1
+	}
+	offset := (page - 1) * pageSize
+
+	countQuery := `
+		SELECT COUNT(*)
+		FROM nfe_invoice i
+		JOIN departure d ON d.id = i.departure_id
+		WHERE d.farm = $1
+	`
+	var total int
+	if err := m.pool.QueryRow(context.Background(), countQuery, farmID).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("failed to count invoices: %w", err)
+	}
+
 	query := `
 		SELECT i.id, i.departure_id, i.access_key, i.serie, i.number, i.status, i.cfop, i.ncm,
 		       i.quantity_kg, i.unit_price, i.total_value, i.icms_value, i.xml_signed, i.xml_authorized,
@@ -392,10 +409,11 @@ func (m *NFeModel) GetInvoicesByFarm(farmID uint32) ([]Invoice, error) {
 		JOIN departure d ON d.id = i.departure_id
 		WHERE d.farm = $1
 		ORDER BY i.created_at DESC
+		LIMIT $2 OFFSET $3
 	`
-	rows, err := m.pool.Query(context.Background(), query, farmID)
+	rows, err := m.pool.Query(context.Background(), query, farmID, pageSize, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get invoices: %w", err)
+		return nil, 0, fmt.Errorf("failed to get invoices: %w", err)
 	}
 	defer rows.Close()
 
@@ -409,7 +427,7 @@ func (m *NFeModel) GetInvoicesByFarm(farmID uint32) ([]Invoice, error) {
 			&xmlSigned, &xmlAuthorized, &protocol, &sefazCode, &sefazMotive, &rejectionReason,
 			&cancellationReason, &inv.RetryCount, &inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan invoice: %w", err)
+			return nil, 0, fmt.Errorf("failed to scan invoice: %w", err)
 		}
 		inv.ICMSValue = icmsValue
 		inv.XMLSigned = xmlSigned
@@ -422,7 +440,7 @@ func (m *NFeModel) GetInvoicesByFarm(farmID uint32) ([]Invoice, error) {
 		invoices = append(invoices, inv)
 	}
 
-	return invoices, rows.Err()
+	return invoices, total, rows.Err()
 }
 
 // GetInvoiceByAccessKey returns an invoice by its access key.

@@ -132,6 +132,7 @@ func saveNFeConfig(c *gin.Context) {
 	config := nfe_model.FarmConfig{
 		FarmID:                       int(farmID),
 		CertificatePath:              certPath,
+		CertificateData:              certData,
 		CertificatePasswordEncrypted: encryptedPassword,
 		Environment:                  environment,
 		Serie:                        serie,
@@ -187,15 +188,32 @@ func getNFeList(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farmID := user_service.GetFarmFromToken(sid)
 
+	page, _ := strconv.Atoi(c.Query("page"))
+	if page < 1 {
+		page = 1
+	}
+
 	nfeModel := nfe_model.GetNFeModel()
-	invoices, err := nfeModel.GetInvoicesByFarm(farmID)
+	invoices, total, err := nfeModel.GetInvoicesByFarm(farmID, page)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Failed to get invoices")
 		return
 	}
 
+	pageSize := 10
+	totalPages := 0
+	if total > 0 {
+		totalPages = (total + pageSize - 1) / pageSize
+	}
+
 	c.HTML(http.StatusOK, "nfe-list", gin.H{
-		"Invoices": invoices,
+		"Invoices":    invoices,
+		"CurrentPage": page,
+		"TotalPages":  totalPages,
+		"HasPrev":     page > 1,
+		"PrevPage":    page - 1,
+		"HasNext":     page < totalPages,
+		"NextPage":    page + 1,
 	})
 }
 
