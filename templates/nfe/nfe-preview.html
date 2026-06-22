@@ -1,0 +1,69 @@
+{{ block "nfe-preview" . }}
+<div id="nfe-emit-step">
+    <div class="mb-3 p-3 rounded-lg bg-yellow-500/15 border border-yellow-500/40 text-yellow-200 text-xs text-center font-bold uppercase tracking-wide">
+        Documento de Pré-visualização — Sem Valor Fiscal
+    </div>
+    <div class="mb-4 mx-auto rounded-lg overflow-hidden border border-white/10 bg-white/5" style="aspect-ratio: 1/1.414; max-height: 65vh;">
+        <iframe src="data:application/pdf;base64,{{ .PDFBase64 }}" class="w-full h-full border-0"
+            title="Pré-visualização DANFE"></iframe>
+    </div>
+    <div class="mb-4 grid grid-cols-2 gap-2 text-white/80 text-base *:text-center">
+        <p><strong>Romaneio:</strong> {{ .DepartureID }}</p>
+        <p><strong>Produto:</strong> {{ .Product }}</p>
+        <p><strong>Peso Líquido:</strong> <span data-raw-weight="{{ .NetWeight }}">{{ .NetWeight }}</span></p>
+        <p><strong>Preço Unitário:</strong> <span data-raw-value="{{ .UnitPrice }}">{{ .UnitPrice }}</span></p>
+        <p class="col-span-2"><strong>Valor Total:</strong> <span data-raw-value="{{ .TotalValue }}">{{ .TotalValue }}</span></p>
+    </div>
+    <form class="flex flex-col gap-4" hx-post="/nfe/build/{{ .DepartureID }}" hx-target="this" hx-swap="none"
+        hx-indicator="#nfe-emit-spinner">
+        <input type="hidden" name="unitPrice" value="{{ .UnitPrice }}">
+        <input type="hidden" name="cfop" value="{{ .CFOP }}">
+        <div class="flex items-center justify-center gap-2">
+            <button type="button" hx-get="/nfe/modal/{{ .DepartureID }}" hx-target="#nfe-emit-dialog"
+                hx-swap="outerHTML" class="glass-btn flex items-center gap-1 p-3">
+                <iconify-icon icon="mdi:arrow-left" width="20" height="20"></iconify-icon>
+                Voltar
+            </button>
+            <button type="submit" class="primary-glass-btn flex items-center gap-1 p-3">
+                <iconify-icon icon="mdi:receipt-text" width="20" height="20"></iconify-icon>
+                Confirmar e Emitir
+            </button>
+            <span id="nfe-emit-spinner" class="htmx-indicator animate-spin text-white">
+                <iconify-icon icon="mdi:loading" width="24" height="24"></iconify-icon>
+            </span>
+        </div>
+    </form>
+    <div id="nfe-result" class="hidden mt-4">
+        <a id="nfe-download-link" href="#" download="nfe.xml"
+            class="primary-glass-btn flex items-center gap-1 p-2 text-sm w-full justify-center">
+            <iconify-icon icon="mdi:download" width="18" height="18"></iconify-icon>
+            Baixar XML Assinado
+        </a>
+    </div>
+</div>
+<script nonce="{{ .CSPNonce }}" type="module">
+    (function() {
+        const dialog = document.querySelector('#nfe-emit-dialog');
+        if (dialog) {
+            dialog.classList.remove('max-w-lg');
+            dialog.classList.add('max-w-4xl');
+        }
+    })();
+</script>
+<script nonce="{{ .CSPNonce }}" type="module">
+    import { formatWeight } from "/public/assets/js/weight.js";
+
+    const weightEl = document.querySelector('[data-raw-weight]');
+    if (weightEl) {
+        weightEl.textContent = formatWeight(weightEl.dataset.rawWeight);
+    }
+
+    const currencyFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+    document.querySelectorAll('[data-raw-value]').forEach(el => {
+        const val = parseFloat(el.dataset.rawValue);
+        if (!isNaN(val)) {
+            el.textContent = currencyFmt.format(val);
+        }
+    });
+</script>
+{{ end }}

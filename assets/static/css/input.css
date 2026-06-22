@@ -121,7 +121,13 @@
     }
 
     dialog {
-        @apply backdrop:bg-black/50 m-auto
+        @apply m-auto
+    }
+
+    dialog::backdrop {
+        background-color: rgb(0 0 0 / 0.6);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
     }
 
     * {

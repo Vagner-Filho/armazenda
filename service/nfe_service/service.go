@@ -35,28 +35,29 @@ func NewNFeService() *NFeService {
 	return &NFeService{}
 }
 
-// BuildInvoiceFromDeparture builds, signs, and attempts to send an NF-e for a departure.
-// The user's workflow is never disrupted by SEFAZ unavailability.
-func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice decimal.Decimal, farmID uint32) (string, entity_public.Toast) {
+// prepareInvoiceBuildData fetches and validates all data needed to build an NF-e
+// without allocating a number, signing, or persisting anything.
+func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decimal.Decimal, farmID uint32) (entity.InvoiceInput, entity_public.Departure, *nfe_model.FarmConfig, *nfe_model.ProductConfig, entity_public.Toast) {
+	var emptyInput entity.InvoiceInput
+
 	// Get departure
 	dModel := departure_model.GetDepartureModel()
 	departure, err := dModel.GetDeparture(departureID)
 	if err != nil {
 		if err.IsServerErr {
-			return "", entity_public.GetErrorToast("Internal error fetching departure", "")
+			return emptyInput, departure, nil, nil, entity_public.GetErrorToast("Internal error fetching departure", "")
 		}
-		return "", entity_public.GetWarningToast(err.Message, "")
+		return emptyInput, departure, nil, nil, entity_public.GetWarningToast(err.Message, "")
 	}
 
 	// Validate departure type for NF-e: only "Self -> Third Party" qualifies
-	// (no external origin, but has an external recipient)
 	if departure.Origin != nil {
-		return "", entity_public.GetWarningToast(
+		return emptyInput, departure, nil, nil, entity_public.GetWarningToast(
 			"Esta saída não pode emitir NF-e",
 			"NF-e só pode ser emitida para saídas do tipo Próprio -> Terceiro (sem origem externa)")
 	}
 	if departure.Recipient == nil {
-		return "", entity_public.GetWarningToast(
+		return emptyInput, departure, nil, nil, entity_public.GetWarningToast(
 			"Esta saída não pode emitir NF-e",
 			"Selecione um destinatário para emitir a NF-e")
 	}
@@ -66,10 +67,10 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	farmNFeConfig, dbErr := nfeModel.GetFarmConfig(farmID)
 	if dbErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("GetFarmConfig error: %v", dbErr.Error()))
-		return "", entity_public.GetErrorToast("Failed to get NFe configuration", "")
+		return emptyInput, departure, nil, nil, entity_public.GetErrorToast("Failed to get NFe configuration", "")
 	}
 	if farmNFeConfig == nil {
-		return "", entity_public.GetWarningToast("NFe not configured for this farm", "configure in settings")
+		return emptyInput, departure, nil, nil, entity_public.GetWarningToast("NFe not configured for this farm", "configure in settings")
 	}
 
 	// Get full farm data for emitter address
@@ -77,10 +78,10 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	farmData, farmErr := farmConfigModel.GetFarmConfig(farmID)
 	if farmErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("GetFarmConfig error: %v", farmErr.Error()))
-		return "", entity_public.GetErrorToast("Failed to get farm data", "")
+		return emptyInput, departure, nil, nil, entity_public.GetErrorToast("Failed to get farm data", "")
 	}
 	if farmData == nil {
-		return "", entity_public.GetWarningToast("Farm not found", "")
+		return emptyInput, departure, nil, nil, entity_public.GetWarningToast("Farm not found", "")
 	}
 
 	// Get recipient
@@ -90,7 +91,7 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 		person, personErr := pModel.GetFullPersonById(*departure.Recipient)
 		if personErr != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("GetFullPersonById error: %v", personErr.Error()))
-			return "", entity_public.GetErrorToast("Failed to get recipient info", "")
+			return emptyInput, departure, nil, nil, entity_public.GetErrorToast("Failed to get recipient info", "")
 		}
 		recipient = s.mapFullPersonToRecipient(person, nfeModel)
 	}
@@ -102,10 +103,9 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	productConfig, prodErr := nfeModel.GetProductConfig(farmID, departure.Crop)
 	if prodErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("GetProductConfig error: %v", prodErr.Error()))
-		return "", entity_public.GetErrorToast("Failed to get product config", "")
+		return emptyInput, departure, nil, nil, entity_public.GetErrorToast("Failed to get product config", "")
 	}
 	if productConfig == nil {
-		// Fallback to defaults
 		productConfig = &nfe_model.ProductConfig{
 			NCM:         defaults.NCMSoja,
 			DefaultCFOP: defaults.CFOPVendaProducao,
@@ -117,7 +117,7 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	// Validate required emitter fields
 	validationErrors := s.validateEmitter(emitter, farmNFeConfig.Serie)
 	if len(validationErrors) > 0 {
-		return "", entity_public.GetWarningToast(
+		return emptyInput, departure, nil, nil, entity_public.GetWarningToast(
 			"Configuração de NF-e incompleta",
 			strings.Join(validationErrors, "; "),
 		)
@@ -129,7 +129,7 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	// Build input
 	input := entity.InvoiceInput{
 		Serie:       farmNFeConfig.Serie,
-		Numero:      0, // Will be set after allocation
+		Numero:      0,
 		Environment: farmNFeConfig.Environment,
 		NaturezaOp:  "Venda de producao do estabelecimento",
 		Emitter:     emitter,
@@ -151,6 +151,19 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 		TotalValue: departure.NetWeight.Mul(unitPrice),
 	}
 
+	return input, departure, farmNFeConfig, productConfig, entity_public.Toast{}
+}
+
+// BuildInvoiceFromDeparture builds, signs, and attempts to send an NF-e for a departure.
+// The user's workflow is never disrupted by SEFAZ unavailability.
+func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice decimal.Decimal, farmID uint32) (string, entity_public.Toast) {
+	input, departure, farmNFeConfig, productConfig, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID)
+	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
+		return "", toast
+	}
+
+	nfeModel := nfe_model.GetNFeModel()
+
 	// Allocate invoice number
 	number, allocErr := nfeModel.AllocateNumber(farmID, farmNFeConfig.Serie)
 	if allocErr != nil {
@@ -159,15 +172,15 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	}
 	input.Numero = number
 
-	// Generate random 8-digit cNF (required by SEFAZ, must not be sequential)
+	// Generate random 8-digit cNF
 	cnf := generateRandomCNF()
 	input.CNF = cnf
 
 	// Build access key
 	accessKey := entity.GenerateAccessKey(entity.AccessKeyData{
-		CUF:      defaults.UFCode(emitter.UF),
+		CUF:      defaults.UFCode(input.Emitter.UF),
 		AAMM:     time.Now().Format("0601"),
-		Document: s.documentForAccessKey(emitter),
+		Document: s.documentForAccessKey(input.Emitter),
 		Mod:      defaults.ModeloNFe,
 		Serie:    input.Serie,
 		NNF:      input.Numero,
@@ -207,7 +220,6 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	// Attempt synchronous SEFAZ submission
 	sefazResp, sendErr := invService.SendToSefaz(signedXML, farmNFeConfig.CertificateData, certPassword)
 	if sendErr != nil {
-		// Network error or SEFAZ down → mark as pending for retry worker
 		errUpd := nfeModel.UpdateInvoiceStatus(invoiceID, "pending", "", "", "SEFAZ unavailable or network error: "+sendErr.Error())
 		if errUpd != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceStatus error: %v", errUpd.Error()))
@@ -216,7 +228,6 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	}
 
 	if sefazResp == nil {
-		// No response but no error either — queue for retry
 		errUpd := nfeModel.UpdateInvoiceStatus(invoiceID, "pending", "", "", "Resposta vazia da SEFAZ")
 		if errUpd != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceStatus error: %v", errUpd.Error()))
@@ -224,7 +235,6 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 		return signedXML, entity_public.GetSuccessToast("NF-e salva e será enviada automaticamente à SEFAZ", "status: pendente")
 	}
 
-	// Handle SEFAZ response status
 	if sefazResp.IsAuthorized() {
 		errUpd := nfeModel.UpdateInvoiceStatus(invoiceID, "authorized", sefazResp.Protocol, sefazResp.StatusCode, sefazResp.StatusMotive)
 		if errUpd != nil {
@@ -258,6 +268,67 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceStatus error: %v", errUpd.Error()))
 	}
 	return signedXML, entity_public.GetSuccessToast("NF-e salva e será enviada automaticamente à SEFAZ", fmt.Sprintf("Status: %s", sefazResp.StatusMotive))
+}
+
+// GeneratePreviewDANFE builds a preview DANFE PDF without allocating an invoice number,
+// signing, or persisting anything. It returns the PDF bytes and any validation toast.
+func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.Decimal, farmID uint32) ([]byte, entity_public.Toast) {
+	input, _, _, _, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID)
+	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
+		return nil, toast
+	}
+
+	now := time.Now()
+	product := input.Items[0].Produto
+
+	data := entity.DANFEData{
+		AccessKey:      "",
+		Numero:         0,
+		Serie:          input.Serie,
+		NaturezaOp:     input.NaturezaOp,
+		EmissionDate:   now.Format("02/01/2006 15:04:05"),
+		EmitterName:    input.Emitter.XNome,
+		EmitterCNPJ:    s.formatDocument(input.Emitter.CNPJ, input.Emitter.CPF),
+		EmitterAddress: fmt.Sprintf("%s, %s", input.Emitter.Logradouro, input.Emitter.Numero),
+		EmitterCity:    input.Emitter.Municipio,
+		EmitterUF:      input.Emitter.UF,
+		DestName:       input.Recipient.XNome,
+		DestCNPJ:       s.formatDocument(input.Recipient.CNPJ, input.Recipient.CPF),
+		DestAddress:    fmt.Sprintf("%s, %s", input.Recipient.Logradouro, input.Recipient.Numero),
+		DestCity:       input.Recipient.Municipio,
+		DestUF:         input.Recipient.UF,
+		Products: []entity.DANFEProduct{
+			{
+				Code:      product.Codigo,
+				Desc:      product.XProd,
+				NCM:       product.NCM,
+				CFOP:      product.CFOP,
+				Unit:      product.UCom,
+				Quantity:  product.QCom,
+				UnitPrice: product.VUnCom,
+				Total:     product.VProd,
+			},
+		},
+		TotalValue: input.TotalValue,
+		ICMSValue:  input.Items[0].Imposto.ICMS.VICMS,
+	}
+
+	generator := service.NewDANFEGenerator()
+	pdfBytes, genErr := generator.GeneratePreview(data)
+	if genErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("GeneratePreview error: %v", genErr.Error()))
+		return nil, entity_public.GetErrorToast("Failed to generate preview DANFE", genErr.Error())
+	}
+
+	return pdfBytes, entity_public.Toast{}
+}
+
+// formatDocument returns the non-empty document (CNPJ or CPF) for display.
+func (s *NFeService) formatDocument(cnpj, cpf string) string {
+	if cnpj != "" {
+		return cnpj
+	}
+	return cpf
 }
 
 // documentForAccessKey returns the CNPJ or zero-padded CPF for the access key.

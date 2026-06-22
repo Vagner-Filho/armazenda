@@ -159,6 +159,7 @@ func setSecurityHeaders(c *gin.Context) {
 		"script-src 'nonce-"+nonce+"' 'strict-dynamic' https: 'nonce-"+nonce+"' 'wasm-unsafe-eval' 'unsafe-inline'; "+
 			"object-src 'none'; "+
 			"base-uri 'none'; "+
+			"frame-src 'self' data: blob:; "+
 			"frame-ancestors 'none'; ")
 	c.Header("X-Content-Type-Options", "nosniff")
 	c.Header("X-Frame-Options", "DENY")

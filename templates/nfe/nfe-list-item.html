@@ -39,14 +39,14 @@
     <td class="py-3 px-4 text-left" data-label="Ações">
         <div class="flex items-center justify-end lg:justify-start gap-2 *:size-5">
             {{ if .XMLSigned }}
-            <button type="button" hx-get="/nfe/download/xml/{{ .AccessKey }}" title="Baixar XML" class="icon-btn size-5">
+            <a href="/nfe/download/xml/{{ .AccessKey }}" download="nfe_{{ .AccessKey }}.xml" title="Baixar XML" class="icon-btn size-5">
                 <iconify-icon icon="mdi:download" class="text-xl"></iconify-icon>
-            </button>
+            </a>
             {{ end }}
             {{ if eq .Status "authorized" }}
-            <button type="button" hx-get="/nfe/download/danfe/{{ .AccessKey }}" title="Baixar DANFE" class="icon-btn size-5">
+            <a href="/nfe/download/danfe/{{ .AccessKey }}" target="_blank" title="Baixar DANFE" class="icon-btn size-5">
                 <iconify-icon icon="mdi:file-pdf-box" class="text-xl"></iconify-icon>
-            </button>
+            </a>
             {{ end }}
         </div>
     </td>
