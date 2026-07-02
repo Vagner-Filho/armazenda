@@ -363,12 +363,20 @@ func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.
 	imp := item.Imposto
 	transport := input.Transport
 
+	tpAmb := "1"
+	if input.Environment == 2 {
+		tpAmb = "2"
+	}
+
 	data := entity.DANFEData{
 		AccessKey:           "",
 		Numero:              0,
 		Serie:               input.Serie,
 		NaturezaOp:          input.NaturezaOp,
 		EmissionDate:        now.Format("02/01/2006 15:04:05"),
+		TpEmis:              input.TpEmis.String(),
+		TpAmb:               tpAmb,
+		TpNF:                "1", // saída (matches builder.go:95)
 		EmitterName:         input.Emitter.XNome,
 		EmitterCNPJ:         s.formatDocument(input.Emitter.CNPJ, input.Emitter.CPF),
 		EmitterIE:           input.Emitter.IE,
@@ -393,22 +401,26 @@ func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.
 		DestPhone:           input.Recipient.Fone,
 		Products: []entity.DANFEProduct{
 			{
-				Code:      product.Codigo,
-				Desc:      product.XProd,
-				NCM:       product.NCM,
-				CST:       imp.ICMS.CST,
-				CFOP:      product.CFOP,
-				Unit:      product.UCom,
-				Quantity:  product.QCom,
-				UnitPrice: product.VUnCom,
-				Total:     product.VProd,
-				VBC:       imp.ICMS.VBC,
-				PICMS:     imp.ICMS.PICMS,
-				VICMS:     imp.ICMS.VICMS,
-				PPIS:      imp.PIS.PPIS,
-				VPIS:      imp.PIS.VPIS,
-				PCOFINS:   imp.COFINS.PCOFINS,
-				VCOFINS:   imp.COFINS.VCOFINS,
+				Code:       product.Codigo,
+				Desc:       product.XProd,
+				NCM:        product.NCM,
+				CST:        imp.ICMS.CST,
+				CFOP:       product.CFOP,
+				Unit:       product.UCom,
+				Quantity:   product.QCom,
+				UnitPrice:  product.VUnCom,
+				Total:      product.VProd,
+				UTrib:      product.UTrib,
+				QTrib:      product.QTrib,
+				VUnTrib:    product.VUnTrib,
+				InfAdProd:  item.InfAdProd,
+				VBC:        imp.ICMS.VBC,
+				PICMS:      imp.ICMS.PICMS,
+				VICMS:      imp.ICMS.VICMS,
+				PPIS:       imp.PIS.PPIS,
+				VPIS:       imp.PIS.VPIS,
+				PCOFINS:    imp.COFINS.PCOFINS,
+				VCOFINS:    imp.COFINS.VCOFINS,
 			},
 		},
 		TotalValue: input.TotalValue,

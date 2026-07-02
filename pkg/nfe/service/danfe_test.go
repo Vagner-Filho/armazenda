@@ -66,6 +66,9 @@ func TestDANFEGenerator_Generate_NoProtocol(t *testing.T) {
 func fullDANFEData() entity.DANFEData {
 	return entity.DANFEData{
 		AccessKey:           "51250312345678000190550010000001231234567890",
+		TpEmis:              "1",
+		TpAmb:               "1",
+		TpNF:                "1",
 		EmitterName:         "Fazenda Exemplo LTDA",
 		EmitterCNPJ:         "12345678000190",
 		EmitterIE:           "123456789",
@@ -169,4 +172,95 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// assertValidPDF checks that bytes are non-empty and start with the PDF magic.
+func assertValidPDF(t *testing.T, pdfBytes []byte, err error, label string) {
+	t.Helper()
+	if err != nil {
+		t.Fatalf("%s: unexpected error: %v", label, err)
+	}
+	if len(pdfBytes) == 0 {
+		t.Fatalf("%s: expected non-empty PDF bytes", label)
+	}
+	if len(pdfBytes) < 5 || string(pdfBytes[:5]) != "%PDF-" {
+		t.Fatalf("%s: output is not a PDF, got: %s", label, string(pdfBytes[:min(20, len(pdfBytes))]))
+	}
+}
+
+// TestDANFEGenerator_GenerateHomologation verifies that a homologação DANFE
+// (TpAmb=2) is generated without error. Text assertion is structural (option 2)
+// since gopdf does not support text extraction.
+func TestDANFEGenerator_GenerateHomologation(t *testing.T) {
+	g := service.NewDANFEGenerator()
+	data := fullDANFEData()
+	data.TpAmb = "2"
+	pdfBytes, err := g.Generate(data)
+	assertValidPDF(t, pdfBytes, err, "homologation")
+}
+
+// TestDANFEGenerator_GenerateSVCContingency verifies that a SVC-RS
+// contingency DANFE (TpEmis=7) with dhCont/xJust is generated without error.
+func TestDANFEGenerator_GenerateSVCContingency(t *testing.T) {
+	g := service.NewDANFEGenerator()
+	data := fullDANFEData()
+	data.TpEmis = "7"
+	data.DhCont = "15/03/2025 10:25:00"
+	data.XJust = "SEFAZ originária indisponível"
+	pdfBytes, err := g.Generate(data)
+	assertValidPDF(t, pdfBytes, err, "SVC contingency")
+}
+
+// TestDANFEGenerator_GenerateFSDAError verifies that FS-DA (tpEmis=5) returns
+// an error since it's not implemented.
+func TestDANFEGenerator_GenerateFSDAError(t *testing.T) {
+	g := service.NewDANFEGenerator()
+	data := fullDANFEData()
+	data.TpEmis = "5"
+	_, err := g.Generate(data)
+	if err == nil {
+		t.Fatal("expected error for FS-DA tpEmis=5, got nil")
+	}
+}
+
+// TestDANFEGenerator_GenerateEPECError verifies that EPEC (tpEmis=4) returns
+// an error since it's not implemented.
+func TestDANFEGenerator_GenerateEPECError(t *testing.T) {
+	g := service.NewDANFEGenerator()
+	data := fullDANFEData()
+	data.TpEmis = "4"
+	_, err := g.Generate(data)
+	if err == nil {
+		t.Fatal("expected error for EPEC tpEmis=4, got nil")
+	}
+}
+
+// TestDANFEGenerator_GenerateDifferingVUnTrib verifies that a product with
+// vUnTrib != vUnCom is handled without panic.
+func TestDANFEGenerator_GenerateDifferingVUnTrib(t *testing.T) {
+	g := service.NewDANFEGenerator()
+	data := fullDANFEData()
+	data.Products[0].VUnTrib = decimal.NewFromFloat(200.0)
+	pdfBytes, err := g.Generate(data)
+	assertValidPDF(t, pdfBytes, err, "differing vUnTrib")
+}
+
+// TestDANFEGenerator_GenerateVICMSDeson verifies that a positive vICMSDeson
+// is handled without panic (it's appended to infCpl per §3.10.5).
+func TestDANFEGenerator_GenerateVICMSDeson(t *testing.T) {
+	g := service.NewDANFEGenerator()
+	data := fullDANFEData()
+	data.VICMSDeson = decimal.NewFromFloat(500.00)
+	pdfBytes, err := g.Generate(data)
+	assertValidPDF(t, pdfBytes, err, "vICMSDeson > 0")
+}
+
+// TestDANFEGenerator_GenerateWithInfAdProd verifies that a product with
+// infAdProd is handled without panic.
+func TestDANFEGenerator_GenerateWithInfAdProd(t *testing.T) {
+	g := service.NewDANFEGenerator()
+	data := fullDANFEData()
+	data.Products[0].InfAdProd = "Produto conferido na balança rodoviária."
+	pdfBytes, err := g.Generate(data)
+	assertValidPDF(t, pdfBytes, err, "infAdProd")
 }
