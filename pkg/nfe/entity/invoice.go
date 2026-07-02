@@ -2,6 +2,9 @@ package entity
 
 import (
 	"fmt"
+	"time"
+
+	"armazenda/pkg/nfe/defaults"
 
 	"github.com/shopspring/decimal"
 )
@@ -16,6 +19,13 @@ type InvoiceInput struct {
 
 	// Environment: 1=production, 2=homologation
 	Environment int
+
+	// Emission type: 1=normal, 6=SVC-AN, 7=SVC-RS
+	TpEmis defaults.TpEmis
+
+	// Contingency fields (required when TpEmis != 1)
+	DhCont *time.Time
+	XJust  string
 
 	// Emitter
 	Emitter EmitterData

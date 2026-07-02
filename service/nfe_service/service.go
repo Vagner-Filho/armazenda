@@ -22,6 +22,7 @@ import (
 	"armazenda/pkg/nfe/config"
 	"armazenda/pkg/nfe/defaults"
 	"armazenda/pkg/nfe/entity"
+	"armazenda/pkg/nfe/sefaz"
 	"armazenda/pkg/nfe/service"
 
 	"github.com/shopspring/decimal"
@@ -155,7 +156,8 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 }
 
 // BuildInvoiceFromDeparture builds, signs, and attempts to send an NF-e for a departure.
-// The user's workflow is never disrupted by SEFAZ unavailability.
+// If the normal SEFAZ is unavailable, it automatically tries SVC. If both are down,
+// the invoice is saved as 'draft' and an error is returned — no DANFE is issued.
 func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice decimal.Decimal, farmID uint32) (string, entity_public.Toast) {
 	input, departure, farmNFeConfig, productConfig, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
@@ -163,32 +165,6 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	}
 
 	nfeModel := nfe_model.GetNFeModel()
-
-	// Allocate invoice number
-	number, allocErr := nfeModel.AllocateNumber(farmID, farmNFeConfig.Serie)
-	if allocErr != nil {
-		model_error.GetLoggerModel().Log(fmt.Sprintf("AllocateNumber error: %v", allocErr.Error()))
-		return "", entity_public.GetErrorToast("Failed to allocate invoice number", "")
-	}
-	input.Numero = number
-
-	// Generate random 8-digit cNF
-	cnf := generateRandomCNF()
-	input.CNF = cnf
-
-	// Build access key
-	accessKey := entity.GenerateAccessKey(entity.AccessKeyData{
-		CUF:      defaults.UFCode(input.Emitter.UF),
-		AAMM:     time.Now().Format("0601"),
-		Document: s.documentForAccessKey(input.Emitter),
-		Mod:      defaults.ModeloNFe,
-		Serie:    input.Serie,
-		NNF:      input.Numero,
-		TpEmis:   "1",
-		CNF:      input.CNF,
-	})
-
-	// Build and sign
 	certPassword := decryptPassword(farmNFeConfig.CertificatePasswordEncrypted)
 	sefazCfg := config.SefazConfig{
 		Environment: config.Environment(farmNFeConfig.Environment),
@@ -196,13 +172,35 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 		Timeout:     30 * time.Second,
 	}
 	invService := service.NewInvoiceService(nil, sefazCfg)
+
+	// --- Step 1: Normal emission attempt ---
+	number, allocErr := nfeModel.AllocateNumber(farmID, farmNFeConfig.Serie)
+	if allocErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("AllocateNumber error: %v", allocErr.Error()))
+		return "", entity_public.GetErrorToast("Failed to allocate invoice number", "")
+	}
+	input.Numero = number
+	input.CNF = generateRandomCNF()
+	input.TpEmis = defaults.EmissaoNormal
+
+	accessKey := entity.GenerateAccessKey(entity.AccessKeyData{
+		CUF:      defaults.UFCode(input.Emitter.UF),
+		AAMM:     time.Now().Format("0601"),
+		Document: s.documentForAccessKey(input.Emitter),
+		Mod:      defaults.ModeloNFe,
+		Serie:    input.Serie,
+		NNF:      input.Numero,
+		TpEmis:   defaults.EmissaoNormal.String(),
+		CNF:      input.CNF,
+	})
+
 	signedXML, signErr := invService.BuildAndSign(input, farmNFeConfig.CertificateData, certPassword)
 	if signErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("BuildAndSign error: %v", signErr.Error()))
 		return "", entity_public.GetErrorToast("Failed to build and sign NF-e", signErr.Error())
 	}
 
-	// Save invoice to database with status 'signed'
+	// Save initial record as draft (will be updated based on SEFAZ response)
 	invoiceID, createErr := nfeModel.CreateInvoice(departureID, accessKey, farmNFeConfig.Serie, number,
 		productConfig.DefaultCFOP, productConfig.NCM, departure.NetWeight, unitPrice, input.TotalValue)
 	if createErr != nil {
@@ -210,31 +208,42 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 		return "", entity_public.GetErrorToast("Failed to save invoice", "")
 	}
 
-	// Update with signed XML
-	xmlErr := nfeModel.UpdateInvoiceXML(invoiceID, signedXML)
-	if xmlErr != nil {
-		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceXML error: %v", xmlErr.Error()))
-		return "", entity_public.GetErrorToast("Failed to save signed XML", "")
-	}
-
-	// Attempt synchronous SEFAZ submission
+	// Attempt synchronous normal SEFAZ submission
 	sefazResp, sendErr := invService.SendToSefaz(signedXML, farmNFeConfig.CertificateData, certPassword)
+	if sendErr == nil && sefazResp != nil {
+		// We got a response — handle it normally
+		return s.handleSefazResponse(sefazResp, invoiceID, signedXML, nfeModel)
+	}
+
+	// --- Step 2: Normal SEFAZ failed (network error or no response) ---
+	// Check if SVC is operational
+	svcResp, svcErr := invService.CheckSVCStatus(farmNFeConfig.CertificateData, certPassword)
+	if svcErr == nil && svcResp != nil && svcResp.IsSVCOperational() {
+		// SVC is active — rebuild with new number and contingency settings
+		return s.attemptSVCContingency(input, departure, farmNFeConfig, productConfig, signedXML, invoiceID, accessKey, nfeModel, invService, certPassword, unitPrice)
+	}
+
+	// --- Step 3: Both SEFAZ and SVC are unavailable ---
+	// Keep the invoice as draft. Do NOT allow DANFE generation.
 	if sendErr != nil {
-		errUpd := nfeModel.UpdateInvoiceStatus(invoiceID, "pending", "", "", "SEFAZ unavailable or network error: "+sendErr.Error())
+		errUpd := nfeModel.UpdateInvoiceStatus(invoiceID, "draft", "", "", "SEFAZ e SVC indisponiveis: "+sendErr.Error())
 		if errUpd != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceStatus error: %v", errUpd.Error()))
 		}
-		return signedXML, entity_public.GetSuccessToast("NF-e salva e será enviada automaticamente à SEFAZ", "status: pendente")
-	}
-
-	if sefazResp == nil {
-		errUpd := nfeModel.UpdateInvoiceStatus(invoiceID, "pending", "", "", "Resposta vazia da SEFAZ")
+	} else {
+		errUpd := nfeModel.UpdateInvoiceStatus(invoiceID, "draft", "", "", "SEFAZ e SVC indisponiveis: resposta vazia")
 		if errUpd != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceStatus error: %v", errUpd.Error()))
 		}
-		return signedXML, entity_public.GetSuccessToast("NF-e salva e será enviada automaticamente à SEFAZ", "status: pendente")
 	}
+	return "", entity_public.GetErrorToast(
+		"SEFAZ e SVC indisponiveis",
+		"NF-e nao pode ser emitida no momento. Tente novamente mais tarde.",
+	)
+}
 
+// handleSefazResponse processes the SEFAZ response and updates the invoice status.
+func (s *NFeService) handleSefazResponse(sefazResp *sefaz.AutorizacaoResponse, invoiceID int, signedXML string, nfeModel *nfe_model.NFeModel) (string, entity_public.Toast) {
 	if sefazResp.IsAuthorized() {
 		errUpd := nfeModel.UpdateInvoiceStatus(invoiceID, "authorized", sefazResp.Protocol, sefazResp.StatusCode, sefazResp.StatusMotive)
 		if errUpd != nil {
@@ -262,12 +271,81 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 		)
 	}
 
-	// Unknown status — queue for retry
+	// Unknown status — queue for status polling
 	errUpd := nfeModel.UpdateInvoiceStatus(invoiceID, "pending", "", sefazResp.StatusCode, sefazResp.StatusMotive)
 	if errUpd != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceStatus error: %v", errUpd.Error()))
 	}
-	return signedXML, entity_public.GetSuccessToast("NF-e salva e será enviada automaticamente à SEFAZ", fmt.Sprintf("Status: %s", sefazResp.StatusMotive))
+	return signedXML, entity_public.GetSuccessToast("NF-e enviada à SEFAZ e em processamento", fmt.Sprintf("Status: %s", sefazResp.StatusMotive))
+}
+
+// attemptSVCContingency tries to send the NF-e via SVC with a new number and contingency fields.
+func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure entity_public.Departure, farmNFeConfig *nfe_model.FarmConfig, productConfig *nfe_model.ProductConfig, oldSignedXML string, oldInvoiceID int, oldAccessKey string, nfeModel *nfe_model.NFeModel, invService *service.InvoiceService, certPassword string, unitPrice decimal.Decimal) (string, entity_public.Toast) {
+	// Allocate new number for the contingency invoice (required by MOC to avoid duplicate Chave Natural)
+	newNumber, allocErr := nfeModel.AllocateNumber(uint32(departure.Farm), farmNFeConfig.Serie)
+	if allocErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("AllocateNumber (SVC) error: %v", allocErr.Error()))
+		return "", entity_public.GetErrorToast("Failed to allocate contingency invoice number", "")
+	}
+
+	tpEmis := defaults.SVCForState(farmNFeConfig.EmitterUF)
+	now := time.Now()
+	reason := "Indisponibilidade do ambiente de autorizacao da SEFAZ de origem"
+
+	newSignedXML, newAccessKey, rebuildErr := invService.RebuildForContingency(input, newNumber, generateRandomCNF(), tpEmis, reason, farmNFeConfig.CertificateData, certPassword)
+	if rebuildErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("RebuildForContingency error: %v", rebuildErr.Error()))
+		return "", entity_public.GetErrorToast("Failed to rebuild NF-e for SVC contingency", rebuildErr.Error())
+	}
+
+	// Save the new contingency invoice
+	newInvoiceID, createErr := nfeModel.CreateInvoiceWithEmission(
+		departure.Id, newAccessKey, farmNFeConfig.Serie, newNumber,
+		productConfig.DefaultCFOP, productConfig.NCM, departure.NetWeight, unitPrice, input.TotalValue,
+		int(tpEmis), now, reason,
+	)
+	if createErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateInvoice (SVC) error: %v", createErr.Error()))
+		return "", entity_public.GetErrorToast("Failed to save contingency invoice", "")
+	}
+
+	xmlErr := nfeModel.UpdateInvoiceXML(newInvoiceID, newSignedXML)
+	if xmlErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceXML (SVC) error: %v", xmlErr.Error()))
+		return "", entity_public.GetErrorToast("Failed to save contingency signed XML", "")
+	}
+
+	// Send to SVC
+	sefazResp, sendErr := invService.SendToSefazWithEmission(newSignedXML, farmNFeConfig.CertificateData, certPassword, tpEmis)
+	if sendErr != nil {
+		// SVC also failed — mark new invoice as draft, supersede old one
+		errUpd := nfeModel.UpdateInvoiceStatus(newInvoiceID, "draft", "", "", "SVC indisponivel: "+sendErr.Error())
+		if errUpd != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceStatus (SVC) error: %v", errUpd.Error()))
+		}
+		_ = nfeModel.SupersedeInvoice(oldInvoiceID, newInvoiceID)
+		return "", entity_public.GetErrorToast(
+			"SEFAZ e SVC indisponiveis",
+			"NF-e nao pode ser emitida no momento. Tente novamente mais tarde.",
+		)
+	}
+
+	if sefazResp == nil {
+		errUpd := nfeModel.UpdateInvoiceStatus(newInvoiceID, "draft", "", "", "SVC indisponivel: resposta vazia")
+		if errUpd != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceStatus (SVC) error: %v", errUpd.Error()))
+		}
+		_ = nfeModel.SupersedeInvoice(oldInvoiceID, newInvoiceID)
+		return "", entity_public.GetErrorToast(
+			"SEFAZ e SVC indisponiveis",
+			"NF-e nao pode ser emitida no momento. Tente novamente mais tarde.",
+		)
+	}
+
+	// SVC responded — handle normally and supersede the old normal attempt
+	resultXML, resultToast := s.handleSefazResponse(sefazResp, newInvoiceID, newSignedXML, nfeModel)
+	_ = nfeModel.SupersedeInvoice(oldInvoiceID, newInvoiceID)
+	return resultXML, resultToast
 }
 
 // GeneratePreviewDANFE builds a preview DANFE PDF without allocating an invoice number,
@@ -281,36 +359,86 @@ func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.
 	now := time.Now()
 	product := input.Items[0].Produto
 
+	item := input.Items[0]
+	imp := item.Imposto
+	transport := input.Transport
+
 	data := entity.DANFEData{
-		AccessKey:      "",
-		Numero:         0,
-		Serie:          input.Serie,
-		NaturezaOp:     input.NaturezaOp,
-		EmissionDate:   now.Format("02/01/2006 15:04:05"),
-		EmitterName:    input.Emitter.XNome,
-		EmitterCNPJ:    s.formatDocument(input.Emitter.CNPJ, input.Emitter.CPF),
-		EmitterAddress: fmt.Sprintf("%s, %s", input.Emitter.Logradouro, input.Emitter.Numero),
-		EmitterCity:    input.Emitter.Municipio,
-		EmitterUF:      input.Emitter.UF,
-		DestName:       input.Recipient.XNome,
-		DestCNPJ:       s.formatDocument(input.Recipient.CNPJ, input.Recipient.CPF),
-		DestAddress:    fmt.Sprintf("%s, %s", input.Recipient.Logradouro, input.Recipient.Numero),
-		DestCity:       input.Recipient.Municipio,
-		DestUF:         input.Recipient.UF,
+		AccessKey:           "",
+		Numero:              0,
+		Serie:               input.Serie,
+		NaturezaOp:          input.NaturezaOp,
+		EmissionDate:        now.Format("02/01/2006 15:04:05"),
+		EmitterName:         input.Emitter.XNome,
+		EmitterCNPJ:         s.formatDocument(input.Emitter.CNPJ, input.Emitter.CPF),
+		EmitterIE:           input.Emitter.IE,
+		EmitterCRT:          input.Emitter.CRT,
+		EmitterAddress:      input.Emitter.Logradouro,
+		EmitterNumber:       input.Emitter.Numero,
+		EmitterNeighborhood: input.Emitter.Bairro,
+		EmitterCEP:          input.Emitter.CEP,
+		EmitterCity:         input.Emitter.Municipio,
+		EmitterUF:           input.Emitter.UF,
+		EmitterPhone:        input.Emitter.Fone,
+		DestName:            input.Recipient.XNome,
+		DestCNPJ:            s.formatDocument(input.Recipient.CNPJ, input.Recipient.CPF),
+		DestIE:              input.Recipient.IE,
+		DestIndIEDest:       input.Recipient.IndIEDest,
+		DestAddress:         input.Recipient.Logradouro,
+		DestNumber:          input.Recipient.Numero,
+		DestNeighborhood:    input.Recipient.Bairro,
+		DestCEP:             input.Recipient.CEP,
+		DestCity:            input.Recipient.Municipio,
+		DestUF:              input.Recipient.UF,
+		DestPhone:           input.Recipient.Fone,
 		Products: []entity.DANFEProduct{
 			{
 				Code:      product.Codigo,
 				Desc:      product.XProd,
 				NCM:       product.NCM,
+				CST:       imp.ICMS.CST,
 				CFOP:      product.CFOP,
 				Unit:      product.UCom,
 				Quantity:  product.QCom,
 				UnitPrice: product.VUnCom,
 				Total:     product.VProd,
+				VBC:       imp.ICMS.VBC,
+				PICMS:     imp.ICMS.PICMS,
+				VICMS:     imp.ICMS.VICMS,
+				PPIS:      imp.PIS.PPIS,
+				VPIS:      imp.PIS.VPIS,
+				PCOFINS:   imp.COFINS.PCOFINS,
+				VCOFINS:   imp.COFINS.VCOFINS,
 			},
 		},
 		TotalValue: input.TotalValue,
-		ICMSValue:  input.Items[0].Imposto.ICMS.VICMS,
+		VBC:        imp.ICMS.VBC,
+		VICMS:      imp.ICMS.VICMS,
+		VPIS:       imp.PIS.VPIS,
+		VCOFINS:    imp.COFINS.VCOFINS,
+		ModFrete:   strconv.Itoa(transport.ModFrete),
+		InfCpl:     input.InformacoesAdicionais,
+	}
+
+	if transport.Transportadora != nil {
+		data.TranspName = transport.Transportadora.XNome
+		data.TranspCNPJ = s.formatDocument(transport.Transportadora.CNPJ, transport.Transportadora.CPF)
+		data.TranspIE = transport.Transportadora.IE
+		data.TranspCity = transport.Transportadora.Municipio
+		data.TranspUF = transport.Transportadora.UF
+	}
+	if len(transport.Volumes) > 0 {
+		vol := transport.Volumes[0]
+		data.QVol = strconv.Itoa(vol.QVol)
+		data.Esp = vol.Esp
+		data.Marca = vol.Marca
+		data.NVol = vol.NVol
+		data.PesoL = vol.PesoL
+		data.PesoB = vol.PesoB
+	}
+	if transport.Veiculo != nil {
+		data.VeicPlate = transport.Veiculo.Placa
+		data.VeicUF = transport.Veiculo.UF
 	}
 
 	generator := service.NewDANFEGenerator()

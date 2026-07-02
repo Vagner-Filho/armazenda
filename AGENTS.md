@@ -260,3 +260,45 @@ The project uses a lightweight, custom migration system with raw SQL files.
 - **WASM**: Calculator package compiled to WebAssembly for client-side use
 - **Offline Support**: Offline-first architecture (see OFFLINE.md)
 - **Air**: Auto-rebuilds Go app and WASM; excludes `_test.go` files
+
+### NF-e Contingency Architecture
+
+The NF-e system implements **automatic SVC (SEFAZ Virtual de Contingência)** contingency per MOC 7.0 Anexo III. FS-DA and EPEC are reserved in the data model but not actively wired.
+
+**State → SVC mapping** (Ato COTEPE 39/2012):
+
+| SVC | States |
+|-----|--------|
+| SVC-AN (tpEmis=6) | AC, AL, AP, MG, PB, RJ, RS, RO, RR, SC, SE, SP, TO, DF |
+| SVC-RS (tpEmis=7) | AM, BA, CE, ES, GO, MA, **MT**, MS, PA, PE, PI, PR, RN |
+
+**Emission flow:**
+
+1. User clicks **"Emitir NF-e"**
+2. System builds normal XML (`tpEmis=1`) and sends to origin SEFAZ
+3. **If authorized/processing** → save with matching status, DANFE available
+4. **If network error** → check SVC status
+   - SVC returns **107** → allocate **new number**, rebuild XML with `tpEmis=6|7`, add `<dhCont>` + `<xJust>`, send to SVC, supersede old draft
+   - SVC not **107** → save as **draft**, return **error to user** — no DANFE
+
+**Status lifecycle:**
+
+| Status | DANFE? |
+|--------|--------|
+| `draft` | No |
+| `pending` | No |
+| `authorized` | **Yes** |
+| `denied` | No |
+| `superseded` | No |
+
+**Worker behavior:**
+- `pending` invoices → query status via the endpoint matching their `tp_emis` (normal or SVC)
+- `draft` invoices (≤ 24h old) → check SVC status; if active, auto-rebuild and send
+- `superseded` invoices → deferred cleanup after SVC deactivation (Phase 2)
+
+**Key implementation files:**
+- `pkg/nfe/defaults/agriculture.go` — `TpEmis` enum, `SVCForState()`
+- `pkg/nfe/sefaz/endpoints.go` — SVC-AN and SVC-RS endpoint sets
+- `pkg/nfe/xml/builder.go` — dynamic `tpEmis`, `<dhCont>`, `<xJust>`
+- `service/nfe_service/service.go` — `BuildInvoiceFromDeparture()` flow
+- `service/nfe_service/worker.go` — draft auto-send logic

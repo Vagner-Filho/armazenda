@@ -109,3 +109,38 @@ func (c *Client) CheckStatus() (*StatusResponse, error) {
 
 	return parsed, nil
 }
+
+// CheckSVCStatus checks the SVC status for the configured state and returns the parsed response.
+func (c *Client) CheckSVCStatus() (*StatusResponse, error) {
+	tpEmis := defaults.SVCForState(c.cfg.StateUF)
+	if tpEmis == defaults.EmissaoNormal {
+		return nil, fmt.Errorf("state %s has no SVC configured", c.cfg.StateUF)
+	}
+
+	url, ns, action, err := GetEndpointWithSOAPActionAndEmission(c.cfg.StateUF, "NfeStatusServico4", c.cfg.Environment == config.EnvironmentProduction, tpEmis)
+	if err != nil {
+		return nil, err
+	}
+
+	cUF := defaults.UFCode(c.cfg.StateUF)
+	tpAmb := "2"
+	if c.cfg.Environment == config.EnvironmentProduction {
+		tpAmb = "1"
+	}
+
+	payload := fmt.Sprintf(`<consStatServ xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><tpAmb>%s</tpAmb><cUF>%s</cUF><xServ>STATUS</xServ></consStatServ>`, tpAmb, cUF)
+
+	soapBody := xml.BuildSOAPEnvelope(ns, payload)
+
+	resp, err := c.Post(url, action, []byte(soapBody))
+	if err != nil {
+		return nil, fmt.Errorf("SVC status check failed: %w", err)
+	}
+
+	parsed, parseErr := ParseStatusResponse(resp)
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse SVC status response: %w", parseErr)
+	}
+
+	return parsed, nil
+}

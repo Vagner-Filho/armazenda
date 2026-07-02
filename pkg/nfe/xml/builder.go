@@ -58,7 +58,7 @@ func (b *Builder) Build(input entity.InvoiceInput) (*etree.Document, error) {
 		Mod:      defaults.ModeloNFe,
 		Serie:    input.Serie,
 		NNF:      input.Numero,
-		TpEmis:   "1",
+		TpEmis:   input.TpEmis.String(),
 		CNF:      input.CNF,
 	})
 	infNFe.CreateAttr("Id", "NFe"+accessKey)
@@ -102,8 +102,18 @@ func (b *Builder) buildIDE(parent *etree.Element, input entity.InvoiceInput, acc
 	ide.CreateElement("idDest").SetText(idDest)
 
 	ide.CreateElement("cMunFG").SetText(input.Emitter.CodigoMun)
-	ide.CreateElement("tpImp").SetText("1")  // 1=Retrato
-	ide.CreateElement("tpEmis").SetText("1") // 1=Emissao normal
+	ide.CreateElement("tpImp").SetText("1") // 1=Retrato
+	ide.CreateElement("tpEmis").SetText(input.TpEmis.String())
+
+	// Contingency fields: required when tpEmis != 1
+	if input.TpEmis != defaults.EmissaoNormal {
+		if input.DhCont != nil {
+			ide.CreateElement("dhCont").SetText(input.DhCont.Format(time.RFC3339))
+		}
+		if input.XJust != "" {
+			ide.CreateElement("xJust").SetText(input.XJust)
+		}
+	}
 
 	// DV is the last digit of the 44-digit access key
 	cDV := "0"

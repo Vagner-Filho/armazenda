@@ -113,6 +113,21 @@ func (r *StatusResponse) IsOperational() bool {
 	return r.StatusCode == "107"
 }
 
+// IsSVCOperational returns true if the SVC service is active (code 107 from SVC status check).
+func (r *StatusResponse) IsSVCOperational() bool {
+	return r.StatusCode == "107"
+}
+
+// IsSVCDeactivating returns true if the SVC is being deactivated (code 113).
+func (r *StatusResponse) IsSVCDeactivating() bool {
+	return r.StatusCode == "113"
+}
+
+// IsSVCDisabled returns true if the SVC has been disabled by the origin SEFAZ (code 114).
+func (r *StatusResponse) IsSVCDisabled() bool {
+	return r.StatusCode == "114"
+}
+
 // ParseStatusResponse parses the SOAP response from NFeStatusServico4.
 func ParseStatusResponse(soapBody []byte) (*StatusResponse, error) {
 	doc := etree.NewDocument()

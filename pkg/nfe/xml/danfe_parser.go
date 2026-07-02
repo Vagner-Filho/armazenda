@@ -64,10 +64,17 @@ func ParseDANFEData(xmlContent string) (*entity.DANFEData, error) {
 			textOrEmpty(emit.SelectElement("CNPJ")),
 			textOrEmpty(emit.SelectElement("CPF")),
 		)
+		data.EmitterIE = textOrEmpty(emit.SelectElement("IE"))
+		data.EmitterCRT = textOrEmpty(emit.SelectElement("CRT"))
 		if ender := emit.SelectElement("enderEmit"); ender != nil {
-			data.EmitterAddress = formatAddress(ender)
+			data.EmitterAddress = textOrEmpty(ender.SelectElement("xLgr"))
+			data.EmitterNumber = textOrEmpty(ender.SelectElement("nro"))
+			data.EmitterComplement = textOrEmpty(ender.SelectElement("xCpl"))
+			data.EmitterNeighborhood = textOrEmpty(ender.SelectElement("xBairro"))
+			data.EmitterCEP = textOrEmpty(ender.SelectElement("CEP"))
 			data.EmitterCity = textOrEmpty(ender.SelectElement("xMun"))
 			data.EmitterUF = textOrEmpty(ender.SelectElement("UF"))
+			data.EmitterPhone = textOrEmpty(ender.SelectElement("fone"))
 		}
 	}
 
@@ -78,14 +85,21 @@ func ParseDANFEData(xmlContent string) (*entity.DANFEData, error) {
 			textOrEmpty(dest.SelectElement("CNPJ")),
 			textOrEmpty(dest.SelectElement("CPF")),
 		)
+		data.DestIE = textOrEmpty(dest.SelectElement("IE"))
+		data.DestIndIEDest = textOrEmpty(dest.SelectElement("indIEDest"))
 		if ender := dest.SelectElement("enderDest"); ender != nil {
-			data.DestAddress = formatAddress(ender)
+			data.DestAddress = textOrEmpty(ender.SelectElement("xLgr"))
+			data.DestNumber = textOrEmpty(ender.SelectElement("nro"))
+			data.DestComplement = textOrEmpty(ender.SelectElement("xCpl"))
+			data.DestNeighborhood = textOrEmpty(ender.SelectElement("xBairro"))
+			data.DestCEP = textOrEmpty(ender.SelectElement("CEP"))
 			data.DestCity = textOrEmpty(ender.SelectElement("xMun"))
 			data.DestUF = textOrEmpty(ender.SelectElement("UF"))
+			data.DestPhone = textOrEmpty(ender.SelectElement("fone"))
 		}
 	}
 
-	// det / prod
+	// det / prod + imposto
 	for _, det := range infNFe.SelectElements("det") {
 		if prod := det.SelectElement("prod"); prod != nil {
 			p := entity.DANFEProduct{
@@ -104,6 +118,61 @@ func ParseDANFEData(xmlContent string) (*entity.DANFEData, error) {
 			if v, err := decimal.NewFromString(textOrEmpty(prod.SelectElement("vProd"))); err == nil {
 				p.Total = v
 			}
+			if v, err := decimal.NewFromString(textOrEmpty(prod.SelectElement("vFrete"))); err == nil {
+				p.VFrete = v
+			}
+			if v, err := decimal.NewFromString(textOrEmpty(prod.SelectElement("vSeg"))); err == nil {
+				p.VSeg = v
+			}
+			if v, err := decimal.NewFromString(textOrEmpty(prod.SelectElement("vDesc"))); err == nil {
+				p.VDesc = v
+			}
+			if v, err := decimal.NewFromString(textOrEmpty(prod.SelectElement("vOutro"))); err == nil {
+				p.VOutro = v
+			}
+
+			// imposto
+			if imposto := det.SelectElement("imposto"); imposto != nil {
+				// ICMS (try common variants)
+				if icms := imposto.SelectElement("ICMS"); icms != nil {
+					for _, child := range icms.ChildElements() {
+						if strings.HasPrefix(child.Tag, "ICMS") {
+							p.CST = textOrEmpty(child.SelectElement("CST"))
+							p.VBC = parseDecimalText(child.SelectElement("vBC"))
+							p.PICMS = parseDecimalText(child.SelectElement("pICMS"))
+							p.VICMS = parseDecimalText(child.SelectElement("vICMS"))
+							break
+						}
+					}
+				}
+				// IPI
+				if ipi := imposto.SelectElement("IPI"); ipi != nil {
+					if ipiTrib := ipi.SelectElement("IPITrib"); ipiTrib != nil {
+						p.PIPI = parseDecimalText(ipiTrib.SelectElement("pIPI"))
+						p.VIPI = parseDecimalText(ipiTrib.SelectElement("vIPI"))
+					}
+				}
+				// PIS
+				if pis := imposto.SelectElement("PIS"); pis != nil {
+					for _, child := range pis.ChildElements() {
+						if strings.HasPrefix(child.Tag, "PIS") {
+							p.PPIS = parseDecimalText(child.SelectElement("pPIS"))
+							p.VPIS = parseDecimalText(child.SelectElement("vPIS"))
+							break
+						}
+					}
+				}
+				// COFINS
+				if cofins := imposto.SelectElement("COFINS"); cofins != nil {
+					for _, child := range cofins.ChildElements() {
+						if strings.HasPrefix(child.Tag, "COFINS") {
+							p.PCOFINS = parseDecimalText(child.SelectElement("pCOFINS"))
+							p.VCOFINS = parseDecimalText(child.SelectElement("vCOFINS"))
+							break
+						}
+					}
+				}
+			}
 			data.Products = append(data.Products, p)
 		}
 	}
@@ -112,8 +181,61 @@ func ParseDANFEData(xmlContent string) (*entity.DANFEData, error) {
 	if total := infNFe.SelectElement("total"); total != nil {
 		if icmsTot := total.SelectElement("ICMSTot"); icmsTot != nil {
 			data.TotalValue = parseDecimalText(icmsTot.SelectElement("vNF"))
-			data.ICMSValue = parseDecimalText(icmsTot.SelectElement("vICMS"))
+			data.VBC = parseDecimalText(icmsTot.SelectElement("vBC"))
+			data.VICMS = parseDecimalText(icmsTot.SelectElement("vICMS"))
+			data.VICMSDeson = parseDecimalText(icmsTot.SelectElement("vICMSDeson"))
+			data.VBCST = parseDecimalText(icmsTot.SelectElement("vBCST"))
+			data.VST = parseDecimalText(icmsTot.SelectElement("vST"))
+			data.VII = parseDecimalText(icmsTot.SelectElement("vII"))
+			data.VIPI = parseDecimalText(icmsTot.SelectElement("vIPI"))
+			data.VPIS = parseDecimalText(icmsTot.SelectElement("vPIS"))
+			data.VCOFINS = parseDecimalText(icmsTot.SelectElement("vCOFINS"))
+			data.VFrete = parseDecimalText(icmsTot.SelectElement("vFrete"))
+			data.VSeg = parseDecimalText(icmsTot.SelectElement("vSeg"))
+			data.VDesc = parseDecimalText(icmsTot.SelectElement("vDesc"))
+			data.VOutro = parseDecimalText(icmsTot.SelectElement("vOutro"))
+			data.VTotTrib = parseDecimalText(icmsTot.SelectElement("vTotTrib"))
 		}
+		if issqnTot := total.SelectElement("ISSQNtot"); issqnTot != nil {
+			data.VBCISSQN = parseDecimalText(issqnTot.SelectElement("vBC"))
+			data.VISSQN = parseDecimalText(issqnTot.SelectElement("vISS"))
+			data.VPISISSQN = parseDecimalText(issqnTot.SelectElement("vPIS"))
+			data.VCOFINSSISSQN = parseDecimalText(issqnTot.SelectElement("vCOFINS"))
+		}
+	}
+
+	// transp
+	if transp := infNFe.SelectElement("transp"); transp != nil {
+		data.ModFrete = textOrEmpty(transp.SelectElement("modFrete"))
+		if transporta := transp.SelectElement("transporta"); transporta != nil {
+			data.TranspName = textOrEmpty(transporta.SelectElement("xNome"))
+			data.TranspCNPJ = coalesce(
+				textOrEmpty(transporta.SelectElement("CNPJ")),
+				textOrEmpty(transporta.SelectElement("CPF")),
+			)
+			data.TranspIE = textOrEmpty(transporta.SelectElement("IE"))
+			data.TranspAddress = textOrEmpty(transporta.SelectElement("xEnder"))
+			data.TranspCity = textOrEmpty(transporta.SelectElement("xMun"))
+			data.TranspUF = textOrEmpty(transporta.SelectElement("UF"))
+		}
+		if vol := transp.SelectElement("vol"); vol != nil {
+			data.QVol = textOrEmpty(vol.SelectElement("qVol"))
+			data.Esp = textOrEmpty(vol.SelectElement("esp"))
+			data.Marca = textOrEmpty(vol.SelectElement("marca"))
+			data.NVol = textOrEmpty(vol.SelectElement("nVol"))
+			data.PesoL = parseDecimalText(vol.SelectElement("pesoL"))
+			data.PesoB = parseDecimalText(vol.SelectElement("pesoB"))
+		}
+		if veic := transp.SelectElement("veicTransp"); veic != nil {
+			data.VeicPlate = textOrEmpty(veic.SelectElement("placa"))
+			data.VeicUF = textOrEmpty(veic.SelectElement("UF"))
+		}
+	}
+
+	// infAdic
+	if infAdic := infNFe.SelectElement("infAdic"); infAdic != nil {
+		data.InfCpl = textOrEmpty(infAdic.SelectElement("infCpl"))
+		data.InfAdFisco = textOrEmpty(infAdic.SelectElement("infAdFisco"))
 	}
 
 	// protNFe (authorized only)
@@ -122,6 +244,8 @@ func ParseDANFEData(xmlContent string) (*entity.DANFEData, error) {
 			if infProt := protNFe.SelectElement("infProt"); infProt != nil {
 				data.Protocol = textOrEmpty(infProt.SelectElement("nProt"))
 				data.ProtocolDate = formatDateTime(textOrEmpty(infProt.SelectElement("dhRecbto")))
+				data.CStat = textOrEmpty(infProt.SelectElement("cStat"))
+				data.XMotivo = textOrEmpty(infProt.SelectElement("xMotivo"))
 			}
 		}
 	}
@@ -157,20 +281,6 @@ func parseDecimalText(el *etree.Element) decimal.Decimal {
 		return d
 	}
 	return decimal.Zero
-}
-
-func formatAddress(ender *etree.Element) string {
-	parts := make([]string, 0, 4)
-	if v := textOrEmpty(ender.SelectElement("xLgr")); v != "" {
-		parts = append(parts, v)
-	}
-	if v := textOrEmpty(ender.SelectElement("nro")); v != "" {
-		parts = append(parts, v)
-	}
-	if v := textOrEmpty(ender.SelectElement("xBairro")); v != "" {
-		parts = append(parts, v)
-	}
-	return strings.Join(parts, ", ")
 }
 
 func coalesce(values ...string) string {

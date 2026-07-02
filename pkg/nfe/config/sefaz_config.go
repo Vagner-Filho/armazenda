@@ -3,6 +3,8 @@ package config
 import (
 	"crypto/tls"
 	"time"
+
+	"armazenda/pkg/nfe/defaults"
 )
 
 // Environment represents the SEFAZ environment type.
@@ -30,6 +32,11 @@ type SefazConfig struct {
 	StateUF     string // e.g., "MT"
 	Timeout     time.Duration
 	Certificate CertificateConfig
+
+	// Contingency fields (populated when entering SVC mode).
+	ContingencyMode   *defaults.TpEmis // nil = normal emission
+	ContingencyReason string
+	ContingencyStart  time.Time
 }
 
 // CertificateConfig holds the digital certificate (A1) settings.

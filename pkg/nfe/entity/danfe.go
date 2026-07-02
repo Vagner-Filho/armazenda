@@ -2,28 +2,95 @@ package entity
 
 import "github.com/shopspring/decimal"
 
-// DANFEData holds the data needed to generate a DANFE.
+// DANFEData holds the data needed to generate a SEFAZ-compliant DANFE.
 type DANFEData struct {
-	AccessKey      string
-	EmitterName    string
-	EmitterCNPJ    string
-	EmitterAddress string
-	EmitterCity    string
-	EmitterUF      string
-	DestName       string
-	DestCNPJ       string
-	DestAddress    string
-	DestCity       string
-	DestUF         string
-	NaturezaOp     string
-	Numero         int
-	Serie          int
-	EmissionDate   string
-	Products       []DANFEProduct
-	TotalValue     decimal.Decimal
-	ICMSValue      decimal.Decimal
-	Protocol       string
-	ProtocolDate   string
+	// Identification
+	AccessKey    string
+	NaturezaOp   string
+	Numero       int
+	Serie        int
+	EmissionDate string
+
+	// Emitter
+	EmitterName         string
+	EmitterCNPJ         string
+	EmitterIE           string
+	EmitterCRT          string
+	EmitterAddress      string
+	EmitterNumber       string
+	EmitterComplement   string
+	EmitterNeighborhood string
+	EmitterCEP          string
+	EmitterCity         string
+	EmitterUF           string
+	EmitterPhone        string
+
+	// Destinatario
+	DestName         string
+	DestCNPJ         string
+	DestIE           string
+	DestIndIEDest    string
+	DestAddress      string
+	DestNumber       string
+	DestComplement   string
+	DestNeighborhood string
+	DestCEP          string
+	DestCity         string
+	DestUF           string
+	DestPhone        string
+
+	// Products
+	Products []DANFEProduct
+
+	// Totals (ICMS)
+	TotalValue decimal.Decimal
+	VBC        decimal.Decimal
+	VICMS      decimal.Decimal
+	VICMSDeson decimal.Decimal
+	VBCST      decimal.Decimal
+	VST        decimal.Decimal
+	VII        decimal.Decimal
+	VIPI       decimal.Decimal
+	VPIS       decimal.Decimal
+	VCOFINS    decimal.Decimal
+	VFrete     decimal.Decimal
+	VSeg       decimal.Decimal
+	VDesc      decimal.Decimal
+	VOutro     decimal.Decimal
+	VTotTrib   decimal.Decimal
+
+	// Transport
+	ModFrete      string
+	TranspName    string
+	TranspCNPJ    string
+	TranspIE      string
+	TranspAddress string
+	TranspCity    string
+	TranspUF      string
+	QVol          string
+	Esp           string
+	Marca         string
+	NVol          string
+	PesoL         decimal.Decimal
+	PesoB         decimal.Decimal
+	VeicPlate     string
+	VeicUF        string
+
+	// ISSQN (conditional)
+	VBCISSQN      decimal.Decimal
+	VISSQN        decimal.Decimal
+	VPISISSQN     decimal.Decimal
+	VCOFINSSISSQN decimal.Decimal
+
+	// Additional info
+	InfCpl     string
+	InfAdFisco string
+
+	// Protocol (authorized only)
+	Protocol     string
+	ProtocolDate string
+	CStat        string
+	XMotivo      string
 }
 
 // DANFEProduct holds a single product line for the DANFE.
@@ -31,9 +98,24 @@ type DANFEProduct struct {
 	Code      string
 	Desc      string
 	NCM       string
+	CST       string
 	CFOP      string
 	Unit      string
 	Quantity  decimal.Decimal
 	UnitPrice decimal.Decimal
 	Total     decimal.Decimal
+	// Taxes
+	VBC     decimal.Decimal
+	PICMS   decimal.Decimal
+	VICMS   decimal.Decimal
+	PIPI    decimal.Decimal
+	VIPI    decimal.Decimal
+	PPIS    decimal.Decimal
+	VPIS    decimal.Decimal
+	PCOFINS decimal.Decimal
+	VCOFINS decimal.Decimal
+	VFrete  decimal.Decimal
+	VSeg    decimal.Decimal
+	VDesc   decimal.Decimal
+	VOutro  decimal.Decimal
 }

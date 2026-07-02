@@ -171,49 +171,64 @@ func (m *NFeModel) AllocateNumber(farmID uint32, serie int) (int, error) {
 
 // Invoice represents a tracked NF-e invoice.
 type Invoice struct {
-	ID                 int
-	DepartureID        uint32
-	AccessKey          string
-	Serie              int
-	Number             int
-	Status             string
-	CFOP               string
-	NCM                string
-	QuantityKG         decimal.Decimal
-	UnitPrice          decimal.Decimal
-	TotalValue         decimal.Decimal
-	ICMSValue          *decimal.Decimal
-	XMLSigned          *string
-	XMLAuthorized      *string
-	Protocol           *string
-	SefazStatusCode    *string
-	SefazMotive        *string
-	RejectionReason    *string
-	CancellationReason *string
-	RetryCount         int
-	CreatedAt          interface{}
-	SignedAt           interface{}
-	SentAt             interface{}
-	AuthorizedAt       interface{}
+	ID                   int
+	DepartureID          uint32
+	AccessKey            string
+	Serie                int
+	Number               int
+	Status               string
+	CFOP                 string
+	NCM                  string
+	QuantityKG           decimal.Decimal
+	UnitPrice            decimal.Decimal
+	TotalValue           decimal.Decimal
+	ICMSValue            *decimal.Decimal
+	XMLSigned            *string
+	XMLAuthorized        *string
+	Protocol             *string
+	SefazStatusCode      *string
+	SefazMotive          *string
+	RejectionReason      *string
+	CancellationReason   *string
+	RetryCount           int
+	TpEmis               int
+	DhCont               interface{}
+	XJust                *string
+	ContingencyParentID  *int
+	SVCEndpointUsed      *string
+	CreatedAt            interface{}
+	SignedAt             interface{}
+	SentAt               interface{}
+	AuthorizedAt         interface{}
 }
 
-// CreateInvoice creates a new invoice record.
+// CreateInvoice creates a new invoice record with default tpEmis=1 (normal).
 func (m *NFeModel) CreateInvoice(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal) (int, error) {
+	return m.CreateInvoiceWithEmission(departureID, accessKey, serie, number, cfop, ncm, quantityKG, unitPrice, totalValue, 1, nil, "")
+}
+
+// CreateInvoiceWithEmission creates a new invoice record with a specific emission type.
+func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal, tpEmis int, dhCont interface{}, xJust string) (int, error) {
 	query := `
-		INSERT INTO nfe_invoice (departure_id, access_key, serie, number, status, cfop, ncm, quantity_kg, unit_price, total_value)
-		VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9)
+		INSERT INTO nfe_invoice (
+			departure_id, access_key, serie, number, status,
+			cfop, ncm, quantity_kg, unit_price, total_value,
+			tp_emis, dh_cont, x_just
+		)
+		VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9, $10, $11, $12)
 		RETURNING id
 	`
 	var id int
 	err := m.pool.QueryRow(context.Background(), query,
-		departureID, accessKey, serie, number, cfop, ncm, quantityKG, unitPrice, totalValue).Scan(&id)
+		departureID, accessKey, serie, number, cfop, ncm, quantityKG, unitPrice, totalValue,
+		tpEmis, dhCont, xJust).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create invoice: %w", err)
 	}
 	return id, nil
 }
 
-// UpdateInvoiceXML updates the signed XML of an invoice.
+// UpdateInvoiceXML updates the signed XML of an invoice and transitions status.
 func (m *NFeModel) UpdateInvoiceXML(id int, xmlSigned string) error {
 	query := `
 		UPDATE nfe_invoice
@@ -221,6 +236,17 @@ func (m *NFeModel) UpdateInvoiceXML(id int, xmlSigned string) error {
 		WHERE id = $1
 	`
 	_, err := m.pool.Exec(context.Background(), query, id, xmlSigned)
+	return err
+}
+
+// UpdateInvoiceXMLWithStatus updates the signed XML and sets a custom status.
+func (m *NFeModel) UpdateInvoiceXMLWithStatus(id int, xmlSigned, status string) error {
+	query := `
+		UPDATE nfe_invoice
+		SET xml_signed = $2, status = $3, signed_at = CURRENT_TIMESTAMP
+		WHERE id = $1
+	`
+	_, err := m.pool.Exec(context.Background(), query, id, xmlSigned, status)
 	return err
 }
 
@@ -242,7 +268,8 @@ func (m *NFeModel) GetInvoiceByDeparture(departureID uint32) (*Invoice, error) {
 		SELECT id, departure_id, access_key, serie, number, status, cfop, ncm,
 		       quantity_kg, unit_price, total_value, icms_value, xml_signed, xml_authorized,
 		       protocol, sefaz_status_code, sefaz_motive, rejection_reason, cancellation_reason,
-		       retry_count, created_at, signed_at, sent_at, authorized_at
+		       retry_count, tp_emis, dh_cont, x_just, contingency_parent_id, svc_endpoint_used,
+		       created_at, signed_at, sent_at, authorized_at
 		FROM nfe_invoice
 		WHERE departure_id = $1
 		ORDER BY id DESC
@@ -252,11 +279,13 @@ func (m *NFeModel) GetInvoiceByDeparture(departureID uint32) (*Invoice, error) {
 
 	var inv Invoice
 	var icmsValue *decimal.Decimal
-	var xmlSigned, xmlAuthorized, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason *string
+	var xmlSigned, xmlAuthorized, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason, xJust, svcEndpoint *string
+	var contingencyParentID *int
 	err := row.Scan(&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Serie, &inv.Number, &inv.Status,
 		&inv.CFOP, &inv.NCM, &inv.QuantityKG, &inv.UnitPrice, &inv.TotalValue, &icmsValue,
 		&xmlSigned, &xmlAuthorized, &protocol, &sefazCode, &sefazMotive, &rejectionReason,
-		&cancellationReason, &inv.RetryCount, &inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt)
+		&cancellationReason, &inv.RetryCount, &inv.TpEmis, &inv.DhCont, &xJust, &contingencyParentID, &svcEndpoint,
+		&inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -272,6 +301,9 @@ func (m *NFeModel) GetInvoiceByDeparture(departureID uint32) (*Invoice, error) {
 	inv.SefazMotive = sefazMotive
 	inv.RejectionReason = rejectionReason
 	inv.CancellationReason = cancellationReason
+	inv.XJust = xJust
+	inv.ContingencyParentID = contingencyParentID
+	inv.SVCEndpointUsed = svcEndpoint
 	return &inv, nil
 }
 
@@ -301,17 +333,17 @@ type InvoiceForRetry struct {
 	Status      string
 	XMLSigned   string
 	RetryCount  int
+	TpEmis      int
 	LastRetryAt interface{}
 }
 
-// GetPendingInvoicesForRetry returns invoices that need to be retried,
-// respecting capped exponential backoff: only return if enough time has passed.
-// Backoff is capped at 12 doublings (60 minutes max) to prevent unbounded waits.
+// GetPendingInvoicesForRetry returns invoices with status 'pending' that need status polling,
+// respecting capped exponential backoff.
 func (m *NFeModel) GetPendingInvoicesForRetry() ([]InvoiceForRetry, error) {
 	query := `
-		SELECT id, departure_id, access_key, status, xml_signed, retry_count, last_retry_at
+		SELECT id, departure_id, access_key, status, xml_signed, retry_count, tp_emis, last_retry_at
 		FROM nfe_invoice
-		WHERE status IN ('pending', 'signed')
+		WHERE status = 'pending'
 		  AND retry_count < 10
 		  AND (
 		    last_retry_at IS NULL
@@ -331,7 +363,7 @@ func (m *NFeModel) GetPendingInvoicesForRetry() ([]InvoiceForRetry, error) {
 		var inv InvoiceForRetry
 		var xmlSigned *string
 		var lastRetryAt interface{}
-		if err := rows.Scan(&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Status, &xmlSigned, &inv.RetryCount, &lastRetryAt); err != nil {
+		if err := rows.Scan(&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Status, &xmlSigned, &inv.RetryCount, &inv.TpEmis, &lastRetryAt); err != nil {
 			return nil, fmt.Errorf("failed to scan pending invoice: %w", err)
 		}
 		if xmlSigned != nil {
@@ -344,13 +376,53 @@ func (m *NFeModel) GetPendingInvoicesForRetry() ([]InvoiceForRetry, error) {
 	return invoices, rows.Err()
 }
 
-// ResetPendingBackoff clears last_retry_at for all pending/signed invoices
-// so they become immediately eligible for retry on the next worker run.
+// GetDraftInvoicesForRetry returns draft invoices that are eligible for auto-retry
+// when SVC becomes active. Only returns invoices created within the last 24 hours.
+func (m *NFeModel) GetDraftInvoicesForRetry() ([]InvoiceForRetry, error) {
+	query := `
+		SELECT id, departure_id, access_key, status, xml_signed, retry_count, tp_emis, last_retry_at
+		FROM nfe_invoice
+		WHERE status = 'draft'
+		  AND retry_count < 5
+		  AND created_at > CURRENT_TIMESTAMP - INTERVAL '24 hours'
+		  AND (
+		    last_retry_at IS NULL
+		    OR last_retry_at <= CURRENT_TIMESTAMP - (INTERVAL '10 minutes' * LEAST(POWER(2, retry_count), 6))
+		  )
+		ORDER BY created_at ASC
+		LIMIT 50
+	`
+	rows, err := m.pool.Query(context.Background(), query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get draft invoices: %w", err)
+	}
+	defer rows.Close()
+
+	var invoices []InvoiceForRetry
+	for rows.Next() {
+		var inv InvoiceForRetry
+		var xmlSigned *string
+		var lastRetryAt interface{}
+		if err := rows.Scan(&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Status, &xmlSigned, &inv.RetryCount, &inv.TpEmis, &lastRetryAt); err != nil {
+			return nil, fmt.Errorf("failed to scan draft invoice: %w", err)
+		}
+		if xmlSigned != nil {
+			inv.XMLSigned = *xmlSigned
+		}
+		inv.LastRetryAt = lastRetryAt
+		invoices = append(invoices, inv)
+	}
+
+	return invoices, rows.Err()
+}
+
+// ResetPendingBackoff clears last_retry_at for all pending invoices
+// so they become immediately eligible for status polling on the next worker run.
 func (m *NFeModel) ResetPendingBackoff() error {
 	query := `
 		UPDATE nfe_invoice
 		SET last_retry_at = NULL
-		WHERE status IN ('pending', 'signed')
+		WHERE status = 'pending'
 	`
 	_, err := m.pool.Exec(context.Background(), query)
 	if err != nil {
@@ -381,6 +453,20 @@ func (m *NFeModel) UpdateInvoiceSent(id int) error {
 	return err
 }
 
+// SupersedeInvoice marks an old invoice as superseded and links a new contingency invoice to it.
+func (m *NFeModel) SupersedeInvoice(oldID, newID int) error {
+	query := `
+		UPDATE nfe_invoice
+		SET status = 'superseded', contingency_parent_id = $2
+		WHERE id = $1
+	`
+	_, err := m.pool.Exec(context.Background(), query, oldID, newID)
+	if err != nil {
+		return fmt.Errorf("failed to supersede invoice: %w", err)
+	}
+	return nil
+}
+
 // GetInvoicesByFarm returns invoices for a farm with pagination, ordered by creation date descending.
 func (m *NFeModel) GetInvoicesByFarm(farmID uint32, page int) ([]Invoice, int, error) {
 	pageSize := 10
@@ -404,7 +490,8 @@ func (m *NFeModel) GetInvoicesByFarm(farmID uint32, page int) ([]Invoice, int, e
 		SELECT i.id, i.departure_id, i.access_key, i.serie, i.number, i.status, i.cfop, i.ncm,
 		       i.quantity_kg, i.unit_price, i.total_value, i.icms_value, i.xml_signed, i.xml_authorized,
 		       i.protocol, i.sefaz_status_code, i.sefaz_motive, i.rejection_reason, i.cancellation_reason,
-		       i.retry_count, i.created_at, i.signed_at, i.sent_at, i.authorized_at
+		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id, i.svc_endpoint_used,
+		       i.created_at, i.signed_at, i.sent_at, i.authorized_at
 		FROM nfe_invoice i
 		JOIN departure d ON d.id = i.departure_id
 		WHERE d.farm = $1
@@ -421,11 +508,13 @@ func (m *NFeModel) GetInvoicesByFarm(farmID uint32, page int) ([]Invoice, int, e
 	for rows.Next() {
 		var inv Invoice
 		var icmsValue *decimal.Decimal
-		var xmlSigned, xmlAuthorized, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason *string
+		var xmlSigned, xmlAuthorized, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason, xJust, svcEndpoint *string
+		var contingencyParentID *int
 		err := rows.Scan(&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Serie, &inv.Number, &inv.Status,
 			&inv.CFOP, &inv.NCM, &inv.QuantityKG, &inv.UnitPrice, &inv.TotalValue, &icmsValue,
 			&xmlSigned, &xmlAuthorized, &protocol, &sefazCode, &sefazMotive, &rejectionReason,
-			&cancellationReason, &inv.RetryCount, &inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt)
+			&cancellationReason, &inv.RetryCount, &inv.TpEmis, &inv.DhCont, &xJust, &contingencyParentID, &svcEndpoint,
+			&inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan invoice: %w", err)
 		}
@@ -437,6 +526,9 @@ func (m *NFeModel) GetInvoicesByFarm(farmID uint32, page int) ([]Invoice, int, e
 		inv.SefazMotive = sefazMotive
 		inv.RejectionReason = rejectionReason
 		inv.CancellationReason = cancellationReason
+		inv.XJust = xJust
+		inv.ContingencyParentID = contingencyParentID
+		inv.SVCEndpointUsed = svcEndpoint
 		invoices = append(invoices, inv)
 	}
 
@@ -449,7 +541,8 @@ func (m *NFeModel) GetInvoiceByAccessKey(accessKey string) (*Invoice, error) {
 		SELECT id, departure_id, access_key, serie, number, status, cfop, ncm,
 		       quantity_kg, unit_price, total_value, icms_value, xml_signed, xml_authorized,
 		       protocol, sefaz_status_code, sefaz_motive, rejection_reason, cancellation_reason,
-		       retry_count, created_at, signed_at, sent_at, authorized_at
+		       retry_count, tp_emis, dh_cont, x_just, contingency_parent_id, svc_endpoint_used,
+		       created_at, signed_at, sent_at, authorized_at
 		FROM nfe_invoice
 		WHERE access_key = $1
 		LIMIT 1
@@ -458,11 +551,13 @@ func (m *NFeModel) GetInvoiceByAccessKey(accessKey string) (*Invoice, error) {
 
 	var inv Invoice
 	var icmsValue *decimal.Decimal
-	var xmlSigned, xmlAuthorized, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason *string
+	var xmlSigned, xmlAuthorized, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason, xJust, svcEndpoint *string
+	var contingencyParentID *int
 	err := row.Scan(&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Serie, &inv.Number, &inv.Status,
 		&inv.CFOP, &inv.NCM, &inv.QuantityKG, &inv.UnitPrice, &inv.TotalValue, &icmsValue,
 		&xmlSigned, &xmlAuthorized, &protocol, &sefazCode, &sefazMotive, &rejectionReason,
-		&cancellationReason, &inv.RetryCount, &inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt)
+		&cancellationReason, &inv.RetryCount, &inv.TpEmis, &inv.DhCont, &xJust, &contingencyParentID, &svcEndpoint,
+		&inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -478,5 +573,8 @@ func (m *NFeModel) GetInvoiceByAccessKey(accessKey string) (*Invoice, error) {
 	inv.SefazMotive = sefazMotive
 	inv.RejectionReason = rejectionReason
 	inv.CancellationReason = cancellationReason
+	inv.XJust = xJust
+	inv.ContingencyParentID = contingencyParentID
+	inv.SVCEndpointUsed = svcEndpoint
 	return &inv, nil
 }

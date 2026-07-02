@@ -197,6 +197,52 @@ func UFCode(uf string) string {
 	return ""
 }
 
+// TpEmis represents the NF-e emission type (tpEmis).
+type TpEmis int
+
+const (
+	EmissaoNormal TpEmis = 1
+	EPEC          TpEmis = 4 // reserved for future use
+	FSDA          TpEmis = 5 // reserved (never active for SaaS)
+	SVCAN         TpEmis = 6
+	SVCRS         TpEmis = 7
+)
+
+func (t TpEmis) String() string {
+	switch t {
+	case EmissaoNormal:
+		return "1"
+	case EPEC:
+		return "4"
+	case FSDA:
+		return "5"
+	case SVCAN:
+		return "6"
+	case SVCRS:
+		return "7"
+	default:
+		return "1"
+	}
+}
+
+// IsContingency returns true for any contingency emission mode.
+func (t TpEmis) IsContingency() bool {
+	return t == EPEC || t == FSDA || t == SVCAN || t == SVCRS
+}
+
+// SVCForState returns the SVC emission type for a given state per Ato COTEPE 39/2012.
+// Returns EmissaoNormal for states not mapped to any SVC.
+func SVCForState(uf string) TpEmis {
+	switch uf {
+	case "AC", "AL", "AP", "MG", "PB", "RJ", "RS", "RO", "RR", "SC", "SE", "SP", "TO", "DF":
+		return SVCAN
+	case "AM", "BA", "CE", "ES", "GO", "MA", "MT", "MS", "PA", "PE", "PI", "PR", "RN":
+		return SVCRS
+	default:
+		return EmissaoNormal
+	}
+}
+
 // ModeloNFe is the NF-e model code.
 const ModeloNFe = "55"
 

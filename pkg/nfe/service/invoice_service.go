@@ -75,8 +75,14 @@ func (s *InvoiceService) BuildAndSign(input entity.InvoiceInput, certData []byte
 	return str, nil
 }
 
-// SendToSefaz sends a signed NF-e to SEFAZ and returns the parsed response.
+// SendToSefaz sends a signed NF-e to SEFAZ (normal endpoint) and returns the parsed response.
 func (s *InvoiceService) SendToSefaz(signedXML string, certData []byte, certPassword string) (*sefaz.AutorizacaoResponse, error) {
+	return s.SendToSefazWithEmission(signedXML, certData, certPassword, defaults.EmissaoNormal)
+}
+
+// SendToSefazWithEmission sends a signed NF-e to the endpoint matching the emission type
+// (normal SEFAZ or SVC) and returns the parsed response.
+func (s *InvoiceService) SendToSefazWithEmission(signedXML string, certData []byte, certPassword string, tpEmis defaults.TpEmis) (*sefaz.AutorizacaoResponse, error) {
 	cert, err := sign.LoadCertificateFromBytes(certData, certPassword)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load certificate: %w", err)
@@ -87,7 +93,7 @@ func (s *InvoiceService) SendToSefaz(signedXML string, certData []byte, certPass
 		return nil, fmt.Errorf("failed to create SEFAZ client: %w", err)
 	}
 
-	url, ns, action, err := sefaz.GetEndpointWithSOAPAction(s.config.StateUF, "NFeAutorizacao4", s.config.Environment == config.EnvironmentProduction)
+	url, ns, action, err := sefaz.GetEndpointWithSOAPActionAndEmission(s.config.StateUF, "NFeAutorizacao4", s.config.Environment == config.EnvironmentProduction, tpEmis)
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +113,21 @@ func (s *InvoiceService) SendToSefaz(signedXML string, certData []byte, certPass
 	}
 
 	return parsed, nil
+}
+
+// CheckSVCStatus checks if the SVC for the configured state is operational.
+func (s *InvoiceService) CheckSVCStatus(certData []byte, certPassword string) (*sefaz.StatusResponse, error) {
+	cert, err := sign.LoadCertificateFromBytes(certData, certPassword)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load certificate: %w", err)
+	}
+
+	client, err := sefaz.NewClient(s.config, cert)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create SEFAZ client: %w", err)
+	}
+
+	return client.CheckSVCStatus()
 }
 
 // CheckSefazStatus checks if the configured SEFAZ is operational.
@@ -182,6 +203,11 @@ type PendingInvoice struct {
 
 // QueryInvoiceStatus queries the SEFAZ for the current status of an invoice by access key.
 func (s *InvoiceService) QueryInvoiceStatus(accessKey string, certData []byte, certPassword string) (*sefaz.ConsultaResponse, error) {
+	return s.QueryInvoiceStatusWithEmission(accessKey, certData, certPassword, defaults.EmissaoNormal)
+}
+
+// QueryInvoiceStatusWithEmission queries the endpoint matching the emission type for the current status.
+func (s *InvoiceService) QueryInvoiceStatusWithEmission(accessKey string, certData []byte, certPassword string, tpEmis defaults.TpEmis) (*sefaz.ConsultaResponse, error) {
 	cert, err := sign.LoadCertificateFromBytes(certData, certPassword)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load certificate: %w", err)
@@ -192,7 +218,7 @@ func (s *InvoiceService) QueryInvoiceStatus(accessKey string, certData []byte, c
 		return nil, fmt.Errorf("failed to create SEFAZ client: %w", err)
 	}
 
-	url, ns, action, err := sefaz.GetEndpointWithSOAPAction(s.config.StateUF, "NFeConsultaProtocolo4", s.config.Environment == config.EnvironmentProduction)
+	url, ns, action, err := sefaz.GetEndpointWithSOAPActionAndEmission(s.config.StateUF, "NFeConsultaProtocolo4", s.config.Environment == config.EnvironmentProduction, tpEmis)
 	if err != nil {
 		return nil, err
 	}
@@ -216,6 +242,52 @@ func (s *InvoiceService) QueryInvoiceStatus(accessKey string, certData []byte, c
 	}
 
 	return parsed, nil
+}
+
+// RebuildForContingency rebuilds the NF-e XML for a contingency emission mode.
+// It returns the newly signed XML and the new access key.
+func (s *InvoiceService) RebuildForContingency(input entity.InvoiceInput, newNumber int, newCNF string, tpEmis defaults.TpEmis, reason string, certData []byte, certPassword string) (string, string, error) {
+	now := time.Now()
+	input.Numero = newNumber
+	input.CNF = newCNF
+	input.TpEmis = tpEmis
+	input.DhCont = &now
+	input.XJust = reason
+
+	signedXML, err := s.BuildAndSign(input, certData, certPassword)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to rebuild NF-e for contingency: %w", err)
+	}
+
+	accessKey := entity.GenerateAccessKey(entity.AccessKeyData{
+		CUF:      defaults.UFCode(input.Emitter.UF),
+		AAMM:     now.Format("0601"),
+		Document: documentForAccessKey(input.Emitter),
+		Mod:      defaults.ModeloNFe,
+		Serie:    input.Serie,
+		NNF:      input.Numero,
+		TpEmis:   tpEmis.String(),
+		CNF:      input.CNF,
+	})
+
+	return signedXML, accessKey, nil
+}
+
+func documentForAccessKey(emit entity.EmitterData) string {
+	if emit.Type == 2 {
+		return padLeftZeros(emit.CPF, 14)
+	}
+	return padLeftZeros(emit.CNPJ, 14)
+}
+
+func padLeftZeros(s string, length int) string {
+	for len(s) < length {
+		s = "0" + s
+	}
+	if len(s) > length {
+		return s[:length]
+	}
+	return s
 }
 
 // CalculateTaxes calculates the default taxes for a grain sale.

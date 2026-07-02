@@ -334,6 +334,12 @@ func downloadNFeDANFE(c *gin.Context) {
 		return
 	}
 
+	// DANFE can ONLY be generated for authorized invoices (legal requirement)
+	if invoice.Status != "authorized" {
+		c.String(http.StatusForbidden, "DANFE somente disponivel para NF-e autorizada pela SEFAZ")
+		return
+	}
+
 	var xmlContent string
 	if invoice.XMLAuthorized != nil && *invoice.XMLAuthorized != "" {
 		xmlContent = *invoice.XMLAuthorized
