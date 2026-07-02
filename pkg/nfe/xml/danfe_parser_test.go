@@ -20,6 +20,11 @@ const sampleSignedNFe = `
       <serie>1</serie>
       <nNF>123</nNF>
       <dhEmi>2025-03-15T10:30:00-03:00</dhEmi>
+      <dhSaiEnt>2025-03-15T11:00:00-03:00</dhSaiEnt>
+      <tpNF>1</tpNF>
+      <tpEmis>1</tpEmis>
+      <tpAmb>2</tpAmb>
+      <verProc>Armazenda-1.0</verProc>
     </ide>
     <emit>
       <CNPJ>12345678000190</CNPJ>
@@ -69,7 +74,11 @@ const sampleSignedNFe = `
         <vSeg>0.00</vSeg>
         <vDesc>0.00</vDesc>
         <vOutro>0.00</vOutro>
+        <uTrib>KG</uTrib>
+        <qTrib>50000.0000</qTrib>
+        <vUnTrib>150.0000</vUnTrib>
       </prod>
+      <infAdProd>Produto conferido na balança rodoviária.</infAdProd>
       <imposto>
         <ICMS>
           <ICMS00>
@@ -244,6 +253,29 @@ func TestParseDANFEData_Signed(t *testing.T) {
 		t.Errorf("EmissionDate = %s, want to contain '15/03/2025'", data.EmissionDate)
 	}
 
+	// Emission context (Grupo B)
+	if data.TpEmis != "1" {
+		t.Errorf("TpEmis = %s, want '1'", data.TpEmis)
+	}
+	if data.TpAmb != "2" {
+		t.Errorf("TpAmb = %s, want '2' (homologação)", data.TpAmb)
+	}
+	if data.TpNF != "1" {
+		t.Errorf("TpNF = %s, want '1' (saída)", data.TpNF)
+	}
+	if !strings.Contains(data.DhSaiEnt, "15/03/2025") {
+		t.Errorf("DhSaiEnt = %s, want to contain '15/03/2025'", data.DhSaiEnt)
+	}
+	if data.DhCont != "" {
+		t.Errorf("DhCont = %s, want empty for normal emission", data.DhCont)
+	}
+	if data.XJust != "" {
+		t.Errorf("XJust = %s, want empty for normal emission", data.XJust)
+	}
+	if data.VerProc != "Armazenda-1.0" {
+		t.Errorf("VerProc = %s, want 'Armazenda-1.0'", data.VerProc)
+	}
+
 	if data.EmitterName != "Fazenda Exemplo LTDA" {
 		t.Errorf("EmitterName = %s, want 'Fazenda Exemplo LTDA'", data.EmitterName)
 	}
@@ -365,6 +397,21 @@ func TestParseDANFEData_Signed(t *testing.T) {
 		t.Errorf("Product.VCOFINS = %s, want 225000.00", p.VCOFINS.String())
 	}
 
+	// Tributable unit (Grupo I)
+	if p.UTrib != "KG" {
+		t.Errorf("Product.UTrib = %s, want 'KG'", p.UTrib)
+	}
+	if !p.QTrib.Equal(decimal.NewFromFloat(50000.0)) {
+		t.Errorf("Product.QTrib = %s, want 50000.0000", p.QTrib.String())
+	}
+	if !p.VUnTrib.Equal(decimal.NewFromFloat(150.0)) {
+		t.Errorf("Product.VUnTrib = %s, want 150.0000", p.VUnTrib.String())
+	}
+	// infAdProd (sibling of prod inside det)
+	if p.InfAdProd != "Produto conferido na balança rodoviária." {
+		t.Errorf("Product.InfAdProd = %s, want 'Produto conferido na balança rodoviária.'", p.InfAdProd)
+	}
+
 	if !data.TotalValue.Equal(decimal.NewFromFloat(7500000.0)) {
 		t.Errorf("TotalValue = %s, want 7500000.00", data.TotalValue.String())
 	}
@@ -433,5 +480,125 @@ func TestParseDANFEData_Empty(t *testing.T) {
 	_, err := xml.ParseDANFEData("")
 	if err == nil {
 		t.Fatal("expected error for empty XML, got nil")
+	}
+}
+
+// TestParseDANFEData_ContingencyFields verifies that contingency-only fields
+// (dhCont, xJust) and a non-default tpEmis are extracted when present.
+func TestParseDANFEData_ContingencyFields(t *testing.T) {
+	const svcXML = `
+<NFe xmlns="http://www.portalfiscal.inf.br/nfe">
+  <infNFe Id="NFe51250312345678000190550010000001231734567890" versao="4.00">
+    <ide>
+      <cUF>51</cUF>
+      <cNF>73456789</cNF>
+      <natOp>Venda de Mercadoria</natOp>
+      <mod>55</mod>
+      <serie>1</serie>
+      <nNF>123</nNF>
+      <dhEmi>2025-03-15T10:30:00-03:00</dhEmi>
+      <tpEmis>7</tpEmis>
+      <dhCont>2025-03-15T10:25:00-03:00</dhCont>
+      <xJust>SEFAZ originária indisponível</xJust>
+      <tpAmb>1</tpAmb>
+    </ide>
+    <emit>
+      <CNPJ>12345678000190</CNPJ>
+      <xNome>Fazenda Exemplo LTDA</xNome>
+      <IE>123456789</IE>
+      <CRT>3</CRT>
+    </emit>
+    <total>
+      <ICMSTot>
+        <vNF>0.00</vNF>
+      </ICMSTot>
+    </total>
+  </infNFe>
+</NFe>
+`
+	data, err := xml.ParseDANFEData(svcXML)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if data.TpEmis != "7" {
+		t.Errorf("TpEmis = %s, want '7' (SVC-RS)", data.TpEmis)
+	}
+	if data.TpAmb != "1" {
+		t.Errorf("TpAmb = %s, want '1' (produção)", data.TpAmb)
+	}
+	if !strings.Contains(data.DhCont, "15/03/2025") {
+		t.Errorf("DhCont = %s, want to contain '15/03/2025'", data.DhCont)
+	}
+	if data.XJust != "SEFAZ originária indisponível" {
+		t.Errorf("XJust = %s, want contingency justification", data.XJust)
+	}
+}
+
+// TestParseDANFEData_DifferingTributableUnit verifies that vUnTrib differing
+// from vUnCom is captured separately (MOC Anexo II §3.1.7 requires both on
+// the DANFE when they differ).
+func TestParseDANFEData_DifferingTributableUnit(t *testing.T) {
+	const xmlStr = `
+<NFe xmlns="http://www.portalfiscal.inf.br/nfe">
+  <infNFe Id="NFe51250312345678000190550010000001231234567890" versao="4.00">
+    <ide>
+      <cUF>51</cUF>
+      <cNF>12345678</cNF>
+      <natOp>Venda</natOp>
+      <mod>55</mod>
+      <serie>1</serie>
+      <nNF>123</nNF>
+      <dhEmi>2025-03-15T10:30:00-03:00</dhEmi>
+      <tpEmis>1</tpEmis>
+      <tpAmb>2</tpAmb>
+    </ide>
+    <emit>
+      <CNPJ>12345678000190</CNPJ>
+      <xNome>Fazenda Exemplo LTDA</xNome>
+      <IE>123456789</IE>
+      <CRT>3</CRT>
+    </emit>
+    <det nItem="1">
+      <prod>
+        <cProd>SOJA</cProd>
+        <xProd>Soja em Graos</xProd>
+        <NCM>12010010</NCM>
+        <CFOP>5102</CFOP>
+        <uCom>SC</uCom>
+        <qCom>500.0000</qCom>
+        <vUnCom>15000.0000</vUnCom>
+        <vProd>7500000.00</vProd>
+        <uTrib>KG</uTrib>
+        <qTrib>50000.0000</qTrib>
+        <vUnTrib>150.0000</vUnTrib>
+      </prod>
+    </det>
+    <total>
+      <ICMSTot>
+        <vNF>7500000.00</vNF>
+      </ICMSTot>
+    </total>
+  </infNFe>
+</NFe>
+`
+	data, err := xml.ParseDANFEData(xmlStr)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(data.Products) != 1 {
+		t.Fatalf("Products len = %d, want 1", len(data.Products))
+	}
+	p := data.Products[0]
+	if p.UTrib != "KG" || p.Unit != "SC" {
+		t.Errorf("Unit=%s UTrib=%s, want SC/KG (differing units)", p.Unit, p.UTrib)
+	}
+	if !p.UnitPrice.Equal(decimal.NewFromFloat(15000.0)) {
+		t.Errorf("UnitPrice = %s, want 15000", p.UnitPrice.String())
+	}
+	if !p.VUnTrib.Equal(decimal.NewFromFloat(150.0)) {
+		t.Errorf("VUnTrib = %s, want 150", p.VUnTrib.String())
+	}
+	if p.UnitPrice.Equal(p.VUnTrib) {
+		t.Error("expected vUnCom != vUnTrib, got equal values")
 	}
 }

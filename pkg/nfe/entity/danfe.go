@@ -11,6 +11,15 @@ type DANFEData struct {
 	Serie        int
 	EmissionDate string
 
+	// Emission context (Grupo B)
+	TpEmis   string // B22: 1=normal, 4=EPEC, 5=FS-DA, 6=SVC-AN, 7=SVC-RS
+	TpAmb    string // B24: 1=produção, 2=homologação
+	TpNF     string // B11: 0=Entrada, 1=Saída
+	DhSaiEnt string // B10: data/hora de saída ou entrada
+	DhCont   string // B28: data/hora da entrada em contingência (formatted)
+	XJust    string // B29: justificativa da entrada em contingência
+	VerProc  string // B27: versão do processo de emissão
+
 	// Emitter
 	EmitterName         string
 	EmitterCNPJ         string
@@ -104,6 +113,12 @@ type DANFEProduct struct {
 	Quantity  decimal.Decimal
 	UnitPrice decimal.Decimal
 	Total     decimal.Decimal
+	// Tributable unit (Grupo I): required to be shown when different from
+	// the commercial unit (MOC 7.0 Anexo II §3.1.7).
+	UTrib     string
+	QTrib     decimal.Decimal
+	VUnTrib   decimal.Decimal
+	InfAdProd string
 	// Taxes
 	VBC     decimal.Decimal
 	PICMS   decimal.Decimal

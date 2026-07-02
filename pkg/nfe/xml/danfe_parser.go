@@ -55,6 +55,13 @@ func ParseDANFEData(xmlContent string) (*entity.DANFEData, error) {
 		data.Numero = parseIntText(ide.SelectElement("nNF"))
 		data.NaturezaOp = textOrEmpty(ide.SelectElement("natOp"))
 		data.EmissionDate = formatDateTime(textOrEmpty(ide.SelectElement("dhEmi")))
+		data.TpEmis = textOrEmpty(ide.SelectElement("tpEmis"))
+		data.TpAmb = textOrEmpty(ide.SelectElement("tpAmb"))
+		data.TpNF = textOrEmpty(ide.SelectElement("tpNF"))
+		data.DhSaiEnt = formatDateTime(textOrEmpty(ide.SelectElement("dhSaiEnt")))
+		data.DhCont = formatDateTime(textOrEmpty(ide.SelectElement("dhCont")))
+		data.XJust = textOrEmpty(ide.SelectElement("xJust"))
+		data.VerProc = textOrEmpty(ide.SelectElement("verProc"))
 	}
 
 	// emit
@@ -101,8 +108,9 @@ func ParseDANFEData(xmlContent string) (*entity.DANFEData, error) {
 
 	// det / prod + imposto
 	for _, det := range infNFe.SelectElements("det") {
+		var p entity.DANFEProduct
 		if prod := det.SelectElement("prod"); prod != nil {
-			p := entity.DANFEProduct{
+			p = entity.DANFEProduct{
 				Code: textOrEmpty(prod.SelectElement("cProd")),
 				Desc: textOrEmpty(prod.SelectElement("xProd")),
 				NCM:  textOrEmpty(prod.SelectElement("NCM")),
@@ -130,51 +138,62 @@ func ParseDANFEData(xmlContent string) (*entity.DANFEData, error) {
 			if v, err := decimal.NewFromString(textOrEmpty(prod.SelectElement("vOutro"))); err == nil {
 				p.VOutro = v
 			}
+			// Tributable unit (Grupo I)
+			p.UTrib = textOrEmpty(prod.SelectElement("uTrib"))
+			if q, err := decimal.NewFromString(textOrEmpty(prod.SelectElement("qTrib"))); err == nil {
+				p.QTrib = q
+			}
+			if v, err := decimal.NewFromString(textOrEmpty(prod.SelectElement("vUnTrib"))); err == nil {
+				p.VUnTrib = v
+			}
+		}
 
-			// imposto
-			if imposto := det.SelectElement("imposto"); imposto != nil {
-				// ICMS (try common variants)
-				if icms := imposto.SelectElement("ICMS"); icms != nil {
-					for _, child := range icms.ChildElements() {
-						if strings.HasPrefix(child.Tag, "ICMS") {
-							p.CST = textOrEmpty(child.SelectElement("CST"))
-							p.VBC = parseDecimalText(child.SelectElement("vBC"))
-							p.PICMS = parseDecimalText(child.SelectElement("pICMS"))
-							p.VICMS = parseDecimalText(child.SelectElement("vICMS"))
-							break
-						}
-					}
-				}
-				// IPI
-				if ipi := imposto.SelectElement("IPI"); ipi != nil {
-					if ipiTrib := ipi.SelectElement("IPITrib"); ipiTrib != nil {
-						p.PIPI = parseDecimalText(ipiTrib.SelectElement("pIPI"))
-						p.VIPI = parseDecimalText(ipiTrib.SelectElement("vIPI"))
-					}
-				}
-				// PIS
-				if pis := imposto.SelectElement("PIS"); pis != nil {
-					for _, child := range pis.ChildElements() {
-						if strings.HasPrefix(child.Tag, "PIS") {
-							p.PPIS = parseDecimalText(child.SelectElement("pPIS"))
-							p.VPIS = parseDecimalText(child.SelectElement("vPIS"))
-							break
-						}
-					}
-				}
-				// COFINS
-				if cofins := imposto.SelectElement("COFINS"); cofins != nil {
-					for _, child := range cofins.ChildElements() {
-						if strings.HasPrefix(child.Tag, "COFINS") {
-							p.PCOFINS = parseDecimalText(child.SelectElement("pCOFINS"))
-							p.VCOFINS = parseDecimalText(child.SelectElement("vCOFINS"))
-							break
-						}
+		// infAdProd is a sibling of prod inside det (MOC Anexo I, id V01)
+		p.InfAdProd = textOrEmpty(det.SelectElement("infAdProd"))
+
+		// imposto
+		if imposto := det.SelectElement("imposto"); imposto != nil {
+			// ICMS (try common variants)
+			if icms := imposto.SelectElement("ICMS"); icms != nil {
+				for _, child := range icms.ChildElements() {
+					if strings.HasPrefix(child.Tag, "ICMS") {
+						p.CST = textOrEmpty(child.SelectElement("CST"))
+						p.VBC = parseDecimalText(child.SelectElement("vBC"))
+						p.PICMS = parseDecimalText(child.SelectElement("pICMS"))
+						p.VICMS = parseDecimalText(child.SelectElement("vICMS"))
+						break
 					}
 				}
 			}
-			data.Products = append(data.Products, p)
+			// IPI
+			if ipi := imposto.SelectElement("IPI"); ipi != nil {
+				if ipiTrib := ipi.SelectElement("IPITrib"); ipiTrib != nil {
+					p.PIPI = parseDecimalText(ipiTrib.SelectElement("pIPI"))
+					p.VIPI = parseDecimalText(ipiTrib.SelectElement("vIPI"))
+				}
+			}
+			// PIS
+			if pis := imposto.SelectElement("PIS"); pis != nil {
+				for _, child := range pis.ChildElements() {
+					if strings.HasPrefix(child.Tag, "PIS") {
+						p.PPIS = parseDecimalText(child.SelectElement("pPIS"))
+						p.VPIS = parseDecimalText(child.SelectElement("vPIS"))
+						break
+					}
+				}
+			}
+			// COFINS
+			if cofins := imposto.SelectElement("COFINS"); cofins != nil {
+				for _, child := range cofins.ChildElements() {
+					if strings.HasPrefix(child.Tag, "COFINS") {
+						p.PCOFINS = parseDecimalText(child.SelectElement("pCOFINS"))
+						p.VCOFINS = parseDecimalText(child.SelectElement("vCOFINS"))
+						break
+					}
+				}
+			}
 		}
+		data.Products = append(data.Products, p)
 	}
 
 	// total
