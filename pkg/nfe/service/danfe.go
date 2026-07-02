@@ -272,7 +272,16 @@ func (g *DANFEGenerator) drawHeaderBlock(pdf *gopdf.GoPdf, data entity.DANFEData
 	pdf.Cell(nil, "RECEBEMOS DE")
 	pdf.SetFont("serif-bold", "", 8)
 	pdf.SetXY(x+4, y+10)
-	pdf.Cell(nil, truncate(data.EmitterName, 45))
+	// Wrap emitter name within the canhoto width (§3.1: represent full content)
+	canhotoW := w*0.55 - 8
+	pdf.SetFont("serif-bold", "", 8)
+	canhotoLines := wrapText(pdf, data.EmitterName, canhotoW)
+	canhotoY := y + 10.0
+	for _, line := range canhotoLines {
+		pdf.SetXY(x+4, canhotoY)
+		pdf.Cell(nil, line)
+		canhotoY += 7
+	}
 	pdf.SetFont("serif", "", 6)
 	pdf.SetXY(x+4, y+18)
 	pdf.Cell(nil, "OS PRODUTOS/SERVIÇOS CONSTANTES DA NOTA FISCAL INDICADA AO LADO")
@@ -361,10 +370,17 @@ func (g *DANFEGenerator) drawContingencyBanner(pdf *gopdf.GoPdf, data entity.DAN
 		if contInfo != "" {
 			contInfo += " — "
 		}
-		contInfo += "Justificativa: " + truncate(data.XJust, 80)
+		contInfo += "Justificativa: " + data.XJust
 	}
 	if contInfo != "" {
-		pdf.Cell(nil, contInfo)
+		pdf.SetFont("serif", "", 8)
+		contLines := wrapText(pdf, contInfo, w-8)
+		contY := y + 12.0
+		for _, line := range contLines {
+			pdf.SetXY(x+4, contY)
+			pdf.Cell(nil, line)
+			contY += 7
+		}
 	}
 
 	return y + h
@@ -447,12 +463,17 @@ func (g *DANFEGenerator) drawAccessKeyBlock(pdf *gopdf.GoPdf, data entity.DANFED
 	pdf.Cell(nil, "2 — PROTOCOLO DE AUTORIZAÇÃO DE USO")
 	if data.Protocol != "" {
 		pdf.SetFont("serif-bold", "", 8)
-		pdf.SetXY(c2X, y+h-7)
 		protText := data.Protocol
 		if data.ProtocolDate != "" {
 			protText += " " + data.ProtocolDate
 		}
-		pdf.Cell(nil, truncate(protText, 40))
+		protLines := wrapText(pdf, protText, w*0.45-8)
+		protY := y + h - 7.0
+		for i := len(protLines) - 1; i >= 0; i-- {
+			pdf.SetXY(c2X, protY)
+			pdf.Cell(nil, protLines[i])
+			protY -= 7
+		}
 	}
 
 	return y + h
@@ -474,8 +495,13 @@ func (g *DANFEGenerator) drawEmitente(pdf *gopdf.GoPdf, data entity.DANFEData, x
 
 	// Razão Social (12pt bold per §3.7.6)
 	pdf.SetFont("serif-bold", "", 12)
-	pdf.SetXY(x+4, y+11)
-	pdf.Cell(nil, truncate(data.EmitterName, 60))
+	nameLines := wrapText(pdf, data.EmitterName, w-8)
+	nameY := y + 11.0
+	for _, line := range nameLines {
+		pdf.SetXY(x+4, nameY)
+		pdf.Cell(nil, line)
+		nameY += 10
+	}
 
 	// CNPJ | IE | CRT (8pt per §3.7.6)
 	row1H := 20.0
@@ -514,8 +540,13 @@ func (g *DANFEGenerator) drawDestinatario(pdf *gopdf.GoPdf, data entity.DANFEDat
 	// but razão social of dest/emit benefits from the same 12pt as emitente
 	// for legibility; 12 ≥ 10 satisfies the minimum)
 	pdf.SetFont("serif-bold", "", 12)
-	pdf.SetXY(x+4, y+11)
-	pdf.Cell(nil, truncate(data.DestName, 60))
+	nameLines := wrapText(pdf, data.DestName, w-8)
+	nameY := y + 11.0
+	for _, line := range nameLines {
+		pdf.SetXY(x+4, nameY)
+		pdf.Cell(nil, line)
+		nameY += 10
+	}
 
 	row1H := 20.0
 	col1 := w * 0.35
@@ -622,30 +653,49 @@ func (g *DANFEGenerator) drawTransport(pdf *gopdf.GoPdf, data entity.DANFEData, 
 
 func (g *DANFEGenerator) drawProductTable(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
 	headerH := 22.0
-	rowH := 20.0
+	baseRowH := 20.0
+	lineH := 8.0 // line height for 6pt font
 
-	// Calculate total height accounting for items with infAdProd or differing
-	// vUnTrib (which need extra lines).
+	descColW := w * 0.22
+	descColInner := descColW - 8 // padding
+
+	// Pre-wrap description and infAdProd for each item to calculate heights.
 	type itemLayout struct {
-		rowH     float64
-		hasExtra bool
+		rowH       float64
+		descLines  []string
+		infALines  []string
+		hasVUnTrib bool
 	}
 	layout := make([]itemLayout, len(data.Products))
 	totalRowsH := 0.0
+	pdf.SetFont("serif", "", 6)
 	for i, p := range data.Products {
-		lh := rowH
+		lh := baseRowH
+		descLines := wrapText(pdf, p.Desc, descColInner)
+		if len(descLines) > 1 {
+			lh = float64(len(descLines))*lineH + 6
+			if lh < baseRowH {
+				lh = baseRowH
+			}
+		}
+
+		hasVUnTrib := !p.UnitPrice.Equal(p.VUnTrib) && !p.VUnTrib.IsZero()
+		if hasVUnTrib {
+			lh += lineH
+		}
+
+		var infALines []string
 		if p.InfAdProd != "" {
-			lh += 10 // extra line for infAdProd
+			infALines = wrapText(pdf, p.InfAdProd, w-8)
+			lh += float64(len(infALines))*lineH + 2
 		}
-		if !p.UnitPrice.Equal(p.VUnTrib) && !p.VUnTrib.IsZero() {
-			lh += 8 // extra line for vUnTrib
-		}
-		layout[i] = itemLayout{rowH: lh, hasExtra: lh > rowH}
+
+		layout[i] = itemLayout{rowH: lh, descLines: descLines, infALines: infALines, hasVUnTrib: hasVUnTrib}
 		totalRowsH += lh
 	}
 	h := headerH + totalRowsH
-	if h < headerH+rowH {
-		h = headerH + rowH
+	if h < headerH+baseRowH {
+		h = headerH + baseRowH
 	}
 
 	g.box(pdf, x, y, w, h)
@@ -684,11 +734,14 @@ func (g *DANFEGenerator) drawProductTable(pdf *gopdf.GoPdf, data entity.DANFEDat
 	// Rows
 	cyAcc := y + headerH
 	for i, p := range data.Products {
-		lh := layout[i].rowH
+		l := layout[i]
+		lh := l.rowH
 		cx := x
-		vals := []string{
+
+		// Render non-description columns (single line)
+		singleVals := []string{
 			p.Code,
-			truncate(p.Desc, 30),
+			"", // description handled separately
 			p.NCM,
 			p.CST,
 			p.CFOP,
@@ -701,39 +754,45 @@ func (g *DANFEGenerator) drawProductTable(pdf *gopdf.GoPdf, data entity.DANFEDat
 			fmtDec2(p.PICMS),
 			fmtDec2(p.VIPI),
 		}
+		pdf.SetFont("serif", "", 6)
 		for j, c := range cols {
-			pdf.SetFont("serif", "", 6)
-			pdf.SetXY(cx+4, cyAcc+5)
-			pdf.Cell(nil, vals[j])
+			if j == 1 {
+				// Description column: render wrapped lines
+				descX := cx + 4
+				descY := cyAcc + 5
+				for _, line := range l.descLines {
+					pdf.SetXY(descX, descY)
+					pdf.Cell(nil, line)
+					descY += lineH
+				}
+			} else {
+				pdf.SetXY(cx+4, cyAcc+5)
+				pdf.Cell(nil, singleVals[j])
+			}
 			cx += c.w
 		}
 
 		// Second line for vUnTrib when different from vUnCom (§3.1.7)
-		if !p.UnitPrice.Equal(p.VUnTrib) && !p.VUnTrib.IsZero() {
+		if l.hasVUnTrib {
 			cx := x
 			for j, c := range cols {
 				if j == 7 { // V. UNIT column
 					pdf.SetFont("serif", "", 6)
-					pdf.SetXY(cx+4, cyAcc+13)
+					pdf.SetXY(cx+4, cyAcc+5+lineH*float64(max(len(l.descLines), 1)))
 					pdf.Cell(nil, "Trib: "+fmtDec4(p.VUnTrib))
 				}
 				cx += c.w
 			}
 		}
 
-		// infAdProd below the item (§3.1.7)
-		if p.InfAdProd != "" {
-			infY := cyAcc + lh - 8
-			if !p.UnitPrice.Equal(p.VUnTrib) && !p.VUnTrib.IsZero() {
-				infY = cyAcc + lh - 5
-			}
+		// infAdProd below the item (§3.1.7) — render wrapped lines
+		if len(l.infALines) > 0 {
+			infY := cyAcc + lh - float64(len(l.infALines))*lineH - 2
 			pdf.SetFont("serif", "", 6)
-			pdf.SetXY(x+4, infY)
-			pdf.Cell(nil, truncate(p.InfAdProd, 80))
+			drawWrapped(pdf, l.infALines, x+4, infY, lineH)
 		}
 
-		// Item divider between items per §5.3 (solid line — spec allows
-		// "pontilhadas, continuas, ou tracejada")
+		// Item divider between items per §5.3
 		if i < len(data.Products)-1 {
 			pdf.SetLineWidth(0.2)
 			pdf.Line(x+2, cyAcc+lh, x+w-2, cyAcc+lh)
@@ -795,38 +854,105 @@ func (g *DANFEGenerator) drawISSQN(pdf *gopdf.GoPdf, data entity.DANFEData, x, y
 }
 
 func (g *DANFEGenerator) drawAdditionalInfo(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
-	h := 56.0
+	// Dynamic height based on wrapped content (§3.1: fields shall represent
+	// full XML content; §3.1.8: "Deverá conter todas as Informações Adicionais").
+	leftW := w * 0.60
+	rightW := w - leftW
+	lineH := 8.0 // 6pt font line height
+	minH := 56.0
+
+	pdf.SetFont("serif", "", 6)
+	infCplLines := wrapText(pdf, data.InfCpl, leftW-8)
+	infFiscoLines := wrapText(pdf, data.InfAdFisco, rightW-8)
+
+	contentH := 20.0 // header area
+	if len(infCplLines) > 0 {
+		contentH += float64(len(infCplLines))*lineH + 4
+	} else {
+		contentH += 10
+	}
+	// Use the taller of the two panels
+	fiscoH := 20.0
+	if len(infFiscoLines) > 0 {
+		fiscoH += float64(len(infFiscoLines))*lineH + 4
+	} else {
+		fiscoH += 10
+	}
+	if fiscoH > contentH {
+		contentH = fiscoH
+	}
+	h := contentH
+	if h < minH {
+		h = minH
+	}
+
 	g.box(pdf, x, y, w, h)
 	pdf.SetFont("serif", "", 6)
 	pdf.SetXY(x+4, y+3)
 	pdf.Cell(nil, "DADOS ADICIONAIS")
 
-	leftW := w * 0.60
 	pdf.Line(x+leftW, y, x+leftW, y+h)
 
+	// Informações Complementares (left panel)
 	pdf.SetXY(x+4, y+10)
 	pdf.Cell(nil, "INFORMAÇÕES COMPLEMENTARES")
 	pdf.SetFont("serif", "", 6)
-	pdf.SetXY(x+4, y+20)
-	pdf.Cell(nil, truncate(data.InfCpl, 400))
+	if len(infCplLines) > 0 {
+		drawWrapped(pdf, infCplLines, x+4, y+20, lineH)
+	}
 
+	// Reservado ao Fisco (right panel)
 	pdf.SetFont("serif", "", 6)
 	pdf.SetXY(x+leftW+4, y+10)
 	pdf.Cell(nil, "RESERVADO AO FISCO")
 	pdf.SetFont("serif", "", 6)
-	pdf.SetXY(x+leftW+4, y+20)
-	pdf.Cell(nil, truncate(data.InfAdFisco, 200))
+	if len(infFiscoLines) > 0 {
+		drawWrapped(pdf, infFiscoLines, x+leftW+4, y+20, lineH)
+	}
 
 	return y + h
 }
 
 // --- Formatting utilities ---
 
-func truncate(s string, max int) string {
-	if len(s) <= max {
-		return s
+// wrapText splits text into lines that fit within maxWidth using the
+// currently set font. Returns the slice of lines. Per MOC Anexo II §3.1:
+// "O conteúdo dos campos poderá ser impresso em mais de uma linha desde
+// que a leitura possa ser feita de forma clara." This replaces truncation
+// to ensure fields "deverão representar o conteúdo das respectivas TAG XML."
+func wrapText(pdf *gopdf.GoPdf, text string, maxWidth float64) []string {
+	if text == "" {
+		return nil
 	}
-	return s[:max-3] + "..."
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		return nil
+	}
+	var lines []string
+	current := words[0]
+	for _, word := range words[1:] {
+		candidate := current + " " + word
+		tw, _ := pdf.MeasureTextWidth(candidate)
+		if tw <= maxWidth {
+			current = candidate
+		} else {
+			lines = append(lines, current)
+			current = word
+		}
+	}
+	lines = append(lines, current)
+	return lines
+}
+
+// drawWrapped renders wrapped text starting at (x, y) with the given line
+// height. Returns the y position after the last line.
+func drawWrapped(pdf *gopdf.GoPdf, lines []string, x, y, lineH float64) float64 {
+	for _, line := range lines {
+		pdf.SetXY(x, y)
+		pdf.Cell(nil, line)
+		y += lineH
+	}
+	return y
 }
 
 func joinNonEmpty(parts ...string) string {

@@ -1,6 +1,7 @@
 package service_test
 
 import (
+	"strings"
 	"testing"
 
 	"armazenda/pkg/nfe/entity"
@@ -263,4 +264,22 @@ func TestDANFEGenerator_GenerateWithInfAdProd(t *testing.T) {
 	data.Products[0].InfAdProd = "Produto conferido na balança rodoviária."
 	pdfBytes, err := g.Generate(data)
 	assertValidPDF(t, pdfBytes, err, "infAdProd")
+}
+
+// TestDANFEGenerator_GenerateLongText verifies that long product descriptions,
+// infAdProd, and infCpl are wrapped (not truncated) without error. Per MOC
+// Anexo II §3.1: "Os campos do DANFE deverão representar o conteúdo das
+// respectivas TAG XML" and §3.1.8: "Deverá conter todas as Informações
+// Adicionais."
+func TestDANFEGenerator_GenerateLongText(t *testing.T) {
+	g := service.NewDANFEGenerator()
+	data := fullDANFEData()
+	// Product description at the XML max (120 chars)
+	data.Products[0].Desc = "Soja em grao variedad precoce com alto teor de proteinas destinada a indústria de ração animal e farelagem industrial."
+	// infAdProd longer than 80 chars (old truncation limit)
+	data.Products[0].InfAdProd = "Produto conferido na balança rodoviária do posto fiscal BR-163 km 500, com tara descontada conforme contrato comercial nº 12345/2025."
+	// infCpl longer than 400 chars (old truncation limit)
+	data.InfCpl = strings.Repeat("Esta é uma linha de informação complementar de teste para verificar que o texto longo é corretamente quebrado em múltiplas linhas sem truncamento. ", 6)
+	pdfBytes, err := g.Generate(data)
+	assertValidPDF(t, pdfBytes, err, "long text wrapping")
 }
