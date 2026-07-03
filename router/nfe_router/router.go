@@ -356,6 +356,13 @@ func downloadNFeDANFE(c *gin.Context) {
 		return
 	}
 
+	// Fallback: if the XML doesn't contain <protNFe> (e.g., older invoices
+	// authorized before the <nfeProc> wrapper was stored), populate the
+	// protocol from the database column so Campo 2 on the DANFE is filled.
+	if data.Protocol == "" && invoice.Protocol != nil {
+		data.Protocol = *invoice.Protocol
+	}
+
 	generator := nfe_pdf.NewDANFEGenerator()
 	pdfBytes, genErr := generator.Generate(*data)
 	if genErr != nil {

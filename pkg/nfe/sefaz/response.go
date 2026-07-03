@@ -14,6 +14,7 @@ type AutorizacaoResponse struct {
 	Protocol      string // nProt (if available)
 	ReceiptNumber string // nRec (for batch tracking)
 	AccessKey     string // chNFe (if available)
+	DhRecbto      string // dhRecbto (date/time of receipt by SEFAZ)
 }
 
 // IsAuthorized returns true if the NF-e was authorized.
@@ -64,6 +65,7 @@ func ParseAutorizacaoResponse(soapBody []byte) (*AutorizacaoResponse, error) {
 				resp.StatusMotive = getElementText(infProt, "xMotivo")
 				resp.Protocol = getElementText(infProt, "nProt")
 				resp.AccessKey = getElementText(infProt, "chNFe")
+				resp.DhRecbto = getElementText(infProt, "dhRecbto")
 			}
 		}
 
@@ -94,6 +96,7 @@ func ParseAutorizacaoResponse(soapBody []byte) (*AutorizacaoResponse, error) {
 					resp.StatusMotive = getElementText(infProt, "xMotivo")
 					resp.Protocol = getElementText(infProt, "nProt")
 					resp.AccessKey = getElementText(infProt, "chNFe")
+					resp.DhRecbto = getElementText(infProt, "dhRecbto")
 				}
 			}
 		}
@@ -155,6 +158,7 @@ type ConsultaResponse struct {
 	StatusMotive string
 	Protocol     string
 	AccessKey    string
+	DhRecbto     string
 }
 
 // IsAuthorized returns true if the NF-e was authorized.
@@ -187,6 +191,7 @@ func ParseConsultaResponse(soapBody []byte) (*ConsultaResponse, error) {
 				resp.StatusMotive = getElementText(infProt, "xMotivo")
 				resp.Protocol = getElementText(infProt, "nProt")
 				resp.AccessKey = getElementText(infProt, "chNFe")
+				resp.DhRecbto = getElementText(infProt, "dhRecbto")
 			}
 		}
 	}

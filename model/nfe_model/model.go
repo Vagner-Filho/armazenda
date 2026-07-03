@@ -262,6 +262,14 @@ func (m *NFeModel) UpdateInvoiceStatus(id int, status, protocol, sefazCode, sefa
 	return err
 }
 
+// UpdateInvoiceAuthorizedXML stores the <nfeProc> wrapper XML (signed NFe +
+// protocol) in the xml_authorized column.
+func (m *NFeModel) UpdateInvoiceAuthorizedXML(id int, xmlAuthorized string) error {
+	query := `UPDATE nfe_invoice SET xml_authorized = $2 WHERE id = $1`
+	_, err := m.pool.Exec(context.Background(), query, id, xmlAuthorized)
+	return err
+}
+
 // GetInvoiceByDeparture returns the invoice for a departure.
 func (m *NFeModel) GetInvoiceByDeparture(departureID uint32) (*Invoice, error) {
 	query := `

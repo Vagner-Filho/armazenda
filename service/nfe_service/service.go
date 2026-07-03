@@ -24,6 +24,7 @@ import (
 	"armazenda/pkg/nfe/entity"
 	"armazenda/pkg/nfe/sefaz"
 	"armazenda/pkg/nfe/service"
+	nfe_xml "armazenda/pkg/nfe/xml"
 
 	"github.com/shopspring/decimal"
 )
@@ -248,6 +249,15 @@ func (s *NFeService) handleSefazResponse(sefazResp *sefaz.AutorizacaoResponse, i
 		errUpd := nfeModel.UpdateInvoiceStatus(invoiceID, "authorized", sefazResp.Protocol, sefazResp.StatusCode, sefazResp.StatusMotive)
 		if errUpd != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceStatus error: %v", errUpd.Error()))
+		}
+		// Build and store the <nfeProc> wrapper (signed NFe + protocol) so the
+		// DANFE parser can extract nProt/dhRecbto from the stored XML.
+		if authXML, buildErr := nfe_xml.BuildAuthorizedXML(signedXML, sefazResp.AccessKey, sefazResp.Protocol, sefazResp.DhRecbto, sefazResp.StatusCode, sefazResp.StatusMotive); buildErr == nil {
+			if xmlErr := nfeModel.UpdateInvoiceAuthorizedXML(invoiceID, authXML); xmlErr != nil {
+				model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceAuthorizedXML error: %v", xmlErr.Error()))
+			}
+		} else {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("BuildAuthorizedXML error: %v", buildErr.Error()))
 		}
 		return signedXML, entity_public.GetSuccessToast("NF-e autorizada pela SEFAZ", fmt.Sprintf("Protocolo: %s", sefazResp.Protocol))
 	}

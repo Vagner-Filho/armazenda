@@ -11,6 +11,7 @@ import (
 	"armazenda/pkg/nfe/config"
 	"armazenda/pkg/nfe/defaults"
 	"armazenda/pkg/nfe/service"
+	nfe_xml "armazenda/pkg/nfe/xml"
 )
 
 // StartRetryWorker starts the background worker that retries pending invoices.
@@ -126,6 +127,17 @@ func processInvoice(inv nfe_model.InvoiceForRetry) error {
 		updErr := nfeModel.UpdateInvoiceStatus(inv.ID, "authorized", resp.Protocol, resp.StatusCode, resp.StatusMotive)
 		if updErr != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: failed to update status: %v", updErr))
+		}
+		// Build and store the <nfeProc> wrapper so the DANFE parser can
+		// extract nProt/dhRecbto from the stored XML.
+		if inv.XMLSigned != "" {
+			if authXML, buildErr := nfe_xml.BuildAuthorizedXML(inv.XMLSigned, inv.AccessKey, resp.Protocol, resp.DhRecbto, resp.StatusCode, resp.StatusMotive); buildErr == nil {
+				if xmlErr := nfeModel.UpdateInvoiceAuthorizedXML(inv.ID, authXML); xmlErr != nil {
+					model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: UpdateInvoiceAuthorizedXML error: %v", xmlErr.Error()))
+				}
+			} else {
+				model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: BuildAuthorizedXML error: %v", buildErr.Error()))
+			}
 		}
 	} else if isProcessingStatusCode(resp.StatusCode) {
 		// Still processing — keep pending
