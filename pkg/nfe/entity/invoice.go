@@ -162,6 +162,7 @@ type TransportadoraData struct {
 	CPF       string
 	XNome     string
 	IE        string
+	Endereco  string
 	UF        string
 	Municipio string
 }

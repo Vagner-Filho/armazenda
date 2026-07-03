@@ -165,3 +165,122 @@ func minimalInvoiceInput() entity.InvoiceInput {
 		TotalValue: decimal.NewFromInt(1000),
 	}
 }
+
+func TestBuilder_MandatoryEnderEmitFields(t *testing.T) {
+	builder := xml.NewBuilder()
+	input := minimalInvoiceInput()
+	// Intentionally leave Bairro empty — it's mandatory and must default
+	input.Emitter.Bairro = ""
+
+	doc, err := builder.Build(input)
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	xmlStr, _ := doc.WriteToString()
+
+	// xBairro must always be present (C09, 1-1 mandatory)
+	if !strings.Contains(xmlStr, "<xBairro>") {
+		t.Error("emit/enderEmit/xBairro must always be present (mandatory)")
+	}
+	if !strings.Contains(xmlStr, "<xBairro>RURAL</xBairro>") {
+		t.Error("emit/enderEmit/xBairro should default to 'RURAL' when empty")
+	}
+	// CEP must always be present (C13, 1-1 mandatory)
+	if !strings.Contains(xmlStr, "<CEP>78000000</CEP>") {
+		t.Error("emit/enderEmit/CEP must always be present (mandatory)")
+	}
+}
+
+func TestBuilder_MandatoryEnderDestFields(t *testing.T) {
+	builder := xml.NewBuilder()
+	input := minimalInvoiceInput()
+	// Intentionally leave Bairro empty
+	input.Recipient.Bairro = ""
+
+	doc, err := builder.Build(input)
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	xmlStr, _ := doc.WriteToString()
+
+	// xBairro must always be present (E09, 1-1 mandatory)
+	if !strings.Contains(xmlStr, "<xBairro>") {
+		t.Error("dest/enderDest/xBairro must always be present (mandatory)")
+	}
+}
+
+func TestBuilder_TransportadoraEndereco(t *testing.T) {
+	builder := xml.NewBuilder()
+	input := minimalInvoiceInput()
+	input.Transport.Transportadora = &entity.TransportadoraData{
+		Type:      1,
+		CNPJ:      "11223344000155",
+		XNome:     "Transp Test",
+		IE:        "123456789",
+		Endereco:  "Rua dos Transportes, 100",
+		UF:        "MT",
+		Municipio: "Sorriso",
+	}
+
+	doc, err := builder.Build(input)
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	xmlStr, _ := doc.WriteToString()
+
+	if !strings.Contains(xmlStr, "<xEnder>Rua dos Transportes, 100</xEnder>") {
+		t.Error("xEnder should contain the transportadora's address, not the municipality")
+	}
+	if !strings.Contains(xmlStr, "<xMun>Sorriso</xMun>") {
+		t.Error("xMun should contain the municipality name")
+	}
+}
+
+func TestBuilder_MultipleVolumesSeparateElements(t *testing.T) {
+	builder := xml.NewBuilder()
+	input := minimalInvoiceInput()
+	input.Transport.Volumes = []entity.VolumeData{
+		{QVol: 1, Esp: "Saco", PesoL: decimal.NewFromInt(50), PesoB: decimal.NewFromInt(51)},
+		{QVol: 2, Esp: "Big Bag", PesoL: decimal.NewFromInt(100), PesoB: decimal.NewFromInt(102)},
+	}
+
+	doc, err := builder.Build(input)
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	xmlStr, _ := doc.WriteToString()
+
+	// Count <vol> elements — should be 2
+	count := strings.Count(xmlStr, "<vol>")
+	if count != 2 {
+		t.Errorf("expected 2 <vol> elements, got %d", count)
+	}
+	// Verify each vol has its own qVol
+	if !strings.Contains(xmlStr, "<qVol>1</qVol>") {
+		t.Error("first vol should have qVol=1")
+	}
+	if !strings.Contains(xmlStr, "<qVol>2</qVol>") {
+		t.Error("second vol should have qVol=2")
+	}
+}
+
+func TestBuilder_MultiplePaymentsSeparateDetPag(t *testing.T) {
+	builder := xml.NewBuilder()
+	input := minimalInvoiceInput()
+	input.Payment.Detalhes = []entity.PagamentoDetalhe{
+		{IndPag: 0, TPag: "01", VPag: decimal.NewFromInt(500)},
+		{IndPag: 1, TPag: "01", VPag: decimal.NewFromInt(500)},
+	}
+
+	doc, err := builder.Build(input)
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	xmlStr, _ := doc.WriteToString()
+
+	// Count <detPag> elements — should be 2
+	count := strings.Count(xmlStr, "<detPag>")
+	if count != 2 {
+		t.Errorf("expected 2 <detPag> elements, got %d", count)
+	}
+}

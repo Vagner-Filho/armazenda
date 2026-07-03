@@ -162,15 +162,18 @@ func (b *Builder) buildEmit(parent *etree.Element, emit entity.EmitterData) {
 	enderEmit := e.CreateElement("enderEmit")
 	enderEmit.CreateElement("xLgr").SetText(emit.Logradouro)
 	enderEmit.CreateElement("nro").SetText(emit.Numero)
-	if emit.Bairro != "" {
-		enderEmit.CreateElement("xBairro").SetText(emit.Bairro)
+	// xBairro is 1-1 mandatory (C09); default to "RURAL" if absent (min 2 chars).
+	bairro := emit.Bairro
+	if bairro == "" {
+		bairro = "RURAL"
 	}
+	enderEmit.CreateElement("xBairro").SetText(bairro)
 	enderEmit.CreateElement("cMun").SetText(emit.CodigoMun)
 	enderEmit.CreateElement("xMun").SetText(emit.Municipio)
 	enderEmit.CreateElement("UF").SetText(emit.UF)
-	if emit.CEP != "" {
-		enderEmit.CreateElement("CEP").SetText(strings.ReplaceAll(emit.CEP, "-", ""))
-	}
+	// CEP is 1-1 mandatory (C13); "Informar os zeros não significativos."
+	cep := strings.ReplaceAll(emit.CEP, "-", "")
+	enderEmit.CreateElement("CEP").SetText(cep)
 	if emit.Fone != "" {
 		enderEmit.CreateElement("fone").SetText(emit.Fone)
 	}
@@ -198,9 +201,12 @@ func (b *Builder) buildDest(parent *etree.Element, dest entity.RecipientData, en
 	enderDest := d.CreateElement("enderDest")
 	enderDest.CreateElement("xLgr").SetText(dest.Logradouro)
 	enderDest.CreateElement("nro").SetText(dest.Numero)
-	if dest.Bairro != "" {
-		enderDest.CreateElement("xBairro").SetText(dest.Bairro)
+	// xBairro is 1-1 mandatory (E09); default to "RURAL" if absent.
+	destBairro := dest.Bairro
+	if destBairro == "" {
+		destBairro = "RURAL"
 	}
+	enderDest.CreateElement("xBairro").SetText(destBairro)
 	enderDest.CreateElement("cMun").SetText(dest.CodigoMun)
 	enderDest.CreateElement("xMun").SetText(dest.Municipio)
 	enderDest.CreateElement("UF").SetText(dest.UF)
@@ -385,7 +391,7 @@ func (b *Builder) buildTransp(parent *etree.Element, transp entity.TransportData
 		if transp.Transportadora.IE != "" {
 			transporta.CreateElement("IE").SetText(transp.Transportadora.IE)
 		}
-		transporta.CreateElement("xEnder").SetText(transp.Transportadora.Municipio)
+		transporta.CreateElement("xEnder").SetText(transp.Transportadora.Endereco)
 		transporta.CreateElement("xMun").SetText(transp.Transportadora.Municipio)
 		transporta.CreateElement("UF").SetText(transp.Transportadora.UF)
 	}
@@ -400,8 +406,8 @@ func (b *Builder) buildTransp(parent *etree.Element, transp entity.TransportData
 	}
 
 	if len(transp.Volumes) > 0 {
-		vol := transpElem.CreateElement("vol")
 		for _, v := range transp.Volumes {
+			vol := transpElem.CreateElement("vol")
 			vol.CreateElement("qVol").SetText(strconv.Itoa(v.QVol))
 			if v.Esp != "" {
 				vol.CreateElement("esp").SetText(v.Esp)
@@ -431,9 +437,9 @@ func (b *Builder) buildCobr(parent *etree.Element, input entity.InvoiceInput) {
 
 func (b *Builder) buildPag(parent *etree.Element, pag entity.PaymentData) {
 	pagElem := parent.CreateElement("pag")
-	detPag := pagElem.CreateElement("detPag")
-	detPag.CreateElement("indPag").SetText(strconv.Itoa(pag.IndPag))
 	for _, det := range pag.Detalhes {
+		detPag := pagElem.CreateElement("detPag")
+		detPag.CreateElement("indPag").SetText(strconv.Itoa(pag.IndPag))
 		detPag.CreateElement("tPag").SetText(det.TPag)
 		// SEFAZ requires vPag=0.00 when tPag=90 (Sem pagamento), actual value otherwise
 		if det.TPag == "90" {

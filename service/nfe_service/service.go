@@ -446,6 +446,7 @@ func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.
 		data.TranspName = transport.Transportadora.XNome
 		data.TranspCNPJ = s.formatDocument(transport.Transportadora.CNPJ, transport.Transportadora.CPF)
 		data.TranspIE = transport.Transportadora.IE
+		data.TranspAddress = transport.Transportadora.Endereco
 		data.TranspCity = transport.Transportadora.Municipio
 		data.TranspUF = transport.Transportadora.UF
 	}
