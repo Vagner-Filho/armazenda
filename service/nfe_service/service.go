@@ -125,6 +125,15 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 		)
 	}
 
+	// Validate required recipient fields
+	recipientErrors := validateRecipient(recipient)
+	if len(recipientErrors) > 0 {
+		return emptyInput, departure, nil, nil, entity_public.GetWarningToast(
+			"Dados do destinatário incompletos",
+			strings.Join(recipientErrors, "; "),
+		)
+	}
+
 	// Build items
 	items := s.buildItems(departure, unitPrice, farmNFeConfig, productConfig)
 
@@ -706,6 +715,45 @@ func (s *NFeService) validateEmitter(emit entity.EmitterData, serie int) []strin
 	}
 	if emit.CEP == "" {
 		errs = append(errs, "CEP do emitente não configurado")
+	}
+	if emit.Bairro == "" {
+		errs = append(errs, "Bairro do emitente não configurado")
+	}
+	return errs
+}
+
+// validateRecipient checks mandatory dest fields per MOC Anexo I (Grupo E).
+func validateRecipient(dest entity.RecipientData) []string {
+	var errs []string
+	if dest.Type == 2 {
+		if dest.CPF == "" {
+			errs = append(errs, "CPF do destinatário não informado")
+		}
+	} else {
+		if dest.CNPJ == "" {
+			errs = append(errs, "CNPJ do destinatário não informado")
+		}
+	}
+	if dest.XNome == "" {
+		errs = append(errs, "Nome/Razão Social do destinatário não informado")
+	}
+	if dest.Logradouro == "" {
+		errs = append(errs, "Logradouro do destinatário não informado")
+	}
+	if dest.Numero == "" {
+		errs = append(errs, "Número do endereço do destinatário não informado")
+	}
+	if dest.Bairro == "" {
+		errs = append(errs, "Bairro do destinatário não informado")
+	}
+	if dest.CodigoMun == "" {
+		errs = append(errs, "Município do destinatário não informado (código IBGE)")
+	}
+	if dest.Municipio == "" {
+		errs = append(errs, "Nome do município do destinatário não informado")
+	}
+	if dest.UF == "" {
+		errs = append(errs, "UF do destinatário não informada")
 	}
 	return errs
 }

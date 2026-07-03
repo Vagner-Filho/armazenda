@@ -162,12 +162,8 @@ func (b *Builder) buildEmit(parent *etree.Element, emit entity.EmitterData) {
 	enderEmit := e.CreateElement("enderEmit")
 	enderEmit.CreateElement("xLgr").SetText(emit.Logradouro)
 	enderEmit.CreateElement("nro").SetText(emit.Numero)
-	// xBairro is 1-1 mandatory (C09); default to "RURAL" if absent (min 2 chars).
-	bairro := emit.Bairro
-	if bairro == "" {
-		bairro = "RURAL"
-	}
-	enderEmit.CreateElement("xBairro").SetText(bairro)
+	// xBairro is 1-1 mandatory (C09); the caller must ensure it's populated.
+	enderEmit.CreateElement("xBairro").SetText(emit.Bairro)
 	enderEmit.CreateElement("cMun").SetText(emit.CodigoMun)
 	enderEmit.CreateElement("xMun").SetText(emit.Municipio)
 	enderEmit.CreateElement("UF").SetText(emit.UF)
@@ -201,12 +197,8 @@ func (b *Builder) buildDest(parent *etree.Element, dest entity.RecipientData, en
 	enderDest := d.CreateElement("enderDest")
 	enderDest.CreateElement("xLgr").SetText(dest.Logradouro)
 	enderDest.CreateElement("nro").SetText(dest.Numero)
-	// xBairro is 1-1 mandatory (E09); default to "RURAL" if absent.
-	destBairro := dest.Bairro
-	if destBairro == "" {
-		destBairro = "RURAL"
-	}
-	enderDest.CreateElement("xBairro").SetText(destBairro)
+	// xBairro is 1-1 mandatory (E09); the caller must ensure it's populated.
+	enderDest.CreateElement("xBairro").SetText(dest.Bairro)
 	enderDest.CreateElement("cMun").SetText(dest.CodigoMun)
 	enderDest.CreateElement("xMun").SetText(dest.Municipio)
 	enderDest.CreateElement("UF").SetText(dest.UF)

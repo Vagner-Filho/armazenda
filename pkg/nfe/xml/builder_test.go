@@ -169,8 +169,8 @@ func minimalInvoiceInput() entity.InvoiceInput {
 func TestBuilder_MandatoryEnderEmitFields(t *testing.T) {
 	builder := xml.NewBuilder()
 	input := minimalInvoiceInput()
-	// Intentionally leave Bairro empty — it's mandatory and must default
-	input.Emitter.Bairro = ""
+	// Ensure bairro and CEP are set (caller is responsible)
+	input.Emitter.Bairro = "Centro"
 
 	doc, err := builder.Build(input)
 	if err != nil {
@@ -179,11 +179,8 @@ func TestBuilder_MandatoryEnderEmitFields(t *testing.T) {
 	xmlStr, _ := doc.WriteToString()
 
 	// xBairro must always be present (C09, 1-1 mandatory)
-	if !strings.Contains(xmlStr, "<xBairro>") {
+	if !strings.Contains(xmlStr, "<xBairro>Centro</xBairro>") {
 		t.Error("emit/enderEmit/xBairro must always be present (mandatory)")
-	}
-	if !strings.Contains(xmlStr, "<xBairro>RURAL</xBairro>") {
-		t.Error("emit/enderEmit/xBairro should default to 'RURAL' when empty")
 	}
 	// CEP must always be present (C13, 1-1 mandatory)
 	if !strings.Contains(xmlStr, "<CEP>78000000</CEP>") {
@@ -194,8 +191,7 @@ func TestBuilder_MandatoryEnderEmitFields(t *testing.T) {
 func TestBuilder_MandatoryEnderDestFields(t *testing.T) {
 	builder := xml.NewBuilder()
 	input := minimalInvoiceInput()
-	// Intentionally leave Bairro empty
-	input.Recipient.Bairro = ""
+	input.Recipient.Bairro = "Centro"
 
 	doc, err := builder.Build(input)
 	if err != nil {
@@ -204,7 +200,7 @@ func TestBuilder_MandatoryEnderDestFields(t *testing.T) {
 	xmlStr, _ := doc.WriteToString()
 
 	// xBairro must always be present (E09, 1-1 mandatory)
-	if !strings.Contains(xmlStr, "<xBairro>") {
+	if !strings.Contains(xmlStr, "<xBairro>Centro</xBairro>") {
 		t.Error("dest/enderDest/xBairro must always be present (mandatory)")
 	}
 }
