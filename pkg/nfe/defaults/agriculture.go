@@ -248,3 +248,25 @@ const ModeloNFe = "55"
 
 // VersaoLayout is the current NF-e layout version.
 const VersaoLayout = "4.00"
+
+// NaturezaOpForCFOP returns the standard natureza da operação description
+// for a given CFOP code. If the CFOP is not in the mapping, returns a
+// generic "Venda de mercadoria".
+func NaturezaOpForCFOP(cfop string) string {
+	switch cfop {
+	case "1101", "5101", "7101":
+		return "Venda de producao do estabelecimento"
+	case "1102", "5102", "7102":
+		return "Venda de mercadoria adquirida ou recebida de terceiros"
+	case "1901", "5901", "7901":
+		return "Remessa para industrializacao"
+	case "1202", "2202", "5202", "6202":
+		return "Devolucao de compra"
+	case "1103", "5103", "7103":
+		return "Venda de producao do estabelecimento ao contribuinte do ICMS"
+	case "1104", "5104", "7104":
+		return "Venda de producao do estabelecimento a nao contribuinte"
+	default:
+		return "Venda de mercadoria"
+	}
+}

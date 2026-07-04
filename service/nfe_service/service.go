@@ -19,6 +19,7 @@ import (
 	"armazenda/model/farm_config_model"
 	"armazenda/model/nfe_model"
 	"armazenda/model/person_model"
+	"armazenda/model/vehicle_model"
 	"armazenda/pkg/nfe/config"
 	"armazenda/pkg/nfe/defaults"
 	"armazenda/pkg/nfe/entity"
@@ -39,7 +40,7 @@ func NewNFeService() *NFeService {
 
 // prepareInvoiceBuildData fetches and validates all data needed to build an NF-e
 // without allocating a number, signing, or persisting anything.
-func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decimal.Decimal, farmID uint32) (entity.InvoiceInput, entity_public.Departure, *nfe_model.FarmConfig, *nfe_model.ProductConfig, entity_public.Toast) {
+func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string) (entity.InvoiceInput, entity_public.Departure, *nfe_model.FarmConfig, *nfe_model.ProductConfig, entity_public.Toast) {
 	var emptyInput entity.InvoiceInput
 
 	// Get departure
@@ -134,21 +135,54 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 		)
 	}
 
-	// Build items
-	items := s.buildItems(departure, unitPrice, farmNFeConfig, productConfig)
+	// Build items — use CFOP from form if provided, else from product config
+	effectiveCFOP := cfop
+	if effectiveCFOP == "" {
+		effectiveCFOP = productConfig.DefaultCFOP
+	}
+	items := s.buildItems(departure, unitPrice, farmNFeConfig, productConfig, effectiveCFOP)
+
+	// Determine NaturezaOp from config or derive from CFOP
+	naturezaOp := ""
+	if productConfig.NaturezaOp != nil && *productConfig.NaturezaOp != "" {
+		naturezaOp = *productConfig.NaturezaOp
+	} else {
+		naturezaOp = defaults.NaturezaOpForCFOP(effectiveCFOP)
+	}
+
+	// Build transport data: map departure vehicle + weights
+	transport := entity.TransportData{
+		ModFrete: farmNFeConfig.DefaultModFrete,
+	}
+	if departure.Vehicle > 0 {
+		vModel := vehicle_model.GetVehicleModel()
+		vehicle, vehErr := vModel.GetVehicle(departure.Vehicle)
+		if vehErr == nil && vehicle.Plate != "" {
+			transport.Veiculo = &entity.VeiculoData{
+				Placa: vehicle.Plate,
+				UF:    farmNFeConfig.EmitterUF,
+			}
+		}
+	}
+	if !departure.NetWeight.IsZero() || !departure.GrossWeight.IsZero() {
+		transport.Volumes = []entity.VolumeData{{
+			QVol:  1,
+			Esp:   "Granel",
+			PesoL: departure.NetWeight,
+			PesoB: departure.GrossWeight,
+		}}
+	}
 
 	// Build input
 	input := entity.InvoiceInput{
 		Serie:       farmNFeConfig.Serie,
 		Numero:      0,
 		Environment: farmNFeConfig.Environment,
-		NaturezaOp:  "Venda de producao do estabelecimento",
+		NaturezaOp:  naturezaOp,
 		Emitter:     emitter,
 		Recipient:   recipient,
 		Items:       items,
-		Transport: entity.TransportData{
-			ModFrete: farmNFeConfig.DefaultModFrete,
-		},
+		Transport:   transport,
 		Payment: entity.PaymentData{
 			IndPag: 1,
 			Detalhes: []entity.PagamentoDetalhe{
@@ -168,8 +202,8 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 // BuildInvoiceFromDeparture builds, signs, and attempts to send an NF-e for a departure.
 // If the normal SEFAZ is unavailable, it automatically tries SVC. If both are down,
 // the invoice is saved as 'draft' and an error is returned — no DANFE is issued.
-func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice decimal.Decimal, farmID uint32) (string, entity_public.Toast) {
-	input, departure, farmNFeConfig, productConfig, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID)
+func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string) (string, entity_public.Toast) {
+	input, departure, farmNFeConfig, productConfig, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		return "", toast
 	}
@@ -369,8 +403,8 @@ func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure 
 
 // GeneratePreviewDANFE builds a preview DANFE PDF without allocating an invoice number,
 // signing, or persisting anything. It returns the PDF bytes and any validation toast.
-func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.Decimal, farmID uint32) ([]byte, entity_public.Toast) {
-	input, _, _, _, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID)
+func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string) ([]byte, entity_public.Toast) {
+	input, _, _, _, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		return nil, toast
 	}
@@ -420,26 +454,26 @@ func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.
 		DestPhone:           input.Recipient.Fone,
 		Products: []entity.DANFEProduct{
 			{
-				Code:       product.Codigo,
-				Desc:       product.XProd,
-				NCM:        product.NCM,
-				CST:        imp.ICMS.CST,
-				CFOP:       product.CFOP,
-				Unit:       product.UCom,
-				Quantity:   product.QCom,
-				UnitPrice:  product.VUnCom,
-				Total:      product.VProd,
-				UTrib:      product.UTrib,
-				QTrib:      product.QTrib,
-				VUnTrib:    product.VUnTrib,
-				InfAdProd:  item.InfAdProd,
-				VBC:        imp.ICMS.VBC,
-				PICMS:      imp.ICMS.PICMS,
-				VICMS:      imp.ICMS.VICMS,
-				PPIS:       imp.PIS.PPIS,
-				VPIS:       imp.PIS.VPIS,
-				PCOFINS:    imp.COFINS.PCOFINS,
-				VCOFINS:    imp.COFINS.VCOFINS,
+				Code:      product.Codigo,
+				Desc:      product.XProd,
+				NCM:       product.NCM,
+				CST:       imp.ICMS.CST,
+				CFOP:      product.CFOP,
+				Unit:      product.UCom,
+				Quantity:  product.QCom,
+				UnitPrice: product.VUnCom,
+				Total:     product.VProd,
+				UTrib:     product.UTrib,
+				QTrib:     product.QTrib,
+				VUnTrib:   product.VUnTrib,
+				InfAdProd: item.InfAdProd,
+				VBC:       imp.ICMS.VBC,
+				PICMS:     imp.ICMS.PICMS,
+				VICMS:     imp.ICMS.VICMS,
+				PPIS:      imp.PIS.PPIS,
+				VPIS:      imp.PIS.VPIS,
+				PCOFINS:   imp.COFINS.PCOFINS,
+				VCOFINS:   imp.COFINS.VCOFINS,
 			},
 		},
 		TotalValue: input.TotalValue,
@@ -512,18 +546,28 @@ func padLeftZeros(s string, length int) string {
 }
 
 // buildItems creates the NF-e item data from departure and configs.
-func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice decimal.Decimal, farmConfig *nfe_model.FarmConfig, productConfig *nfe_model.ProductConfig) []entity.ItemData {
+func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice decimal.Decimal, farmConfig *nfe_model.FarmConfig, productConfig *nfe_model.ProductConfig, cfop string) []entity.ItemData {
 	totalValue := departure.NetWeight.Mul(unitPrice)
 	regime := defaults.TaxRegime(farmConfig.TaxRegime)
 
-	// Default tax values
-	icmsRate := decimal.NewFromFloat(0.17)
-	pisRate := decimal.NewFromFloat(0.0165)
-	cofinsRate := decimal.NewFromFloat(0.076)
+	// Tax rates from product config, falling back to defaults
+	icmsRate := productConfig.ICMSRate
+	if icmsRate.IsZero() {
+		icmsRate = decimal.NewFromFloat(0.17)
+	}
+	pisRate := productConfig.PISRate
+	if pisRate.IsZero() {
+		pisRate = decimal.NewFromFloat(0.0165)
+	}
+	cofinsRate := productConfig.COFINSRate
+	if cofinsRate.IsZero() {
+		cofinsRate = decimal.NewFromFloat(0.076)
+	}
 
 	// Determine ICMS CST/CSOSN from product config or defaults
 	var icmsCST, icmsCSOSN string
 	var vBC, vICMS decimal.Decimal
+	var picms decimal.Decimal
 
 	if regime == defaults.TaxRegimeSimplesNacional {
 		if productConfig.ICMSCST != nil && *productConfig.ICMSCST != "" {
@@ -531,9 +575,10 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 		} else {
 			icmsCSOSN = defaults.CSOSNSemPermissaoCredito // 102
 		}
-		// For SN, ICMS totals may be zero depending on CSOSN
+		// For SN, ICMS totals are zero; pICMS is not sent in CSOSN groups
 		vBC = decimal.Zero
 		vICMS = decimal.Zero
+		picms = decimal.Zero
 	} else {
 		if productConfig.ICMSCST != nil && *productConfig.ICMSCST != "" {
 			icmsCST = *productConfig.ICMSCST
@@ -542,6 +587,7 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 		}
 		vBC = totalValue
 		vICMS = totalValue.Mul(icmsRate)
+		picms = icmsRate.Mul(decimal.NewFromInt(100)) // rate as percentage
 	}
 
 	// Determine PIS and COFINS CST from product config
@@ -554,9 +600,16 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 		cofinsCST = *productConfig.COFINSCST
 	}
 
+	// Product description: use config, else use crop name from defaults
 	description := "Produto Agricola"
-	if productConfig.Description != nil {
+	if productConfig.Description != nil && *productConfig.Description != "" {
 		description = *productConfig.Description
+	} else {
+		// Look up crop name via product defaults
+		productDefaults := defaults.GetProductDefaults("", regime)
+		if productDefaults.Description != "" {
+			description = productDefaults.Description
+		}
 	}
 
 	return []entity.ItemData{
@@ -567,7 +620,7 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 				CEAN:     "SEM GTIN",
 				XProd:    description,
 				NCM:      productConfig.NCM,
-				CFOP:     productConfig.DefaultCFOP,
+				CFOP:     cfop,
 				UCom:     productConfig.Unit,
 				QCom:     departure.NetWeight,
 				VUnCom:   unitPrice,
@@ -585,19 +638,19 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 					CSOSN:  icmsCSOSN,
 					ModBC:  "3",
 					VBC:    vBC,
-					PICMS:  decimal.NewFromFloat(17.0),
+					PICMS:  picms,
 					VICMS:  vICMS,
 				},
 				PIS: entity.PISData{
 					CST:  pisCST,
 					VBC:  totalValue,
-					PPIS: decimal.NewFromFloat(1.65),
+					PPIS: pisRate.Mul(decimal.NewFromInt(100)),
 					VPIS: totalValue.Mul(pisRate),
 				},
 				COFINS: entity.COFINSData{
 					CST:     cofinsCST,
 					VBC:     totalValue,
-					PCOFINS: decimal.NewFromFloat(7.6),
+					PCOFINS: cofinsRate.Mul(decimal.NewFromInt(100)),
 					VCOFINS: totalValue.Mul(cofinsRate),
 				},
 			},

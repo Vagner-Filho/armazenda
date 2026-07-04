@@ -128,22 +128,28 @@ type ProductConfig struct {
 	ICMSCST     *string
 	PISCST      *string
 	COFINSCST   *string
+	ICMSRate    decimal.Decimal
+	PISRate     decimal.Decimal
+	COFINSRate  decimal.Decimal
+	NaturezaOp  *string
 }
 
 // GetProductConfig returns the NFe configuration for a product.
 func (m *NFeModel) GetProductConfig(farmID uint32, productID uint8) (*ProductConfig, error) {
 	query := `
 		SELECT id, farm_id, product_id, ncm, default_cfop, default_cest,
-		       unit, description, default_icms_cst, default_pis_cst, default_cofins_cst
+		       unit, description, default_icms_cst, default_pis_cst, default_cofins_cst,
+		       icms_rate, pis_rate, cofins_rate, natureza_op
 		FROM nfe_product_config
 		WHERE farm_id = $1 AND product_id = $2
 	`
 	row := m.pool.QueryRow(context.Background(), query, farmID, productID)
 
 	var cfg ProductConfig
-	var cest, desc, icmsCst, pisCst, cofinsCst *string
+	var cest, desc, icmsCst, pisCst, cofinsCst, naturezaOp *string
 	err := row.Scan(&cfg.ID, &cfg.FarmID, &cfg.ProductID, &cfg.NCM, &cfg.DefaultCFOP,
-		&cest, &cfg.Unit, &desc, &icmsCst, &pisCst, &cofinsCst)
+		&cest, &cfg.Unit, &desc, &icmsCst, &pisCst, &cofinsCst,
+		&cfg.ICMSRate, &cfg.PISRate, &cfg.COFINSRate, &naturezaOp)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -156,6 +162,7 @@ func (m *NFeModel) GetProductConfig(farmID uint32, productID uint8) (*ProductCon
 	cfg.ICMSCST = icmsCst
 	cfg.PISCST = pisCst
 	cfg.COFINSCST = cofinsCst
+	cfg.NaturezaOp = naturezaOp
 	return &cfg, nil
 }
 

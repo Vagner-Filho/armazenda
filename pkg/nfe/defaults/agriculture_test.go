@@ -66,3 +66,25 @@ func TestSVCForState(t *testing.T) {
 		})
 	}
 }
+
+func TestNaturezaOpForCFOP(t *testing.T) {
+	tests := []struct {
+		cfop     string
+		expected string
+	}{
+		{"5101", "Venda de producao do estabelecimento"},
+		{"5102", "Venda de mercadoria adquirida ou recebida de terceiros"},
+		{"5901", "Remessa para industrializacao"},
+		{"6202", "Devolucao de compra"},
+		{"5103", "Venda de producao do estabelecimento ao contribuinte do ICMS"},
+		{"5104", "Venda de producao do estabelecimento a nao contribuinte"},
+		{"9999", "Venda de mercadoria"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.cfop, func(t *testing.T) {
+			if got := defaults.NaturezaOpForCFOP(tt.cfop); got != tt.expected {
+				t.Errorf("NaturezaOpForCFOP(%s) = %q, want %q", tt.cfop, got, tt.expected)
+			}
+		})
+	}
+}

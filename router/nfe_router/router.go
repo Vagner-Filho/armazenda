@@ -37,11 +37,13 @@ func buildNFe(c *gin.Context) {
 		return
 	}
 
+	cfop := c.PostForm("cfop")
+
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
 
 	service := nfe_service.NewNFeService()
-	signedXML, toast := service.BuildInvoiceFromDeparture(uint32(departureID), unitPrice, farm)
+	signedXML, toast := service.BuildInvoiceFromDeparture(uint32(departureID), unitPrice, farm, cfop)
 
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		c.Header("HX-Trigger", string(toast.ToJson()))
@@ -75,11 +77,13 @@ func previewNFe(c *gin.Context) {
 		return
 	}
 
+	cfop := c.PostForm("cfop")
+
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
 
 	svc := nfe_service.NewNFeService()
-	pdfBytes, toast := svc.GeneratePreviewDANFE(uint32(departureID), unitPrice, farm)
+	pdfBytes, toast := svc.GeneratePreviewDANFE(uint32(departureID), unitPrice, farm, cfop)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 		if toast.Type == entity_public.WarningToast {

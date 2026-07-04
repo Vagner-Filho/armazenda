@@ -206,7 +206,7 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 
 	// Get the original full invoice input data
 	nfeSvc := NewNFeService()
-	input, _, _, _, toast := nfeSvc.prepareInvoiceBuildData(departure.Id, invoiceRecord.UnitPrice, uint32(departure.Farm))
+	input, _, _, _, toast := nfeSvc.prepareInvoiceBuildData(departure.Id, invoiceRecord.UnitPrice, uint32(departure.Farm), "")
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		return fmt.Errorf("failed to prepare rebuild data: %s", toast.Message)
 	}
