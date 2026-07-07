@@ -6,7 +6,7 @@ import (
 )
 
 func GetVehiclesByFarm(farm uint32) ([]entity_public.Vehicle, *entity_public.Toast) {
-	vModel, _ := vehicle_model.GetVehicleModel()
+	vModel := vehicle_model.GetVehicleModel()
 
 	vehicles, err := vModel.GetVehiclesByFarm(farm)
 	if err != nil {
@@ -18,15 +18,12 @@ func GetVehiclesByFarm(farm uint32) ([]entity_public.Vehicle, *entity_public.Toa
 }
 
 func GetVehicle(id uint16) (entity_public.Vehicle, error) {
-	vModel, _ := vehicle_model.GetVehicleModel()
+	vModel := vehicle_model.GetVehicleModel()
 	return vModel.GetVehicle(id)
 }
 
 func AddVehicle(v entity_public.Vehicle) (entity_public.Vehicle, error) {
-	vModel, modelErr := vehicle_model.GetVehicleModel()
-	if modelErr != nil {
-		return entity_public.Vehicle{}, modelErr
-	}
+	vModel := vehicle_model.GetVehicleModel()
 
 	vehicle, addErr := vModel.AddVehicle(v)
 	if addErr != nil {

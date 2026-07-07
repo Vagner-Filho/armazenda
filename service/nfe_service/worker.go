@@ -10,6 +10,7 @@ import (
 	"armazenda/model/nfe_model"
 	"armazenda/pkg/nfe/config"
 	"armazenda/pkg/nfe/defaults"
+	"armazenda/pkg/nfe/entity"
 	"armazenda/pkg/nfe/service"
 	nfe_xml "armazenda/pkg/nfe/xml"
 )
@@ -204,9 +205,18 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 	now := time.Now()
 	reason := "Indisponibilidade do ambiente de autorizacao da SEFAZ de origem"
 
+	// Get the original user-typed tax rates from the persisted row.
+	// For legacy invoices (no row) or partially-set rows, individual rates will
+	// be nil and MergeRates will fall back to the farm config.
+	overrides := invoiceRecord.TaxRates
+	if overrides == nil {
+		overrides = &entity.TaxRates{}
+	}
+	rates := MergeRates(*overrides, farmConfig)
+
 	// Get the original full invoice input data
 	nfeSvc := NewNFeService()
-	input, _, _, _, toast := nfeSvc.prepareInvoiceBuildData(departure.Id, invoiceRecord.UnitPrice, uint32(departure.Farm), "")
+	input, _, _, _, toast := nfeSvc.prepareInvoiceBuildData(departure.Id, invoiceRecord.UnitPrice, uint32(departure.Farm), "", rates)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		return fmt.Errorf("failed to prepare rebuild data: %s", toast.Message)
 	}
@@ -222,11 +232,17 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 		return fmt.Errorf("failed to rebuild for SVC: %w", rebuildErr)
 	}
 
-	// Save the new contingency invoice
+	// Persist the new contingency invoice. Carry the same user-typed rates so
+	// the worker's next retry uses the same values; the merged result would
+	// change if the product config shifts.
+	var ratesToPersist *entity.TaxRates
+	if hasAnyUserRate(*overrides) {
+		ratesToPersist = overrides
+	}
 	newInvoiceID, createErr := nfeModel.CreateInvoiceWithEmission(
 		departure.Id, newAccessKey, farmConfig.Serie, newNumber,
 		invoiceRecord.CFOP, invoiceRecord.NCM, invoiceRecord.QuantityKG, invoiceRecord.UnitPrice, invoiceRecord.TotalValue,
-		int(tpEmis), now, reason,
+		int(tpEmis), now, reason, ratesToPersist,
 	)
 	if createErr != nil {
 		return fmt.Errorf("failed to create contingency invoice: %w", createErr)

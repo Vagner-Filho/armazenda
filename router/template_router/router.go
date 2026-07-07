@@ -188,10 +188,7 @@ func prepareTemplateData(name string, farm uint32) (map[string]interface{}, erro
 		}
 		data["Crops"] = crops
 
-		vehicleModel, vmErr := vehicle_model.GetVehicleModel()
-		if vmErr != nil {
-			return nil, vmErr
-		}
+		vehicleModel := vehicle_model.GetVehicleModel()
 		vehicles, vehiclesErr := vehicleModel.GetVehiclesByFarm(farm)
 		if vehiclesErr != nil {
 			return nil, vehiclesErr
@@ -216,10 +213,7 @@ func prepareTemplateData(name string, farm uint32) (map[string]interface{}, erro
 		}
 		data["Crops"] = crops
 
-		vehicleModel, vmErr := vehicle_model.GetVehicleModel()
-		if vmErr != nil {
-			return nil, vmErr
-		}
+		vehicleModel := vehicle_model.GetVehicleModel()
 		vehicles, vehiclesErr := vehicleModel.GetVehiclesByFarm(farm)
 		if vehiclesErr != nil {
 			return nil, vehiclesErr

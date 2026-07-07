@@ -32,11 +32,11 @@ func InitVehicleModel(pool *pgxpool.Pool) (*vehicleModel, error) {
 	return vehicleModelImpl, nil
 }
 
-func GetVehicleModel() (*vehicleModel, error) {
+func GetVehicleModel() *vehicleModel {
 	if vehicleModelImpl == nil {
-		return nil, errors.New("vehicle model hasnt been initialized")
+		panic("\nvehicle model hasnt been initialized\n")
 	}
-	return vehicleModelImpl, nil
+	return vehicleModelImpl
 }
 
 func (vm *vehicleModel) AddVehicle(v entity_public.Vehicle) (entity_public.Vehicle, *model_error.ModelError) {

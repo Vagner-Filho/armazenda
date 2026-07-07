@@ -74,13 +74,8 @@
 
             <!-- NFe Config Tab -->
             <div id="tab-nfe" class="tab-panel hidden">
-                <div class="glass-panel rounded-xl shadow-center p-4 mb-8">
-                    <h2 class="text-lg font-bold text-white/95 border-b border-white/20 pb-2 mb-4">
-                        Configuração de NF-e
-                    </h2>
-                    <div hx-get="/nfe/config/form" hx-trigger="load" hx-swap="outerHTML">
-                        <p class="text-white/50 text-sm">Carregando...</p>
-                    </div>
+                <div hx-get="/nfe/config/form" hx-trigger="load" hx-swap="outerHTML">
+                    <p class="text-white/50 text-sm">Carregando...</p>
                 </div>
             </div>
 

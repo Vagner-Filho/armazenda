@@ -119,6 +119,17 @@ type ImpostoData struct {
 	COFINS COFINSData
 }
 
+// TaxRates holds tax rate inputs for an emission.
+// A nil pointer means "not provided" (the resolver should fall back to the
+// product config or a last-resort default). A non-nil pointer — including a
+// pointer to a zero Decimal — is authoritative; a zero value means the user
+// explicitly declared the operation exempt for that tax.
+type TaxRates struct {
+	ICMSRate   *decimal.Decimal
+	PISRate    *decimal.Decimal
+	COFINSRate *decimal.Decimal
+}
+
 // ICMSData holds ICMS tax information.
 // For Simples Nacional, use CSOSN instead of CST, and leave VBC/PICMS/VICMS zero.
 type ICMSData struct {

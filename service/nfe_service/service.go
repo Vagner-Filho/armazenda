@@ -19,6 +19,7 @@ import (
 	"armazenda/model/farm_config_model"
 	"armazenda/model/nfe_model"
 	"armazenda/model/person_model"
+	"armazenda/model/product_model"
 	"armazenda/model/vehicle_model"
 	"armazenda/pkg/nfe/config"
 	"armazenda/pkg/nfe/defaults"
@@ -40,7 +41,7 @@ func NewNFeService() *NFeService {
 
 // prepareInvoiceBuildData fetches and validates all data needed to build an NF-e
 // without allocating a number, signing, or persisting anything.
-func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string) (entity.InvoiceInput, entity_public.Departure, *nfe_model.FarmConfig, *nfe_model.ProductConfig, entity_public.Toast) {
+func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates) (entity.InvoiceInput, entity_public.Departure, *nfe_model.FarmConfig, entity_public.Product, entity_public.Toast) {
 	var emptyInput entity.InvoiceInput
 
 	// Get departure
@@ -48,19 +49,19 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	departure, err := dModel.GetDeparture(departureID)
 	if err != nil {
 		if err.IsServerErr {
-			return emptyInput, departure, nil, nil, entity_public.GetErrorToast("Internal error fetching departure", "")
+			return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetErrorToast("Internal error fetching departure", "")
 		}
-		return emptyInput, departure, nil, nil, entity_public.GetWarningToast(err.Message, "")
+		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetWarningToast(err.Message, "")
 	}
 
 	// Validate departure type for NF-e: only "Self -> Third Party" qualifies
 	if departure.Origin != nil {
-		return emptyInput, departure, nil, nil, entity_public.GetWarningToast(
+		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetWarningToast(
 			"Esta saída não pode emitir NF-e",
 			"NF-e só pode ser emitida para saídas do tipo Próprio -> Terceiro (sem origem externa)")
 	}
 	if departure.Recipient == nil {
-		return emptyInput, departure, nil, nil, entity_public.GetWarningToast(
+		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetWarningToast(
 			"Esta saída não pode emitir NF-e",
 			"Selecione um destinatário para emitir a NF-e")
 	}
@@ -70,10 +71,10 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	farmNFeConfig, dbErr := nfeModel.GetFarmConfig(farmID)
 	if dbErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("GetFarmConfig error: %v", dbErr.Error()))
-		return emptyInput, departure, nil, nil, entity_public.GetErrorToast("Failed to get NFe configuration", "")
+		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetErrorToast("Failed to get NFe configuration", "")
 	}
 	if farmNFeConfig == nil {
-		return emptyInput, departure, nil, nil, entity_public.GetWarningToast("NFe not configured for this farm", "configure in settings")
+		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetWarningToast("NFe not configured for this farm", "configure in settings")
 	}
 
 	// Get full farm data for emitter address
@@ -81,10 +82,10 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	farmData, farmErr := farmConfigModel.GetFarmConfig(farmID)
 	if farmErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("GetFarmConfig error: %v", farmErr.Error()))
-		return emptyInput, departure, nil, nil, entity_public.GetErrorToast("Failed to get farm data", "")
+		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetErrorToast("Failed to get farm data", "")
 	}
 	if farmData == nil {
-		return emptyInput, departure, nil, nil, entity_public.GetWarningToast("Farm not found", "")
+		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetWarningToast("Farm not found", "")
 	}
 
 	// Get recipient
@@ -94,7 +95,7 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 		person, personErr := pModel.GetFullPersonById(*departure.Recipient)
 		if personErr != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("GetFullPersonById error: %v", personErr.Error()))
-			return emptyInput, departure, nil, nil, entity_public.GetErrorToast("Failed to get recipient info", "")
+			return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetErrorToast("Failed to get recipient info", "")
 		}
 		recipient = s.mapFullPersonToRecipient(person, nfeModel)
 	}
@@ -102,25 +103,34 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	// Get emitter
 	emitter := s.mapFarmToEmitter(farmNFeConfig, farmData, nfeModel)
 
-	// Get product config for the crop
-	productConfig, prodErr := nfeModel.GetProductConfig(farmID, departure.Crop)
-	if prodErr != nil {
-		model_error.GetLoggerModel().Log(fmt.Sprintf("GetProductConfig error: %v", prodErr.Error()))
-		return emptyInput, departure, nil, nil, entity_public.GetErrorToast("Failed to get product config", "")
+	// Get the product for the crop — NCM and name come from the product table
+	prodModel := product_model.GetProductModel()
+	product, productErr := prodModel.GetProductById(departure.Crop)
+	if productErr != nil {
+		// Non-fatal: fall back to NCMSoja and a generic name
+		model_error.GetLoggerModel().Log(fmt.Sprintf("GetProductById error: %v", productErr.Error()))
 	}
-	if productConfig == nil {
-		productConfig = &nfe_model.ProductConfig{
-			NCM:         defaults.NCMSoja,
-			DefaultCFOP: defaults.CFOPVendaProducao,
-			Unit:        "KG",
-			Description: nil,
-		}
+	if product.NCM == "" || product.NCM == "00000000" {
+		product.NCM = defaults.NCMSoja
+	}
+	if product.Name == "" {
+		product.Name = "Produto Agricola"
+	}
+
+	// Resolve CFOP and unit from the farm config (per-farm defaults)
+	effectiveCFOP := cfop
+	if effectiveCFOP == "" {
+		effectiveCFOP = farmNFeConfig.DefaultCFOP
+	}
+	effectiveUnit := farmNFeConfig.DefaultUnit
+	if effectiveUnit == "" {
+		effectiveUnit = "KG"
 	}
 
 	// Validate required emitter fields
 	validationErrors := s.validateEmitter(emitter, farmNFeConfig.Serie)
 	if len(validationErrors) > 0 {
-		return emptyInput, departure, nil, nil, entity_public.GetWarningToast(
+		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetWarningToast(
 			"Configuração de NF-e incompleta",
 			strings.Join(validationErrors, "; "),
 		)
@@ -129,23 +139,22 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	// Validate required recipient fields
 	recipientErrors := validateRecipient(recipient)
 	if len(recipientErrors) > 0 {
-		return emptyInput, departure, nil, nil, entity_public.GetWarningToast(
+		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetWarningToast(
 			"Dados do destinatário incompletos",
 			strings.Join(recipientErrors, "; "),
 		)
 	}
 
-	// Build items — use CFOP from form if provided, else from product config
-	effectiveCFOP := cfop
-	if effectiveCFOP == "" {
-		effectiveCFOP = productConfig.DefaultCFOP
-	}
-	items := s.buildItems(departure, unitPrice, farmNFeConfig, productConfig, effectiveCFOP)
+	// Merge user-typed rates with the farm config defaults. The result feeds
+	// buildItems directly; the raw user input is returned separately so the
+	// caller can persist a partial-override row in nfe_invoice_tax_rates.
+	rates := MergeRates(userRates, farmNFeConfig)
+	items := s.buildItems(departure, unitPrice, product.NCM, effectiveUnit, product.Name, farmNFeConfig, effectiveCFOP, rates)
 
 	// Determine NaturezaOp from config or derive from CFOP
 	naturezaOp := ""
-	if productConfig.NaturezaOp != nil && *productConfig.NaturezaOp != "" {
-		naturezaOp = *productConfig.NaturezaOp
+	if farmNFeConfig.DefaultNaturezaOp != nil && *farmNFeConfig.DefaultNaturezaOp != "" {
+		naturezaOp = *farmNFeConfig.DefaultNaturezaOp
 	} else {
 		naturezaOp = defaults.NaturezaOpForCFOP(effectiveCFOP)
 	}
@@ -196,14 +205,14 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 		TotalValue: departure.NetWeight.Mul(unitPrice),
 	}
 
-	return input, departure, farmNFeConfig, productConfig, entity_public.Toast{}
+	return input, departure, farmNFeConfig, product, entity_public.Toast{}
 }
 
 // BuildInvoiceFromDeparture builds, signs, and attempts to send an NF-e for a departure.
 // If the normal SEFAZ is unavailable, it automatically tries SVC. If both are down,
 // the invoice is saved as 'draft' and an error is returned — no DANFE is issued.
-func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string) (string, entity_public.Toast) {
-	input, departure, farmNFeConfig, productConfig, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop)
+func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates) (string, entity_public.Toast) {
+	input, departure, farmNFeConfig, product, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop, userRates)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		return "", toast
 	}
@@ -245,8 +254,15 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	}
 
 	// Save initial record as draft (will be updated based on SEFAZ response)
+	// Persist the raw user-typed rates (not the merged ones) so the row reflects
+	// the user's exact intent and the worker reuses it on retry.
+	var ratesToPersist *entity.TaxRates
+	if hasAnyUserRate(userRates) {
+		ratesToPersist = &userRates
+	}
 	invoiceID, createErr := nfeModel.CreateInvoice(departureID, accessKey, farmNFeConfig.Serie, number,
-		productConfig.DefaultCFOP, productConfig.NCM, departure.NetWeight, unitPrice, input.TotalValue)
+		farmNFeConfig.DefaultCFOP, product.NCM, departure.NetWeight, unitPrice, input.TotalValue,
+		ratesToPersist)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateInvoice error: %v", createErr.Error()))
 		return "", entity_public.GetErrorToast("Failed to save invoice", "")
@@ -264,7 +280,7 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	svcResp, svcErr := invService.CheckSVCStatus(farmNFeConfig.CertificateData, certPassword)
 	if svcErr == nil && svcResp != nil && svcResp.IsSVCOperational() {
 		// SVC is active — rebuild with new number and contingency settings
-		return s.attemptSVCContingency(input, departure, farmNFeConfig, productConfig, signedXML, invoiceID, accessKey, nfeModel, invService, certPassword, unitPrice)
+		return s.attemptSVCContingency(input, departure, farmNFeConfig, product, signedXML, invoiceID, accessKey, nfeModel, invService, certPassword, unitPrice, ratesToPersist)
 	}
 
 	// --- Step 3: Both SEFAZ and SVC are unavailable ---
@@ -333,7 +349,7 @@ func (s *NFeService) handleSefazResponse(sefazResp *sefaz.AutorizacaoResponse, i
 }
 
 // attemptSVCContingency tries to send the NF-e via SVC with a new number and contingency fields.
-func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure entity_public.Departure, farmNFeConfig *nfe_model.FarmConfig, productConfig *nfe_model.ProductConfig, oldSignedXML string, oldInvoiceID int, oldAccessKey string, nfeModel *nfe_model.NFeModel, invService *service.InvoiceService, certPassword string, unitPrice decimal.Decimal) (string, entity_public.Toast) {
+func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure entity_public.Departure, farmNFeConfig *nfe_model.FarmConfig, product entity_public.Product, oldSignedXML string, oldInvoiceID int, oldAccessKey string, nfeModel *nfe_model.NFeModel, invService *service.InvoiceService, certPassword string, unitPrice decimal.Decimal, taxRates *entity.TaxRates) (string, entity_public.Toast) {
 	// Allocate new number for the contingency invoice (required by MOC to avoid duplicate Chave Natural)
 	newNumber, allocErr := nfeModel.AllocateNumber(uint32(departure.Farm), farmNFeConfig.Serie)
 	if allocErr != nil {
@@ -351,11 +367,11 @@ func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure 
 		return "", entity_public.GetErrorToast("Failed to rebuild NF-e for SVC contingency", rebuildErr.Error())
 	}
 
-	// Save the new contingency invoice
+	// Save the new contingency invoice (same tax rates as the original attempt)
 	newInvoiceID, createErr := nfeModel.CreateInvoiceWithEmission(
 		departure.Id, newAccessKey, farmNFeConfig.Serie, newNumber,
-		productConfig.DefaultCFOP, productConfig.NCM, departure.NetWeight, unitPrice, input.TotalValue,
-		int(tpEmis), now, reason,
+		farmNFeConfig.DefaultCFOP, product.NCM, departure.NetWeight, unitPrice, input.TotalValue,
+		int(tpEmis), now, reason, taxRates,
 	)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateInvoice (SVC) error: %v", createErr.Error()))
@@ -403,8 +419,8 @@ func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure 
 
 // GeneratePreviewDANFE builds a preview DANFE PDF without allocating an invoice number,
 // signing, or persisting anything. It returns the PDF bytes and any validation toast.
-func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string) ([]byte, entity_public.Toast) {
-	input, _, _, _, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop)
+func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates) ([]byte, entity_public.Toast) {
+	input, _, _, _, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop, userRates)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		return nil, toast
 	}
@@ -546,32 +562,23 @@ func padLeftZeros(s string, length int) string {
 }
 
 // buildItems creates the NF-e item data from departure and configs.
-func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice decimal.Decimal, farmConfig *nfe_model.FarmConfig, productConfig *nfe_model.ProductConfig, cfop string) []entity.ItemData {
+func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice decimal.Decimal, ncm string, unit string, description string, farmConfig *nfe_model.FarmConfig, cfop string, rates entity.TaxRates) []entity.ItemData {
 	totalValue := departure.NetWeight.Mul(unitPrice)
 	regime := defaults.TaxRegime(farmConfig.TaxRegime)
 
-	// Tax rates from product config, falling back to defaults
-	icmsRate := productConfig.ICMSRate
-	if icmsRate.IsZero() {
-		icmsRate = decimal.NewFromFloat(0.17)
-	}
-	pisRate := productConfig.PISRate
-	if pisRate.IsZero() {
-		pisRate = decimal.NewFromFloat(0.0165)
-	}
-	cofinsRate := productConfig.COFINSRate
-	if cofinsRate.IsZero() {
-		cofinsRate = decimal.NewFromFloat(0.076)
-	}
+	// Resolved rates are authoritative (mergeRates already applied user > farm > last-resort).
+	icmsRate := *rates.ICMSRate
+	pisRate := *rates.PISRate
+	cofinsRate := *rates.COFINSRate
 
-	// Determine ICMS CST/CSOSN from product config or defaults
+	// Determine ICMS CST/CSOSN from farm config or defaults
 	var icmsCST, icmsCSOSN string
 	var vBC, vICMS decimal.Decimal
 	var picms decimal.Decimal
 
 	if regime == defaults.TaxRegimeSimplesNacional {
-		if productConfig.ICMSCST != nil && *productConfig.ICMSCST != "" {
-			icmsCSOSN = *productConfig.ICMSCST
+		if farmConfig.DefaultICMSCST != nil && *farmConfig.DefaultICMSCST != "" {
+			icmsCSOSN = *farmConfig.DefaultICMSCST
 		} else {
 			icmsCSOSN = defaults.CSOSNSemPermissaoCredito // 102
 		}
@@ -580,8 +587,8 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 		vICMS = decimal.Zero
 		picms = decimal.Zero
 	} else {
-		if productConfig.ICMSCST != nil && *productConfig.ICMSCST != "" {
-			icmsCST = *productConfig.ICMSCST
+		if farmConfig.DefaultICMSCST != nil && *farmConfig.DefaultICMSCST != "" {
+			icmsCST = *farmConfig.DefaultICMSCST
 		} else {
 			icmsCST = defaults.CSTTributadaIntegral // 00
 		}
@@ -590,25 +597,23 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 		picms = icmsRate.Mul(decimal.NewFromInt(100)) // rate as percentage
 	}
 
-	// Determine PIS and COFINS CST from product config
+	// Determine PIS and COFINS CST from farm config
 	pisCST := "01"
-	if productConfig.PISCST != nil && *productConfig.PISCST != "" {
-		pisCST = *productConfig.PISCST
+	if farmConfig.DefaultPISCST != nil && *farmConfig.DefaultPISCST != "" {
+		pisCST = *farmConfig.DefaultPISCST
 	}
 	cofinsCST := "01"
-	if productConfig.COFINSCST != nil && *productConfig.COFINSCST != "" {
-		cofinsCST = *productConfig.COFINSCST
+	if farmConfig.DefaultCOFINSCST != nil && *farmConfig.DefaultCOFINSCST != "" {
+		cofinsCST = *farmConfig.DefaultCOFINSCST
 	}
 
-	// Product description: use config, else use crop name from defaults
-	description := "Produto Agricola"
-	if productConfig.Description != nil && *productConfig.Description != "" {
-		description = *productConfig.Description
-	} else {
-		// Look up crop name via product defaults
+	// Description fallback: if empty, try the product defaults; finally "Produto Agricola"
+	if description == "" {
 		productDefaults := defaults.GetProductDefaults("", regime)
 		if productDefaults.Description != "" {
 			description = productDefaults.Description
+		} else {
+			description = "Produto Agricola"
 		}
 	}
 
@@ -619,14 +624,14 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 				Codigo:   strconv.Itoa(int(departure.Crop)),
 				CEAN:     "SEM GTIN",
 				XProd:    description,
-				NCM:      productConfig.NCM,
+				NCM:      ncm,
 				CFOP:     cfop,
-				UCom:     productConfig.Unit,
+				UCom:     unit,
 				QCom:     departure.NetWeight,
 				VUnCom:   unitPrice,
 				VProd:    totalValue,
 				CEANTrib: "SEM GTIN",
-				UTrib:    productConfig.Unit,
+				UTrib:    unit,
 				QTrib:    departure.NetWeight,
 				VUnTrib:  unitPrice,
 				IndTot:   1,
@@ -656,6 +661,42 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 			},
 		},
 	}
+}
+
+// MergeRates resolves the effective TaxRates for an emission.
+// User-provided rates are authoritative when non-nil (even if zero). For nil
+// values, fall back to the farm config; if the farm config is also zero for
+// that rate, use the last-resort default (the historical pre-migration values
+// for grain sales).
+//
+// All three returned pointers are non-nil by construction, so callers (e.g.
+// buildItems) can safely dereference without nil checks.
+func MergeRates(overrides entity.TaxRates, farmConfig *nfe_model.FarmConfig) entity.TaxRates {
+	var pICMS, pPIS, pCOFINS decimal.Decimal
+	if farmConfig != nil {
+		pICMS, pPIS, pCOFINS = farmConfig.ICMSRate, farmConfig.PISRate, farmConfig.COFINSRate
+	}
+	return entity.TaxRates{
+		ICMSRate:   pickRate(overrides.ICMSRate, pICMS, decimal.NewFromFloat(0.17)),
+		PISRate:    pickRate(overrides.PISRate, pPIS, decimal.NewFromFloat(0.0165)),
+		COFINSRate: pickRate(overrides.COFINSRate, pCOFINS, decimal.NewFromFloat(0.076)),
+	}
+}
+
+func pickRate(override *decimal.Decimal, product, fallback decimal.Decimal) *decimal.Decimal {
+	if override != nil {
+		return override
+	}
+	if !product.IsZero() {
+		return &product
+	}
+	return &fallback
+}
+
+// hasAnyUserRate reports whether the user typed at least one rate in the form.
+// Used to decide whether to persist a row in nfe_invoice_tax_rates.
+func hasAnyUserRate(rates entity.TaxRates) bool {
+	return rates.ICMSRate != nil || rates.PISRate != nil || rates.COFINSRate != nil
 }
 
 // mapFarmToEmitter maps farm config and farm data to NF-e emitter data.
@@ -812,15 +853,12 @@ func validateRecipient(dest entity.RecipientData) []string {
 }
 
 // isValidIEMT validates an Inscrição Estadual for Mato Grosso.
-// MT IE format: exactly 11 digits (99999999999).
 func isValidIEMT(ie string) bool {
-	return true
 	if ie == "" {
 		return false
 	}
 	cleaned := cleanIE(ie)
-	fmt.Printf("\n%v\n", cleaned)
-	return len(cleaned) == 11
+	return len(cleaned) == 9
 }
 
 // cleanIE strips any non-numeric characters from an IE string.

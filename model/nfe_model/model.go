@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"armazenda/pkg/nfe/entity"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
@@ -54,6 +56,16 @@ type FarmConfig struct {
 	IEEmitter                    string
 	EmitterUF                    string
 	DefaultModFrete              int
+	DefaultCFOP                  string
+	DefaultCEST                  *string
+	DefaultUnit                  string
+	DefaultICMSCST               *string
+	DefaultPISCST                *string
+	DefaultCOFINSCST             *string
+	DefaultNaturezaOp            *string
+	ICMSRate                     decimal.Decimal
+	PISRate                      decimal.Decimal
+	COFINSRate                   decimal.Decimal
 }
 
 // GetFarmConfig returns the NFe configuration for a farm.
@@ -61,7 +73,10 @@ func (m *NFeModel) GetFarmConfig(farmID uint32) (*FarmConfig, error) {
 	query := `
 		SELECT id, farm_id, certificate_path, certificate_data, certificate_password_encrypted,
 		       environment, serie, next_number, tax_regime, emitter_type,
-		       cnpj_emitter, cpf_emitter, ie_emitter, emitter_uf, default_mod_frete
+		       cnpj_emitter, cpf_emitter, ie_emitter, emitter_uf, default_mod_frete,
+		       default_cfop, default_cest, default_unit,
+		       default_icms_cst, default_pis_cst, default_cofins_cst, default_natureza_op,
+		       icms_rate, pis_rate, cofins_rate
 		FROM nfe_farm_config
 		WHERE farm_id = $1
 	`
@@ -69,9 +84,15 @@ func (m *NFeModel) GetFarmConfig(farmID uint32) (*FarmConfig, error) {
 
 	var cfg FarmConfig
 	var cnpj, cpf *string
-	err := row.Scan(&cfg.ID, &cfg.FarmID, &cfg.CertificatePath, &cfg.CertificateData, &cfg.CertificatePasswordEncrypted,
+	var defaultCest, defaultIcmsCst, defaultPisCst, defaultCofinsCst, defaultNaturezaOp *string
+	err := row.Scan(
+		&cfg.ID, &cfg.FarmID, &cfg.CertificatePath, &cfg.CertificateData, &cfg.CertificatePasswordEncrypted,
 		&cfg.Environment, &cfg.Serie, &cfg.NextNumber, &cfg.TaxRegime, &cfg.EmitterType,
-		&cnpj, &cpf, &cfg.IEEmitter, &cfg.EmitterUF, &cfg.DefaultModFrete)
+		&cnpj, &cpf, &cfg.IEEmitter, &cfg.EmitterUF, &cfg.DefaultModFrete,
+		&cfg.DefaultCFOP, &defaultCest, &cfg.DefaultUnit,
+		&defaultIcmsCst, &defaultPisCst, &defaultCofinsCst, &defaultNaturezaOp,
+		&cfg.ICMSRate, &cfg.PISRate, &cfg.COFINSRate,
+	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -81,6 +102,11 @@ func (m *NFeModel) GetFarmConfig(farmID uint32) (*FarmConfig, error) {
 
 	cfg.CNPJEmitter = cnpj
 	cfg.CPFEmitter = cpf
+	cfg.DefaultCEST = defaultCest
+	cfg.DefaultICMSCST = defaultIcmsCst
+	cfg.DefaultPISCST = defaultPisCst
+	cfg.DefaultCOFINSCST = defaultCofinsCst
+	cfg.DefaultNaturezaOp = defaultNaturezaOp
 	return &cfg, nil
 }
 
@@ -90,8 +116,14 @@ func (m *NFeModel) UpsertFarmConfig(cfg FarmConfig) error {
 		INSERT INTO nfe_farm_config (
 			farm_id, certificate_path, certificate_data, certificate_password_encrypted, environment,
 			serie, next_number, tax_regime, emitter_type, cnpj_emitter, cpf_emitter,
-			ie_emitter, emitter_uf, default_mod_frete
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			ie_emitter, emitter_uf, default_mod_frete,
+			default_cfop, default_cest, default_unit,
+			default_icms_cst, default_pis_cst, default_cofins_cst, default_natureza_op,
+			icms_rate, pis_rate, cofins_rate
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+			$15, $16, $17, $18, $19, $20, $21, $22, $23, $24
+		)
 		ON CONFLICT (farm_id) DO UPDATE SET
 			certificate_path = EXCLUDED.certificate_path,
 			certificate_data = EXCLUDED.certificate_data,
@@ -106,64 +138,27 @@ func (m *NFeModel) UpsertFarmConfig(cfg FarmConfig) error {
 			ie_emitter = EXCLUDED.ie_emitter,
 			emitter_uf = EXCLUDED.emitter_uf,
 			default_mod_frete = EXCLUDED.default_mod_frete,
+			default_cfop = EXCLUDED.default_cfop,
+			default_cest = EXCLUDED.default_cest,
+			default_unit = EXCLUDED.default_unit,
+			default_icms_cst = EXCLUDED.default_icms_cst,
+			default_pis_cst = EXCLUDED.default_pis_cst,
+			default_cofins_cst = EXCLUDED.default_cofins_cst,
+			default_natureza_op = EXCLUDED.default_natureza_op,
+			icms_rate = EXCLUDED.icms_rate,
+			pis_rate = EXCLUDED.pis_rate,
+			cofins_rate = EXCLUDED.cofins_rate,
 			modified_at = CURRENT_TIMESTAMP
 	`
 	_, err := m.pool.Exec(context.Background(), query,
 		cfg.FarmID, cfg.CertificatePath, cfg.CertificateData, cfg.CertificatePasswordEncrypted,
 		cfg.Environment, cfg.Serie, cfg.NextNumber, cfg.TaxRegime, cfg.EmitterType,
-		cfg.CNPJEmitter, cfg.CPFEmitter, cfg.IEEmitter, cfg.EmitterUF, cfg.DefaultModFrete)
+		cfg.CNPJEmitter, cfg.CPFEmitter, cfg.IEEmitter, cfg.EmitterUF, cfg.DefaultModFrete,
+		cfg.DefaultCFOP, cfg.DefaultCEST, cfg.DefaultUnit,
+		cfg.DefaultICMSCST, cfg.DefaultPISCST, cfg.DefaultCOFINSCST, cfg.DefaultNaturezaOp,
+		cfg.ICMSRate, cfg.PISRate, cfg.COFINSRate,
+	)
 	return err
-}
-
-// ProductConfig represents the NFe product configuration.
-type ProductConfig struct {
-	ID          int
-	FarmID      int
-	ProductID   int
-	NCM         string
-	DefaultCFOP string
-	DefaultCEST *string
-	Unit        string
-	Description *string
-	ICMSCST     *string
-	PISCST      *string
-	COFINSCST   *string
-	ICMSRate    decimal.Decimal
-	PISRate     decimal.Decimal
-	COFINSRate  decimal.Decimal
-	NaturezaOp  *string
-}
-
-// GetProductConfig returns the NFe configuration for a product.
-func (m *NFeModel) GetProductConfig(farmID uint32, productID uint8) (*ProductConfig, error) {
-	query := `
-		SELECT id, farm_id, product_id, ncm, default_cfop, default_cest,
-		       unit, description, default_icms_cst, default_pis_cst, default_cofins_cst,
-		       icms_rate, pis_rate, cofins_rate, natureza_op
-		FROM nfe_product_config
-		WHERE farm_id = $1 AND product_id = $2
-	`
-	row := m.pool.QueryRow(context.Background(), query, farmID, productID)
-
-	var cfg ProductConfig
-	var cest, desc, icmsCst, pisCst, cofinsCst, naturezaOp *string
-	err := row.Scan(&cfg.ID, &cfg.FarmID, &cfg.ProductID, &cfg.NCM, &cfg.DefaultCFOP,
-		&cest, &cfg.Unit, &desc, &icmsCst, &pisCst, &cofinsCst,
-		&cfg.ICMSRate, &cfg.PISRate, &cfg.COFINSRate, &naturezaOp)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("failed to get product config: %w", err)
-	}
-
-	cfg.DefaultCEST = cest
-	cfg.Description = desc
-	cfg.ICMSCST = icmsCst
-	cfg.PISCST = pisCst
-	cfg.COFINSCST = cofinsCst
-	cfg.NaturezaOp = naturezaOp
-	return &cfg, nil
 }
 
 // AllocateNumber atomically allocates a new invoice number for a farm/serie.
@@ -207,15 +202,18 @@ type Invoice struct {
 	SignedAt             interface{}
 	SentAt               interface{}
 	AuthorizedAt         interface{}
+	TaxRates             *entity.TaxRates
 }
 
 // CreateInvoice creates a new invoice record with default tpEmis=1 (normal).
-func (m *NFeModel) CreateInvoice(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal) (int, error) {
-	return m.CreateInvoiceWithEmission(departureID, accessKey, serie, number, cfop, ncm, quantityKG, unitPrice, totalValue, 1, nil, "")
+func (m *NFeModel) CreateInvoice(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal, taxRates *entity.TaxRates) (int, error) {
+	return m.CreateInvoiceWithEmission(departureID, accessKey, serie, number, cfop, ncm, quantityKG, unitPrice, totalValue, 1, nil, "", taxRates)
 }
 
 // CreateInvoiceWithEmission creates a new invoice record with a specific emission type.
-func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal, tpEmis int, dhCont interface{}, xJust string) (int, error) {
+// If taxRates is non-nil and contains at least one non-nil rate, a row is also
+// inserted into nfe_invoice_tax_rates recording the user-provided rates.
+func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal, tpEmis int, dhCont interface{}, xJust string, taxRates *entity.TaxRates) (int, error) {
 	query := `
 		INSERT INTO nfe_invoice (
 			departure_id, access_key, serie, number, status,
@@ -232,7 +230,62 @@ func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey strin
 	if err != nil {
 		return 0, fmt.Errorf("failed to create invoice: %w", err)
 	}
+
+	if err := m.insertInvoiceTaxRates(id, taxRates); err != nil {
+		return 0, err
+	}
 	return id, nil
+}
+
+// insertInvoiceTaxRates persists a row in nfe_invoice_tax_rates when at least
+// one rate was provided by the user. Nil inputs are written as NULL columns,
+// preserving the per-axis "user provided / not provided" distinction.
+func (m *NFeModel) insertInvoiceTaxRates(invoiceID int, taxRates *entity.TaxRates) error {
+	if taxRates == nil {
+		return nil
+	}
+	if taxRates.ICMSRate == nil && taxRates.PISRate == nil && taxRates.COFINSRate == nil {
+		return nil
+	}
+	_, err := m.pool.Exec(context.Background(),
+		`INSERT INTO nfe_invoice_tax_rates (invoice_id, icms_rate, pis_rate, cofins_rate)
+		 VALUES ($1, $2, $3, $4)`,
+		invoiceID, taxRates.ICMSRate, taxRates.PISRate, taxRates.COFINSRate,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to insert invoice tax rates: %w", err)
+	}
+	return nil
+}
+
+// GetInvoiceTaxRates returns the user-provided tax rate overrides for an
+// invoice. Returns (nil, nil) when no row exists (legacy invoice or emission
+// where the user did not provide any rate).
+func (m *NFeModel) GetInvoiceTaxRates(invoiceID int) (*entity.TaxRates, error) {
+	var tr entity.TaxRates
+	err := m.pool.QueryRow(context.Background(),
+		`SELECT icms_rate, pis_rate, cofins_rate
+		 FROM nfe_invoice_tax_rates
+		 WHERE invoice_id = $1`,
+		invoiceID,
+	).Scan(&tr.ICMSRate, &tr.PISRate, &tr.COFINSRate)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get invoice tax rates: %w", err)
+	}
+	return &tr, nil
+}
+
+// DeleteInvoiceTaxRates removes the tax rate row for an invoice.
+func (m *NFeModel) DeleteInvoiceTaxRates(invoiceID int) error {
+	_, err := m.pool.Exec(context.Background(),
+		`DELETE FROM nfe_invoice_tax_rates WHERE invoice_id = $1`, invoiceID)
+	if err != nil {
+		return fmt.Errorf("failed to delete invoice tax rates: %w", err)
+	}
+	return nil
 }
 
 // UpdateInvoiceXML updates the signed XML of an invoice and transitions status.
@@ -280,46 +333,28 @@ func (m *NFeModel) UpdateInvoiceAuthorizedXML(id int, xmlAuthorized string) erro
 // GetInvoiceByDeparture returns the invoice for a departure.
 func (m *NFeModel) GetInvoiceByDeparture(departureID uint32) (*Invoice, error) {
 	query := `
-		SELECT id, departure_id, access_key, serie, number, status, cfop, ncm,
-		       quantity_kg, unit_price, total_value, icms_value, xml_signed, xml_authorized,
-		       protocol, sefaz_status_code, sefaz_motive, rejection_reason, cancellation_reason,
-		       retry_count, tp_emis, dh_cont, x_just, contingency_parent_id, svc_endpoint_used,
-		       created_at, signed_at, sent_at, authorized_at
-		FROM nfe_invoice
-		WHERE departure_id = $1
-		ORDER BY id DESC
+		SELECT i.id, i.departure_id, i.access_key, i.serie, i.number, i.status, i.cfop, i.ncm,
+		       i.quantity_kg, i.unit_price, i.total_value, i.icms_value, i.xml_signed, i.xml_authorized,
+		       i.protocol, i.sefaz_status_code, i.sefaz_motive, i.rejection_reason, i.cancellation_reason,
+		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id, i.svc_endpoint_used,
+		       i.created_at, i.signed_at, i.sent_at, i.authorized_at,
+		       t.icms_rate, t.pis_rate, t.cofins_rate
+		FROM nfe_invoice i
+		LEFT JOIN nfe_invoice_tax_rates t ON t.invoice_id = i.id
+		WHERE i.departure_id = $1
+		ORDER BY i.id DESC
 		LIMIT 1
 	`
 	row := m.pool.QueryRow(context.Background(), query, departureID)
 
-	var inv Invoice
-	var icmsValue *decimal.Decimal
-	var xmlSigned, xmlAuthorized, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason, xJust, svcEndpoint *string
-	var contingencyParentID *int
-	err := row.Scan(&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Serie, &inv.Number, &inv.Status,
-		&inv.CFOP, &inv.NCM, &inv.QuantityKG, &inv.UnitPrice, &inv.TotalValue, &icmsValue,
-		&xmlSigned, &xmlAuthorized, &protocol, &sefazCode, &sefazMotive, &rejectionReason,
-		&cancellationReason, &inv.RetryCount, &inv.TpEmis, &inv.DhCont, &xJust, &contingencyParentID, &svcEndpoint,
-		&inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt)
+	inv, err := scanInvoice(row)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to get invoice: %w", err)
 	}
-
-	inv.ICMSValue = icmsValue
-	inv.XMLSigned = xmlSigned
-	inv.XMLAuthorized = xmlAuthorized
-	inv.Protocol = protocol
-	inv.SefazStatusCode = sefazCode
-	inv.SefazMotive = sefazMotive
-	inv.RejectionReason = rejectionReason
-	inv.CancellationReason = cancellationReason
-	inv.XJust = xJust
-	inv.ContingencyParentID = contingencyParentID
-	inv.SVCEndpointUsed = svcEndpoint
-	return &inv, nil
+	return inv, nil
 }
 
 // GetMunicipio returns an IBGE municipality by name and UF.
@@ -506,9 +541,11 @@ func (m *NFeModel) GetInvoicesByFarm(farmID uint32, page int) ([]Invoice, int, e
 		       i.quantity_kg, i.unit_price, i.total_value, i.icms_value, i.xml_signed, i.xml_authorized,
 		       i.protocol, i.sefaz_status_code, i.sefaz_motive, i.rejection_reason, i.cancellation_reason,
 		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id, i.svc_endpoint_used,
-		       i.created_at, i.signed_at, i.sent_at, i.authorized_at
+		       i.created_at, i.signed_at, i.sent_at, i.authorized_at,
+		       t.icms_rate, t.pis_rate, t.cofins_rate
 		FROM nfe_invoice i
 		JOIN departure d ON d.id = i.departure_id
+		LEFT JOIN nfe_invoice_tax_rates t ON t.invoice_id = i.id
 		WHERE d.farm = $1
 		ORDER BY i.created_at DESC
 		LIMIT $2 OFFSET $3
@@ -521,30 +558,11 @@ func (m *NFeModel) GetInvoicesByFarm(farmID uint32, page int) ([]Invoice, int, e
 
 	var invoices []Invoice
 	for rows.Next() {
-		var inv Invoice
-		var icmsValue *decimal.Decimal
-		var xmlSigned, xmlAuthorized, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason, xJust, svcEndpoint *string
-		var contingencyParentID *int
-		err := rows.Scan(&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Serie, &inv.Number, &inv.Status,
-			&inv.CFOP, &inv.NCM, &inv.QuantityKG, &inv.UnitPrice, &inv.TotalValue, &icmsValue,
-			&xmlSigned, &xmlAuthorized, &protocol, &sefazCode, &sefazMotive, &rejectionReason,
-			&cancellationReason, &inv.RetryCount, &inv.TpEmis, &inv.DhCont, &xJust, &contingencyParentID, &svcEndpoint,
-			&inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt)
+		inv, err := scanInvoice(rows)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan invoice: %w", err)
 		}
-		inv.ICMSValue = icmsValue
-		inv.XMLSigned = xmlSigned
-		inv.XMLAuthorized = xmlAuthorized
-		inv.Protocol = protocol
-		inv.SefazStatusCode = sefazCode
-		inv.SefazMotive = sefazMotive
-		inv.RejectionReason = rejectionReason
-		inv.CancellationReason = cancellationReason
-		inv.XJust = xJust
-		inv.ContingencyParentID = contingencyParentID
-		inv.SVCEndpointUsed = svcEndpoint
-		invoices = append(invoices, inv)
+		invoices = append(invoices, *inv)
 	}
 
 	return invoices, total, rows.Err()
@@ -553,31 +571,54 @@ func (m *NFeModel) GetInvoicesByFarm(farmID uint32, page int) ([]Invoice, int, e
 // GetInvoiceByAccessKey returns an invoice by its access key.
 func (m *NFeModel) GetInvoiceByAccessKey(accessKey string) (*Invoice, error) {
 	query := `
-		SELECT id, departure_id, access_key, serie, number, status, cfop, ncm,
-		       quantity_kg, unit_price, total_value, icms_value, xml_signed, xml_authorized,
-		       protocol, sefaz_status_code, sefaz_motive, rejection_reason, cancellation_reason,
-		       retry_count, tp_emis, dh_cont, x_just, contingency_parent_id, svc_endpoint_used,
-		       created_at, signed_at, sent_at, authorized_at
-		FROM nfe_invoice
-		WHERE access_key = $1
+		SELECT i.id, i.departure_id, i.access_key, i.serie, i.number, i.status, i.cfop, i.ncm,
+		       i.quantity_kg, i.unit_price, i.total_value, i.icms_value, i.xml_signed, i.xml_authorized,
+		       i.protocol, i.sefaz_status_code, i.sefaz_motive, i.rejection_reason, i.cancellation_reason,
+		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id, i.svc_endpoint_used,
+		       i.created_at, i.signed_at, i.sent_at, i.authorized_at,
+		       t.icms_rate, t.pis_rate, t.cofins_rate
+		FROM nfe_invoice i
+		LEFT JOIN nfe_invoice_tax_rates t ON t.invoice_id = i.id
+		WHERE i.access_key = $1
 		LIMIT 1
 	`
 	row := m.pool.QueryRow(context.Background(), query, accessKey)
 
-	var inv Invoice
-	var icmsValue *decimal.Decimal
-	var xmlSigned, xmlAuthorized, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason, xJust, svcEndpoint *string
-	var contingencyParentID *int
-	err := row.Scan(&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Serie, &inv.Number, &inv.Status,
-		&inv.CFOP, &inv.NCM, &inv.QuantityKG, &inv.UnitPrice, &inv.TotalValue, &icmsValue,
-		&xmlSigned, &xmlAuthorized, &protocol, &sefazCode, &sefazMotive, &rejectionReason,
-		&cancellationReason, &inv.RetryCount, &inv.TpEmis, &inv.DhCont, &xJust, &contingencyParentID, &svcEndpoint,
-		&inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt)
+	inv, err := scanInvoice(row)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to get invoice: %w", err)
+	}
+	return inv, nil
+}
+
+// invoiceScanner is the common surface for pgx.Row and pgx.Rows so scanInvoice
+// can serve both single-row and multi-row queries.
+type invoiceScanner interface {
+	Scan(dest ...any) error
+}
+
+// scanInvoice reads a row produced by a query that LEFT JOINs
+// nfe_invoice_tax_rates and materializes the optional tax rate columns into
+// the Invoice.TaxRates field.
+func scanInvoice(row invoiceScanner) (*Invoice, error) {
+	var inv Invoice
+	var icmsValue *decimal.Decimal
+	var xmlSigned, xmlAuthorized, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason, xJust, svcEndpoint *string
+	var contingencyParentID *int
+	var icmsRate, pisRate, cofinsRate *decimal.Decimal
+	err := row.Scan(
+		&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Serie, &inv.Number, &inv.Status,
+		&inv.CFOP, &inv.NCM, &inv.QuantityKG, &inv.UnitPrice, &inv.TotalValue, &icmsValue,
+		&xmlSigned, &xmlAuthorized, &protocol, &sefazCode, &sefazMotive, &rejectionReason,
+		&cancellationReason, &inv.RetryCount, &inv.TpEmis, &inv.DhCont, &xJust, &contingencyParentID, &svcEndpoint,
+		&inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt,
+		&icmsRate, &pisRate, &cofinsRate,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	inv.ICMSValue = icmsValue
@@ -591,5 +632,13 @@ func (m *NFeModel) GetInvoiceByAccessKey(accessKey string) (*Invoice, error) {
 	inv.XJust = xJust
 	inv.ContingencyParentID = contingencyParentID
 	inv.SVCEndpointUsed = svcEndpoint
+
+	if icmsRate != nil || pisRate != nil || cofinsRate != nil {
+		inv.TaxRates = &entity.TaxRates{
+			ICMSRate:   icmsRate,
+			PISRate:    pisRate,
+			COFINSRate: cofinsRate,
+		}
+	}
 	return &inv, nil
 }

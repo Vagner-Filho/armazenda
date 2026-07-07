@@ -6,11 +6,13 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	entity_public "armazenda/entity/public"
 	"armazenda/model/departure_model"
 	"armazenda/model/nfe_model"
 	"armazenda/model/product_model"
+	"armazenda/pkg/nfe/entity"
 	nfe_pdf "armazenda/pkg/nfe/service"
 	nfe_xml "armazenda/pkg/nfe/xml"
 	"armazenda/service/nfe_service"
@@ -39,11 +41,19 @@ func buildNFe(c *gin.Context) {
 
 	cfop := c.PostForm("cfop")
 
+	userRates, rateErr := parseUserTaxRates(c)
+	if rateErr != nil {
+		toast := entity_public.GetWarningToast("Falhamos ao identificar as alíquotas", rateErr.Error())
+		c.Header("HX-Trigger", string(toast.ToJson()))
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
 
 	service := nfe_service.NewNFeService()
-	signedXML, toast := service.BuildInvoiceFromDeparture(uint32(departureID), unitPrice, farm, cfop)
+	signedXML, toast := service.BuildInvoiceFromDeparture(uint32(departureID), unitPrice, farm, cfop, userRates)
 
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		c.Header("HX-Trigger", string(toast.ToJson()))
@@ -79,11 +89,19 @@ func previewNFe(c *gin.Context) {
 
 	cfop := c.PostForm("cfop")
 
+	userRates, rateErr := parseUserTaxRates(c)
+	if rateErr != nil {
+		toast := entity_public.GetWarningToast("Falhamos ao identificar as alíquotas", rateErr.Error())
+		c.Header("HX-Trigger", string(toast.ToJson()))
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
 
 	svc := nfe_service.NewNFeService()
-	pdfBytes, toast := svc.GeneratePreviewDANFE(uint32(departureID), unitPrice, farm, cfop)
+	pdfBytes, toast := svc.GeneratePreviewDANFE(uint32(departureID), unitPrice, farm, cfop, userRates)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 		if toast.Type == entity_public.WarningToast {
@@ -116,6 +134,10 @@ func previewNFe(c *gin.Context) {
 		"UnitPrice":   unitPrice,
 		"TotalValue":  departure.NetWeight.Mul(unitPrice),
 		"PDFBase64":   base64.StdEncoding.EncodeToString(pdfBytes),
+		"CFOP":        cfop,
+		"ICMSRate":    rateDisplayString(userRates.ICMSRate),
+		"PISRate":     rateDisplayString(userRates.PISRate),
+		"COFINSRate":  rateDisplayString(userRates.COFINSRate),
 		"CSPNonce":    nonce.(string),
 	})
 }
@@ -134,8 +156,11 @@ func getNFeConfigForm(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "nfe-config-form", gin.H{
-		"FarmID": farmID,
-		"Config": config,
+		"FarmID":        farmID,
+		"Config":        config,
+		"ICMSRatePct":   percentDisplay(config.ICMSRate),
+		"PISRatePct":    percentDisplay(config.PISRate),
+		"COFINSRatePct": percentDisplay(config.COFINSRate),
 	})
 }
 
@@ -145,6 +170,7 @@ func saveNFeConfig(c *gin.Context) {
 
 	// Parse form fields
 	environment, _ := strconv.Atoi(c.PostForm("environment"))
+	environment = 2
 	emitterType, _ := strconv.Atoi(c.PostForm("emitterType"))
 	taxRegime, _ := strconv.Atoi(c.PostForm("taxRegime"))
 	defaultModFrete, _ := strconv.Atoi(c.PostForm("defaultModFrete"))
@@ -156,6 +182,46 @@ func saveNFeConfig(c *gin.Context) {
 	ieEmitter := c.PostForm("ieEmitter")
 	cnpjEmitter := c.PostForm("cnpjEmitter")
 	cpfEmitter := c.PostForm("cpfEmitter")
+
+	// Tax config defaults
+	defaultCFOP := c.PostForm("defaultCFOP")
+	if defaultCFOP == "" {
+		defaultCFOP = "5101"
+	}
+	defaultUnit := c.PostForm("defaultUnit")
+	if defaultUnit == "" {
+		defaultUnit = "KG"
+	}
+	defaultCEST := strings.TrimSpace(c.PostForm("defaultCEST"))
+	defaultICMSCST := strings.TrimSpace(c.PostForm("defaultICMSCST"))
+	defaultPISCST := strings.TrimSpace(c.PostForm("defaultPISCST"))
+	defaultCOFINSCST := strings.TrimSpace(c.PostForm("defaultCOFINSCST"))
+	defaultNaturezaOp := strings.TrimSpace(c.PostForm("defaultNaturezaOp"))
+
+	icmsRate, icmsRateErr := parsePercentRateOrNil(c.PostForm("icmsRate"))
+	if icmsRateErr != nil {
+		c.HTML(http.StatusBadRequest, "nfe-config-form", gin.H{
+			"FarmID": farmID,
+			"Error":  "Alíquota ICMS inválida: " + icmsRateErr.Error(),
+		})
+		return
+	}
+	pisRate, pisRateErr := parsePercentRateOrNil(c.PostForm("pisRate"))
+	if pisRateErr != nil {
+		c.HTML(http.StatusBadRequest, "nfe-config-form", gin.H{
+			"FarmID": farmID,
+			"Error":  "Alíquota PIS inválida: " + pisRateErr.Error(),
+		})
+		return
+	}
+	cofinsRate, cofinsRateErr := parsePercentRateOrNil(c.PostForm("cofinsRate"))
+	if cofinsRateErr != nil {
+		c.HTML(http.StatusBadRequest, "nfe-config-form", gin.H{
+			"FarmID": farmID,
+			"Error":  "Alíquota COFINS inválida: " + cofinsRateErr.Error(),
+		})
+		return
+	}
 
 	// Handle certificate upload
 	var certPath string
@@ -206,6 +272,11 @@ func saveNFeConfig(c *gin.Context) {
 		IEEmitter:                    ieEmitter,
 		EmitterUF:                    "MT", // Default for now
 		DefaultModFrete:              defaultModFrete,
+		DefaultCFOP:                  defaultCFOP,
+		DefaultUnit:                  defaultUnit,
+		ICMSRate:                     derefDecimal(icmsRate),
+		PISRate:                      derefDecimal(pisRate),
+		COFINSRate:                   derefDecimal(cofinsRate),
 	}
 
 	if cnpjEmitter != "" {
@@ -213,6 +284,21 @@ func saveNFeConfig(c *gin.Context) {
 	}
 	if cpfEmitter != "" {
 		config.CPFEmitter = &cpfEmitter
+	}
+	if defaultCEST != "" {
+		config.DefaultCEST = &defaultCEST
+	}
+	if defaultICMSCST != "" {
+		config.DefaultICMSCST = &defaultICMSCST
+	}
+	if defaultPISCST != "" {
+		config.DefaultPISCST = &defaultPISCST
+	}
+	if defaultCOFINSCST != "" {
+		config.DefaultCOFINSCST = &defaultCOFINSCST
+	}
+	if defaultNaturezaOp != "" {
+		config.DefaultNaturezaOp = &defaultNaturezaOp
 	}
 
 	if upsertErr := nfeModel.UpsertFarmConfig(config); upsertErr != nil {
@@ -229,6 +315,14 @@ func saveNFeConfig(c *gin.Context) {
 		"Config":  config,
 		"Success": "Configuração NF-e salva com sucesso!",
 	})
+}
+
+// derefDecimal returns the decimal value pointed to by d, or zero if d is nil.
+func derefDecimal(d *decimal.Decimal) decimal.Decimal {
+	if d == nil {
+		return decimal.Zero
+	}
+	return *d
 }
 
 func UseNFeRoutes(router *gin.Engine) {
@@ -414,15 +508,92 @@ func getNFeEmitModal(c *gin.Context) {
 
 	// Get product name
 	pModel := product_model.GetProductModel()
-	product, prodErr := pModel.GetProductById(departure.Crop)
+	product, prodErr := pModel.GetProductByCrop(departure.Crop)
 	if prodErr != nil {
 		product.Name = "Produto"
 	}
 
+	// Load the farm's NFe config to pre-populate the rate inputs with the
+	// configured defaults. Missing config is non-fatal — the form will simply
+	// show empty defaults.
+	sid, _ := c.Cookie("session_id")
+	farmID := user_service.GetFarmFromToken(sid)
+	var defaultICMS, defaultPIS, defaultCOFINS decimal.Decimal
+	if fc, fcErr := nfeModel.GetFarmConfig(farmID); fcErr == nil && fc != nil {
+		defaultICMS = fc.ICMSRate
+		defaultPIS = fc.PISRate
+		defaultCOFINS = fc.COFINSRate
+	}
+
 	c.HTML(http.StatusOK, "nfe-emit-modal", gin.H{
-		"DepartureID": departureID,
-		"Product":     product.Name,
-		"NetWeight":   departure.NetWeight,
-		"CSPNonce":    nonce.(string),
+		"DepartureID":       departureID,
+		"Product":           product.Name,
+		"NetWeight":         departure.NetWeight,
+		"DefaultICMSRate":   percentDisplay(defaultICMS),
+		"DefaultPISRate":    percentDisplay(defaultPIS),
+		"DefaultCOFINSRate": percentDisplay(defaultCOFINS),
+		"CSPNonce":          nonce.(string),
 	})
+}
+
+// parsePercentRateOrNil converts a form-submitted percentage string (e.g. "17,00")
+// into a decimal rate (0.17) wrapped in a pointer. An empty string yields nil,
+// which the service interprets as "user did not provide a value" and falls back
+// to the product config. A non-empty string is divided by 100 to produce the
+// decimal rate stored in the DB and on the invoice row.
+func parsePercentRateOrNil(s string) (*decimal.Decimal, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil, nil
+	}
+	d, err := decimal.NewFromString(s)
+	if err != nil {
+		return nil, err
+	}
+	if d.IsNegative() {
+		return nil, fmt.Errorf("rate must be non-negative")
+	}
+	rate := d.Div(decimal.NewFromInt(100))
+	return &rate, nil
+}
+
+// parseUserTaxRates extracts the three rate fields from a form submission.
+// An error from any of the three field parses is returned (the caller converts
+// it into a 400 response). Empty fields are tolerated and yield nil pointers.
+func parseUserTaxRates(c *gin.Context) (entity.TaxRates, error) {
+	icms, err := parsePercentRateOrNil(c.PostForm("icmsRate"))
+	if err != nil {
+		return entity.TaxRates{}, fmt.Errorf("ICMS: %w", err)
+	}
+	pis, err := parsePercentRateOrNil(c.PostForm("pisRate"))
+	if err != nil {
+		return entity.TaxRates{}, fmt.Errorf("PIS: %w", err)
+	}
+	cofins, err := parsePercentRateOrNil(c.PostForm("cofinsRate"))
+	if err != nil {
+		return entity.TaxRates{}, fmt.Errorf("COFINS: %w", err)
+	}
+	return entity.TaxRates{ICMSRate: icms, PISRate: pis, COFINSRate: cofins}, nil
+}
+
+// rateDisplayString converts an optional decimal rate back to the percentage
+// string used in form fields (e.g. 0.17 → "17.00"). Nil pointers yield empty
+// strings so the form starts blank for "not provided" cases.
+func rateDisplayString(rate *decimal.Decimal) string {
+	if rate == nil {
+		return ""
+	}
+	return percentDisplay(*rate)
+}
+
+// percentDisplay formats a decimal rate (e.g. 0.17) for display in the form,
+// keeping two decimal places of precision.
+func percentDisplay(rate decimal.Decimal) string {
+	if rate.IsZero() {
+		return ""
+	}
+	pct := rate.Mul(decimal.NewFromInt(100))
+	// Use a fixed two-decimal representation; the shopspring/decimal String()
+	// method preserves trailing zeros for the value but does not pad.
+	return pct.StringFixed(2)
 }

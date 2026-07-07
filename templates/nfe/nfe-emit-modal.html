@@ -23,12 +23,54 @@
                     </label>
                 </div>
                 <div class="flex flex-col-reverse">
-                    <input type="text" name="cfop" id="cfop" value="5101"
-                        class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                    <select name="cfop" id="cfop" required class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                        <option value="5101" selected>5101 - Venda de produção do estabelecimento</option>
+                        <option value="5102">5102 - Venda de mercadoria adquirida ou recebida de terceiros</option>
+                        <option value="5901">5901 - Remessa para industrialização</option>
+                    </select>
                     <label for="cfop"
                         class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                        CFOP (opcional)
+                        CFOP
                     </label>
+                </div>
+                <div class="text-white/80 text-xs flex flex-col gap-3">
+                    <label class="flex items-center gap-2 cursor-pointer text-white/80 select-none">
+                        <input type="checkbox" name="useDefaultTaxRates" id="useDefaultTaxRates" checked
+                            class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white">
+                        <span class="text-xs lg:text-sm uppercase tracking-wider font-medium">Usar taxa padrão</span>
+                    </label>
+                    <div class="flex flex-col gap-3 pl-2 border-l border-white/10">
+                        <div class="flex flex-col-reverse">
+                            <input type="text" inputmode="decimal" name="icmsRate" id="icmsRate"
+                                value="{{ .DefaultICMSRate }}" disabled
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
+                                placeholder="17,00">
+                            <label for="icmsRate"
+                                class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Alíquota ICMS (%)
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" inputmode="decimal" name="pisRate" id="pisRate"
+                                value="{{ .DefaultPISRate }}" disabled
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
+                                placeholder="1,65">
+                            <label for="pisRate"
+                                class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Alíquota PIS (%)
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" inputmode="decimal" name="cofinsRate" id="cofinsRate"
+                                value="{{ .DefaultCOFINSRate }}" disabled
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
+                                placeholder="7,60">
+                            <label for="cofinsRate"
+                                class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Alíquota COFINS (%)
+                            </label>
+                        </div>
+                    </div>
                 </div>
                 <div class="flex items-center justify-center gap-2">
                     <button type="submit" class="primary-glass-btn flex items-center gap-1 p-3">
@@ -44,6 +86,36 @@
     </div>
     <script nonce="{{ .CSPNonce }}" type="module">
         import { setupNFeForm } from "/public/assets/js/form/nfe-form.js";
+
+        (function () {
+            const dialog = document.querySelector('#nfe-emit-dialog');
+            const checkbox = dialog?.querySelector('#useDefaultTaxRates');
+            const rateInputs = dialog
+                ? [
+                      dialog.querySelector('#icmsRate'),
+                      dialog.querySelector('#pisRate'),
+                      dialog.querySelector('#cofinsRate'),
+                  ].filter(Boolean)
+                : [];
+
+            function applyState() {
+                if (!checkbox || rateInputs.length === 0) return;
+                const useDefault = checkbox.checked;
+                rateInputs.forEach((input) => {
+                    if (useDefault) {
+                        input.setAttribute('disabled', '');
+                    } else {
+                        input.removeAttribute('disabled');
+                    }
+                });
+            }
+
+            if (checkbox) {
+                checkbox.addEventListener('change', applyState);
+                applyState();
+            }
+        })();
+
         setupNFeForm();
     </script>
 </dialog>

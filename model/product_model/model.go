@@ -56,6 +56,7 @@ func (pm *ProductModel) GetProducts() ([]entity_public.Product, error) {
 func (pm *ProductModel) GetProductById(id uint8) (entity_public.Product, error) {
 	rows, err := pm.pool.Query(context.Background(), "SELECT * FROM product WHERE id = @id", pgx.NamedArgs{"id": id})
 	if err != nil {
+		model_error.GetLoggerModel().Log(err.Error())
 		return entity_public.Product{}, &model_error.ModelError{Message: err.Error()}
 	}
 
@@ -64,6 +65,26 @@ func (pm *ProductModel) GetProductById(id uint8) (entity_public.Product, error) 
 		if errors.Is(collectErr, pgx.ErrNoRows) {
 			return entity_public.Product{}, &model_error.ModelError{Message: "Produto não encontrado"}
 		}
+		model_error.GetLoggerModel().Log(collectErr.Error())
+		return entity_public.Product{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+
+	return product, nil
+}
+
+func (pm *ProductModel) GetProductByCrop(cropId uint8) (entity_public.Product, error) {
+	rows, err := pm.pool.Query(context.Background(), "SELECT p.* FROM product p JOIN crop c ON c.product = p.id WHERE c.id = @id", pgx.NamedArgs{"id": cropId})
+	if err != nil {
+		model_error.GetLoggerModel().Log(err.Error())
+		return entity_public.Product{}, &model_error.ModelError{Message: err.Error()}
+	}
+
+	product, collectErr := pgx.CollectOneRow(rows, pgx.RowToStructByPos[entity_public.Product])
+	if collectErr != nil {
+		if errors.Is(collectErr, pgx.ErrNoRows) {
+			return entity_public.Product{}, &model_error.ModelError{Message: "Produto não encontrado"}
+		}
+		model_error.GetLoggerModel().Log(collectErr.Error())
 		return entity_public.Product{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
 

@@ -18,6 +18,9 @@
         hx-indicator="#nfe-emit-spinner">
         <input type="hidden" name="unitPrice" value="{{ .UnitPrice }}">
         <input type="hidden" name="cfop" value="{{ .CFOP }}">
+        <input type="hidden" name="icmsRate" value="{{ .ICMSRate }}">
+        <input type="hidden" name="pisRate" value="{{ .PISRate }}">
+        <input type="hidden" name="cofinsRate" value="{{ .COFINSRate }}">
         <div class="flex items-center justify-center gap-2">
             <button type="button" hx-get="/nfe/modal/{{ .DepartureID }}" hx-target="#nfe-emit-dialog"
                 hx-swap="outerHTML" class="glass-btn flex items-center gap-1 p-3">
