@@ -286,6 +286,8 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS add_get_departure(smallint,integer,integer,timestamp without time zone,integer,numeric,numeric,numeric,numeric,numeric,numeric,integer);
+
 CREATE OR REPLACE FUNCTION add_get_departure(
     IN crop SMALLINT,
     IN recipient_id INTEGER,
@@ -340,6 +342,8 @@ BEGIN
     out_origin_id := in_origin_id;
 END;
 $$;
+
+DROP FUNCTION IF EXISTS update_get_departure(smallint,integer,integer,integer,timestamp without time zone,numeric,numeric,numeric,numeric,numeric,numeric,integer);
 
 CREATE OR REPLACE FUNCTION update_get_departure(
     IN d_crop SMALLINT,
