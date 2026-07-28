@@ -2,13 +2,21 @@ package billing_service
 
 import (
 	"armazenda/entity/public"
+	"armazenda/model/owner_subscription_model"
 	"armazenda/model/subscription_model"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
+	"sort"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/stripe/stripe-go/v85"
+	portal "github.com/stripe/stripe-go/v85/billingportal/session"
 	"github.com/stripe/stripe-go/v85/checkout/session"
 	"github.com/stripe/stripe-go/v85/price"
 	"github.com/stripe/stripe-go/v85/subscription"
@@ -19,6 +27,46 @@ func init() {
 	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
 }
 
+type tempOwnerSession struct {
+	ownerDocument string
+	expiresAt     time.Time
+}
+
+var (
+	tempSessions   = make(map[string]tempOwnerSession)
+	tempSessionsMu sync.RWMutex
+)
+
+func CreateTempOwnerSession(ownerDocument string) string {
+	tempSessionsMu.Lock()
+	defer tempSessionsMu.Unlock()
+
+	b := make([]byte, 16)
+	rand.Read(b)
+	token := hex.EncodeToString(b)
+
+	tempSessions[token] = tempOwnerSession{
+		ownerDocument: ownerDocument,
+		expiresAt:     time.Now().Add(10 * time.Minute),
+	}
+	return token
+}
+
+func ValidateTempOwnerSession(token string) (string, bool) {
+	tempSessionsMu.Lock()
+	defer tempSessionsMu.Unlock()
+
+	session, ok := tempSessions[token]
+	if !ok {
+		return "", false
+	}
+	if time.Now().After(session.expiresAt) {
+		delete(tempSessions, token)
+		return "", false
+	}
+	return session.ownerDocument, true
+}
+
 func getPriceID() string {
 	return os.Getenv("STRIPE_PRICE_ID")
 }
@@ -27,7 +75,142 @@ func GetPublishableKey() string {
 	return os.Getenv("STRIPE_PUBLISHABLE_KEY")
 }
 
-func CreateCheckoutSession(pendingRegistrationID uint32, priceID string) (string, error) {
+func formatBRL(value float64) string {
+	s := fmt.Sprintf("%.2f", value)
+	return strings.ReplaceAll(s, ".", ",")
+}
+
+type PricingTier struct {
+	TierKey                 string
+	ProductName             string
+	ProductDescription      string
+	MonthlyPriceID          string
+	YearlyPriceID           string
+	MonthlyAmount           string
+	YearlyTotal             string
+	YearlyMonthlyEquivalent string
+	SavingsPercent          string
+	Features                []string
+}
+
+func ListStripePrices() ([]*stripe.Price, error) {
+	params := &stripe.PriceListParams{
+		Active: stripe.Bool(true),
+		Type:   stripe.String("recurring"),
+	}
+	params.AddExpand("data.product")
+	iter := price.List(params)
+	var prices []*stripe.Price
+	for iter.Next() {
+		prices = append(prices, iter.Price())
+	}
+	if err := iter.Err(); err != nil {
+		return nil, err
+	}
+	return prices, nil
+}
+
+func GetPricingTiers() ([]PricingTier, error) {
+	prices, err := ListStripePrices()
+	if err != nil {
+		return nil, err
+	}
+
+	type tierGroup struct {
+		tierKey string
+		monthly *stripe.Price
+		yearly  *stripe.Price
+		product *stripe.Product
+	}
+
+	groups := make(map[string]*tierGroup)
+	for _, p := range prices {
+		if p.Product == nil {
+			continue
+		}
+		tierKey := p.Product.ID
+
+		g, ok := groups[tierKey]
+		if !ok {
+			g = &tierGroup{tierKey: tierKey, product: p.Product}
+			groups[tierKey] = g
+		}
+
+		if p.Recurring != nil {
+			switch p.Recurring.Interval {
+			case stripe.PriceRecurringIntervalMonth:
+				g.monthly = p
+			case stripe.PriceRecurringIntervalYear:
+				g.yearly = p
+			}
+		}
+	}
+
+	var tiers []PricingTier
+	for _, g := range groups {
+		if g.monthly == nil || g.yearly == nil {
+			continue
+		}
+
+		monthlyAmount := float64(g.monthly.UnitAmount) / 100.0
+		yearlyTotal := float64(g.yearly.UnitAmount) / 100.0
+		yearlyMonthlyEquivalent := yearlyTotal / 12.0
+		savingsPercent := math.Round((1.0 - yearlyMonthlyEquivalent/monthlyAmount) * 100)
+
+		var features []string
+		if g.product.MarketingFeatures != nil {
+			for _, f := range g.product.MarketingFeatures {
+				if f.Name != "" {
+					features = append(features, f.Name)
+				}
+			}
+		}
+
+		tiers = append(tiers, PricingTier{
+			TierKey:                 g.tierKey,
+			ProductName:             g.product.Name,
+			ProductDescription:      g.product.Description,
+			MonthlyPriceID:          g.monthly.ID,
+			YearlyPriceID:           g.yearly.ID,
+			MonthlyAmount:           formatBRL(monthlyAmount),
+			YearlyTotal:             formatBRL(yearlyTotal),
+			YearlyMonthlyEquivalent: formatBRL(yearlyMonthlyEquivalent),
+			SavingsPercent:          fmt.Sprintf("%.0f", savingsPercent),
+			Features:                features,
+		})
+	}
+
+	sort.Slice(tiers, func(i, j int) bool {
+		return tiers[i].TierKey < tiers[j].TierKey
+	})
+
+	return tiers, nil
+}
+
+func ResolveTierKey(priceID string) (string, error) {
+	if priceID == "" {
+		return "", fmt.Errorf("priceID is empty")
+	}
+
+	stripePrice, err := GetStripePrice(priceID)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch stripe price: %w", err)
+	}
+
+	if stripePrice.Product == nil || stripePrice.Product.ID == "" {
+		return "", fmt.Errorf("stripe price has no product")
+	}
+
+	osm := owner_subscription_model.GetOwnerSubscriptionModel()
+	tierKey, err := osm.GetTierKeyByStripeProductID(stripePrice.Product.ID)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve tier key for product %s: %w", stripePrice.Product.ID, err)
+	}
+
+	return tierKey, nil
+}
+
+func CreateCheckoutSession(pendingRegistrationID uint32, priceID string, quantity int64) (string, error) {
 	if priceID == "" {
 		priceID = getPriceID()
 	}
@@ -41,18 +224,25 @@ func CreateCheckoutSession(pendingRegistrationID uint32, priceID string) (string
 		cancelURL = "http://localhost:8100/payment/cancel"
 	}
 
+	tierKey, tierErr := ResolveTierKey(priceID)
+	if tierErr != nil {
+		fmt.Printf("warning: failed to resolve tier key for checkout: %v\n", tierErr)
+		tierKey = ""
+	}
+
 	params := &stripe.CheckoutSessionParams{
 		Mode: stripe.String(string(stripe.CheckoutSessionModeSubscription)),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
 				Price:    stripe.String(priceID),
-				Quantity: stripe.Int64(1),
+				Quantity: stripe.Int64(quantity),
 			},
 		},
 		SuccessURL: stripe.String(successURL),
 		CancelURL:  stripe.String(cancelURL),
 		Metadata: map[string]string{
 			"pending_registration_id": fmt.Sprintf("%d", pendingRegistrationID),
+			"tier_key":                tierKey,
 		},
 		SubscriptionData: &stripe.CheckoutSessionSubscriptionDataParams{
 			Metadata: map[string]string{
@@ -71,6 +261,56 @@ func CreateCheckoutSession(pendingRegistrationID uint32, priceID string) (string
 	updateErr := sm.UpdatePendingRegistrationSessionID(pendingRegistrationID, s.ID)
 	if updateErr != nil {
 		fmt.Printf("failed to update pending registration with session ID: %v\n", updateErr)
+	}
+
+	return s.URL, nil
+}
+
+func CreateCheckoutSessionForOwner(ownerSubscriptionID uint32, priceID string, quantity int64, customerEmail string) (string, error) {
+	if priceID == "" {
+		return "", fmt.Errorf("priceID is required")
+	}
+
+	successURL := os.Getenv("STRIPE_SUCCESS_URL")
+	if successURL == "" {
+		successURL = "http://localhost:8100/payment/success"
+	}
+	cancelURL := os.Getenv("STRIPE_CANCEL_URL")
+	if cancelURL == "" {
+		cancelURL = "http://localhost:8100/payment/cancel"
+	}
+
+	tierKey, tierErr := ResolveTierKey(priceID)
+	if tierErr != nil {
+		fmt.Printf("warning: failed to resolve tier key for checkout: %v\n", tierErr)
+		tierKey = ""
+	}
+
+	params := &stripe.CheckoutSessionParams{
+		Mode: stripe.String(string(stripe.CheckoutSessionModeSubscription)),
+		LineItems: []*stripe.CheckoutSessionLineItemParams{
+			{
+				Price:    stripe.String(priceID),
+				Quantity: stripe.Int64(quantity),
+			},
+		},
+		SuccessURL:    stripe.String(successURL),
+		CancelURL:     stripe.String(cancelURL),
+		CustomerEmail: stripe.String(customerEmail),
+		Metadata: map[string]string{
+			"owner_subscription_id": fmt.Sprintf("%d", ownerSubscriptionID),
+			"tier_key":              tierKey,
+		},
+		SubscriptionData: &stripe.CheckoutSessionSubscriptionDataParams{
+			Metadata: map[string]string{
+				"owner_subscription_id": fmt.Sprintf("%d", ownerSubscriptionID),
+			},
+		},
+	}
+
+	s, err := session.New(params)
+	if err != nil {
+		return "", err
 	}
 
 	return s.URL, nil
@@ -96,6 +336,51 @@ func HandleWebhook(payload []byte, sigHeader string) error {
 			return fmt.Errorf("failed to unmarshal checkout session: %w", err)
 		}
 
+		// Check for existing owner subscription checkout first
+		ownerSubIDStr, hasOwnerSub := session.Metadata["owner_subscription_id"]
+		if hasOwnerSub {
+			var ownerSubID uint32
+			fmt.Sscanf(ownerSubIDStr, "%d", &ownerSubID)
+
+			customerID := ""
+			if session.Customer != nil {
+				customerID = session.Customer.ID
+			}
+			subscriptionID := ""
+			if session.Subscription != nil {
+				subscriptionID = session.Subscription.ID
+			}
+
+			if subscriptionID != "" {
+				osm := owner_subscription_model.GetOwnerSubscriptionModel()
+				var periodEnd time.Time
+				var status string
+				sub, subErr := getSubscription(subscriptionID)
+				if subErr != nil {
+					fmt.Printf("failed to fetch subscription details after checkout: %v\n", subErr)
+					periodEnd = time.Now()
+					status = "active"
+				} else if sub != nil {
+					periodEnd = subscriptionPeriodEnd(sub)
+					status = string(sub.Status)
+				}
+
+				tierKey := session.Metadata["tier_key"]
+				if tierKey == "" {
+					resolvedTier, tierErr := ResolveTierKey(session.LineItems.Data[0].Price.ID)
+					if tierErr == nil {
+						tierKey = resolvedTier
+					}
+				}
+
+				updateErr := osm.UpdateFromCheckout(ownerSubID, customerID, subscriptionID, status, periodEnd, tierKey)
+				if updateErr != nil {
+					fmt.Printf("failed to update owner subscription from checkout: %v\n", updateErr)
+				}
+			}
+			return nil
+		}
+
 		pendingIDStr, ok := session.Metadata["pending_registration_id"]
 		if !ok {
 			return fmt.Errorf("missing pending_registration_id in checkout session metadata")
@@ -113,13 +398,12 @@ func HandleWebhook(payload []byte, sigHeader string) error {
 			}
 		}
 
-		farmId, createErr := sm.CreateFarmAndUserFromPending(*pending)
+		_, farmIds, createErr := sm.CreateFarmAndUserFromPending(*pending)
 		if createErr != nil {
 			return fmt.Errorf("failed to create farm and user from pending registration: %w", createErr)
 		}
 
-		// Always store Stripe customer and subscription IDs on the farm.
-		// This ensures downstream webhooks (subscription.updated, etc.) can locate the farm.
+		// Create owner_subscription record
 		customerID := ""
 		if session.Customer != nil {
 			customerID = session.Customer.ID
@@ -128,25 +412,49 @@ func HandleWebhook(payload []byte, sigHeader string) error {
 		if session.Subscription != nil {
 			subscriptionID = session.Subscription.ID
 		}
-		if customerID != "" || subscriptionID != "" {
-			idErr := sm.SetFarmStripeIDs(farmId, customerID, subscriptionID)
-			if idErr != nil {
-				fmt.Printf("failed to set farm stripe IDs: %v\n", idErr)
+
+		ownerDoc := pending.Cpf
+		ownerDocType := 1
+		if pending.OwnerDocument != nil && *pending.OwnerDocument != "" {
+			ownerDoc = *pending.OwnerDocument
+			if pending.OwnerDocumentType != nil {
+				ownerDocType = *pending.OwnerDocumentType
 			}
 		}
 
-		// Try to fetch full subscription details (status + current_period_end).
-		// If this fails, customer.subscription.created/updated will fill them in shortly.
 		if subscriptionID != "" {
+			osm := owner_subscription_model.GetOwnerSubscriptionModel()
+			var periodEnd time.Time
+			var status string
 			sub, subErr := getSubscription(subscriptionID)
 			if subErr != nil {
 				fmt.Printf("failed to fetch subscription details after checkout: %v\n", subErr)
+				periodEnd = time.Now()
+				status = "active"
 			} else if sub != nil {
-				periodEnd := subscriptionPeriodEnd(sub)
-				status := string(sub.Status)
-				updateErr := sm.UpdateFarmSubscription(farmId, customerID, subscriptionID, status, periodEnd)
-				if updateErr != nil {
-					fmt.Printf("failed to update farm subscription after checkout: %v\n", updateErr)
+				periodEnd = subscriptionPeriodEnd(sub)
+				status = string(sub.Status)
+			}
+
+			// Resolve tier key from pending registration's selected price
+			tierKey := ""
+			if pending.StripePriceID != nil && *pending.StripePriceID != "" {
+				resolvedTier, tierErr := ResolveTierKey(*pending.StripePriceID)
+				if tierErr != nil {
+					fmt.Printf("failed to resolve tier key from price %s: %v\n", *pending.StripePriceID, tierErr)
+				} else {
+					tierKey = resolvedTier
+				}
+			}
+			// Fallback to session metadata if pending registration has no price
+			if tierKey == "" {
+				tierKey = session.Metadata["tier_key"]
+			}
+
+			for _, farmId := range farmIds {
+				_, osErr := osm.Create(farmId, ownerDoc, ownerDocType, customerID, subscriptionID, status, periodEnd, tierKey)
+				if osErr != nil {
+					fmt.Printf("failed to create owner subscription: %v\n", osErr)
 				}
 			}
 		}
@@ -162,20 +470,12 @@ func HandleWebhook(payload []byte, sigHeader string) error {
 			return fmt.Errorf("failed to unmarshal subscription: %w", err)
 		}
 
-		farmId, farmErr := sm.GetFarmByStripeSubscriptionID(sub.ID)
-		if farmErr != nil {
-			return fmt.Errorf("farm not found for subscription %s: %w", sub.ID, farmErr)
-		}
-
+		osm := owner_subscription_model.GetOwnerSubscriptionModel()
 		periodEnd := subscriptionPeriodEnd(&sub)
 		status := string(sub.Status)
-		customerID := ""
-		if sub.Customer != nil {
-			customerID = sub.Customer.ID
-		}
-		updateErr := sm.UpdateFarmSubscription(farmId, customerID, sub.ID, status, periodEnd)
+		updateErr := osm.UpdateStatus(sub.ID, status, periodEnd)
 		if updateErr != nil {
-			return fmt.Errorf("failed to update farm subscription: %w", updateErr)
+			return fmt.Errorf("failed to update owner subscription: %w", updateErr)
 		}
 
 	case "customer.subscription.updated":
@@ -184,20 +484,12 @@ func HandleWebhook(payload []byte, sigHeader string) error {
 			return fmt.Errorf("failed to unmarshal subscription: %w", err)
 		}
 
-		farmId, farmErr := sm.GetFarmByStripeSubscriptionID(sub.ID)
-		if farmErr != nil {
-			return fmt.Errorf("farm not found for subscription %s: %w", sub.ID, farmErr)
-		}
-
+		osm := owner_subscription_model.GetOwnerSubscriptionModel()
 		periodEnd := subscriptionPeriodEnd(&sub)
 		status := string(sub.Status)
-		customerID := ""
-		if sub.Customer != nil {
-			customerID = sub.Customer.ID
-		}
-		updateErr := sm.UpdateFarmSubscription(farmId, customerID, sub.ID, status, periodEnd)
+		updateErr := osm.UpdateStatus(sub.ID, status, periodEnd)
 		if updateErr != nil {
-			return fmt.Errorf("failed to update farm subscription: %w", updateErr)
+			return fmt.Errorf("failed to update owner subscription: %w", updateErr)
 		}
 
 	case "customer.subscription.deleted":
@@ -206,20 +498,13 @@ func HandleWebhook(payload []byte, sigHeader string) error {
 			return fmt.Errorf("failed to unmarshal subscription: %w", err)
 		}
 
-		farmId, farmErr := sm.GetFarmByStripeSubscriptionID(sub.ID)
-		if farmErr != nil {
-			return fmt.Errorf("farm not found for subscription %s: %w", sub.ID, farmErr)
+		osm := owner_subscription_model.GetOwnerSubscriptionModel()
+		periodEnd := subscriptionPeriodEnd(&sub)
+		updateErr := osm.UpdateStatus(sub.ID, "canceled", periodEnd)
+		if updateErr != nil {
+			return fmt.Errorf("failed to update owner subscription: %w", updateErr)
 		}
 
-		periodEnd := subscriptionPeriodEnd(&sub)
-		customerID := ""
-		if sub.Customer != nil {
-			customerID = sub.Customer.ID
-		}
-		updateErr := sm.UpdateFarmSubscription(farmId, customerID, sub.ID, "canceled", periodEnd)
-		if updateErr != nil {
-			return fmt.Errorf("failed to update farm subscription: %w", updateErr)
-		}
 	}
 
 	return nil
@@ -234,6 +519,28 @@ func getSubscription(subID string) (*stripe.Subscription, error) {
 	return sub, nil
 }
 
+func GetStripeSubscription(subID string) (*stripe.Subscription, error) {
+	return getSubscription(subID)
+}
+
+func GetStripeCheckoutSession(sessionID string) (*stripe.CheckoutSession, error) {
+	params := &stripe.CheckoutSessionParams{}
+	return session.Get(sessionID, params)
+}
+
+func CancelSubscriptionAtPeriodEnd(subID string) error {
+	params := &stripe.SubscriptionCancelParams{
+		InvoiceNow: stripe.Bool(false),
+		Prorate:    stripe.Bool(false),
+	}
+	sub, err := subscription.Cancel(subID, params)
+	if err != nil {
+		return fmt.Errorf("failed to cancel subscription: %w", err)
+	}
+	_ = sub
+	return nil
+}
+
 func GetStripePrice(priceID string) (*stripe.Price, error) {
 	params := &stripe.PriceParams{}
 	return price.Get(priceID, params)
@@ -246,12 +553,34 @@ func subscriptionPeriodEnd(sub *stripe.Subscription) time.Time {
 	return time.Now()
 }
 
-func GetSubscriptionStatus(farmId uint32) (string, error) {
-	sm := subscription_model.GetSubscriptionModel()
-	return sm.GetFarmSubscriptionStatus(farmId)
+func GetSubscriptionPeriodEnd(sub *stripe.Subscription) time.Time {
+	return subscriptionPeriodEnd(sub)
 }
 
-func CreatePendingAndCheckout(user entity_public.NewUser, priceID string) (string, entity_public.Toast) {
+func CreateCustomerPortalSession(customerID string) (string, error) {
+	if customerID == "" {
+		return "", fmt.Errorf("customer_id is empty")
+	}
+
+	returnURL := os.Getenv("STRIPE_PORTAL_RETURN_URL")
+	if returnURL == "" {
+		returnURL = "http://localhost:8100/"
+	}
+
+	params := &stripe.BillingPortalSessionParams{
+		Customer:  stripe.String(customerID),
+		ReturnURL: stripe.String(returnURL),
+	}
+
+	s, err := portal.New(params)
+	if err != nil {
+		return "", err
+	}
+
+	return s.URL, nil
+}
+
+func CreatePendingAndCheckout(user entity_public.NewUser, priceID string, quantity int64) (string, entity_public.Toast) {
 	sm := subscription_model.GetSubscriptionModel()
 
 	// Create pending registration without session ID first
@@ -261,7 +590,7 @@ func CreatePendingAndCheckout(user entity_public.NewUser, priceID string) (strin
 	}
 
 	// Create Stripe checkout session
-	checkoutURL, sessionErr := CreateCheckoutSession(pendingID, priceID)
+	checkoutURL, sessionErr := CreateCheckoutSession(pendingID, priceID, quantity)
 	if sessionErr != nil {
 		// Clean up pending registration
 		sm.DeletePendingRegistration(pendingID)

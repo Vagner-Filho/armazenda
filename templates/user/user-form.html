@@ -13,53 +13,126 @@
     <div>
       <form hx-post="/user" hx-vals='{"role": "user"}' hx-target="#user-form-content" class="flex flex-col gap-4 mt-4">
         <input type="hidden" name="priceId" value="{{ .PriceID }}">
-      <fieldset class="flex flex-col gap-4 p-2 bg-fieldset rounded-lg">
-        <legend class="fieldset-legend">
-          Identificação
-        </legend>
-        <div class="flex flex-col-reverse gap-2">
-          <input type="text" id="name" required class="peer" name="name" aria-placeholder="Nome" placeholder="João da Silva" autocomplete="on">
-          <label for="name" class="label-peer">Nome</label>
+        <fieldset class="flex gap-4 p-2 bg-fieldset rounded-lg" style="overflow-y: auto; flex-direction: column-reverse;">
+          <legend class="fieldset-legend">
+            Identificação
+          </legend>
+          <button type="button" id="add-ie-btn" class="text-sm text-green-400 hover:text-green-300 transition-colors text-left">
+            + Adicionar outra Inscrição Estadual
+          </button>
+          <small style="text-align: justify; background-color: #666; padding: 1em; border-radius: 10px;">
+            Adicione inscrições estaduais para o mesmo plano. Cada inscrição estadual tem o custo de uma nova. Se
+            precisar de um plano diferente para alguma inscrição estadual, cadastre-a separadamente.
+          </small>
+          <div id="additional-ies-container" class="flex flex-col gap-2"></div>
+          <div class="flex gap-2" style="flex-direction: row;">
+            <div class="flex flex-col-reverse gap-2" style="flex: 1;">
+              <input type="text" id="inscEstadual" required class="peer" name="inscricaoEstadual" aria-placeholder="inscrição estadual" placeholder="0013000001-9">
+              <label for="inscEstadual" class="label-peer">Inscrição Estadual</label>
+            </div>
+            <div class="flex flex-col-reverse gap-2" style="flex: 1;">
+              <select id="state" required class="peer" name="state">
+                <option value="" disabled selected>Selecione</option>
+                <option value="AC">Acre</option>
+                <option value="AL">Alagoas</option>
+                <option value="AP">Amapá</option>
+                <option value="AM">Amazonas</option>
+                <option value="BA">Bahia</option>
+                <option value="CE">Ceará</option>
+                <option value="DF">Distrito Federal</option>
+                <option value="ES">Espírito Santo</option>
+                <option value="GO">Goiás</option>
+                <option value="MA">Maranhão</option>
+                <option value="MT">Mato Grosso</option>
+                <option value="MS">Mato Grosso do Sul</option>
+                <option value="MG">Minas Gerais</option>
+                <option value="PA">Pará</option>
+                <option value="PB">Paraíba</option>
+                <option value="PR">Paraná</option>
+                <option value="PE">Pernambuco</option>
+                <option value="PI">Piauí</option>
+                <option value="RJ">Rio de Janeiro</option>
+                <option value="RN">Rio Grande do Norte</option>
+                <option value="RS">Rio Grande do Sul</option>
+                <option value="RO">Rondônia</option>
+                <option value="RR">Roraima</option>
+                <option value="SC">Santa Catarina</option>
+                <option value="SP">São Paulo</option>
+                <option value="SE">Sergipe</option>
+                <option value="TO">Tocantins</option>
+              </select>
+              <label for="state" class="label-peer">Estado</label>
+            </div>
+          </div>
+          <div class="flex flex-col-reverse gap-2">
+            <input type="text" id="ownerDocument" required class="peer" name="ownerDocument" aria-placeholder="CPF ou CNPJ do proprietário" placeholder="CPF ou CNPJ do proprietário">
+            <label for="ownerDocument" class="label-peer">CPF/CNPJ do Proprietário</label>
+          </div>
+          <div class="flex flex-col-reverse gap-2">
+            <select id="ownerDocumentType" required class="peer" name="ownerDocumentType">
+              <option value="2" selected>CPF</option>
+              <option value="1">CNPJ</option>
+            </select>
+            <label for="ownerDocumentType" class="label-peer">Tipo de Documento do Proprietário</label>
+          </div>
+          {{ template "cpf-field" . }}
+          <div class="flex flex-col-reverse gap-2">
+            <input type="text" id="name" required class="peer" name="name" aria-placeholder="Nome" placeholder="João da Silva" autocomplete="on">
+            <label for="name" class="label-peer">Nome</label>
+          </div>
+        </fieldset>
+        <fieldset class="flex flex-col gap-4 p-2 bg-fieldset rounded-lg">
+          <legend class="fieldset-legend">
+            Credenciais
+          </legend>
+          <div class="flex flex-col-reverse gap-2">
+            <input type="email" id="email" required class="peer" name="email" aria-placeholder="email de cadastro" placeholder="armazenda@email.com" autocomplete="on">
+            <label for="email" class="label-peer">E-mail</label>
+          </div>
+          <div class="flex flex-col-reverse gap-2">
+            <input type="password" id="passwd" required class="peer" name="passwd" aria-placeholder="senha de acesso" placeholder="********">
+            <label for="passwd" class="label-peer">Senha</label>
+          </div>
+          <div class="flex flex-col-reverse gap-2">
+            <input type="password" id="passwdConfirm" required class="peer" name="passwdConfirm" aria-placeholder="repita a senha de acesso" placeholder="********">
+            <label for="passwdConfirm" class="label-peer">Confirme a senha</label>
+          </div>
+        </fieldset>
+        <div class="flex items-center justify-center mt-2 gap-2">
+          <button type="button" class="cancel-new-user">Cancelar</button>
+          <button type="submit" class="login-btn-primary" style="padding-left: 20px; padding-right: 20px; width: fit-content;">Cadastrar</button>
         </div>
-        {{ template "cpf-field" . }}
-        <div class="flex flex-col-reverse gap-2">
-          <input type="text" id="inscEstadual" required class="peer" name="inscricaoEstadual"
-            aria-placeholder="inscrição estadual" placeholder="0013000001-9">
-          <label for="inscEstadual" class="label-peer">Inscrição Estadual</label>
-        </div>
-      </fieldset>
-      <fieldset class="flex flex-col gap-4 p-2 bg-fieldset rounded-lg">
-        <legend class="fieldset-legend">
-          Credenciais
-        </legend>
-        <div class="flex flex-col-reverse gap-2">
-          <input type="email" id="email" required class="peer" name="email" aria-placeholder="email de cadastro" placeholder="armazenda@email.com" autocomplete="on">
-          <label for="email" class="label-peer">E-mail</label>
-        </div>
-        <div class="flex flex-col-reverse gap-2">
-          <input type="password" id="passwd" required class="peer" name="passwd" aria-placeholder="senha de acesso" placeholder="********">
-          <label for="passwd" class="label-peer">Senha</label>
-        </div>
-        <div class="flex flex-col-reverse gap-2">
-          <input type="password" id="passwdConfirm" required class="peer" name="passwdConfirm"
-            aria-placeholder="repita a senha de acesso" placeholder="********">
-          <label for="passwdConfirm" class="label-peer">Confirme a senha</label>
-        </div>
-      </fieldset>
-      <div class="flex items-center justify-center mt-2 gap-2">
-        <button type="button" class="cancel-new-user">Cancelar</button>
-        <button type="submit" class="login-btn-primary" style="padding-left: 20px; padding-right: 20px; width: fit-content;">Cadastrar</button>
-      </div>
       </form>
     </div>
   </div>
   <script nonce="{{ .CSPNonce }}" type="module">
+    import {setupCpfFormatter, setupCnpjFormatter} from "/public/assets/js/utils.js";
+
     const dialog = document.querySelector("dialog#new-user-dialog");
     if (dialog) {
       dialog.showModal();
 
-      const controller = new AbortController()
-      const signal = controller.signal
+      const controller = new AbortController();
+      const signal = controller.signal;
+
+      const ownerDocType = dialog.querySelector('select#ownerDocumentType');
+      if (ownerDocType) {
+        let removeCpfFormatter = setupCpfFormatter('input#ownerDocument');
+        let removeCnpjFormatter;
+        ownerDocType.addEventListener('change', function handleOwnerDocTypeChange(e) {
+          if (e.target.value === '1') {
+            if (removeCnpjFormatter) {
+              removeCnpjFormatter();
+            }
+            removeCpfFormatter = setupCpfFormatter('input#ownerDocument');
+          } else {
+            if (removeCpfFormatter) {
+              removeCpfFormatter();
+            }
+            removeCnpjFormatter = setupCnpjFormatter('input#ownerDocument');
+          }
+        }, {signal});
+      }
 
       window.closeUserForm = function () {
         controller.abort()
@@ -67,31 +140,55 @@
         dialog.remove()
         window.closeUserForm = undefined
       }
-      dialog.addEventListener('close', window.closeUserForm, { signal })
+      dialog.addEventListener('close', window.closeUserForm, {signal});
 
       const cancelBtn = dialog.querySelector(".cancel-new-user");
       if (cancelBtn) {
-        cancelBtn.addEventListener('click', window.closeUserForm, { signal });
+        cancelBtn.addEventListener('click', window.closeUserForm, {signal});
       }
 
-      document.body.addEventListener('htmx:afterSwap', function(evt) {
-          if (evt.detail.successful && 
-              evt.detail.requestConfig.path === '/user' && 
-              evt.detail.requestConfig.verb === 'post' &&
-              evt.detail.target.id === 'user-form-content') {
-              const button = evt.detail.target.querySelector('button.success-button');
-              if (button) {
-                  button.addEventListener('click', window.closeUserForm, { signal });
-              }
+      document.body.addEventListener('htmx:afterSwap', function (evt) {
+        if (evt.detail.successful &&
+          evt.detail.requestConfig.path === '/user' &&
+          evt.detail.requestConfig.verb === 'post' &&
+          evt.detail.target.id === 'user-form-content') {
+          const button = evt.detail.target.querySelector('button.success-button');
+          if (button) {
+            button.addEventListener('click', window.closeUserForm, {signal});
           }
-      }, { signal });
+        }
+      }, {signal});
+
+      // Dynamic additional IE fields
+      const addIeBtn = dialog.querySelector('#add-ie-btn');
+      const ieContainer = dialog.querySelector('#additional-ies-container');
+      let ieCount = 0;
+      if (addIeBtn && ieContainer) {
+        addIeBtn.addEventListener('click', () => {
+          ieCount++;
+          const wrapper = document.createElement('div');
+          wrapper.className = 'flex flex-col-reverse gap-2';
+          wrapper.innerHTML = `
+            <div class="flex items-center justify-center" style="gap: 8px;">
+              <input type="text" id="additionalIE${ieCount}" class="peer" name="additionalIEs"
+              placeholder="0013000001-9" style="width: 100%;">
+              <button type="button" class="remove-ie-btn" style="background: transparent; color: #ff6b6b; font-size: 1.75rem; cursor: pointer; line-height: 1; padding: .5rem; border: 0; width: 2.5rem; height: 2.5rem; min-width: 2.5rem;" title="Remover">&#10005;</button>
+            </div>
+            <label for="additionalIE${ieCount}" class="label-peer">Inscrição Estadual Adicional</label>
+          `;
+          ieContainer.appendChild(wrapper);
+          wrapper.querySelector('.remove-ie-btn').addEventListener('click', () => {
+            wrapper.remove();
+            ieCount - 1;
+          }, {signal});
+        }, {signal});
+      }
     }
   </script>
   <style>
     .user-dialog {
       border-radius: 0.7rem;
       width: 100%;
-      max-width: 32rem;
       background-color: rgba(245, 245, 244, 0.25);
       backdrop-filter: blur(25px);
       border: 0;
@@ -99,23 +196,45 @@
       color: white;
       outline: 0;
     }
-  
+
+    fieldset:first-of-type {
+      max-height: 650px;
+    }
+
+    @media (min-width: 600px) {
+      .user-dialog {
+        max-width: 32rem;
+      }
+    }
+
+    @media (min-width: 96rem) {
+
+      input,
+      select {
+        height: 3rem;
+      }
+
+      .gap-2 {
+        gap: .5rem;
+      }
+    }
+
     .p-4 {
       padding: 1rem;
     }
-  
+
     .relative {
       position: relative;
     }
-  
+
     .text-center {
       text-align: center;
     }
-  
+
     .mb-4 {
       margin-bottom: 1rem;
     }
-  
+
     .text-2xl {
       font-size: 1.5rem
         /* 24px */
@@ -124,79 +243,79 @@
         /* 32px */
       ;
     }
-  
+
     .font-bold {
       font-weight: bold;
     }
-  
+
     .text-slate-700 {
       color: rgb(51 65 85 / 1);
     }
-  
+
     .text-gray-600 {
       color: rgb(75 85 99 / 1);
     }
-  
+
     .mt-2 {
       margin-top: .5rem;
     }
-  
+
     .flex {
       display: flex;
     }
-  
+
     .flex-col {
       flex-direction: column;
     }
-  
+
     .gap-4 {
       gap: 1rem;
     }
-  
+
     .mt-4 {
       margin-top: 1rem;
     }
-  
+
     .gap-2 {
-      gap: .5rem;
+      gap: .3rem;
     }
-  
+
     .p-2 {
       padding: .5rem;
     }
-  
+
     .bg-fieldset {
       border: 0;
       --tw-shadow: 0 0px 3px 0 rgb(255 255 255 / 0.6), 0 0px 2px -1px rgb(255 255 255 / 0.6);
       --tw-shadow-colored: 0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);
       box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
     }
-  
+
     .rounded-lg {
       border-radius: 0.5rem;
     }
-  
+
     .flex-col-reverse {
       flex-direction: column-reverse;
     }
-  
+
     .items-center {
       align-items: center;
     }
-  
+
     .justify-center {
       justify-content: center;
     }
-  
+
     .mx-auto {
       margin-left: auto;
       margin-right: auto;
     }
-  
+
     dialog::backdrop {
       background-color: color-mix(in oklab, #000000 50%, transparent);
     }
-  
+
     .cancel-new-user {
       background-color: #ffa500cc;
       border-radius: 9999px;
@@ -209,13 +328,14 @@
       transition-duration: 300ms;
       cursor: pointer;
     }
-  
+
     .cancel-new-user:hover {
       transform: translateY(-2px);
       box-shadow: 0px 5px 5px 2px #ffa50088;
     }
-  
-    input {
+
+    input,
+    select {
       font-size: 1rem;
       padding: 0 0.5rem;
       background: rgba(255, 255, 255, 0.1);
@@ -226,14 +346,18 @@
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
-      height: 3rem;
+      height: 2rem;
       outline: 0;
     }
-  
+
+    option {
+      color: black;
+    }
+
     input::placeholder {
       color: rgba(245, 245, 244, 0.65);
     }
-  
+
     label {
       padding: 0 0.5rem;
       color: inherit;
@@ -242,14 +366,14 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
-  
+
     fieldset legend {
       text-transform: uppercase;
       letter-spacing: 0.15em;
       font-size: 1rem;
       font-weight: 600;
     }
-  
+
     .close-dialog-btn {
       position: absolute;
       top: 0px;
@@ -268,6 +392,39 @@
 
     .close-dialog-btn:hover {
       transform: scale(1.15);
+    }
+
+    button#add-ie-btn {
+      min-height: 2.2rem;
+      border-radius: 25px;
+      border: 0;
+      cursor: pointer;
+      background-color: #60b660;
+      color: white;
+      font-size: .9rem;
+      box-shadow: 0px 0px 5px .5px #69bb69;
+    }
+
+    .login-btn-primary {
+      width: 100%;
+      padding: 0.75rem 0;
+      background: #059669;
+      border: 1px solid rgba(5, 150, 105, 0.4);
+      color: white;
+      border-radius: 9999px;
+      font-size: 1.125rem;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .login-btn-primary:hover {
+      transform: scale(1.05);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      color: #065f46;
+      background: #d1fae5;
     }
   </style>
 </dialog>

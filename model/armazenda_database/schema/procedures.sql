@@ -7,7 +7,6 @@ CREATE OR REPLACE FUNCTION update_get_farm(
     INOUT f_number INTEGER,
     INOUT f_neighborhood TEXT,
     INOUT f_city TEXT,
-    INOUT f_state CHARACTER(2),
     INOUT f_complement TEXT,
     INOUT f_email TEXT,
     INOUT f_phone_number TEXT,
@@ -38,13 +37,13 @@ BEGIN
         END IF;
     END IF;
 
-    IF f_cep IS NOT NULL AND f_city IS NOT NULL AND f_state IS NOT NULL THEN
+    IF f_cep IS NOT NULL AND f_city IS NOT NULL THEN
         SELECT EXISTS (SELECT 1 FROM farm_address fa WHERE fa.farm_id = f_id) INTO address_exists;
 
         IF address_exists THEN
-            UPDATE farm_address SET street = f_street, cep = f_cep, number = f_number, neighborhood = f_neighborhood, city = f_city, state = f_state WHERE farm_id = f_id RETURNING id INTO var_farm_address_id;
+            UPDATE farm_address SET street = f_street, cep = f_cep, number = f_number, neighborhood = f_neighborhood, city = f_city WHERE farm_id = f_id RETURNING id INTO var_farm_address_id;
         ELSE
-            INSERT INTO farm_address (street, cep, number, neighborhood, city, state, farm_id) VALUES (f_street, f_cep, f_number, f_neighborhood, f_city, f_state, f_id) RETURNING id INTO var_farm_address_id;
+            INSERT INTO farm_address (street, cep, number, neighborhood, city, farm_id) VALUES (f_street, f_cep, f_number, f_neighborhood, f_city, f_id) RETURNING id INTO var_farm_address_id;
         END IF;
 
         IF f_complement IS NOT NULL AND var_farm_address_id IS NOT NULL THEN

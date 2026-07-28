@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	entity_public "armazenda/entity/public"
+	model_error "armazenda/model/error"
 	"armazenda/pkg/nfe/entity"
 
 	"github.com/jackc/pgx/v5"
@@ -39,69 +41,42 @@ func GetNFeModel() *NFeModel {
 	return nfeModelImpl
 }
 
-// FarmConfig represents the NFe configuration for a farm.
-type FarmConfig struct {
-	ID                           int
-	FarmID                       int
-	CertificatePath              string
-	CertificateData              []byte
-	CertificatePasswordEncrypted string
-	Environment                  int
-	Serie                        int
-	NextNumber                   int
-	TaxRegime                    int
-	EmitterType                  int
-	CNPJEmitter                  *string
-	CPFEmitter                   *string
-	IEEmitter                    string
-	EmitterUF                    string
-	DefaultModFrete              int
-	DefaultCFOP                  string
-	DefaultCEST                  *string
-	DefaultUnit                  string
-	DefaultICMSCST               *string
-	DefaultPISCST                *string
-	DefaultCOFINSCST             *string
-	DefaultNaturezaOp            *string
-	ICMSRate                     decimal.Decimal
-	PISRate                      decimal.Decimal
-	COFINSRate                   decimal.Decimal
-}
-
 // GetFarmConfig returns the NFe configuration for a farm.
-func (m *NFeModel) GetFarmConfig(farmID uint32) (*FarmConfig, error) {
+func (m *NFeModel) GetFarmConfig(farmID uint32) (*entity_public.FarmConfig, error) {
 	query := `
-		SELECT id, farm_id, certificate_path, certificate_data, certificate_password_encrypted,
-		       environment, serie, next_number, tax_regime, emitter_type,
-		       cnpj_emitter, cpf_emitter, ie_emitter, emitter_uf, default_mod_frete,
-		       default_cfop, default_cest, default_unit,
-		       default_icms_cst, default_pis_cst, default_cofins_cst, default_natureza_op,
-		       icms_rate, pis_rate, cofins_rate
-		FROM nfe_farm_config
-		WHERE farm_id = $1
+		SELECT nfc.id, nfc.farm_id, nfc.certificate_path, nfc.certificate_data, nfc.certificate_password_encrypted,
+		       nfc.environment, nfc.serie, nfc.next_number, nfc.tax_regime, o.owner_document_type,
+		       o.owner_document, f.inscricao_estadual, f.uf, nfc.default_mod_frete,
+		       nfc.default_cfop, nfc.default_cest, nfc.default_unit,
+		       nfc.default_icms_cst, nfc.default_pis_cst, nfc.default_cofins_cst, nfc.default_natureza_op,
+		       nfc.icms_rate, nfc.pis_rate, nfc.cofins_rate, fcnd.certificate_number, fcnd.exp_date, fcnd.meta
+		FROM nfe_farm_config nfc
+		LEFT JOIN farm_owner_subscription fos ON fos.farm_id = nfc.farm_id
+		LEFT JOIN farm f ON f.id = fos.farm_id
+		LEFT JOIN owner o ON o.id = fos.owner_id
+		LEFT JOIN nfe_farm_cnd fcnd ON fcnd.farm_id = f.id
+		WHERE nfc.farm_id = $1
 	`
 	row := m.pool.QueryRow(context.Background(), query, farmID)
 
-	var cfg FarmConfig
-	var cnpj, cpf *string
+	var cfg entity_public.FarmConfig
 	var defaultCest, defaultIcmsCst, defaultPisCst, defaultCofinsCst, defaultNaturezaOp *string
 	err := row.Scan(
 		&cfg.ID, &cfg.FarmID, &cfg.CertificatePath, &cfg.CertificateData, &cfg.CertificatePasswordEncrypted,
 		&cfg.Environment, &cfg.Serie, &cfg.NextNumber, &cfg.TaxRegime, &cfg.EmitterType,
-		&cnpj, &cpf, &cfg.IEEmitter, &cfg.EmitterUF, &cfg.DefaultModFrete,
+		&cfg.DocEmitter, &cfg.IEEmitter, &cfg.EmitterUF, &cfg.DefaultModFrete,
 		&cfg.DefaultCFOP, &defaultCest, &cfg.DefaultUnit,
 		&defaultIcmsCst, &defaultPisCst, &defaultCofinsCst, &defaultNaturezaOp,
-		&cfg.ICMSRate, &cfg.PISRate, &cfg.COFINSRate,
+		&cfg.ICMSRate, &cfg.PISRate, &cfg.COFINSRate, &cfg.CertificateNumber, &cfg.ExpDate, &cfg.Meta,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
+		model_error.GetLoggerModel().Log(fmt.Sprintf("failed to get nfe farm config: %s", err.Error()))
 		return nil, fmt.Errorf("failed to get farm config: %w", err)
 	}
 
-	cfg.CNPJEmitter = cnpj
-	cfg.CPFEmitter = cpf
 	cfg.DefaultCEST = defaultCest
 	cfg.DefaultICMSCST = defaultIcmsCst
 	cfg.DefaultPISCST = defaultPisCst
@@ -111,18 +86,20 @@ func (m *NFeModel) GetFarmConfig(farmID uint32) (*FarmConfig, error) {
 }
 
 // UpsertFarmConfig inserts or updates the NFe configuration for a farm.
-func (m *NFeModel) UpsertFarmConfig(cfg FarmConfig) error {
+func (m *NFeModel) UpsertFarmConfig(cfg entity_public.FarmConfig) *model_error.ModelError {
 	query := `
 		INSERT INTO nfe_farm_config (
 			farm_id, certificate_path, certificate_data, certificate_password_encrypted, environment,
-			serie, next_number, tax_regime, emitter_type, cnpj_emitter, cpf_emitter,
-			ie_emitter, emitter_uf, default_mod_frete,
+			serie, next_number, tax_regime, default_mod_frete,
 			default_cfop, default_cest, default_unit,
 			default_icms_cst, default_pis_cst, default_cofins_cst, default_natureza_op,
 			icms_rate, pis_rate, cofins_rate
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-			$15, $16, $17, $18, $19, $20, $21, $22, $23, $24
+			@farm_id, @certificate_path, @certificate_data, @certificate_password_encrypted, @environment,
+			@serie, @next_number, @tax_regime, @default_mod_frete,
+			@default_cfop, @default_cest, @default_unit,
+			@default_icms_cst, @default_pis_cst, @default_cofins_cst, @default_natureza_op,
+			@icms_rate, @pis_rate, @cofins_rate
 		)
 		ON CONFLICT (farm_id) DO UPDATE SET
 			certificate_path = EXCLUDED.certificate_path,
@@ -132,11 +109,6 @@ func (m *NFeModel) UpsertFarmConfig(cfg FarmConfig) error {
 			serie = EXCLUDED.serie,
 			next_number = EXCLUDED.next_number,
 			tax_regime = EXCLUDED.tax_regime,
-			emitter_type = EXCLUDED.emitter_type,
-			cnpj_emitter = EXCLUDED.cnpj_emitter,
-			cpf_emitter = EXCLUDED.cpf_emitter,
-			ie_emitter = EXCLUDED.ie_emitter,
-			emitter_uf = EXCLUDED.emitter_uf,
 			default_mod_frete = EXCLUDED.default_mod_frete,
 			default_cfop = EXCLUDED.default_cfop,
 			default_cest = EXCLUDED.default_cest,
@@ -150,15 +122,54 @@ func (m *NFeModel) UpsertFarmConfig(cfg FarmConfig) error {
 			cofins_rate = EXCLUDED.cofins_rate,
 			modified_at = CURRENT_TIMESTAMP
 	`
-	_, err := m.pool.Exec(context.Background(), query,
-		cfg.FarmID, cfg.CertificatePath, cfg.CertificateData, cfg.CertificatePasswordEncrypted,
-		cfg.Environment, cfg.Serie, cfg.NextNumber, cfg.TaxRegime, cfg.EmitterType,
-		cfg.CNPJEmitter, cfg.CPFEmitter, cfg.IEEmitter, cfg.EmitterUF, cfg.DefaultModFrete,
-		cfg.DefaultCFOP, cfg.DefaultCEST, cfg.DefaultUnit,
-		cfg.DefaultICMSCST, cfg.DefaultPISCST, cfg.DefaultCOFINSCST, cfg.DefaultNaturezaOp,
-		cfg.ICMSRate, cfg.PISRate, cfg.COFINSRate,
-	)
-	return err
+	_, err := m.pool.Exec(context.Background(), query, pgx.NamedArgs{
+		"farm_id":                        cfg.FarmID,
+		"certificate_path":               cfg.CertificatePath,
+		"certificate_data":               cfg.CertificateData,
+		"certificate_password_encrypted": cfg.CertificatePasswordEncrypted,
+		"environment":                    cfg.Environment,
+		"serie":                          cfg.Serie,
+		"next_number":                    cfg.NextNumber,
+		"tax_regime":                     cfg.TaxRegime,
+		"default_mod_frete":              cfg.DefaultModFrete,
+		"default_cfop":                   cfg.DefaultCFOP,
+		"default_cest":                   cfg.DefaultCEST,
+		"default_unit":                   cfg.DefaultUnit,
+		"default_icms_cst":               cfg.DefaultICMSCST,
+		"default_pis_cst":                cfg.DefaultPISCST,
+		"default_cofins_cst":             cfg.DefaultCOFINSCST,
+		"default_natureza_op":            cfg.DefaultNaturezaOp,
+		"icms_rate":                      cfg.ICMSRate,
+		"pis_rate":                       cfg.PISRate,
+		"cofins_rate":                    cfg.COFINSRate,
+	})
+	if err != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("UpsertFarmConfig nfe_farm_config err: %s", err.Error()))
+		return &model_error.ModelError{IsServerErr: true, Message: "Erro interno ao salvar configuração da NF-e"}
+	}
+
+	if cfg.CertificateNumber != nil && cfg.ExpDate != nil {
+		_, cndErr := m.pool.Exec(
+			context.Background(),
+			`INSERT INTO nfe_farm_cnd (farm_id, certificate_number, exp_date, meta)
+			VALUES (@farmId, @certNumber, @expDate, @meta)
+			ON CONFLICT (farm_id) DO UPDATE SET
+			certificate_number = EXCLUDED.certificate_number,
+			exp_date = EXCLUDED.exp_date,
+			meta = EXCLUDED.meta`,
+			pgx.NamedArgs{
+				"farmId":     cfg.FarmID,
+				"certNumber": cfg.CertificateNumber,
+				"expDate":    cfg.ExpDate,
+				"meta":       cfg.Meta,
+			},
+		)
+		if cndErr != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("UpsertFarmConfig nfe_farm_cnd err: %s", cndErr.Error()))
+			return &model_error.ModelError{IsServerErr: true, Message: "Erro interno ao salvar dados do CND"}
+		}
+	}
+	return nil
 }
 
 // AllocateNumber atomically allocates a new invoice number for a farm/serie.
@@ -173,36 +184,36 @@ func (m *NFeModel) AllocateNumber(farmID uint32, serie int) (int, error) {
 
 // Invoice represents a tracked NF-e invoice.
 type Invoice struct {
-	ID                   int
-	DepartureID          uint32
-	AccessKey            string
-	Serie                int
-	Number               int
-	Status               string
-	CFOP                 string
-	NCM                  string
-	QuantityKG           decimal.Decimal
-	UnitPrice            decimal.Decimal
-	TotalValue           decimal.Decimal
-	ICMSValue            *decimal.Decimal
-	XMLSigned            *string
-	XMLAuthorized        *string
-	Protocol             *string
-	SefazStatusCode      *string
-	SefazMotive          *string
-	RejectionReason      *string
-	CancellationReason   *string
-	RetryCount           int
-	TpEmis               int
-	DhCont               interface{}
-	XJust                *string
-	ContingencyParentID  *int
-	SVCEndpointUsed      *string
-	CreatedAt            interface{}
-	SignedAt             interface{}
-	SentAt               interface{}
-	AuthorizedAt         interface{}
-	TaxRates             *entity.TaxRates
+	ID                  int
+	DepartureID         uint32
+	AccessKey           string
+	Serie               int
+	Number              int
+	Status              string
+	CFOP                string
+	NCM                 string
+	QuantityKG          decimal.Decimal
+	UnitPrice           decimal.Decimal
+	TotalValue          decimal.Decimal
+	ICMSValue           *decimal.Decimal
+	XMLSigned           *string
+	XMLAuthorized       *string
+	Protocol            *string
+	SefazStatusCode     *string
+	SefazMotive         *string
+	RejectionReason     *string
+	CancellationReason  *string
+	RetryCount          int
+	TpEmis              int
+	DhCont              interface{}
+	XJust               *string
+	ContingencyParentID *int
+	SVCEndpointUsed     *string
+	CreatedAt           interface{}
+	SignedAt            interface{}
+	SentAt              interface{}
+	AuthorizedAt        interface{}
+	TaxRates            *entity.TaxRates
 }
 
 // CreateInvoice creates a new invoice record with default tpEmis=1 (normal).

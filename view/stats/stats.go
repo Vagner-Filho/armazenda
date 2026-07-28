@@ -82,6 +82,7 @@ func GetAnalysisPage(c *gin.Context) {
 	}
 	c.HTML(http.StatusOK, "analise.html", gin.H{
 		"CSPNonce": nonce.(string),
+		"TierKey":  user_service.GetTierKeyFromContext(c),
 	})
 }
 

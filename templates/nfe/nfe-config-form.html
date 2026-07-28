@@ -1,5 +1,6 @@
 {{ block "nfe-config-form" . }}
-<form hx-put="/nfe/config" hx-swap="outerHTML" class="space-y-6" id="nfe-config-form" enctype="multipart/form-data">
+{{ $docEmitter := .Config.DocEmitter }}
+<form hx-put="/nfe/config" hx-swap="none" class="space-y-6" id="nfe-config-form" enctype="multipart/form-data">
     <input type="hidden" name="farmID" value="{{ .FarmID }}">
 
     <fieldset class="glass-panel rounded-xl p-6">
@@ -43,34 +44,31 @@
             Dados do Emitente
         </legend>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="flex flex-col-reverse">
-                <select name="emitterType" id="emitterType" class="peer bg-white/10 border border-white/20 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
-                    <option value="1" {{ if eq .Config.EmitterType 1 }}selected{{ end }}>CNPJ (Pessoa Jurídica)</option>
-                    <option value="2" {{ if eq .Config.EmitterType 2 }}selected{{ end }}>CPF (Produtor Rural)</option>
-                </select>
-                <label for="emitterType" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                    Tipo de Emitente
-                </label>
-            </div>
+            <input type="hidden" name="emitterType" value="{{ .Config.EmitterType }}" >
+            <input type="hidden" name="cnpjEmitter" value="{{ if $docEmitter }}{{ $docEmitter }}{{ end }}" >
+            <input type="hidden" name="cpfEmitter" value="{{ if $docEmitter }}{{ $docEmitter }}{{ end }}" >
             <div class="flex flex-col-reverse">
                 <input type="text" name="ieEmitter" id="ieEmitter" value="{{ .Config.IEEmitter }}"
-                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40" required>
-                <label for="ieEmitter" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    class="no-default cursor-default bg-white/10 border-none text-white/60 placeholder-white/50 rounded-lg px-3 py-2 outline-0"
+                    readonly>
+                <label for="ieEmitter" class="text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+	                <path d="M0 0h24v24H0z" fill="none" />
+	                <path fill="currentColor" d="M6 22q-.825 0-1.412-.587T4 20V10q0-.825.588-1.412T6 8h1V6q0-2.075 1.463-3.537T12 1t3.538 1.463T17 6v2h1q.825 0 1.413.588T20 10v10q0 .825-.587 1.413T18 22zm7.413-5.587Q14 15.825 14 15t-.587-1.412T12 13t-1.412.588T10 15t.588 1.413T12 17t1.413-.587M9 8h6V6q0-1.25-.875-2.125T12 3t-2.125.875T9 6z" />
+                    </svg>
                     Inscrição Estadual
                 </label>
             </div>
             <div class="flex flex-col-reverse">
-                <input type="text" name="cnpjEmitter" id="cnpjEmitter" value="{{ if .Config.CNPJEmitter }}{{ .Config.CNPJEmitter }}{{ end }}"
-                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
-                <label for="cnpjEmitter" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                    CNPJ
-                </label>
-            </div>
-            <div class="flex flex-col-reverse">
-                <input type="text" name="cpfEmitter" id="cpfEmitter" value="{{ if .Config.CPFEmitter }}{{ .Config.CPFEmitter }}{{ end }}"
-                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
-                <label for="cpfEmitter" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                    CPF
+                <input type="text" name="docEmitter" id="docEmitter" value="{{ if $docEmitter }}{{ $docEmitter }}{{ end }}"
+                    class="no-default cursor-default bg-white/10 border-none text-white/60 placeholder-white/50 rounded-lg px-3 py-2 outline-0"
+                    readonly>
+                <label for="docEmitter" class="text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+	                <path d="M0 0h24v24H0z" fill="none" />
+	                <path fill="currentColor" d="M6 22q-.825 0-1.412-.587T4 20V10q0-.825.588-1.412T6 8h1V6q0-2.075 1.463-3.537T12 1t3.538 1.463T17 6v2h1q.825 0 1.413.588T20 10v10q0 .825-.587 1.413T18 22zm7.413-5.587Q14 15.825 14 15t-.587-1.412T12 13t-1.412.588T10 15t.588 1.413T12 17t1.413-.587M9 8h6V6q0-1.25-.875-2.125T12 3t-2.125.875T9 6z" />
+                    </svg>
+                    {{ if eq .Config.EmitterType 2 }}CPF{{ else }}CNPJ{{ end }} Emitente
                 </label>
             </div>
             <div class="flex flex-col-reverse">
@@ -110,7 +108,7 @@
         <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2">
             Configuração Tributária Padrão
         </legend>
-        <p class="text-xs text-white/60 mt-2 mb-4">
+        <p class="text-xs text-white/60 mb-4">
             Valores aplicados a todas as NF-e desta fazenda. Podem ser sobrescritos na tela de emissão.
         </p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -207,6 +205,7 @@
             </div>
         </div>
     </fieldset>
+    {{ template "farm-nfe-cnd" . }}
 
     {{ if .Success }}
     <div class="text-green-400 text-sm font-medium text-center">{{ .Success }}</div>
@@ -222,7 +221,11 @@
         </button>
     </div>
 </form>
+<script type="module">
+import {setupPersonCND} from "/public/assets/js/personCnd.js"
 
+setupPersonCND({{ .Config.ExpDate }}, "form#nfe-config-form input#expDate")
+</script>
 <script>
 (function() {
     const emitterType = document.getElementById('emitterType');

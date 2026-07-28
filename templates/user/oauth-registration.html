@@ -37,9 +37,24 @@
                 {{ template "cpf-field" . }}
 
                 <div class="flex flex-col-reverse mt-2">
-                    <input type="text" id="inscEstadual" required class="peer w-full px-2" name="inscricaoEstadual" placeholder="Inscrição Estadual">
-                    <label for="inscEstadual" class="label-peer">Inscrição Estadual</label>
+                    <input type="text" id="ownerDocument" required class="peer w-full px-2" name="ownerDocument" placeholder="CPF ou CNPJ do proprietário">
+                    <label for="ownerDocument" class="label-peer">CPF/CNPJ do Proprietário</label>
                 </div>
+                <div class="flex flex-col-reverse mt-2">
+                    <select id="ownerDocumentType" required class="peer w-full px-2" name="ownerDocumentType">
+                        <option value="1" selected>CPF</option>
+                        <option value="2">CNPJ</option>
+                    </select>
+                    <label for="ownerDocumentType" class="label-peer">Tipo de Documento</label>
+                </div>
+                <div class="flex flex-col-reverse mt-2">
+                    <input type="text" id="inscEstadual" required class="peer w-full px-2" name="inscricaoEstadual" placeholder="Inscrição Estadual Principal">
+                    <label for="inscEstadual" class="label-peer">Inscrição Estadual Principal</label>
+                </div>
+                <div id="additional-ies-container" class="flex flex-col gap-2"></div>
+                <button type="button" id="add-ie-btn" class="text-sm text-green-600 hover:text-green-500 transition-colors text-left">
+                    + Adicionar outra Inscrição Estadual
+                </button>
             </fieldset>
 
             <fieldset class="flex flex-col gap-2 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
@@ -63,5 +78,23 @@
             </div>
         </form>
     </main>
+    <script nonce="{{ .CSPNonce }}" type="module">
+        const addIeBtn = document.getElementById('add-ie-btn');
+        const ieContainer = document.getElementById('additional-ies-container');
+        let ieCount = 0;
+        if (addIeBtn && ieContainer) {
+            addIeBtn.addEventListener('click', () => {
+                ieCount++;
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex flex-col-reverse mt-2';
+                wrapper.innerHTML = `
+                    <input type="text" id="additionalIE${ieCount}" class="peer w-full px-2" name="additionalIEs"
+                        placeholder="Inscrição Estadual ${ieCount + 1}">
+                    <label for="additionalIE${ieCount}" class="label-peer">Inscrição Estadual Adicional ${ieCount}</label>
+                `;
+                ieContainer.appendChild(wrapper);
+            });
+        }
+    </script>
 </body>
 </html>

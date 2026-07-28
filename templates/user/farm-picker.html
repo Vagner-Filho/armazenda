@@ -1,0 +1,16 @@
+{{ define "farm-picker" }}
+{{ if .Error }}
+<div class="p-3 text-red-600 bg-red-50 rounded-lg text-sm">{{ .Error }}</div>
+{{ else if .Farms }}
+<div class="flex flex-col gap-2 p-2">
+    <p class="text-sm text-gray-600">Selecione a propriedade:</p>
+    {{ range .Farms }}
+    <div class="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+         hx-post="/user" hx-vals='{"inscricaoEstadual": "{{ .InscricaoEstadual }}"}' hx-swap="none">
+        <div class="font-medium text-gray-800">{{ .Name }}</div>
+        <div class="text-xs text-gray-500">IE: {{ .InscricaoEstadual }}</div>
+    </div>
+    {{ end }}
+</div>
+{{ end }}
+{{ end }}

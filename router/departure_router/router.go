@@ -181,6 +181,7 @@ func filterDepartures(c *gin.Context) {
 		"PrevPage":    page - 1,
 		"HasNext":     page < totalPages,
 		"NextPage":    page + 1,
+		"TierKey":     user_service.GetTierKeyFromContext(c),
 	})
 }
 

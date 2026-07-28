@@ -9,6 +9,7 @@
     <link rel="shortcut icon" href="/public/assets/favicon.ico">
     <link rel="preload" href="/public/assets/static/fonts/noto-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
     <script nonce="{{ .CSPNonce }}" src="/public/assets/static/htmx.min.js.gz" defer></script>
+    <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/toast.js"></script>
     <style>
       @font-face {
         font-family: 'Noto Sans';
@@ -31,40 +32,47 @@
       <p class="pricing-subtitle">Escolha o plano ideal para sua fazenda</p>
 
       <div class="pricing-cards">
-        <div class="pricing-card">
-          <h2 class="plan-name">Mensal</h2>
-          <div class="plan-price">
-            <span class="currency">R$</span>
-            <span class="amount">{{ .MonthlyAmount }}</span>
-            <span class="period">/mês</span>
-          </div>
-          <ul class="plan-features">
-            <li>Acesso completo ao sistema</li>
-            <li>Usuários ilimitados</li>
-            <li>Relatórios e análises</li>
-            <li>Suporte por email</li>
-          </ul>
-          <button class="plan-btn" hx-get="/user/form" hx-vals='{"priceId": "{{ .MonthlyPriceID }}"}' hx-target="body" hx-swap="beforeend">Assinar Mensal</button>
-        </div>
-
-        <div class="pricing-card featured">
+        {{ range .Tiers }}
+        <div class="pricing-card {{ if or (eq $.FeaturedPriceID .MonthlyPriceID) (eq $.FeaturedPriceID .YearlyPriceID) }}featured{{ end }}">
+          {{ if or (eq $.FeaturedPriceID .MonthlyPriceID) (eq $.FeaturedPriceID .YearlyPriceID) }}
           <div class="plan-badge">Mais popular</div>
-          <h2 class="plan-name">Anual</h2>
-          <div class="plan-price">
-            <span class="currency">R$</span>
-            <span class="amount">{{ .YearlyMonthlyEquivalent }}</span>
-            <span class="period">/mês</span>
+          {{ end }}
+          <h2 class="plan-name">{{ .ProductName }}</h2>
+          <p class="plan-description">{{ .ProductDescription }}</p>
+
+          <div class="plan-options">
+            <div class="plan-option">
+              <h3 class="option-label">Mensal</h3>
+              <div class="plan-price">
+                <span class="currency">R$</span>
+                <span class="amount">{{ .MonthlyAmount }}</span>
+                <span class="period">/mês</span>
+              </div>
+              <button class="plan-btn" hx-get="/user/form" hx-vals='{"priceId": "{{ .MonthlyPriceID }}"}' hx-target="body" hx-swap="beforeend">Assinar Mensal</button>
+            </div>
+
+            <div class="plan-divider"></div>
+
+            <div class="plan-option">
+              <h3 class="option-label">Anual</h3>
+              <div class="plan-price">
+                <span class="currency">R$</span>
+                <span class="amount">{{ .YearlyMonthlyEquivalent }}</span>
+                <span class="period">/mês</span>
+              </div>
+              <div class="plan-annual-total">R$ {{ .YearlyTotal }} cobrados anualmente</div>
+              <div class="plan-save">Economize {{ .SavingsPercent }}%</div>
+              <button class="plan-btn" hx-get="/user/form" hx-vals='{"priceId": "{{ .YearlyPriceID }}"}' hx-target="body" hx-swap="beforeend">Assinar Anual</button>
+            </div>
           </div>
-          <div class="plan-annual-total">R$ {{ .YearlyTotal }} cobrados anualmente</div>
-          <div class="plan-save">Economize {{ .SavingsPercent }}%</div>
+
           <ul class="plan-features">
-            <li>Acesso completo ao sistema</li>
-            <li>Usuários ilimitados</li>
-            <li>Relatórios e análises</li>
-            <li>Suporte prioritário</li>
+            {{ range .Features }}
+            <li>{{ . }}</li>
+            {{ end }}
           </ul>
-          <button class="plan-btn" hx-get="/user/form" hx-vals='{"priceId": "{{ .YearlyPriceID }}"}' hx-target="body" hx-swap="beforeend">Assinar Anual</button>
         </div>
+        {{ end }}
       </div>
 
       <p class="pricing-footer">
@@ -130,7 +138,6 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 2rem 1rem;
   }
 
   .pricing-wrapper {
@@ -139,20 +146,65 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2rem;
+    gap: 1rem;
     z-index: 10;
     position: relative;
   }
 
   .pricing-title {
-    font-size: 2.5rem;
+    font-size: 1.5rem;
     font-weight: 800;
     text-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     margin: 0;
   }
 
+  @media (min-width: 64rem) {
+    .pricing-title {
+      font-size: 1.75rem;
+    }
+    .amount {
+      font-size: 2rem;
+    }
+    .plan-btn {
+      font-size: 1rem;
+    }
+    .pricing-card {
+      padding: 1.2rem;
+    }
+  }
+
+  @media (min-width: 80rem) {
+    .pricing-subtitle {
+      font-size: 1.25rem;
+    }
+    .amount {
+      font-size: 2.5rem;
+    }
+    .plan-btn {
+      font-size: 1.1rem;
+    }
+    .pricing-card {
+      padding: 1.5rem;
+    }
+  }
+
+  @media (min-width: 96rem) {
+    .amount {
+      font-size: 3rem;
+    }
+    .plan-btn {
+      font-size: 1.125rem;
+    }
+    .pricing-card {
+      padding: 2rem;
+    }
+    .pricing-wrapper {
+      gap: 2rem;
+    }
+  }
+
   .pricing-subtitle {
-    font-size: 1.25rem;
+    font-size: 1rem;
     opacity: 0.9;
     margin: 0;
   }
@@ -163,6 +215,7 @@
     justify-content: center;
     gap: 1.5rem;
     width: 100%;
+    align-items: stretch;
   }
 
   .pricing-card {
@@ -172,19 +225,20 @@
     border: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
     border-radius: 24px;
-    padding: 2rem;
     width: 100%;
+    padding: 1rem;
     max-width: 20rem;
+    min-width: 19rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 1rem;
     position: relative;
+    flex: 1;
   }
 
   .pricing-card.featured {
     border: 2px solid rgba(255, 255, 255, 0.6);
-    transform: scale(1.05);
   }
 
   .plan-badge {
@@ -206,6 +260,41 @@
     margin: 0;
   }
 
+  .plan-description {
+    font-size: 0.875rem;
+    text-align: center;
+    opacity: 0.85;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .plan-options {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .plan-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .option-label {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    opacity: 0.9;
+  }
+
+  .plan-divider {
+    width: 100%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.3);
+  }
+
   .plan-price {
     display: flex;
     align-items: baseline;
@@ -218,7 +307,7 @@
   }
 
   .amount {
-    font-size: 3rem;
+    font-size: 1.85rem;
     font-weight: 800;
   }
 
@@ -231,7 +320,7 @@
     font-size: 0.875rem;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.85);
-    margin-top: -0.5rem;
+    margin-top: -0.25rem;
   }
 
   .plan-save {
@@ -248,6 +337,7 @@
     flex-direction: column;
     gap: 0.75rem;
     width: 100%;
+    margin-top: auto;
   }
 
   .plan-features li {
@@ -271,7 +361,7 @@
     border: 1px solid rgba(5, 150, 105, 0.4);
     color: white;
     border-radius: 9999px;
-    font-size: 1.125rem;
+    font-size: .9rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-weight: 700;

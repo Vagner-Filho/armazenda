@@ -10,6 +10,7 @@ import (
 	"armazenda/model/field_model"
 	"armazenda/model/humidity_progression_model"
 	"armazenda/model/nfe_model"
+	"armazenda/model/owner_subscription_model"
 	"armazenda/model/person_model"
 	"armazenda/model/product_model"
 	"armazenda/model/report_model"
@@ -35,7 +36,6 @@ import (
 	"armazenda/router/user_approval_router"
 	"armazenda/router/user_router"
 	"armazenda/router/vehicle_router"
-	"armazenda/service/billing_service"
 	"armazenda/service/nfe_service"
 	"armazenda/service/user_service"
 	"context"
@@ -47,6 +47,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -82,7 +83,8 @@ func authenticate(c *gin.Context) {
 		path == "/auth/google/login" || path == "/auth/google/callback" ||
 		path == "/auth/microsoft/login" || path == "/auth/microsoft/callback" ||
 		path == "/user/microsoft-register" || path == "/user/google-register" ||
-		path == "/pricing" || path == "/payment/success" || path == "/payment/cancel" ||
+		path == "/pricing" || path == "/payment/success" || path == "/payment/cancel" || path == "/payment/required" || path == "/payment/checkout" ||
+		path == "/api/user/role" || path == "/api/subscription/status" || path == "/subscription/cancel" ||
 		path == "/stripe/webhook" {
 		c.Next()
 		return
@@ -113,17 +115,29 @@ func authenticate(c *gin.Context) {
 		return
 	}
 
-	// Check subscription status (non-blocking - allows login to resolve payment)
+	// Check subscription status and tier (hard block for inactive subscriptions)
 	claims := user_service.GetClaimsFromToken(sessionCookie.Value)
 	if claims != nil {
-		status, _ := billing_service.GetSubscriptionStatus(claims.Farm)
-		if status != "active" && status != "" {
-			c.Set("subscription_status", status)
+		status, tierKey, tierErr := owner_subscription_model.GetOwnerSubscriptionModel().GetStatusAndTierByFarm(claims.Farm)
+		if tierErr != nil {
+			fmt.Printf("failed to fetch subscription status for farm %d: %v\n", claims.Farm, tierErr)
 		}
+
+		if status != "active" {
+			if c.GetHeader("HX-Request") == "true" {
+				c.Header("HX-Redirect", "/payment/required")
+				c.AbortWithStatus(http.StatusForbidden)
+				return
+			}
+			c.HTML(http.StatusForbidden, "subscription-inactive.html", gin.H{})
+			c.Abort()
+			return
+		}
+
+		c.Set("tier_key", tierKey)
+		c.Set("subscription_status", status)
 	}
 
-	// Also check user role from database for admin routes
-	// For now, we rely on session validation which includes user deactivation check
 	c.Next()
 }
 
@@ -206,6 +220,24 @@ func adminOnlyMiddleware() gin.HandlerFunc {
 	}
 }
 
+func requireTierMiddleware(allowedTiers ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tierKey, exists := c.Get("tier_key")
+		if !exists {
+			c.String(http.StatusForbidden, "Plano não identificado. Atualize sua assinatura.")
+			c.Abort()
+			return
+		}
+
+		if !slices.Contains(allowedTiers, tierKey.(string)) {
+			c.String(http.StatusForbidden, "Recurso disponível apenas no plano Pro.")
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	pool, connErr := armazenda_database.GetDbPool()
@@ -240,6 +272,7 @@ func main() {
 
 	user_model.InitUserModel(pool)
 	subscription_model.InitSubscriptionModel(pool)
+	owner_subscription_model.InitOwnerSubscriptionModel(pool)
 	crop_model.InitCropModel(pool)
 	field_model.InitFieldModel(pool)
 	vehicle_model.InitVehicleModel(pool)
@@ -325,7 +358,8 @@ func main() {
 	sync_router.UseSyncRoutes(router)
 	humidity_progression_router.UseHumidityProgressionRouter(router)
 	humidity_progression_router.UseHumidityProgressionHtmlRoutes(router)
-	nfe_router.UseNFeRoutes(router)
+	nfeGroup := router.Group("/nfe", requireTierMiddleware("fiscal"))
+	nfe_router.UseNFeRoutes(nfeGroup)
 	template_router.UseTemplateRoutes(router)
 
 	port := os.Getenv("PORT")

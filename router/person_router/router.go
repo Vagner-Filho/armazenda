@@ -5,8 +5,10 @@ import (
 	farm_config_service "armazenda/service/farm_config"
 	person_service "armazenda/service/person"
 	"armazenda/service/user_service"
+	"armazenda/utils"
 	"armazenda/view"
 	person_view "armazenda/view/person"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -27,6 +29,10 @@ func addLegalPerson(c *gin.Context) {
 
 	ie := c.PostForm("inscricaoEstadual")
 	newLegalPerson.Person.Ie = ie
+	meta, empty := utils.ParseMetaFromForm(c)
+	if empty == false {
+		newLegalPerson.Person.Meta = &meta
+	}
 
 	person, toast := person_service.AddLegalPerson(newLegalPerson)
 	if toast != nil {
@@ -43,6 +49,7 @@ func addNaturalPerson(c *gin.Context) {
 	var newNatural entity_public.NaturalPerson
 	err := c.Bind(&newNatural)
 	if err != nil {
+		fmt.Printf("\n%v\n", err.Error())
 		c.String(http.StatusBadRequest, "", err.Error())
 		return
 	}
@@ -53,6 +60,12 @@ func addNaturalPerson(c *gin.Context) {
 
 	ie := c.PostForm("inscricaoEstadual")
 	newNatural.Person.Ie = ie
+
+	meta, empty := utils.ParseMetaFromForm(c)
+	if empty == false {
+		newNatural.Person.Meta = &meta
+	}
+
 	person, toast := person_service.AddNaturalPerson(newNatural)
 	if toast != nil {
 		if toast.Type == entity_public.ErrorToast {
@@ -161,6 +174,7 @@ func getPersonPage(c *gin.Context) {
 
 	nonce, _ := c.Get("csp_nonce")
 	pageData["CSPNonce"] = nonce.(string)
+	pageData["TierKey"] = user_service.GetTierKeyFromContext(c)
 	c.HTML(http.StatusOK, "person.html", pageData)
 }
 

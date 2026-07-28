@@ -254,7 +254,7 @@ func (em *EntryModel) GetEntryPdf(id uint32) (entity_public.EntryPdf, *model_err
 			fa.number AS farm_number,
 			fa.neighborhood AS farm_neighborhood,
 			fa.city AS farm_city,
-			fa.state AS farm_state,
+			f.uf AS farm_state,
 			COALESCE(person_union.name, fc.name, 'Pŕopria') AS origin,
 			COALESCE(person_union.document, f.inscricao_estadual) AS document,
 			fc.storage_name,

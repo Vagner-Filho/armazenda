@@ -13,8 +13,12 @@ type User struct {
 
 type NewUser struct {
 	User
-	PasswdConfirm string `form:"passwdConfirm" binding:"required"`
-	PriceID       string `form:"priceId"`
+	PasswdConfirm     string   `form:"passwdConfirm" binding:"required"`
+	PriceID           string   `form:"priceId"`
+	OwnerDocument     string   `form:"ownerDocument" binding:"required"`
+	OwnerDocumentType int      `form:"ownerDocumentType" binding:"required"`
+	AdditionalIEs     []string `form:"additionalIEs"`
+	UF                string   `form:"state" binding:"required"`
 }
 
 type SignInUser struct {

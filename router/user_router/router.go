@@ -24,6 +24,11 @@ func UserRoutes(router *gin.Engine) {
 		credentials, toast := user_service.Login(signInUser.Cpf, signInUser.Passwd, c.ClientIP(), c.Request.UserAgent())
 
 		if toast != nil {
+			if toast.Hint == "subscription-inactive" {
+				c.Header("HX-Redirect", fmt.Sprintf("/payment/required?farmId=%v", credentials.Farm))
+				c.Status(http.StatusForbidden)
+				return
+			}
 			c.Header("HX-Trigger", string(toast.ToJson()))
 		}
 
@@ -85,7 +90,7 @@ func UserRoutes(router *gin.Engine) {
 			return
 		}
 		switch result.Toast.Type {
-		case 0:
+		case entity_public.SuccessToast:
 			var msg string
 			var title string
 			if strings.Contains(result.Toast.Message, "criado") {
@@ -99,12 +104,13 @@ func UserRoutes(router *gin.Engine) {
 				"Body":  msg,
 				"Title": title,
 			})
-		case 1:
+		case entity_public.WarningToast:
 			c.Header("HX-Trigger", string(result.Toast.ToJson()))
 			c.Status(http.StatusBadRequest)
 		}
 	})
 	router.GET("/user/form", getUserForm)
+	router.GET("/user/farms-by-owner", getFarmsByOwner)
 	router.GET("/users", getUsers)
 	router.POST("/user/:id/make-admin", makeAdmin)
 	router.POST("/user/:id/remove-admin", removeAdmin)
@@ -119,6 +125,34 @@ func getUserForm(c *gin.Context) {
 		"CSPNonce": nonce.(string),
 		"PriceID":  priceID,
 	})
+}
+
+func getFarmsByOwner(c *gin.Context) {
+	ownerDocument := c.Query("ownerDocument")
+	ownerDocumentTypeStr := c.Query("ownerDocumentType")
+	if ownerDocument == "" || ownerDocumentTypeStr == "" {
+		c.HTML(http.StatusBadRequest, "farm-picker", gin.H{"Error": "Documento do proprietário obrigatório"})
+		return
+	}
+
+	ownerDocumentType, parseErr := strconv.Atoi(ownerDocumentTypeStr)
+	if parseErr != nil {
+		c.HTML(http.StatusBadRequest, "farm-picker", gin.H{"Error": "Tipo de documento inválido"})
+		return
+	}
+
+	farms, err := user_service.GetFarmsByOwnerDocument(ownerDocument, ownerDocumentType)
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "farm-picker", gin.H{"Error": err.Error()})
+		return
+	}
+
+	if len(farms) == 0 {
+		c.HTML(http.StatusOK, "farm-picker", gin.H{"Error": "Nenhuma fazenda encontrada para este proprietário"})
+		return
+	}
+
+	c.HTML(http.StatusOK, "farm-picker", gin.H{"Farms": farms})
 }
 
 func getUsers(c *gin.Context) {
@@ -338,6 +372,10 @@ func googleCallback(c *gin.Context) {
 	credentials, toast := user_service.LoginWithGoogle(code, c.ClientIP(), c.Request.UserAgent())
 
 	if toast != nil {
+		if toast.Hint == "subscription-inactive" {
+			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/payment/required?farmId=%v", credentials.Farm))
+			return
+		}
 		nonce, _ := c.Get("csp_nonce")
 		c.HTML(http.StatusOK, "login.html", gin.H{"error": toast.Message, "CSPNonce": nonce.(string)})
 		return
@@ -398,6 +436,10 @@ func microsoftCallback(c *gin.Context) {
 	credentials, toast := user_service.LoginWithMicrosoft(code, c.ClientIP(), c.Request.UserAgent())
 
 	if toast != nil {
+		if toast.Hint == "subscription-inactive" {
+			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/payment/required?farmId=%v", credentials.Farm))
+			return
+		}
 		fmt.Printf("%v", toast.Message)
 		nonce, _ := c.Get("csp_nonce")
 		c.HTML(http.StatusOK, "login.html", gin.H{"error": toast.Message, "CSPNonce": nonce.(string)})
@@ -467,11 +509,14 @@ func microsoftRegister(c *gin.Context) {
 	}
 
 	var form struct {
-		Cpf               string `form:"cpf" binding:"len=11"`
-		InscricaoEstadual string `form:"inscricaoEstadual" binding:"required"`
-		Passwd            string `form:"passwd" binding:"required"`
-		PasswdConfirm     string `form:"passwdConfirm" binding:"required"`
-		Role              string `form:"role" binding:"oneof=admin user"`
+		Cpf               string   `form:"cpf" binding:"len=11"`
+		InscricaoEstadual string   `form:"inscricaoEstadual" binding:"required"`
+		Passwd            string   `form:"passwd" binding:"required"`
+		PasswdConfirm     string   `form:"passwdConfirm" binding:"required"`
+		Role              string   `form:"role" binding:"oneof=admin user"`
+		OwnerDocument     string   `form:"ownerDocument"`
+		OwnerDocumentType int      `form:"ownerDocumentType"`
+		AdditionalIEs     []string `form:"additionalIEs"`
 	}
 
 	err = c.Bind(&form)
@@ -491,7 +536,10 @@ func microsoftRegister(c *gin.Context) {
 			Passwd:            form.Passwd,
 			Role:              form.Role,
 		},
-		PasswdConfirm: form.PasswdConfirm,
+		PasswdConfirm:     form.PasswdConfirm,
+		OwnerDocument:     form.OwnerDocument,
+		OwnerDocumentType: form.OwnerDocumentType,
+		AdditionalIEs:     form.AdditionalIEs,
 	}
 
 	result := user_service.Create(newUser)
@@ -529,11 +577,14 @@ func googleRegister(c *gin.Context) {
 
 	// Use a partial struct for binding to avoid 'required' validation on Email/Name
 	var form struct {
-		Cpf               string `form:"cpf" binding:"len=11"`
-		InscricaoEstadual string `form:"inscricaoEstadual" binding:"required"`
-		Passwd            string `form:"passwd" binding:"required"`
-		PasswdConfirm     string `form:"passwdConfirm" binding:"required"`
-		Role              string `form:"role" binding:"oneof=admin user"`
+		Cpf               string   `form:"cpf" binding:"len=11"`
+		InscricaoEstadual string   `form:"inscricaoEstadual" binding:"required"`
+		Passwd            string   `form:"passwd" binding:"required"`
+		PasswdConfirm     string   `form:"passwdConfirm" binding:"required"`
+		Role              string   `form:"role" binding:"oneof=admin user"`
+		OwnerDocument     string   `form:"ownerDocument"`
+		OwnerDocumentType int      `form:"ownerDocumentType"`
+		AdditionalIEs     []string `form:"additionalIEs"`
 	}
 
 	err = c.Bind(&form)
@@ -554,7 +605,10 @@ func googleRegister(c *gin.Context) {
 			Passwd:            form.Passwd,
 			Role:              form.Role,
 		},
-		PasswdConfirm: form.PasswdConfirm,
+		PasswdConfirm:     form.PasswdConfirm,
+		OwnerDocument:     form.OwnerDocument,
+		OwnerDocumentType: form.OwnerDocumentType,
+		AdditionalIEs:     form.AdditionalIEs,
 	}
 
 	result := user_service.Create(newUser)

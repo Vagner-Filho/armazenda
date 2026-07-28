@@ -51,9 +51,8 @@ type InvoiceInput struct {
 
 // EmitterData holds emitter (emitente) information.
 type EmitterData struct {
-	Type       int // 1=CNPJ, 2=CPF
-	CNPJ       string
-	CPF        string
+	Type       int    // 1=CNPJ, 2=CPF
+	Document   string // CNPJ or CPF
 	IE         string
 	XNome      string
 	XFant      string

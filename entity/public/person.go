@@ -30,6 +30,12 @@ type PersonConfig struct {
 	EntryCornDiscount     decimal.Decimal `form:"entryCornDiscount" json:"entryCornDiscount"`
 }
 
+type PersonCND struct {
+	CertificateNumber *string                 `form:"certificateNumber"`
+	ExpDate           *time.Time              `form:"expDate" time_format:"2006-01-02"`
+	Meta              *map[string]interface{} `form:"meta"`
+}
+
 func (pc PersonConfig) GetProductEntryDiscount(product uint8) decimal.Decimal {
 	if product == 1 {
 		return pc.EntryCornDiscount
@@ -47,6 +53,7 @@ type Person struct {
 	Farm       uint32    `form:"farm" binding:"gte=0" json:"farm"`
 	ModifiedAt time.Time `json:"modifiedAt" db:"-"`
 	PersonConfig
+	PersonCND
 }
 
 type PersonOption struct {
@@ -79,6 +86,7 @@ type FullPerson struct {
 	State        *string
 	Email        *string
 	PhoneNumber  *string
+	PersonCND
 }
 
 type PersonFilter struct {

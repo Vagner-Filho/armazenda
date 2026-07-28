@@ -33,11 +33,12 @@ func UseFarmConfigRouter(router *gin.Engine) {
 				"Farm":         &entity_public.Farm{Id: farm, Address: entity_public.Address{}},
 				"Progressions": progressions,
 				"CSPNonce":     nonce.(string),
+				"TierKey":      user_service.GetTierKeyFromContext(c),
 			})
 			return
 		}
 		nonce, _ := c.Get("csp_nonce")
-		c.HTML(http.StatusOK, "config.html", gin.H{"Farm": config, "Progressions": progressions, "CSPNonce": nonce.(string)})
+		c.HTML(http.StatusOK, "config.html", gin.H{"Farm": config, "Progressions": progressions, "CSPNonce": nonce.(string), "TierKey": user_service.GetTierKeyFromContext(c)})
 	})
 
 	router.PUT("/farm/config", func(c *gin.Context) {

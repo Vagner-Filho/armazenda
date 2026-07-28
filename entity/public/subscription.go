@@ -12,13 +12,11 @@ type PendingRegistration struct {
 	Role                    string
 	StripeCheckoutSessionId *string
 	CreatedAt               time.Time
-}
-
-type FarmSubscription struct {
-	StripeCustomerId             *string
-	StripeSubscriptionId         *string
-	Status                       string
-	SubscriptionCurrentPeriodEnd *time.Time
+	OwnerDocument           *string
+	OwnerDocumentType       *int
+	AdditionalIEs           []string
+	StripePriceID           *string
+	UF                      string
 }
 
 type CreateUserResult struct {

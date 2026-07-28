@@ -80,7 +80,8 @@ func (vm *vehicleModel) GetVehiclesByFarm(farm uint32) ([]entity_public.Vehicle,
 func (vm *vehicleModel) GetVehicle(vehicleId uint16) (entity_public.Vehicle, *model_error.ModelError) {
 	var plate string
 	var name string
-	scanErr := vm.pool.QueryRow(context.Background(), "SELECT * FROM vehicle v WHERE v.id = @id", pgx.NamedArgs{"id": vehicleId}).Scan(&plate, &name)
+	var farm uint32
+	scanErr := vm.pool.QueryRow(context.Background(), "SELECT v.plate, v.name, v.farm FROM vehicle v WHERE v.id = @id", pgx.NamedArgs{"id": vehicleId}).Scan(&plate, &name, &farm)
 
 	if scanErr != nil {
 		return entity_public.Vehicle{}, &model_error.ModelError{Message: scanErr.Error()}
@@ -90,5 +91,6 @@ func (vm *vehicleModel) GetVehicle(vehicleId uint16) (entity_public.Vehicle, *mo
 		Id:    vehicleId,
 		Plate: plate,
 		Name:  name,
+		Farm:  farm,
 	}, nil
 }

@@ -16,7 +16,7 @@
   </head>
   <body class="main-bg">
     {{ template "navbar" . }}
-    {{ template "menu" (dict "page" "relatorio" "CSPNonce" .CSPNonce) }}
+    {{ template "menu" (dict "page" "relatorio" "CSPNonce" .CSPNonce "TierKey" .TierKey) }}
     <section class="content-container">
       <header class="text-center mb-4 2xl:mb-8">
         <h1 class="text-xl 2xl:text-3xl font-bold text-white font-[Noto_Sans] drop-shadow-lg">

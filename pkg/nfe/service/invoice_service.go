@@ -50,12 +50,9 @@ func (s *InvoiceService) BuildAndSign(input entity.InvoiceInput, certData []byte
 	if docErr != nil {
 		return "", fmt.Errorf("failed to extract document from certificate: %w", docErr)
 	}
-	var emitterDoc string
-	if input.Emitter.Type == 2 {
-		emitterDoc = input.Emitter.CPF
-	} else {
-		emitterDoc = input.Emitter.CNPJ
-	}
+
+	emitterDoc := input.Emitter.Document
+
 	if certDoc != emitterDoc {
 		return "", fmt.Errorf("certificado digital não pertence ao emitente: certificado=%s, emitente=%s", certDoc, emitterDoc)
 	}
@@ -275,9 +272,9 @@ func (s *InvoiceService) RebuildForContingency(input entity.InvoiceInput, newNum
 
 func documentForAccessKey(emit entity.EmitterData) string {
 	if emit.Type == 2 {
-		return padLeftZeros(emit.CPF, 14)
+		return padLeftZeros(emit.Document, 14)
 	}
-	return padLeftZeros(emit.CNPJ, 14)
+	return padLeftZeros(emit.Document, 14)
 }
 
 func padLeftZeros(s string, length int) string {

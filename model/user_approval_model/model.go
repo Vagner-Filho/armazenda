@@ -63,9 +63,22 @@ func (uam *userApprovalModel) ApproveUser(userId uint32) error {
 	}
 
 	// Insert user into app_user table
-	_, err = uam.pool.Exec(context.Background(), `INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm, cpf, role) VALUES (@email, @name, @passwd, @inscricao_estadual, @farm, @cpf, @role)`, pgx.NamedArgs{"email": user.Email, "name": user.Name, "passwd": user.Passwd, "inscricao_estadual": user.InscricaoEstadual, "farm": user.Farm, "cpf": user.Cpf, "role": user.Role})
-	if err != nil {
-		return err
+	var newUserID uint32
+	insertErr := uam.pool.QueryRow(context.Background(),
+		`INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm, cpf, role)
+		 VALUES (@email, @name, @passwd, @inscricao_estadual, @farm, @cpf, @role)
+		 RETURNING id`,
+		pgx.NamedArgs{
+			"email":              user.Email,
+			"name":               user.Name,
+			"passwd":             user.Passwd,
+			"inscricao_estadual": user.InscricaoEstadual,
+			"farm":               user.Farm,
+			"cpf":                user.Cpf,
+			"role":               user.Role,
+		}).Scan(&newUserID)
+	if insertErr != nil {
+		return insertErr
 	}
 
 	// Update status in user_approval table

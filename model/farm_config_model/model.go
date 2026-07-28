@@ -39,7 +39,7 @@ func GetFarmConfigModel() *farmConfigModel {
 
 func (fcm *farmConfigModel) UpsertFarmConfig(config *entity_public.Farm) error {
 	query := `
-		SELECT * FROM update_get_farm(@id, @inscricao_estadual, @name, @street, @cep, @number, @neighborhood, @city, @state, @complement, @email, @phone_number, @storage_name, @humidity_progression_id, @farm_used_humidity_progression_id);
+		SELECT * FROM update_get_farm(@id, @inscricao_estadual, @name, @street, @cep, @number, @neighborhood, @city, @complement, @email, @phone_number, @storage_name, @humidity_progression_id, @farm_used_humidity_progression_id);
 	`
 	_, err := fcm.pool.Exec(context.Background(), query, pgx.NamedArgs{
 		"id":                                config.Id,
@@ -50,7 +50,6 @@ func (fcm *farmConfigModel) UpsertFarmConfig(config *entity_public.Farm) error {
 		"number":                            config.Address.Number,
 		"neighborhood":                      config.Address.Neighborhood,
 		"city":                              config.Address.City,
-		"state":                             config.Address.State,
 		"complement":                        config.Address.Complement,
 		"email":                             config.Address.Email,
 		"phone_number":                      config.Address.PhoneNumber,
@@ -63,8 +62,10 @@ func (fcm *farmConfigModel) UpsertFarmConfig(config *entity_public.Farm) error {
 
 func (fcm *farmConfigModel) GetFarmConfig(farmID uint32) (*entity_public.Farm, error) {
 	query := `
-		SELECT f.id, f.inscricao_estadual, fc.name, fc.humidity_progression_id, fa.id, fa.street, fa.cep, fa.number, fac.complement, fa.neighborhood, fa.city, fa.state, fco.email, fco.phone_number, fc.storage_name, fc.farm_used_humidity_progression_id
+		SELECT f.id, f.inscricao_estadual, o.owner_document, o.owner_document_type, fc.name, fc.humidity_progression_id, fa.id, fa.street, fa.cep, fa.number, fac.complement, fa.neighborhood, fa.city, f.uf, fco.email, fco.phone_number, fc.storage_name, fc.farm_used_humidity_progression_id, f.uf
 		FROM farm f
+		JOIN farm_owner_subscription fos ON fos.farm_id = f.id
+		JOIN owner o ON o.id = fos.owner_id
 		LEFT JOIN farm_config fc ON f.id = fc.farm_id
 		LEFT JOIN farm_address fa ON fa.farm_id = f.id
 		LEFT JOIN farm_address_complement fac ON fac.farm_address_id = fa.id
@@ -86,8 +87,10 @@ func (fcm *farmConfigModel) GetFarmConfig(farmID uint32) (*entity_public.Farm, e
 
 func (fcm *farmConfigModel) GetFarmByInscricaoEstadual(inscricaoEstadual string) (*entity_public.Farm, error) {
 	query := `
-		SELECT f.id, f.inscricao_estadual, fc.name, fc.humidity_progression_id, fa.id, fa.street, fa.cep, fa.number, fac.complement, fa.neighborhood, fa.city, fa.state, fco.email, fco.phone_number, fc.storage_name
+		SELECT f.id, f.inscricao_estadual, o.owner_document, o.owner_document_type, fc.name, fc.humidity_progression_id, fa.id, fa.street, fa.cep, fa.number, fac.complement, fa.neighborhood, fa.city, f.uf, fco.email, fco.phone_number, fc.storage_name, fc.farm_used_humidity_progression_id, f.uf
 		FROM farm f
+		JOIN farm_owner_subscription fos ON fos.farm_id = f.id
+		JOIN owner o ON o.id = fos.owner_id
 		LEFT JOIN farm_config fc ON f.id = fc.farm_id
 		LEFT JOIN farm_address fa ON fa.farm_id = f.id
 		LEFT JOIN farm_address_complement fac ON fac.farm_address_id = fa.id
@@ -100,10 +103,36 @@ func (fcm *farmConfigModel) GetFarmByInscricaoEstadual(inscricaoEstadual string)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
-		fmt.Printf("%+v\n", err.Error())
 		return nil, fmt.Errorf("failed to get farm config: %w", err)
 	}
 	return &result, nil
+}
+
+func (fcm *farmConfigModel) GetFarmsByOwnerDocument(ownerDocument string, ownerDocumentType int) ([]entity_public.Farm, error) {
+	query := `
+		SELECT f.id, f.inscricao_estadual, o.owner_document, o.owner_document_type, fc.name, fc.humidity_progression_id, fa.id, fa.street, fa.cep, fa.number, fac.complement, fa.neighborhood, fa.city, f.uf, fco.email, fco.phone_number, fc.storage_name, fc.farm_used_humidity_progression_id, f.uf
+		FROM farm f
+		JOIN farm_owner_subscription fos ON fos.farm_id = f.id
+		JOIN owner o ON o.id = fos.owner_id
+		LEFT JOIN farm_config fc ON f.id = fc.farm_id
+		LEFT JOIN farm_address fa ON fa.farm_id = f.id
+		LEFT JOIN farm_address_complement fac ON fac.farm_address_id = fa.id
+		LEFT JOIN farm_contact fco ON fco.farm_id = f.id
+		WHERE o.owner_document = @owner_document AND o.owner_document_type = @owner_document_type;
+	`
+	rows, err := fcm.pool.Query(context.Background(), query, pgx.NamedArgs{
+		"owner_document":      ownerDocument,
+		"owner_document_type": ownerDocumentType,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get farms by owner: %w", err)
+	}
+
+	farms, err := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.Farm])
+	if err != nil {
+		return nil, fmt.Errorf("failed to collect farms by owner: %w", err)
+	}
+	return farms, nil
 }
 
 // SetFarmHumidityProgression updates the farm's default humidity progression

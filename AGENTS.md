@@ -160,6 +160,16 @@ func (e *ModelError) Error() string {
 - Set `IsServerErr: false` for user-facing validation errors (show specific message)
 - Use `pgxmock` for mocking database operations in tests
 
+### Language Requirements
+
+All user-facing text must be written in **Brazilian Portuguese (pt-br)**. This includes:
+- Toast notifications and UI alerts
+- HTTP response messages
+- Error messages returned to the client (`ModelError.Message`)
+- Any other text displayed to the end user
+
+Internal-only strings (log messages, comments, variable names) may remain in English.
+
 ### Database Patterns
 
 - Use `pgx` driver with connection pooling

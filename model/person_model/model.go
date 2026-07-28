@@ -51,12 +51,13 @@ type basePerson struct {
 }
 
 const basePersonQuery = `
-	SELECT ad.id, ad.street, ad.cep, ad.number, adc.complement, ad.neighborhood, ad.city, ad.state, c.email, c.phone_number, p.ie, p.id, p.farm, COALESCE(pc.humidity_progression_id, dpc.humidity_progression_id), COALESCE(pc.entry_soy_discount, dpc.entry_soy_discount), COALESCE(pc.entry_corn_discount, dpc.entry_corn_discount) FROM person p
+	SELECT ad.id, ad.street, ad.cep, ad.number, adc.complement, ad.neighborhood, ad.city, ad.state, c.email, c.phone_number, p.ie, p.id, p.farm, COALESCE(pc.humidity_progression_id, dpc.humidity_progression_id), COALESCE(pc.entry_soy_discount, dpc.entry_soy_discount), COALESCE(pc.entry_corn_discount, dpc.entry_corn_discount), pcnd.certificate_number, pcnd.exp_date, pcnd.meta FROM person p
 		LEFT JOIN address ad ON ad.person_id = p.id
 		LEFT JOIN address_complement adc ON adc.address_id = ad.id
 		LEFT JOIN contact c ON c.person_id = p.id
 		LEFT JOIN person_config pc ON pc.person_id = p.id
 		LEFT JOIN default_person_config dpc ON dpc.id = 1
+		LEFT JOIN person_cnd pcnd ON pcnd.person_id = p.id
 		WHERE p.id = @id
 	`
 
@@ -168,6 +169,22 @@ func (bm *PersonModel) AddLegalPerson(lp entity_public.LegalPerson) (entity_publ
 		}
 	}
 
+	if lp.Person.PersonCND.CertificateNumber != nil && lp.Person.PersonCND.ExpDate != nil {
+		_, err = tx.Exec(ctx,
+			`INSERT INTO person_cnd (person_id, certificate_number, exp_date, meta)
+			VALUES (@person_id, @cert_num, @exp_date, @meta)`,
+			pgx.NamedArgs{
+				"person_id": personID,
+				"cert_num":  lp.Person.PersonCND.CertificateNumber,
+				"exp_date":  lp.Person.PersonCND.ExpDate,
+				"meta":      lp.Person.PersonCND.Meta,
+			},
+		)
+		if err != nil {
+			return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+		}
+	}
+
 	if err = tx.Commit(ctx); err != nil {
 		return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
 	}
@@ -262,6 +279,22 @@ func (bm *PersonModel) AddNaturalPerson(bp entity_public.NaturalPerson) (entity_
 	// 5. Insert Contact
 	if bp.Email != nil || bp.PhoneNumber != nil {
 		_, err = tx.Exec(ctx, "INSERT INTO contact (email, phone_number, person_id) VALUES ($1, $2, $3)", bp.Email, bp.PhoneNumber, personID)
+		if err != nil {
+			return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+		}
+	}
+
+	if bp.Person.PersonCND.CertificateNumber != nil && bp.Person.PersonCND.ExpDate != nil {
+		_, err = tx.Exec(ctx,
+			`INSERT INTO person_cnd (person_id, certificate_number, exp_date, meta)
+			VALUES (@person_id, @cert_num, @exp_date, @meta)`,
+			pgx.NamedArgs{
+				"person_id": personID,
+				"cert_num":  bp.Person.PersonCND.CertificateNumber,
+				"exp_date":  bp.Person.PersonCND.ExpDate,
+				"meta":      bp.Person.PersonCND.Meta,
+			},
+		)
 		if err != nil {
 			return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
 		}
@@ -758,6 +791,7 @@ func (pm *PersonModel) GetFullPersonById(id uint32) (entity_public.FullPerson, *
 			State:        legalPerson.State,
 			Email:        legalPerson.Email,
 			PhoneNumber:  legalPerson.PhoneNumber,
+			PersonCND:    legalPerson.Person.PersonCND,
 		}, nil
 	}
 
@@ -779,6 +813,7 @@ func (pm *PersonModel) GetFullPersonById(id uint32) (entity_public.FullPerson, *
 			State:        naturalPerson.State,
 			Email:        naturalPerson.Email,
 			PhoneNumber:  naturalPerson.PhoneNumber,
+			PersonCND:    naturalPerson.Person.PersonCND,
 		}, nil
 	}
 

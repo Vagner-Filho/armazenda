@@ -85,42 +85,6 @@ func (um *userModel) GetUserByEmail(email string) (*entity_public.User, error) {
 	return &user, nil
 }
 
-func (um *userModel) CreateUser(user entity_public.NewUser) (bool, error) {
-	enc, encErr := bcrypt.GenerateFromPassword([]byte(user.Passwd), 10)
-
-	if encErr != nil {
-		return false, encErr
-	}
-
-	var farmId uint32
-
-	createFarmErr := um.pool.QueryRow(context.Background(), `INSERT INTO farm (inscricao_estadual) VALUES (@inscricao_estadual) RETURNING id`, pgx.NamedArgs{"inscricao_estadual": user.InscricaoEstadual}).Scan(&farmId)
-
-	if createFarmErr != nil {
-		return false, createFarmErr
-	}
-
-	var userCount int
-	countErr := um.pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM app_user WHERE farm = @farmId`, pgx.NamedArgs{"farmId": farmId}).Scan(&userCount)
-
-	if countErr != nil {
-		return false, countErr
-	}
-
-	role := "user"
-	if userCount == 0 {
-		role = "admin"
-	}
-
-	_, err := um.pool.Exec(context.Background(), `INSERT INTO app_user (email, name, passwd, inscricao_estadual, farm, cpf, role) VALUES (@email, @name, @passwd, @inscricao_estadual, @farm, @cpf, @role)`, pgx.NamedArgs{"email": user.Email, "name": user.Name, "passwd": string(enc), "inscricao_estadual": user.InscricaoEstadual, "farm": farmId, "cpf": user.Cpf, "role": role})
-
-	if err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
-
 func (um *userModel) CreateUserApproval(user entity_public.NewUser, farmId uint32) (bool, error) {
 	enc, encErr := bcrypt.GenerateFromPassword([]byte(user.Passwd), 10)
 

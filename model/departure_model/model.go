@@ -292,7 +292,7 @@ func (dm *departureModel) GetDeparturePdf(id uint32) (entity_public.DeparturePdf
 			fa.number as farm_number,
 			fa.neighborhood as farm_neighborhood,
 			fa.city as farm_city,
-			fa.state as farm_state,
+			f.uf as farm_state,
 			da.humidity,
 			da.damage,
 			da.impurity,

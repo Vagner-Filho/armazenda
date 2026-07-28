@@ -98,6 +98,11 @@
         {{ else }}
         {{ template "address-fields" }}
         {{ end }}
+        {{ if ne .Legal nil }}
+        {{ template "person-cnd" .Legal.Person }}
+        {{ else }}
+        {{ template "person-cnd" }}
+        {{ end }}
       </div>
       <div class="flex items-center justify-around mt-4 w-52 mx-auto">
         <button type="button" class="cancel-btn">
@@ -178,6 +183,11 @@
         {{ else }}
         {{ template "address-fields" }}
         {{ end }}
+        {{ if ne .Natural nil }}
+        {{ template "person-cnd" .Natural.Person }}
+        {{ else }}
+        {{ template "person-cnd" }}
+        {{ end }}
       </div>
       <div class="flex items-center justify-around mt-4 w-52 mx-auto">
         <button type="button" class="cancel-btn">
@@ -193,6 +203,7 @@
     import {removeEmptyFields} from "/public/assets/js/form.js"
     import {setupCepListener} from "/public/assets/js/address.js";
     import {setupCpfFormatter, setupCnpjFormatter, setupCepFormatter, setupPhoneFormatter} from "/public/assets/js/utils.js";
+    import {setupPersonCND} from "/public/assets/js/personCnd.js"
 
     setupCepListener('pessoa-juridica-form', 'cep-input', 'street-input', 'neighborhood-input', 'city-input', 'state-input');
     setupCepListener('pessoa-fisica-form', 'cep-input', 'street-input', 'neighborhood-input', 'city-input', 'state-input');
@@ -229,10 +240,13 @@
       {{ if and (eq .Legal nil) (eq .Natural nil) }}
         setupCpfFormatter("input#document-pf")
         setupCnpjFormatter("input#document-pj")
+        setupPersonCND()
       {{ else if .Legal}}
         setupCnpjFormatter("input#document-pj")
+        setupPersonCND({{ .Legal.Person.ExpDate }}, "form#pessoa-juridica-form input#expDate")
       {{ else }}
         setupCpfFormatter("input#document-pf")
+        setupPersonCND({{ .Natural.Person.ExpDate }}, "form#pessoa-fisica-form input#expDate")
       {{ end }}
 
       {{ if and (eq .Legal nil) (eq .Natural nil) }}

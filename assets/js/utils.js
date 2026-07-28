@@ -6,12 +6,13 @@ export function closeModal(selector) {
 	}
 }
 
+/**
+* Formats the input value to the Brazilian CPF format (XXX.XXX.XXX-XX)
+* as the user types.
+* @param {HTMLInputElement} inputElement - The input element to format.
+* @returns {function(): void} removeCpfFormatter - Removes the listener handler for the cpf input element.
+*/
 export function setupCpfFormatter(cpf_selector) {
-	/**
-					 * Formats the input value to the Brazilian CPF format (XXX.XXX.XXX-XX)
-					 * as the user types.
-					 * @param {HTMLInputElement} inputElement - The input element to format.
-					 */
 	const cpfInput = document.querySelector(cpf_selector)
 	if (!cpfInput) {
 		throw Error("input de cpf não encontrado");
@@ -50,21 +51,28 @@ export function setupCpfFormatter(cpf_selector) {
 			evt.detail.parameters['cpf'] = evt.detail.parameters['cpf'].replace(/\D/g, '');
 		}
 	});
+
+	function removeCpfFormatter() {
+		cpfInput.removeEventListener('input', formatCpf);
+	}
+
+	return removeCpfFormatter;
 }
 
+/**
+* Formats the input value to the Brazilian CNPJ format (XX.XXX.XXX/XXXX-XX)
+* as the user types.
+* @param {HTMLInputElement} inputElement - The input element to format.
+* @returns {function(): void} removeCnpjFormatter - Removes the listener handler for the cnpj input element.
+*/
 export function setupCnpjFormatter(cpf_selector) {
-	/**
-					 * Formats the input value to the Brazilian CNPJ format (XX.XXX.XXX/XXXX-XX)
-					 * as the user types.
-					 * @param {HTMLInputElement} inputElement - The input element to format.
-					 */
-	const cpfInput = document.querySelector(cpf_selector)
-	if (!cpfInput) {
+	const cnpjInput = document.querySelector(cpf_selector)
+	if (!cnpjInput) {
 		throw Error("input de cnpj não encontrado");
 	}
 	function formatCnpj() {
 		// 1. Get the raw value and remove non-digit characters
-		let baseValue = cpfInput.value.replace(/\D/g, '');
+		let baseValue = cnpjInput.value.replace(/\D/g, '');
 
 		// 2. Limit to 11 digits (maximum length of a CNPJ without formatting)
 		baseValue = baseValue.substring(0, 14);
@@ -86,16 +94,22 @@ export function setupCnpjFormatter(cpf_selector) {
 		}
 
 		// 4. Update the input field's value
-		cpfInput.value = formattedValue;
+		cnpjInput.value = formattedValue;
 	}
 
-	cpfInput.addEventListener('input', formatCnpj);
+	cnpjInput.addEventListener('input', formatCnpj);
 	formatCnpj(); // Format initial value if present
 	document.body.addEventListener('htmx:configRequest', function(evt) {
 		if (evt.detail.parameters['cnpj']) {
 			evt.detail.parameters['cnpj'] = evt.detail.parameters['cnpj'].replace(/\D/g, '');
 		}
 	});
+
+	function removeCnpjFormatter() {
+		cnpjInput.removeEventListener('input', formatCnpj);
+	}
+
+	return removeCnpjFormatter;
 }
 
 export function setupCepFormatter(cep_selector) {

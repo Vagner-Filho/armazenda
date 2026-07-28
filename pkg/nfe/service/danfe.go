@@ -924,23 +924,30 @@ func wrapText(pdf *gopdf.GoPdf, text string, maxWidth float64) []string {
 	if text == "" {
 		return nil
 	}
-	words := strings.Fields(text)
-	if len(words) == 0 {
-		return nil
-	}
+	paragraphs := strings.Split(text, "\n")
 	var lines []string
-	current := words[0]
-	for _, word := range words[1:] {
-		candidate := current + " " + word
-		tw, _ := pdf.MeasureTextWidth(candidate)
-		if tw <= maxWidth {
-			current = candidate
-		} else {
-			lines = append(lines, current)
-			current = word
+	for i, para := range paragraphs {
+		words := strings.Fields(para)
+		if len(words) == 0 {
+			// Preserve intentional blank lines (e.g. double \n) unless leading or trailing.
+			if i > 0 && i < len(paragraphs)-1 {
+				lines = append(lines, "")
+			}
+			continue
 		}
+		current := words[0]
+		for _, word := range words[1:] {
+			candidate := current + " " + word
+			tw, _ := pdf.MeasureTextWidth(candidate)
+			if tw <= maxWidth {
+				current = candidate
+			} else {
+				lines = append(lines, current)
+				current = word
+			}
+		}
+		lines = append(lines, current)
 	}
-	lines = append(lines, current)
 	return lines
 }
 

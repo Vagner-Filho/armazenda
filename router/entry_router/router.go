@@ -39,6 +39,7 @@ func getRomaneioPage(c *gin.Context) {
 
 	content := entry_view.GetEntryContent(farm, page)
 	content.CSPNonce = nonce.(string)
+	content.TierKey = user_service.GetTierKeyFromContext(c)
 	c.HTML(http.StatusOK, "romaneio.html", content)
 }
 

@@ -5,6 +5,14 @@
             <h2 class="text-lg font-bold text-white">Emitir NF-e</h2>
             {{ template "close-dialog-btn" (dict "selector" "dialog#nfe-emit-dialog" "CSPNonce" .CSPNonce) }}
         </div>
+        {{ if eq .HasNFEFarmConfig false }}
+        <div id="no-nfe-config" data-test-id="no-nfe-config" class="bg-orange-200 rounded-lg p-2 border-2 border-orange-600 text-orange-700 shadow shadow-orange-600 mx-auto text-lg flex gap-2">
+            {{ template "info-icon" "size-7 shrink-0" }}
+            <p>
+                Não encontramos a configuração de NF-e para realizar a emissão. Acesse <strong>Configurações &rarr; NF-e</strong> para inserir os dados necessários.
+            </p>
+        </div>
+        {{ else }}
         <div id="nfe-emit-step">
             <div class="mb-4 text-white/80 text-sm">
                 <p><strong>Romaneio:</strong> {{ .DepartureID }}</p>
@@ -83,6 +91,7 @@
                 </div>
             </form>
         </div>
+        {{ end }}
     </div>
     <script nonce="{{ .CSPNonce }}" type="module">
         import { setupNFeForm } from "/public/assets/js/form/nfe-form.js";

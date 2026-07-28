@@ -31,6 +31,63 @@ type EndpointSet struct {
 	Endpoints []Endpoint
 }
 
+// MSEndpointSet holds all NF-e web service endpoints for Mato Grosso do Sul.
+var MSEndpointSet = &EndpointSet{
+	Name:      "MS",
+	InfraType: InfraOwn,
+	Endpoints: []Endpoint{
+		{
+			Name:         "NFeAutorizacao4",
+			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/NFeAutorizacao4",
+			SOAPAction:   "http://www.portalfiscal.inf.br/nfe/wsdl/NFeAutorizacao4/nfeAutorizacaoLote",
+			Production:   "https://nfe.sefaz.ms.gov.br/ws/NFeAutorizacao4",
+			Homologation: "https://hom.nfe.sefaz.ms.gov.br/ws/NFeAutorizacao4",
+		},
+		{
+			Name:         "NFeRetAutorizacao4",
+			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/NFeRetAutorizacao4",
+			SOAPAction:   "http://www.portalfiscal.inf.br/nfe/wsdl/NFeRetAutorizacao4/nfeRetAutorizacaoLote",
+			Production:   "https://nfe.sefaz.ms.gov.br/ws/NFeRetAutorizacao4",
+			Homologation: "https://hom.nfe.sefaz.ms.gov.br/ws/NFeRetAutorizacao4",
+		},
+		{
+			Name:         "NFeConsultaProtocolo4",
+			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/NFeConsultaProtocolo4",
+			SOAPAction:   "http://www.portalfiscal.inf.br/nfe/wsdl/NFeConsultaProtocolo4/nfeConsultaNF",
+			Production:   "https://nfe.sefaz.ms.gov.br/ws/NFeConsultaProtocolo4",
+			Homologation: "https://hom.nfe.sefaz.ms.gov.br/ws/NFeConsultaProtocolo4",
+		},
+		{
+			Name:         "NfeStatusServico4",
+			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/NFeStatusServico4",
+			SOAPAction:   "http://www.portalfiscal.inf.br/nfe/wsdl/NFeStatusServico4/nfeStatusServicoNF",
+			Production:   "https://nfe.sefaz.ms.gov.br/ws/NFeStatusServico4",
+			Homologation: "https://hom.nfe.sefaz.ms.gov.br/ws/NFeStatusServico4",
+		},
+		{
+			Name:         "RecepcaoEvento4",
+			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/RecepcaoEvento4",
+			SOAPAction:   "http://www.portalfiscal.inf.br/nfe/wsdl/RecepcaoEvento4/nfeRecepcaoEvento",
+			Production:   "https://nfe.sefaz.ms.gov.br/ws/NFeRecepcaoEvento4",
+			Homologation: "https://hom.nfe.sefaz.ms.gov.br/ws/NFeRecepcaoEvento4",
+		},
+		{
+			Name:         "NfeInutilizacao4",
+			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/NFeInutilizacao4",
+			SOAPAction:   "http://www.portalfiscal.inf.br/nfe/wsdl/NFeInutilizacao4/nfeInutilizacaoNF",
+			Production:   "https://nfe.sefaz.ms.gov.br/ws/NFeInutilizacao4",
+			Homologation: "https://hom.nfe.sefaz.ms.gov.br/ws/NFeInutilizacao4",
+		},
+		{
+			Name:         "CadConsultaCadastro4",
+			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/CadConsultaCadastro4",
+			SOAPAction:   "http://www.portalfiscal.inf.br/nfe/wsdl/CadConsultaCadastro4/consultaCadastro",
+			Production:   "https://nfe.sefaz.ms.gov.br/ws/CadConsultaCadastro4",
+			Homologation: "https://hom.nfe.sefaz.ms.gov.br/ws/CadConsultaCadastro4",
+		},
+	},
+}
+
 // MTEndpointSet holds all NF-e web service endpoints for Mato Grosso.
 var MTEndpointSet = &EndpointSet{
 	Name:      "MT",
@@ -185,6 +242,7 @@ var SVCRegistry = map[defaults.TpEmis]*EndpointSet{
 // Multiple states can point to the same EndpointSet (e.g., SVRS states).
 var StateRegistry = map[string]*EndpointSet{
 	"MT": MTEndpointSet,
+	"MS": MSEndpointSet,
 }
 
 // GetEndpoint returns the URL for a specific service in a given state.

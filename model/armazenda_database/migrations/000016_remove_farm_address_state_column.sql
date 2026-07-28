@@ -1,0 +1,5 @@
+ALTER TABLE IF EXISTS farm_address DROP COLUMN IF EXISTS state;
+
+ALTER TABLE IF EXISTS pending_registration ADD COLUMN IF NOT EXISTS uf VARCHAR(2);
+UPDATE pending_registration SET uf = 'MT' WHERE uf IS NULL;
+ALTER TABLE IF EXISTS pending_registration ALTER COLUMN uf SET NOT NULL;

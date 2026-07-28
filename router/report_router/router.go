@@ -22,6 +22,7 @@ func getRelatorioPage(c *gin.Context) {
 	pageData := report_view.GetReportPage(farm, page)
 	nonce, _ := c.Get("csp_nonce")
 	pageData.CSPNonce = nonce.(string)
+	pageData.TierKey = user_service.GetTierKeyFromContext(c)
 	c.HTML(http.StatusOK, "relatorio.html", pageData)
 }
 

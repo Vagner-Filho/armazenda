@@ -3,6 +3,15 @@
   <div class="ml-auto flex items-center gap-3 w-fit h-full px-2">
     {{ template "user-icon" "text-green-500 size-6 lg:size-7" }}
     <h3 id="username" class="text-white text-lg">...</h3>
+    <div id="farm-switcher" class="hidden relative">
+      <button id="farm-switcher-btn" class="text-white text-sm bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg transition-colors flex items-center gap-1">
+        <span id="current-farm-name">...</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </button>
+      <div id="farm-switcher-dropdown" class="hidden absolute right-0 mt-1 w-56 bg-white text-gray-800 rounded-lg shadow-lg overflow-hidden z-50">
+        <div id="farm-switcher-list" class="flex flex-col"></div>
+      </div>
+    </div>
   </div>
   <script nonce="{{ .CSPNonce }}" type="module">
     cookieStore.get('username')
@@ -12,6 +21,21 @@
           usernameEl.textContent = username.value.replaceAll("+", " ")
         }
       })
+
+    // Fetch subscription status and show warning banner if cancellation is pending
+    fetch('/api/subscription/status', { credentials: 'same-origin' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data || !data.cancelAtPeriodEnd) return
+        const nav = document.querySelector('nav')
+        if (!nav) return
+        const banner = document.createElement('div')
+        banner.className = 'mt-2 mx-auto px-3 py-1.5 rounded-lg bg-red-500/80 text-white text-xs font-semibold text-center shadow-lg'
+        const dateStr = data.periodEnd ? new Date(data.periodEnd).toLocaleDateString('pt-BR') : 'em breve'
+        banner.textContent = `Sua assinatura foi cancelada e seu acesso será revogado ${dateStr}.`
+        nav.appendChild(banner)
+      })
+      .catch(() => {})
   </script>
 </nav>
 {{ end }}

@@ -10,6 +10,7 @@ import (
 
 	entity_public "armazenda/entity/public"
 	"armazenda/model/departure_model"
+	"armazenda/model/farm_config_model"
 	"armazenda/model/nfe_model"
 	"armazenda/model/product_model"
 	"armazenda/pkg/nfe/entity"
@@ -17,6 +18,7 @@ import (
 	nfe_xml "armazenda/pkg/nfe/xml"
 	"armazenda/service/nfe_service"
 	"armazenda/service/user_service"
+	"armazenda/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
@@ -149,10 +151,19 @@ func getNFeConfigForm(c *gin.Context) {
 	nfeModel := nfe_model.GetNFeModel()
 	config, err := nfeModel.GetFarmConfig(farmID)
 	if err != nil {
-		config = &nfe_model.FarmConfig{}
+		config = &entity_public.FarmConfig{}
 	}
 	if config == nil {
-		config = &nfe_model.FarmConfig{}
+		fcm := farm_config_model.GetFarmConfigModel()
+		farm, farmErr := fcm.GetFarmConfig(farmID)
+		if farmErr != nil {
+
+		}
+		config = &entity_public.FarmConfig{
+			IEEmitter:   farm.InscricaoEstadual,
+			DocEmitter:  farm.OwnerDocument,
+			EmitterType: *farm.OwnerDocumentType,
+		}
 	}
 
 	c.HTML(http.StatusOK, "nfe-config-form", gin.H{
@@ -166,37 +177,42 @@ func getNFeConfigForm(c *gin.Context) {
 
 func saveNFeConfig(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
+
+	var fConfig entity_public.FarmConfig
+	c.Bind(&fConfig)
+
 	farmID := user_service.GetFarmFromToken(sid)
 
-	// Parse form fields
-	environment, _ := strconv.Atoi(c.PostForm("environment"))
-	environment = 2
-	emitterType, _ := strconv.Atoi(c.PostForm("emitterType"))
-	taxRegime, _ := strconv.Atoi(c.PostForm("taxRegime"))
-	defaultModFrete, _ := strconv.Atoi(c.PostForm("defaultModFrete"))
-	serie, _ := strconv.Atoi(c.PostForm("serie"))
-	if serie == 0 {
-		serie = 1
+	fConfig.Environment = 2
+	if fConfig.Serie == 0 {
+		fConfig.Serie = 1
 	}
-
-	ieEmitter := c.PostForm("ieEmitter")
-	cnpjEmitter := c.PostForm("cnpjEmitter")
-	cpfEmitter := c.PostForm("cpfEmitter")
-
-	// Tax config defaults
-	defaultCFOP := c.PostForm("defaultCFOP")
-	if defaultCFOP == "" {
-		defaultCFOP = "5101"
+	if fConfig.DefaultCFOP == "" {
+		fConfig.DefaultCFOP = "5101"
 	}
-	defaultUnit := c.PostForm("defaultUnit")
-	if defaultUnit == "" {
-		defaultUnit = "KG"
+	if fConfig.DefaultUnit == "" {
+		fConfig.DefaultUnit = "KG"
 	}
-	defaultCEST := strings.TrimSpace(c.PostForm("defaultCEST"))
-	defaultICMSCST := strings.TrimSpace(c.PostForm("defaultICMSCST"))
-	defaultPISCST := strings.TrimSpace(c.PostForm("defaultPISCST"))
-	defaultCOFINSCST := strings.TrimSpace(c.PostForm("defaultCOFINSCST"))
-	defaultNaturezaOp := strings.TrimSpace(c.PostForm("defaultNaturezaOp"))
+	if fConfig.DefaultCEST != nil {
+		trimmed := strings.TrimSpace(*fConfig.DefaultCEST)
+		fConfig.DefaultCEST = &trimmed
+	}
+	if fConfig.DefaultICMSCST != nil {
+		trimmed := strings.TrimSpace(*fConfig.DefaultICMSCST)
+		fConfig.DefaultICMSCST = &trimmed
+	}
+	if fConfig.DefaultPISCST != nil {
+		trimmed := strings.TrimSpace(*fConfig.DefaultPISCST)
+		fConfig.DefaultPISCST = &trimmed
+	}
+	if fConfig.DefaultCOFINSCST != nil {
+		trimmed := strings.TrimSpace(*fConfig.DefaultCOFINSCST)
+		fConfig.DefaultCOFINSCST = &trimmed
+	}
+	if fConfig.DefaultNaturezaOp != nil {
+		trimmed := strings.TrimSpace(*fConfig.DefaultNaturezaOp)
+		fConfig.DefaultNaturezaOp = &trimmed
+	}
 
 	icmsRate, icmsRateErr := parsePercentRateOrNil(c.PostForm("icmsRate"))
 	if icmsRateErr != nil {
@@ -246,9 +262,9 @@ func saveNFeConfig(c *gin.Context) {
 	// Get existing config to preserve certificate data if no new upload
 	nfeModel := nfe_model.GetNFeModel()
 	existingConfig, _ := nfeModel.GetFarmConfig(farmID)
-	if certData == nil && existingConfig != nil {
+	if certData == nil && existingConfig != nil && existingConfig.CertificatePath != nil {
 		certData = existingConfig.CertificateData
-		certPath = existingConfig.CertificatePath
+		certPath = *existingConfig.CertificatePath
 	}
 
 	// Handle password encryption
@@ -260,61 +276,39 @@ func saveNFeConfig(c *gin.Context) {
 		encryptedPassword = existingConfig.CertificatePasswordEncrypted
 	}
 
-	config := nfe_model.FarmConfig{
-		FarmID:                       int(farmID),
-		CertificatePath:              certPath,
+	config := entity_public.FarmConfig{
+		FarmID:                       &farmID,
+		CertificatePath:              &certPath,
 		CertificateData:              certData,
 		CertificatePasswordEncrypted: encryptedPassword,
-		Environment:                  environment,
-		Serie:                        serie,
-		TaxRegime:                    taxRegime,
-		EmitterType:                  emitterType,
-		IEEmitter:                    ieEmitter,
-		EmitterUF:                    "MT", // Default for now
-		DefaultModFrete:              defaultModFrete,
-		DefaultCFOP:                  defaultCFOP,
-		DefaultUnit:                  defaultUnit,
+		Environment:                  fConfig.Environment,
+		Serie:                        fConfig.Serie,
+		TaxRegime:                    fConfig.TaxRegime,
+		DefaultModFrete:              fConfig.DefaultModFrete,
+		DefaultCFOP:                  fConfig.DefaultCFOP,
+		DefaultUnit:                  fConfig.DefaultUnit,
 		ICMSRate:                     derefDecimal(icmsRate),
 		PISRate:                      derefDecimal(pisRate),
 		COFINSRate:                   derefDecimal(cofinsRate),
+		FarmCND: entity_public.FarmCND{
+			CertificateNumber: fConfig.CertificateNumber,
+			ExpDate:           fConfig.ExpDate,
+		},
 	}
 
-	if cnpjEmitter != "" {
-		config.CNPJEmitter = &cnpjEmitter
-	}
-	if cpfEmitter != "" {
-		config.CPFEmitter = &cpfEmitter
-	}
-	if defaultCEST != "" {
-		config.DefaultCEST = &defaultCEST
-	}
-	if defaultICMSCST != "" {
-		config.DefaultICMSCST = &defaultICMSCST
-	}
-	if defaultPISCST != "" {
-		config.DefaultPISCST = &defaultPISCST
-	}
-	if defaultCOFINSCST != "" {
-		config.DefaultCOFINSCST = &defaultCOFINSCST
-	}
-	if defaultNaturezaOp != "" {
-		config.DefaultNaturezaOp = &defaultNaturezaOp
+	meta, empty := utils.ParseMetaFromForm(c)
+	if empty == false {
+		config.FarmCND.Meta = &meta
 	}
 
-	if upsertErr := nfeModel.UpsertFarmConfig(config); upsertErr != nil {
-		c.HTML(http.StatusInternalServerError, "nfe-config-form", gin.H{
-			"FarmID": farmID,
-			"Config": config,
-			"Error":  "Failed to save NF-e configuration: " + upsertErr.Error(),
-		})
+	_, toast := nfe_service.UpsertFarmConfig(config)
+	if toast.Type == entity_public.ErrorToast {
+		c.Header("HX-Trigger", toast.ToJsonStr())
+		c.Status(http.StatusInternalServerError)
 		return
 	}
-
-	c.HTML(http.StatusOK, "nfe-config-form", gin.H{
-		"FarmID":  farmID,
-		"Config":  config,
-		"Success": "Configuração NF-e salva com sucesso!",
-	})
+	c.Header("HX-Trigger", toast.ToJsonStr())
+	c.Status(http.StatusOK)
 }
 
 // derefDecimal returns the decimal value pointed to by d, or zero if d is nil.
@@ -325,22 +319,23 @@ func derefDecimal(d *decimal.Decimal) decimal.Decimal {
 	return *d
 }
 
-func UseNFeRoutes(router *gin.Engine) {
-	router.GET("/nfe", getNFePage)
-	router.POST("/nfe/preview/:departureId", previewNFe)
-	router.POST("/nfe/build/:departureId", buildNFe)
-	router.GET("/nfe/config/form", getNFeConfigForm)
-	router.PUT("/nfe/config", saveNFeConfig)
-	router.GET("/nfe/modal/:departureId", getNFeEmitModal)
-	router.GET("/nfe/list", getNFeList)
-	router.GET("/nfe/download/xml/:accessKey", downloadNFeXML)
-	router.GET("/nfe/download/danfe/:accessKey", downloadNFeDANFE)
+func UseNFeRoutes(router gin.IRoutes) {
+	router.GET("/", getNFePage)
+	router.POST("/preview/:departureId", previewNFe)
+	router.POST("/build/:departureId", buildNFe)
+	router.GET("/config/form", getNFeConfigForm)
+	router.PUT("/config", saveNFeConfig)
+	router.GET("/modal/:departureId", getNFeEmitModal)
+	router.GET("/list", getNFeList)
+	router.GET("/download/xml/:accessKey", downloadNFeXML)
+	router.GET("/download/danfe/:accessKey", downloadNFeDANFE)
 }
 
 func getNFePage(c *gin.Context) {
 	nonce, _ := c.Get("csp_nonce")
 	c.HTML(http.StatusOK, "nfe.html", gin.H{
 		"CSPNonce": nonce.(string),
+		"TierKey":  user_service.GetTierKeyFromContext(c),
 	})
 }
 
@@ -519,10 +514,12 @@ func getNFeEmitModal(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farmID := user_service.GetFarmFromToken(sid)
 	var defaultICMS, defaultPIS, defaultCOFINS decimal.Decimal
+	hasConfig := false
 	if fc, fcErr := nfeModel.GetFarmConfig(farmID); fcErr == nil && fc != nil {
 		defaultICMS = fc.ICMSRate
 		defaultPIS = fc.PISRate
 		defaultCOFINS = fc.COFINSRate
+		hasConfig = true
 	}
 
 	c.HTML(http.StatusOK, "nfe-emit-modal", gin.H{
@@ -533,6 +530,7 @@ func getNFeEmitModal(c *gin.Context) {
 		"DefaultPISRate":    percentDisplay(defaultPIS),
 		"DefaultCOFINSRate": percentDisplay(defaultCOFINS),
 		"CSPNonce":          nonce.(string),
+		"HasNFEFarmConfig":  hasConfig,
 	})
 }
 

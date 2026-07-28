@@ -28,9 +28,9 @@ func NewBuilder() *Builder {
 // Build creates the NF-e XML document from the input data.
 func (b *Builder) documentForAccessKey(emit entity.EmitterData) string {
 	if emit.Type == 2 {
-		return padLeftZeros(emit.CPF, 14)
+		return padLeftZeros(emit.Document, 14)
 	}
-	return padLeftZeros(emit.CNPJ, 14)
+	return padLeftZeros(emit.Document, 14)
 }
 
 func padLeftZeros(s string, length int) string {
@@ -151,9 +151,9 @@ func (b *Builder) buildIDE(parent *etree.Element, input entity.InvoiceInput, acc
 func (b *Builder) buildEmit(parent *etree.Element, emit entity.EmitterData) {
 	e := parent.CreateElement("emit")
 	if emit.Type == 2 {
-		e.CreateElement("CPF").SetText(emit.CPF)
+		e.CreateElement("CPF").SetText(emit.Document)
 	} else {
-		e.CreateElement("CNPJ").SetText(emit.CNPJ)
+		e.CreateElement("CNPJ").SetText(emit.Document)
 	}
 	e.CreateElement("xNome").SetText(emit.XNome)
 	if emit.XFant != "" {

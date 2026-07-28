@@ -1,0 +1,64 @@
+{{ block "farm-nfe-cnd" . }}
+<fieldset class="glass-panel flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2 col-span-2" id="farm-cnd-fieldset">
+  <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+    Certidão Negativa de Débitos (CND)
+    <small>opcional</small>
+  </legend>
+  <i class="text-xs font-normal text-white/60 normal-case">Campos usados para preencher observação da nota fiscal</i>
+  <div class="flex items-center gap-4">
+    <div class="flex flex-col-reverse w-full">
+      <input type="text" name="certificateNumber" id="certificateNumber" data-test_id="cnd-certificate-number" class="peer bg-white/10 border-white/20 text-white placeholder-white/50"{{ with .Config.CertificateNumber}} value="{{ . }}" {{ end }}>
+      <label for="certificateNumber" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+        Número do Certificado
+      </label>
+    </div>
+    <div class="flex flex-col-reverse w-full">
+      <input type="date" name="expDate" id="expDate" data-test_id="cnd-exp-date" class="peer bg-white/10 border-white/20 text-white placeholder-white/50">
+      <label for="expDate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+        Data de Expiração
+      </label>
+    </div>
+  </div>
+  <div class="flex flex-col">
+    <input type="hidden" name="meta" id="cnd-meta" data-test_id="key-value-cnd">
+    <div class="flex items-center gap-4 my-2 px-2">
+      <h5 class="text-white/85 font-medium text-base">Informação Adicional</h5>
+      <button type="button" id="addMetaKeyValue" class="flex items-center gap-2 add-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m5 11h-4v4h-2v-4H7v-2h4V7h2v4h4z"/>
+        </svg>
+        Nova Informação
+      </button>
+    </div>
+    <div class="flex items-center text-white/70 text-xs lg:text-sm font-medium uppercase tracking-wider" id="meta-legend">
+      <h6 class="pl-2 w-full">Nome</h6>
+      <h6 class="w-full">Valor</h6>
+    </div>
+    <div class="flex flex-col gap-4" id="meta-container">
+      {{ if and (ne .Config.Meta nil) (gt (len .Config.Meta) 0) }}
+      {{ range $key, $value := .Config.Meta }}
+      <div class="flex items-center gap-4" id="meta-row">
+        <input id="meta-key" type="text" name="meta[0].key" class="bg-white/10 border-white/20 text-white placeholder-white/50 w-full" placeholder="Cód. Autenticação" value="{{ $key }}">
+        <input id="meta-value" type="text" name="meta[0].value" class="bg-white/10 border-white/20 text-white placeholder-white/50 w-full" placeholder="0782129100" value="{{ $value }}">
+        <button type="button" id="minus-btn" class="invisible remove-tier-btn icon-btn text-red-400/70 hover:text-red-400" title="Remover faixa">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" class="pointer-events-none">
+            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m5 11H7v-2h10z"></path>
+          </svg>
+        </button>
+      </div>
+      {{ end }}
+      {{ else }}
+      <div class="flex items-center gap-4" id="meta-row">
+        <input id="meta-key" type="text" name="meta[0].key" class="bg-white/10 border-white/20 text-white placeholder-white/50 w-full" placeholder="Cód. Autenticação">
+        <input id="meta-value" type="text" name="meta[0].value" class="bg-white/10 border-white/20 text-white placeholder-white/50 w-full" placeholder="0782129100">
+        <button type="button" id="minus-btn" class="invisible remove-tier-btn icon-btn text-red-400/70 hover:text-red-400" title="Remover faixa">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" class="pointer-events-none">
+            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m5 11H7v-2h10z"></path>
+          </svg>
+        </button>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+</fieldset>
+{{ end }}

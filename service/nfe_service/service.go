@@ -41,7 +41,7 @@ func NewNFeService() *NFeService {
 
 // prepareInvoiceBuildData fetches and validates all data needed to build an NF-e
 // without allocating a number, signing, or persisting anything.
-func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates) (entity.InvoiceInput, entity_public.Departure, *nfe_model.FarmConfig, entity_public.Product, entity_public.Toast) {
+func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates) (entity.InvoiceInput, entity_public.Departure, *entity_public.FarmConfig, entity_public.Product, entity_public.Toast) {
 	var emptyInput entity.InvoiceInput
 
 	// Get departure
@@ -74,7 +74,7 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetErrorToast("Failed to get NFe configuration", "")
 	}
 	if farmNFeConfig == nil {
-		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetWarningToast("NFe not configured for this farm", "configure in settings")
+		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetWarningToast("NF-e não configurada", "acesse NF-e em Configurações")
 	}
 
 	// Get full farm data for emitter address
@@ -90,9 +90,11 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 
 	// Get recipient
 	var recipient entity.RecipientData
+	var person entity_public.FullPerson
 	if departure.Recipient != nil {
 		pModel := person_model.GetPersonModel()
-		person, personErr := pModel.GetFullPersonById(*departure.Recipient)
+		var personErr *model_error.ModelError
+		person, personErr = pModel.GetFullPersonById(*departure.Recipient)
 		if personErr != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("GetFullPersonById error: %v", personErr.Error()))
 			return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetErrorToast("Failed to get recipient info", "")
@@ -182,6 +184,30 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 		}}
 	}
 
+	// Build CND additional info: certificate blocks first, then all metadata.
+	var cndParts []string
+	var metaParts []string
+	if farmBlock := formatCNDBlock("Fazenda", farmNFeConfig.CertificateNumber, farmNFeConfig.ExpDate); farmBlock != "" {
+		cndParts = append(cndParts, farmBlock)
+	}
+	if personBlock := formatCNDBlock("Destinatário", person.CertificateNumber, person.ExpDate); personBlock != "" {
+		cndParts = append(cndParts, personBlock)
+	}
+	if m := formatCNDMeta(farmNFeConfig.Meta); m != "" {
+		metaParts = append(metaParts, m)
+	}
+	if m := formatCNDMeta(person.Meta); m != "" {
+		metaParts = append(metaParts, m)
+	}
+	var infCplParts []string
+	if len(cndParts) > 0 {
+		infCplParts = append(infCplParts, strings.Join(cndParts, "\n"))
+	}
+	if len(metaParts) > 0 {
+		infCplParts = append(infCplParts, strings.Join(metaParts, "\n"))
+	}
+	infCpl := strings.Join(infCplParts, "\n")
+
 	// Build input
 	input := entity.InvoiceInput{
 		Serie:       farmNFeConfig.Serie,
@@ -202,7 +228,8 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 				},
 			},
 		},
-		TotalValue: departure.NetWeight.Mul(unitPrice),
+		TotalValue:            departure.NetWeight.Mul(unitPrice),
+		InformacoesAdicionais: infCpl,
 	}
 
 	return input, departure, farmNFeConfig, product, entity_public.Toast{}
@@ -349,7 +376,7 @@ func (s *NFeService) handleSefazResponse(sefazResp *sefaz.AutorizacaoResponse, i
 }
 
 // attemptSVCContingency tries to send the NF-e via SVC with a new number and contingency fields.
-func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure entity_public.Departure, farmNFeConfig *nfe_model.FarmConfig, product entity_public.Product, oldSignedXML string, oldInvoiceID int, oldAccessKey string, nfeModel *nfe_model.NFeModel, invService *service.InvoiceService, certPassword string, unitPrice decimal.Decimal, taxRates *entity.TaxRates) (string, entity_public.Toast) {
+func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure entity_public.Departure, farmNFeConfig *entity_public.FarmConfig, product entity_public.Product, oldSignedXML string, oldInvoiceID int, oldAccessKey string, nfeModel *nfe_model.NFeModel, invService *service.InvoiceService, certPassword string, unitPrice decimal.Decimal, taxRates *entity.TaxRates) (string, entity_public.Toast) {
 	// Allocate new number for the contingency invoice (required by MOC to avoid duplicate Chave Natural)
 	newNumber, allocErr := nfeModel.AllocateNumber(uint32(departure.Farm), farmNFeConfig.Serie)
 	if allocErr != nil {
@@ -447,7 +474,7 @@ func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.
 		TpAmb:               tpAmb,
 		TpNF:                "1", // saída (matches builder.go:95)
 		EmitterName:         input.Emitter.XNome,
-		EmitterCNPJ:         s.formatDocument(input.Emitter.CNPJ, input.Emitter.CPF),
+		EmitterCNPJ:         s.formatDocument(input.Emitter.Document, input.Emitter.Document),
 		EmitterIE:           input.Emitter.IE,
 		EmitterCRT:          input.Emitter.CRT,
 		EmitterAddress:      input.Emitter.Logradouro,
@@ -545,10 +572,10 @@ func (s *NFeService) formatDocument(cnpj, cpf string) string {
 func (s *NFeService) documentForAccessKey(emitter entity.EmitterData) string {
 	if emitter.Type == 2 {
 		// CPF: pad with leading zeros to 14 digits
-		return padLeftZeros(emitter.CPF, 14)
+		return padLeftZeros(emitter.Document, 14)
 	}
 	// CNPJ must be exactly 14 digits
-	return padLeftZeros(emitter.CNPJ, 14)
+	return padLeftZeros(emitter.Document, 14)
 }
 
 func padLeftZeros(s string, length int) string {
@@ -562,7 +589,7 @@ func padLeftZeros(s string, length int) string {
 }
 
 // buildItems creates the NF-e item data from departure and configs.
-func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice decimal.Decimal, ncm string, unit string, description string, farmConfig *nfe_model.FarmConfig, cfop string, rates entity.TaxRates) []entity.ItemData {
+func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice decimal.Decimal, ncm string, unit string, description string, farmConfig *entity_public.FarmConfig, cfop string, rates entity.TaxRates) []entity.ItemData {
 	totalValue := departure.NetWeight.Mul(unitPrice)
 	regime := defaults.TaxRegime(farmConfig.TaxRegime)
 
@@ -671,7 +698,7 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 //
 // All three returned pointers are non-nil by construction, so callers (e.g.
 // buildItems) can safely dereference without nil checks.
-func MergeRates(overrides entity.TaxRates, farmConfig *nfe_model.FarmConfig) entity.TaxRates {
+func MergeRates(overrides entity.TaxRates, farmConfig *entity_public.FarmConfig) entity.TaxRates {
 	var pICMS, pPIS, pCOFINS decimal.Decimal
 	if farmConfig != nil {
 		pICMS, pPIS, pCOFINS = farmConfig.ICMSRate, farmConfig.PISRate, farmConfig.COFINSRate
@@ -700,7 +727,7 @@ func hasAnyUserRate(rates entity.TaxRates) bool {
 }
 
 // mapFarmToEmitter maps farm config and farm data to NF-e emitter data.
-func (s *NFeService) mapFarmToEmitter(cfg *nfe_model.FarmConfig, farm *entity_public.Farm, nfeModel *nfe_model.NFeModel) entity.EmitterData {
+func (s *NFeService) mapFarmToEmitter(cfg *entity_public.FarmConfig, farm *entity_public.Farm, nfeModel *nfe_model.NFeModel) entity.EmitterData {
 	emitter := entity.EmitterData{
 		Type:       cfg.EmitterType,
 		IE:         cfg.IEEmitter,
@@ -714,16 +741,7 @@ func (s *NFeService) mapFarmToEmitter(cfg *nfe_model.FarmConfig, farm *entity_pu
 		CEP:        "",
 		Fone:       "",
 		CRT:        defaults.TaxRegime(cfg.TaxRegime).CRT(),
-	}
-
-	if cfg.EmitterType == 2 {
-		if cfg.CPFEmitter != nil {
-			emitter.CPF = *cfg.CPFEmitter
-		}
-	} else {
-		if cfg.CNPJEmitter != nil {
-			emitter.CNPJ = *cfg.CNPJEmitter
-		}
+		Document:   *cfg.DocEmitter,
 	}
 
 	// Populate emitter name and address from farm data
@@ -769,26 +787,27 @@ func (s *NFeService) mapFarmToEmitter(cfg *nfe_model.FarmConfig, farm *entity_pu
 // validateEmitter checks that all required emitter fields are populated.
 func (s *NFeService) validateEmitter(emit entity.EmitterData, serie int) []string {
 	var errs []string
-	if emit.Type == 2 {
-		if emit.CPF == "" {
+
+	if emit.Document == "" {
+		if emit.Type == 2 {
 			errs = append(errs, "CPF do emitente não configurado")
+		} else {
+			errs = append(errs, "CNPJ do emitente não configurado")
 		}
+	}
+
+	if emit.Type == 2 {
 		// CPF (Produtor Rural) emitters must use series 920-969 per Nota Técnica 2018.001
 		if serie < 920 || serie > 969 {
 			errs = append(errs, fmt.Sprintf("Série %d inválida para emitente CPF: deve estar entre 920 e 969", serie))
 		}
 	} else {
-		if emit.CNPJ == "" {
-			errs = append(errs, "CNPJ do emitente não configurado")
-		}
 		// CNPJ emitters must use series 0-889
 		if serie < 0 || serie > 889 {
 			errs = append(errs, fmt.Sprintf("Série %d inválida para emitente CNPJ: deve estar entre 0 e 889", serie))
 		}
 	}
-	if !isValidIEMT(emit.IE) {
-		errs = append(errs, "IE do emitente inválida para MT (deve ter 11 dígitos)")
-	}
+
 	if emit.XNome == "" {
 		errs = append(errs, "Nome/Razão Social do emitente não configurado")
 	}
@@ -948,6 +967,35 @@ func (s *NFeService) mapFullPersonToRecipient(person entity_public.FullPerson, n
 	return recipient
 }
 
+// formatCNDBlock returns the certificate portion of a CND block for the DANFE infCpl.
+// If the certificate number is absent, it returns an empty string.
+func formatCNDBlock(label string, certNumber *string, expDate *time.Time) string {
+	if certNumber == nil || *certNumber == "" {
+		return ""
+	}
+	var parts []string
+	parts = append(parts, fmt.Sprintf("CND %s:", label))
+	certParts := []string{fmt.Sprintf("Cert. Nº %s", *certNumber)}
+	if expDate != nil {
+		certParts = append(certParts, fmt.Sprintf("válido até %s", expDate.Format("02/01/2006")))
+	}
+	parts = append(parts, strings.Join(certParts, ", "))
+	return strings.Join(parts, "\n")
+}
+
+// formatCNDMeta returns the metadata lines for a CND entry.
+// If there is no metadata, it returns an empty string.
+func formatCNDMeta(meta *map[string]interface{}) string {
+	if meta == nil || len(*meta) == 0 {
+		return ""
+	}
+	var parts []string
+	for k, v := range *meta {
+		parts = append(parts, fmt.Sprintf("%s: %v", k, v))
+	}
+	return strings.Join(parts, "\n")
+}
+
 // EncryptPassword encrypts a certificate password using AES-256-GCM with the env key.
 // Returns base64-encoded ciphertext (nonce || ciphertext || tag).
 func EncryptPassword(plaintext string) string {
@@ -1031,7 +1079,7 @@ func deriveKey(keyStr string) []byte {
 	}
 	// Pad by repeating
 	padded := make([]byte, 32)
-	for i := 0; i < 32; i++ {
+	for i := range 32 {
 		padded[i] = keyBytes[i%len(keyBytes)]
 	}
 	return padded
