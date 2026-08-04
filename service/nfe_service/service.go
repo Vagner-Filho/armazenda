@@ -201,12 +201,12 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	}
 	var infCplParts []string
 	if len(cndParts) > 0 {
-		infCplParts = append(infCplParts, strings.Join(cndParts, "\n"))
+		infCplParts = append(infCplParts, strings.Join(cndParts, "; "))
 	}
 	if len(metaParts) > 0 {
-		infCplParts = append(infCplParts, strings.Join(metaParts, "\n"))
+		infCplParts = append(infCplParts, strings.Join(metaParts, "; "))
 	}
-	infCpl := strings.Join(infCplParts, "\n")
+	infCpl := strings.Join(infCplParts, "; ")
 
 	// Build input
 	input := entity.InvoiceInput{
@@ -251,7 +251,7 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 		StateUF:     farmNFeConfig.EmitterUF,
 		Timeout:     30 * time.Second,
 	}
-	invService := service.NewInvoiceService(nil, sefazCfg)
+	invService := service.NewInvoiceService(sefazCfg)
 
 	// --- Step 1: Normal emission attempt ---
 	number, allocErr := nfeModel.AllocateNumber(farmID, farmNFeConfig.Serie)
@@ -293,6 +293,14 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateInvoice error: %v", createErr.Error()))
 		return "", entity_public.GetErrorToast("Failed to save invoice", "")
+	}
+
+	// Persist the signed XML regardless of the SEFAZ outcome: the XML download
+	// falls back to it, and the retry worker builds the <nfeProc> from it when
+	// a pending invoice later gets authorized. The status stays 'draft' until
+	// a real SEFAZ response arrives.
+	if xmlErr := nfeModel.UpdateInvoiceSignedXML(invoiceID, signedXML); xmlErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceSignedXML error: %v", xmlErr.Error()))
 	}
 
 	// Attempt synchronous normal SEFAZ submission
@@ -405,9 +413,9 @@ func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure 
 		return "", entity_public.GetErrorToast("Failed to save contingency invoice", "")
 	}
 
-	xmlErr := nfeModel.UpdateInvoiceXML(newInvoiceID, newSignedXML)
+	xmlErr := nfeModel.UpdateInvoiceSignedXML(newInvoiceID, newSignedXML)
 	if xmlErr != nil {
-		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceXML (SVC) error: %v", xmlErr.Error()))
+		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceSignedXML (SVC) error: %v", xmlErr.Error()))
 		return "", entity_public.GetErrorToast("Failed to save contingency signed XML", "")
 	}
 
@@ -442,6 +450,129 @@ func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure 
 	resultXML, resultToast := s.handleSefazResponse(sefazResp, newInvoiceID, newSignedXML, nfeModel)
 	_ = nfeModel.SupersedeInvoice(oldInvoiceID, newInvoiceID)
 	return resultXML, resultToast
+}
+
+// CancelInvoice registers a cancellation event (110111) for an authorized NF-e
+// at the same environment that authorized it (origin SEFAZ or SVC). On success
+// the invoice is marked as 'cancelled' and the signed event XML is stored as
+// legal proof.
+func (s *NFeService) CancelInvoice(accessKey, justification string, farmID uint32) entity_public.Toast {
+	nfeModel := nfe_model.GetNFeModel()
+	invoice, err := nfeModel.GetInvoiceByAccessKey(accessKey)
+	if err != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("CancelInvoice GetInvoiceByAccessKey error: %v", err.Error()))
+		return entity_public.GetErrorToast("Erro interno ao buscar a NF-e", "")
+	}
+	if invoice == nil {
+		return entity_public.GetWarningToast("NF-e não encontrada", "")
+	}
+
+	// Verify the invoice belongs to the user's farm
+	dModel := departure_model.GetDepartureModel()
+	departure, depErr := dModel.GetDeparture(invoice.DepartureID)
+	if depErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("CancelInvoice GetDeparture error: %v", depErr.Error()))
+		return entity_public.GetErrorToast("Erro interno ao validar a NF-e", "")
+	}
+	if departure.Farm != farmID {
+		return entity_public.GetWarningToast("Esta NF-e não pertence à sua fazenda", "")
+	}
+
+	if invoice.Status != "authorized" {
+		return entity_public.GetWarningToast(
+			"Esta NF-e não pode ser cancelada",
+			"Somente NF-e autorizadas pela SEFAZ podem ser canceladas")
+	}
+	if invoice.Protocol == nil || *invoice.Protocol == "" {
+		return entity_public.GetWarningToast(
+			"Protocolo de autorização não encontrado",
+			"Consulte a NF-e na SEFAZ e tente novamente")
+	}
+
+	justification = strings.TrimSpace(justification)
+	if len([]rune(justification)) < 15 || len([]rune(justification)) > 256 {
+		return entity_public.GetWarningToast(
+			"Justificativa inválida",
+			"A justificativa deve ter entre 15 e 256 caracteres")
+	}
+
+	farmNFeConfig, dbErr := nfeModel.GetFarmConfig(farmID)
+	if dbErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("CancelInvoice GetFarmConfig error: %v", dbErr.Error()))
+		return entity_public.GetErrorToast("Erro interno ao buscar a configuração da NF-e", "")
+	}
+	if farmNFeConfig == nil {
+		return entity_public.GetWarningToast("NF-e não configurada", "acesse NF-e em Configurações")
+	}
+
+	certPassword := decryptPassword(farmNFeConfig.CertificatePasswordEncrypted)
+	sefazCfg := config.SefazConfig{
+		Environment: config.Environment(farmNFeConfig.Environment),
+		StateUF:     farmNFeConfig.EmitterUF,
+		Timeout:     30 * time.Second,
+	}
+	invService := service.NewInvoiceService(sefazCfg)
+
+	emitterDoc := ""
+	if farmNFeConfig.DocEmitter != nil {
+		emitterDoc = *farmNFeConfig.DocEmitter
+	}
+	eventInput := nfe_xml.CancelEventInput{
+		AccessKey:     invoice.AccessKey,
+		Protocol:      *invoice.Protocol,
+		Justification: justification,
+		EmitterDoc:    emitterDoc,
+		EmitterType:   farmNFeConfig.EmitterType,
+		EmitterUF:     farmNFeConfig.EmitterUF,
+		Environment:   farmNFeConfig.Environment,
+		DhEvento:      time.Now(),
+		SeqEvento:     1,
+	}
+
+	signedEventXML, buildErr := invService.BuildAndSignCancellationEvent(eventInput, farmNFeConfig.CertificateData, certPassword)
+	if buildErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("BuildAndSignCancellationEvent error: %v", buildErr.Error()))
+		return entity_public.GetErrorToast("Falha ao montar o evento de cancelamento", buildErr.Error())
+	}
+
+	// Per the MOC contingency annex, the cancellation must be registered in the
+	// same environment that authorized the NF-e (origin SEFAZ or SVC).
+	tpEmis := defaults.TpEmis(invoice.TpEmis)
+	resp, sendErr := invService.SendCancellationEvent(signedEventXML, farmNFeConfig.CertificateData, certPassword, tpEmis)
+	if sendErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("SendCancellationEvent error: %v", sendErr.Error()))
+		return entity_public.GetErrorToast(
+			"Não foi possível comunicar com a SEFAZ",
+			"O cancelamento não foi registrado. Tente novamente mais tarde.")
+	}
+	if resp == nil {
+		return entity_public.GetErrorToast(
+			"Não foi possível comunicar com a SEFAZ",
+			"Resposta vazia. O cancelamento não foi registrado.")
+	}
+
+	if resp.IsRegistered() || resp.IsAlreadyCancelled() {
+		updErr := nfeModel.UpdateInvoiceCancelled(invoice.ID, justification, signedEventXML, resp.StatusCode, resp.StatusMotive)
+		if updErr != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceCancelled error: %v", updErr.Error()))
+			return entity_public.GetErrorToast(
+				"Cancelamento registrado na SEFAZ, mas falhamos ao atualizar a NF-e localmente",
+				"")
+		}
+		if resp.IsAlreadyCancelled() {
+			return entity_public.GetSuccessToast(
+				"NF-e já estava cancelada na SEFAZ",
+				"A situação da NF-e foi atualizada")
+		}
+		return entity_public.GetSuccessToast(
+			"NF-e cancelada",
+			fmt.Sprintf("Motivo registrado: %s", justification))
+	}
+
+	return entity_public.GetWarningToast(
+		fmt.Sprintf("SEFAZ rejeitou o cancelamento (%s)", resp.StatusCode),
+		resp.StatusMotive,
+	)
 }
 
 // GeneratePreviewDANFE builds a preview DANFE PDF without allocating an invoice number,
@@ -980,7 +1111,9 @@ func formatCNDBlock(label string, certNumber *string, expDate *time.Time) string
 		certParts = append(certParts, fmt.Sprintf("válido até %s", expDate.Format("02/01/2006")))
 	}
 	parts = append(parts, strings.Join(certParts, ", "))
-	return strings.Join(parts, "\n")
+	// Single space separator: the schema TString pattern forbids newlines in
+	// infCpl (SEFAZ rejects with cvc-type.3.1.3 otherwise).
+	return strings.Join(parts, " ")
 }
 
 // formatCNDMeta returns the metadata lines for a CND entry.
@@ -993,7 +1126,9 @@ func formatCNDMeta(meta *map[string]interface{}) string {
 	for k, v := range *meta {
 		parts = append(parts, fmt.Sprintf("%s: %v", k, v))
 	}
-	return strings.Join(parts, "\n")
+	// "; " separator: the schema TString pattern forbids newlines in infCpl
+	// (SEFAZ rejects with cvc-type.3.1.3 otherwise).
+	return strings.Join(parts, "; ")
 }
 
 // EncryptPassword encrypts a certificate password using AES-256-GCM with the env key.

@@ -1,0 +1,56 @@
+{{ block "nfe-cancel-modal" . }}
+<dialog id="nfe-cancel-dialog" class="glass-panel rounded-xl w-full max-w-lg">
+    <div class="p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-white">Cancelar NF-e</h2>
+            {{ template "close-dialog-btn" (dict "selector" "dialog#nfe-cancel-dialog" "CSPNonce" .CSPNonce) }}
+        </div>
+        <div class="mb-4 text-white/80 text-sm space-y-2">
+            <p><strong>Chave de Acesso:</strong> <span class="font-mono text-xs break-all">{{ .Invoice.AccessKey }}</span></p>
+            <p><strong>Série/Número:</strong> {{ .Invoice.Serie }}/{{ .Invoice.Number }}</p>
+            <p><strong>Valor Total:</strong> <span class="font-bold">R$ {{ .Invoice.TotalValue }}</span></p>
+        </div>
+        {{ if .PastDeadline }}
+        <div class="mb-4 bg-yellow-500/15 border border-yellow-500/40 text-yellow-200 rounded-lg p-3 text-xs flex gap-2">
+            {{ template "info-icon" "size-5 shrink-0" }}
+            <p>
+                Esta NF-e foi autorizada há mais de 24 horas. A SEFAZ poderá rejeitar o cancelamento
+                fora do prazo (erro 501), dependendo da legislação do seu estado.
+            </p>
+        </div>
+        {{ end }}
+        <div class="mb-4 bg-red-500/10 border border-red-500/30 text-red-300 rounded-lg p-3 text-xs flex gap-2">
+            {{ template "info-icon" "size-5 shrink-0" }}
+            <p>
+                O cancelamento é registrado na SEFAZ e <strong>não pode ser desfeito</strong>.
+                Após o cancelamento, a NF-e perde sua validade fiscal.
+            </p>
+        </div>
+        <form class="flex flex-col gap-4" hx-post="/nfe/cancel/{{ .Invoice.AccessKey }}"
+            hx-target="#nfe-{{ .Invoice.ID }}" hx-swap="outerHTML" hx-indicator="#nfe-cancel-spinner">
+            <div class="flex flex-col-reverse">
+                <textarea name="justification" id="justification" required minlength="15" maxlength="256" rows="3"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 resize-none"
+                    placeholder="Informe o motivo do cancelamento (mínimo 15 caracteres)"></textarea>
+                <label for="justification"
+                    class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Justificativa
+                </label>
+            </div>
+            <div class="flex items-center justify-center gap-2">
+                <button type="submit" class="primary-glass-btn flex items-center gap-1 p-3">
+                    <iconify-icon icon="mdi:file-cancel-outline" width="20" height="20"></iconify-icon>
+                    Confirmar Cancelamento
+                </button>
+                <span id="nfe-cancel-spinner" class="htmx-indicator animate-spin text-white">
+                    <iconify-icon icon="mdi:loading" width="24" height="24"></iconify-icon>
+                </span>
+            </div>
+        </form>
+    </div>
+    <script nonce="{{ .CSPNonce }}" type="module">
+        import { setupNFeCancelModal } from "/public/assets/js/form/nfe-cancel-modal.js";
+        setupNFeCancelModal();
+    </script>
+</dialog>
+{{ end }}

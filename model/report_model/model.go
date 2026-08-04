@@ -2,6 +2,7 @@ package report_model
 
 import (
 	entity_public "armazenda/entity/public"
+	model_error "armazenda/model/error"
 	"armazenda/utils"
 	"context"
 	"errors"
@@ -41,10 +42,10 @@ func GetReportModel() *reportModel {
 
 var availableReportFilters = map[string]func(ef entity_public.ReportFilter) string{
 	"StartDate": func(ef entity_public.ReportFilter) string {
-		return fmt.Sprintf("r.date >= '%v'", ef.StartDate.Format(utils.DBTimeWithoutTimeZone))
+		return fmt.Sprintf("r.date >= '%v'", ef.StartDate.Format(utils.DBDateOnly))
 	},
 	"EndDate": func(ef entity_public.ReportFilter) string {
-		return fmt.Sprintf("r.date <= '%v'", ef.EndDate.Format(utils.DBTimeWithoutTimeZone))
+		return fmt.Sprintf("r.date <= '%v 23:59:59'", ef.EndDate.Format(utils.DBDateOnly))
 	},
 	"Vehicle": func(ef entity_public.ReportFilter) string {
 		return fmt.Sprintf("r.vehicle = '%s'", ef.Vehicle)
@@ -73,6 +74,9 @@ var availableReportFilters = map[string]func(ef entity_public.ReportFilter) stri
 	"Type": func(rf entity_public.ReportFilter) string {
 		return fmt.Sprintf("r.operation_type = %v", rf.Type)
 	},
+	"Field": func(rf entity_public.ReportFilter) string {
+		return fmt.Sprintf("r.field_id = %v", rf.Field)
+	},
 }
 
 func buildReportWhereClause(rf entity_public.ReportFilter) string {
@@ -96,27 +100,28 @@ func buildReportWhereClause(rf entity_public.ReportFilter) string {
 
 func getReportSubquery() string {
 	return `
-	FROM (SELECT e.id, 1 AS operation_type, p.name, v.plate AS vehicle, e.netweight, e.arrivaldate AS date, coalesce(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, p.id AS product_id, '-' AS recipient_name, NULL AS recipient_id
+	FROM (SELECT e.id, 1 AS operation_type, p.name, v.plate AS vehicle, e.netweight, e.arrivaldate AS date, coalesce(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, p.id AS product_id, '-' AS recipient_name, NULL AS recipient_id, f.name AS field_name, f.id as field_id
 		FROM entry e
 		JOIN crop c ON e.crop = c.id
 		JOIN product p ON c.product = p.id
+		JOIN vehicle v ON v.id = e.vehicle
+		JOIN field f ON f.id = e.field
 		LEFT JOIN entry_origin eo ON eo.entry_id = e.id
 		LEFT JOIN people
 		AS prs_origin ON prs_origin.personid = eo.person_id
 		LEFT OUTER JOIN inactive_entry ie ON ie.entry_Id = e.id
-		JOIN vehicle v ON v.id = e.vehicle
 		WHERE e.farm = @userFarm AND ie.entry_id IS NULL
 		UNION ALL
-	SELECT d.id, 2 AS operation_type, p.name, v.plate AS vehicle, d.netweight , d.departuredate AS date, coalesce(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, p.id AS product_id, COALESCE(prs_recipient.name, 'Própria') AS recipient_name, prs_recipient.personid AS recipient_id
+	SELECT d.id, 2 AS operation_type, p.name, v.plate AS vehicle, d.netweight , d.departuredate AS date, coalesce(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, p.id AS product_id, COALESCE(prs_recipient.name, 'Própria') AS recipient_name, prs_recipient.personid AS recipient_id, '-' AS field_name, NULL as field_id
 		FROM departure d
 		JOIN crop c ON d.crop = c.id
 		JOIN product p ON c.product = p.id
+		JOIN vehicle v ON v.id = d.vehicle
 		LEFT JOIN departure_origin dor ON dor.departure_id = d.id
 		LEFT JOIN people AS prs_origin ON prs_origin.personid = dor.person_id
 		LEFT JOIN departure_recipient dre ON dre.departure_id = d.id
 		LEFT JOIN people AS prs_recipient ON prs_recipient.personid = dre.person_id
 		LEFT OUTER JOIN inactive_departure id ON id.departure_id = d.id
-		JOIN vehicle v ON v.id = d.vehicle
 		WHERE d.farm = @userFarm AND id.departure_id IS NULL) AS r`
 }
 
@@ -147,7 +152,7 @@ func (rm *reportModel) FilterReport(rf entity_public.ReportFilter, farm uint32, 
 	pageSize := 10
 	offset := (page - 1) * pageSize
 
-	dataStmt := cte + "SELECT r.id, r.operation_type, r.name, r.vehicle, r.netweight, r.date, r.origin_name, r.origin_id, r.recipient_name, r.recipient_id " + subquery + whereClause + " ORDER BY r.date DESC LIMIT @pageSize OFFSET @offset"
+	dataStmt := cte + "SELECT r.id, r.operation_type, r.name, r.vehicle, r.netweight, r.date, r.origin_name, r.origin_id, r.recipient_name, r.recipient_id, r.field_name, r.field_id" + subquery + whereClause + " ORDER BY r.date DESC LIMIT @pageSize OFFSET @offset"
 
 	rows, queryErr := rm.pool.Query(context.Background(), dataStmt, pgx.NamedArgs{"userFarm": farm, "pageSize": pageSize, "offset": offset})
 	if queryErr != nil {
@@ -167,16 +172,17 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 
 	stmt := `
 	WITH people AS (SELECT np.name, np.personid FROM natural_person np UNION ALL SELECT COALESCE(lp.fantasyname, lp.companyname) AS name, lp.personid FROM legal_person lp)
-	SELECT r.id, r.operation_type, r.name, r.vehicle, r.netweight, r.date, r.origin_name, r.origin_id, r.recipient_name, r.recipient_id, r.grossweight, r.tare, r.city, r.state, r.humidity, r.damage, r.impurity, r.humidity_discount, r.service_tax, r.tax_weight FROM
+	SELECT r.id, r.operation_type, r.name, r.vehicle, r.netweight, r.date, r.origin_name, r.origin_id, r.recipient_name, r.recipient_id, r.field_name, r.field_id, r.grossweight, r.tare, r.city, r.state, r.humidity, r.damage, r.impurity, r.humidity_discount, r.service_tax, r.tax_weight FROM
 	(SELECT e.id, 1 AS operation_type,
 			p.name, v.plate AS vehicle, e.netweight, e.arrivaldate AS date,
-			COALESCE(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, '-' AS recipient_name, NULL AS recipient_id, e.grossweight, e.tare, COALESCE(a.city, 'N/A') AS city,
+			COALESCE(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, '-' AS recipient_name, NULL AS recipient_id, f.name AS field_name, f.id AS field_id, e.grossweight, e.tare, COALESCE(a.city, 'N/A') AS city,
 			COALESCE(a.state, 'N/A') AS state, COALESCE(ea.humidity, 0) AS humidity,
 			COALESCE(ea.damage, 0) AS damage, COALESCE(ea.impurity, 0) AS impurity, p.id AS product_id,
 			COALESCE(ea.humidity_discount_modifier, 1.15) AS humidity_discount, COALESCE(et.applied_tax, 0.0) AS service_tax, COALESCE(et.weight, 0.0) AS tax_weight
 			FROM entry e
 			JOIN crop c ON e.crop = c.id
 			JOIN product p ON c.product = p.id
+			JOIN field f ON f.id = e.field
 			LEFT JOIN entry_origin eo ON eo.entry_id = e.id
 			LEFT JOIN people
 			AS prs_origin ON prs_origin.personid = eo.person_id
@@ -190,7 +196,7 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 			UNION ALL
 		SELECT d.id, 2 AS operation_type,
 			p.name, v.plate AS vehicle, d.netweight, d.departuredate AS date,
-			COALESCE(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, COALESCE(prs_recipient.name, 'Pŕopria') AS recipient_name, prs_recipient.personid AS recipient_id, d.grossweight, d.tare, COALESCE(a.city, 'N/A') AS city,
+			COALESCE(prs_origin.name, 'Própria') AS origin_name, prs_origin.personid AS origin_id, COALESCE(prs_recipient.name, 'Pŕopria') AS recipient_name, prs_recipient.personid AS recipient_id, '-' AS field_name, NULL as field_id, d.grossweight, d.tare, COALESCE(a.city, 'N/A') AS city,
 			COALESCE(a.state, 'N/A') AS state, 0 AS humidity,
 			0 AS damage, 0 AS impurity, p.id AS product_id,
 			1 AS humidity_discount, 0.0 AS service_tax, 0.0 AS tax_weight
@@ -223,11 +229,13 @@ func (rm *reportModel) GetFullReport(rf entity_public.ReportFilter, farm uint32)
 
 	rows, queryErr := rm.pool.Query(context.Background(), stmt, pgx.NamedArgs{"userFarm": farm})
 	if queryErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("full report query err: %s", queryErr.Error()))
 		return []entity_public.FullReport{}, queryErr
 	}
 
 	result, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.FullReport])
 	if collectErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("full report collect err: %s", collectErr.Error()))
 		return []entity_public.FullReport{}, collectErr
 	}
 

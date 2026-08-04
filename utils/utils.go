@@ -13,6 +13,7 @@ func GetReadableDate(date int64) string {
 
 const TimeLayout string = "2006-01-02T15:04"
 const DBTimeWithoutTimeZone string = "2006-01-02 03:04:05"
+const DBDateOnly string = "2006-01-02"
 
 func ParseMetaFromForm(c *gin.Context) (map[string]interface{}, bool) {
 	meta := make(map[string]any)

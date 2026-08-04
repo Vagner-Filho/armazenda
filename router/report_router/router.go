@@ -46,6 +46,7 @@ func filterReport(c *gin.Context) {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 		return
 	}
+
 	nonce, _ := c.Get("csp_nonce")
 	report.CSPNonce = nonce.(string)
 	c.HTML(http.StatusOK, "report-content", report)

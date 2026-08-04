@@ -48,15 +48,36 @@ func (s *Signer) SignEnveloped(element *etree.Element) (*etree.Element, error) {
 // SignDocument signs the <infNFe> element and moves the resulting <Signature>
 // to be a sibling of <infNFe> under <NFe>, as required by the NF-e 4.00 schema.
 func (s *Signer) SignDocument(doc *etree.Document) error {
-	// Find the <NFe> root and <infNFe> to sign
+	return s.signElement(doc, "infNFe")
+}
+
+// SignEventDocument signs the <infEvento> element and moves the resulting
+// <Signature> to be a sibling of <infEvento> under <evento>, as required by
+// the NF-e event 1.00 schema (e.g., cancellation event 110111).
+func (s *Signer) SignEventDocument(doc *etree.Document) error {
+	return s.signElement(doc, "infEvento")
+}
+
+// signElement signs the element identified by tag (e.g., "infNFe", "infEvento")
+// and moves the resulting <Signature> to be its sibling under the parent, as
+// required by the NF-e schemas.
+func (s *Signer) signElement(doc *etree.Document, tag string) error {
+	// Find the root and the element to sign
 	root := doc.Root()
 	if root == nil {
 		return fmt.Errorf("document has no root element")
 	}
 
-	infNFe := root.FindElement("//infNFe")
+	infNFe := root.FindElement("//" + tag)
 	if infNFe == nil {
-		return fmt.Errorf("infNFe element not found")
+		return fmt.Errorf("%s element not found", tag)
+	}
+
+	// The element may be nested (e.g., <infEvento> lives under <evento>, not
+	// under the document root), so replace it within its actual parent.
+	parent := infNFe.Parent()
+	if parent == nil {
+		parent = root
 	}
 
 	// Sign enveloped — this places <ds:Signature> inside <infNFe>
@@ -88,14 +109,14 @@ func (s *Signer) SignDocument(doc *etree.Document) error {
 			}
 		}
 		// Replace the original <infNFe> with the cleaned one
-		root.RemoveChild(infNFe)
-		root.AddChild(signedElement)
+		parent.RemoveChild(infNFe)
+		parent.AddChild(signedElement)
 		// Add the signature copy as a sibling after <infNFe>
-		root.AddChild(sigCopy)
+		parent.AddChild(sigCopy)
 	} else {
 		// No signature found — replace with signed element as-is
-		root.RemoveChild(infNFe)
-		root.AddChild(signedElement)
+		parent.RemoveChild(infNFe)
+		parent.AddChild(signedElement)
 	}
 
 	return nil

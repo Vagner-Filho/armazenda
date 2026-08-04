@@ -18,14 +18,12 @@ func getFontPath(bold bool) string {
 	// filename is .../pkg/nfe/service/danfe.go
 	// Go up 3 directories to reach project root
 	dir := filepath.Dir(filename)
-	for i := 0; i < 3; i++ {
-		dir = filepath.Dir(dir)
-	}
+	dir = filepath.Dir(dir)
 	name := "LiberationSerif-Regular.ttf"
 	if bold {
 		name = "LiberationSerif-Bold.ttf"
 	}
-	return filepath.Join(dir, "assets", "fonts", name)
+	return filepath.Join(dir, "config", "fonts", name)
 }
 
 // DANFEGenerator generates DANFE PDFs.
@@ -38,15 +36,23 @@ func NewDANFEGenerator() *DANFEGenerator {
 
 // Generate creates a DANFE PDF and returns it as bytes.
 func (g *DANFEGenerator) Generate(data entity.DANFEData) ([]byte, error) {
-	return g.generatePDF(data, false)
+	return g.generatePDF(data, "")
 }
 
 // GeneratePreview creates a preview DANFE PDF with a watermark banner.
 func (g *DANFEGenerator) GeneratePreview(data entity.DANFEData) ([]byte, error) {
-	return g.generatePDF(data, true)
+	return g.generatePDF(data, "DOCUMENTO DE PRÉ-VISUALIZAÇÃO — SEM VALOR FISCAL")
 }
 
-func (g *DANFEGenerator) generatePDF(data entity.DANFEData, isPreview bool) ([]byte, error) {
+// GenerateCancelled creates a DANFE PDF for a cancelled NF-e with a prominent
+// "NF-e CANCELADA" banner, as required by MOC Anexo II for cancelled invoices.
+func (g *DANFEGenerator) GenerateCancelled(data entity.DANFEData) ([]byte, error) {
+	return g.generatePDF(data, "NF-e CANCELADA")
+}
+
+// generatePDF renders the DANFE. When banner is non-empty, a highlighted
+// banner with the given text is drawn at the top of the page.
+func (g *DANFEGenerator) generatePDF(data entity.DANFEData, banner string) ([]byte, error) {
 	// Per MOC Anexo II: FS-DA (tpEmis=5) and EPEC (tpEmis=4) are reserved
 	// and not actively wired (see AGENTS.md). Return a clear error so the
 	// caller can surface it instead of silently producing a non-compliant DANFE.
@@ -101,13 +107,13 @@ func (g *DANFEGenerator) generatePDF(data entity.DANFEData, isPreview bool) ([]b
 
 	y := margin
 
-	if isPreview {
+	if banner != "" {
 		pdf.SetFillColor(255, 200, 200)
 		pdf.Rectangle(margin, y, right, y+24, "FD", 0.5, 0)
 		pdf.SetTextColor(180, 0, 0)
 		pdf.SetFont("serif-bold", "", 12)
 		pdf.SetXY(margin+4, y+8)
-		pdf.Cell(nil, "DOCUMENTO DE PRÉ-VISUALIZAÇÃO — SEM VALOR FISCAL")
+		pdf.Cell(nil, banner)
 		pdf.SetTextColor(0, 0, 0)
 		y += 28
 	}

@@ -299,25 +299,17 @@ func (m *NFeModel) DeleteInvoiceTaxRates(invoiceID int) error {
 	return nil
 }
 
-// UpdateInvoiceXML updates the signed XML of an invoice and transitions status.
-func (m *NFeModel) UpdateInvoiceXML(id int, xmlSigned string) error {
+// UpdateInvoiceSignedXML stores the signed XML of an invoice without changing
+// its status. The status only moves when a real SEFAZ response arrives (or a
+// send failure is recorded), so a crash between persisting the XML and sending
+// leaves a retriable draft instead of an orphaned 'signed' row.
+func (m *NFeModel) UpdateInvoiceSignedXML(id int, xmlSigned string) error {
 	query := `
 		UPDATE nfe_invoice
-		SET xml_signed = $2, status = 'signed', signed_at = CURRENT_TIMESTAMP
+		SET xml_signed = $2, signed_at = CURRENT_TIMESTAMP
 		WHERE id = $1
 	`
 	_, err := m.pool.Exec(context.Background(), query, id, xmlSigned)
-	return err
-}
-
-// UpdateInvoiceXMLWithStatus updates the signed XML and sets a custom status.
-func (m *NFeModel) UpdateInvoiceXMLWithStatus(id int, xmlSigned, status string) error {
-	query := `
-		UPDATE nfe_invoice
-		SET xml_signed = $2, status = $3, signed_at = CURRENT_TIMESTAMP
-		WHERE id = $1
-	`
-	_, err := m.pool.Exec(context.Background(), query, id, xmlSigned, status)
 	return err
 }
 
@@ -338,6 +330,20 @@ func (m *NFeModel) UpdateInvoiceStatus(id int, status, protocol, sefazCode, sefa
 func (m *NFeModel) UpdateInvoiceAuthorizedXML(id int, xmlAuthorized string) error {
 	query := `UPDATE nfe_invoice SET xml_authorized = $2 WHERE id = $1`
 	_, err := m.pool.Exec(context.Background(), query, id, xmlAuthorized)
+	return err
+}
+
+// UpdateInvoiceCancelled marks an invoice as cancelled, storing the
+// cancellation reason, the signed cancellation event XML, and the SEFAZ event
+// response details (cStat/xMotivo of the RecepcaoEvento response).
+func (m *NFeModel) UpdateInvoiceCancelled(id int, reason, eventXML, sefazCode, sefazMotive string) error {
+	query := `
+		UPDATE nfe_invoice
+		SET status = 'cancelled', cancellation_reason = $2, xml_cancel_event = $3,
+		    sefaz_status_code = $4, sefaz_motive = $5, cancelled_at = CURRENT_TIMESTAMP
+		WHERE id = $1
+	`
+	_, err := m.pool.Exec(context.Background(), query, id, reason, eventXML, sefazCode, sefazMotive)
 	return err
 }
 

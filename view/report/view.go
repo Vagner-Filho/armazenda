@@ -20,7 +20,7 @@ type reportView struct {
 	view.BaseTemplateData
 	Products []entity_public.Product
 	Vehicles []entity_public.Vehicle
-	Fields   map[string][]entity_public.Field
+	Fields   []entity_public.Field
 	reportContent
 	StartDate time.Time `form:"initialDate" binding:"required" time_format:"2006-01-02T15:04"`
 	EndDate   time.Time `form:"endDate" binding:"required" time_format:"2006-01-02T15:04"`
@@ -92,10 +92,8 @@ func GetReportPage(farm uint32, page int) reportView {
 	return reportView{
 		Products: products,
 		Vehicles: vehicles,
-		Fields: map[string][]entity_public.Field{
-			"Fields": fields,
-		},
-		People: people,
+		Fields:   fields,
+		People:   people,
 		reportContent: reportContent{
 			Operations:     report,
 			EntryTotal:     entryAmount,

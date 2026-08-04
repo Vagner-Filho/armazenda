@@ -1,8 +1,8 @@
 package service
 
 import (
-	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"armazenda/pkg/nfe/config"
@@ -11,21 +11,17 @@ import (
 	"armazenda/pkg/nfe/sefaz"
 	"armazenda/pkg/nfe/sign"
 	"armazenda/pkg/nfe/xml"
-
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/shopspring/decimal"
 )
 
 // InvoiceService orchestrates the NF-e lifecycle.
+// It never connects to a database — persistence is handled by nfe_model.
 type InvoiceService struct {
-	pool   *pgxpool.Pool
 	config config.SefazConfig
 }
 
 // NewInvoiceService creates a new invoice service.
-func NewInvoiceService(pool *pgxpool.Pool, cfg config.SefazConfig) *InvoiceService {
+func NewInvoiceService(cfg config.SefazConfig) *InvoiceService {
 	return &InvoiceService{
-		pool:   pool,
 		config: cfg,
 	}
 }
@@ -51,7 +47,7 @@ func (s *InvoiceService) BuildAndSign(input entity.InvoiceInput, certData []byte
 		return "", fmt.Errorf("failed to extract document from certificate: %w", docErr)
 	}
 
-	emitterDoc := input.Emitter.Document
+	emitterDoc := strings.ReplaceAll(input.Emitter.Document, ".", "")
 
 	if certDoc != emitterDoc {
 		return "", fmt.Errorf("certificado digital não pertence ao emitente: certificado=%s, emitente=%s", certDoc, emitterDoc)
@@ -112,6 +108,69 @@ func (s *InvoiceService) SendToSefazWithEmission(signedXML string, certData []by
 	return parsed, nil
 }
 
+// BuildAndSignCancellationEvent builds and signs a cancellation event
+// (tpEvento=110111) for an authorized NF-e, returning the serialized
+// <envEvento> document ready to be sent to RecepcaoEvento4.
+func (s *InvoiceService) BuildAndSignCancellationEvent(input xml.CancelEventInput, certData []byte, certPassword string) (string, error) {
+	doc, err := xml.BuildCancellationEvent(input)
+	if err != nil {
+		return "", fmt.Errorf("failed to build cancellation event XML: %w", err)
+	}
+
+	cert, err := sign.LoadCertificateFromBytes(certData, certPassword)
+	if err != nil {
+		return "", fmt.Errorf("failed to load certificate: %w", err)
+	}
+
+	signer := sign.NewSigner(cert)
+	if err := signer.SignEventDocument(doc); err != nil {
+		return "", fmt.Errorf("failed to sign cancellation event: %w", err)
+	}
+
+	str, err := doc.WriteToString()
+	if err != nil {
+		return "", fmt.Errorf("failed to serialize cancellation event XML: %w", err)
+	}
+
+	return str, nil
+}
+
+// SendCancellationEvent sends a signed cancellation event (<envEvento>) to the
+// RecepcaoEvento4 endpoint matching the emission type (normal SEFAZ or SVC)
+// and returns the parsed response. Per the MOC contingency annex, a
+// cancellation must be registered in the same environment that authorized the
+// NF-e, so the caller must pass the invoice's tpEmis.
+func (s *InvoiceService) SendCancellationEvent(signedEventXML string, certData []byte, certPassword string, tpEmis defaults.TpEmis) (*sefaz.EventoResponse, error) {
+	cert, err := sign.LoadCertificateFromBytes(certData, certPassword)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load certificate: %w", err)
+	}
+
+	client, err := sefaz.NewClient(s.config, cert)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create SEFAZ client: %w", err)
+	}
+
+	url, ns, action, err := sefaz.GetEndpointWithSOAPActionAndEmission(s.config.StateUF, "RecepcaoEvento4", s.config.Environment == config.EnvironmentProduction, tpEmis)
+	if err != nil {
+		return nil, err
+	}
+
+	soapBody := xml.BuildSOAPEnvelope(ns, signedEventXML)
+	fmt.Println(signedEventXML)
+	resp, err := client.Post(url, action, []byte(soapBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to send cancellation event to SEFAZ: %w", err)
+	}
+
+	parsed, parseErr := sefaz.ParseEventoResponse(resp)
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse SEFAZ event response: %w", parseErr)
+	}
+
+	return parsed, nil
+}
+
 // CheckSVCStatus checks if the SVC for the configured state is operational.
 func (s *InvoiceService) CheckSVCStatus(certData []byte, certPassword string) (*sefaz.StatusResponse, error) {
 	cert, err := sign.LoadCertificateFromBytes(certData, certPassword)
@@ -140,62 +199,6 @@ func (s *InvoiceService) CheckSefazStatus(certData []byte, certPassword string) 
 	}
 
 	return client.CheckStatus()
-}
-
-// SaveInvoice saves a signed NF-e to the database with status 'signed'.
-func (s *InvoiceService) SaveInvoice(ctx context.Context, departureID uint32, accessKey string, serie, number int, xmlSigned string) error {
-	query := `
-		INSERT INTO nfe_invoice (departure_id, access_key, serie, number, status, xml_signed, signed_at)
-		VALUES ($1, $2, $3, $4, 'signed', $5, $6)
-	`
-	_, err := s.pool.Exec(ctx, query, departureID, accessKey, serie, number, xmlSigned, time.Now())
-	return err
-}
-
-// GetPendingInvoices returns all invoices with status 'pending'.
-func (s *InvoiceService) GetPendingInvoices(ctx context.Context) ([]PendingInvoice, error) {
-	query := `
-		SELECT id, departure_id, access_key, xml_signed, retry_count
-		FROM nfe_invoice
-		WHERE status IN ('pending', 'signed')
-	`
-	rows, err := s.pool.Query(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var invoices []PendingInvoice
-	for rows.Next() {
-		var inv PendingInvoice
-		if err := rows.Scan(&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.XMLSigned, &inv.RetryCount); err != nil {
-			return nil, err
-		}
-		invoices = append(invoices, inv)
-	}
-
-	return invoices, rows.Err()
-}
-
-// UpdateInvoiceStatus updates the status of an invoice.
-func (s *InvoiceService) UpdateInvoiceStatus(ctx context.Context, id int, status string, protocol, sefazCode, sefazMotive string) error {
-	query := `
-		UPDATE nfe_invoice
-		SET status = $2, protocol = $3, sefaz_status_code = $4, sefaz_motive = $5,
-		    authorized_at = CASE WHEN $2 = 'authorized' THEN $6 ELSE authorized_at END
-		WHERE id = $1
-	`
-	_, err := s.pool.Exec(ctx, query, id, status, protocol, sefazCode, sefazMotive, time.Now())
-	return err
-}
-
-// PendingInvoice represents an invoice waiting to be sent to SEFAZ.
-type PendingInvoice struct {
-	ID          int
-	DepartureID uint32
-	AccessKey   string
-	XMLSigned   string
-	RetryCount  int
 }
 
 // QueryInvoiceStatus queries the SEFAZ for the current status of an invoice by access key.
@@ -285,29 +288,4 @@ func padLeftZeros(s string, length int) string {
 		return s[:length]
 	}
 	return s
-}
-
-// CalculateTaxes calculates the default taxes for a grain sale.
-func CalculateTaxes(unitPrice, quantity decimal.Decimal, regime defaults.TaxRegime) (icms, pis, cofins decimal.Decimal) {
-	// Default ICMS rate for MT: 17%
-	icmsRate := decimal.NewFromFloat(0.17)
-	// Default PIS rate: 1.65%
-	pisRate := decimal.NewFromFloat(0.0165)
-	// Default COFINS rate: 7.6%
-	cofinsRate := decimal.NewFromFloat(0.076)
-
-	baseValue := unitPrice.Mul(quantity)
-
-	icms = baseValue.Mul(icmsRate)
-	pis = baseValue.Mul(pisRate)
-	cofins = baseValue.Mul(cofinsRate)
-
-	// Simples Nacional: different calculation (simplified)
-	if regime == defaults.TaxRegimeSimplesNacional {
-		// For SN, ICMS is calculated but may have different rates
-		// This is a simplified placeholder
-		icms = baseValue.Mul(decimal.NewFromFloat(0.12))
-	}
-
-	return icms, pis, cofins
 }

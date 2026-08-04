@@ -27,22 +27,21 @@
                 <iconify-icon icon="mdi:arrow-left" width="20" height="20"></iconify-icon>
                 Voltar
             </button>
-            <button type="submit" class="primary-glass-btn flex items-center gap-1 p-3">
+            <button type="submit" class="primary-glass-btn flex items-center gap-1 p-3" id="confirm-nfe" data-test-id="confirm-nfe">
                 <iconify-icon icon="mdi:receipt-text" width="20" height="20"></iconify-icon>
                 Confirmar e Emitir
+            </button>
+            <button type="button" id="nfe-result" class="primary-glass-btn hidden p-3">
+                <a id="nfe-download-link" href="#" download="nfe.xml" class="flex items-center gap-1">
+                    <iconify-icon icon="mdi:download" width="20" height="20"></iconify-icon>
+                    Baixar XML Assinado
+                </a>
             </button>
             <span id="nfe-emit-spinner" class="htmx-indicator animate-spin text-white">
                 <iconify-icon icon="mdi:loading" width="24" height="24"></iconify-icon>
             </span>
         </div>
     </form>
-    <div id="nfe-result" class="hidden mt-4">
-        <a id="nfe-download-link" href="#" download="nfe.xml"
-            class="primary-glass-btn flex items-center gap-1 p-2 text-sm w-full justify-center">
-            <iconify-icon icon="mdi:download" width="18" height="18"></iconify-icon>
-            Baixar XML Assinado
-        </a>
-    </div>
 </div>
 <script nonce="{{ .CSPNonce }}" type="module">
     (function() {

@@ -12,11 +12,12 @@ type ReportFilter struct {
 	Vehicle      string    `form:"vehiclePlate"`
 	NetWeightMin float64   `form:"netWeightMin"`
 	NetWeightMax float64   `form:"netWeightMax"`
-	StartDate    time.Time `form:"startDate" time_format:"2006-01-02T15:04"`
-	EndDate      time.Time `form:"endDate" time_format:"2006-01-02T15:04"`
+	StartDate    time.Time `form:"startDate" time_format:"2006-01-02"`
+	EndDate      time.Time `form:"endDate" time_format:"2006-01-02"`
 	OriginId     string    `form:"origin"`
 	RecipientId  string    `form:"recipient"`
 	Type         uint8     `form:"type"`
+	Field        uint32    `form:"field"`
 }
 
 type reportFilterCollection map[string]func(rf ReportFilter) string
@@ -49,6 +50,8 @@ type ReportDisplay struct {
 	OriginId      *uint32
 	RecipientName string
 	RecipientId   *uint32
+	FieldName     string
+	FieldId       *uint32
 }
 
 type FullReport struct {

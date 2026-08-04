@@ -199,6 +199,78 @@ func ParseConsultaResponse(soapBody []byte) (*ConsultaResponse, error) {
 	return resp, nil
 }
 
+// EventoResponse holds the parsed response from RecepcaoEvento4.
+type EventoResponse struct {
+	StatusCode   string // cStat (from retEvento/infEvento when available)
+	StatusMotive string // xMotivo
+	Protocol     string // nProt of the registered event
+	AccessKey    string // chNFe
+	DhRegEvento  string // dhRegEvento (date/time the event was registered)
+}
+
+// IsRegistered returns true if the event was registered and linked to the NF-e.
+func (r *EventoResponse) IsRegistered() bool {
+	return r.StatusCode == "135"
+}
+
+// IsAlreadyCancelled returns true if SEFAZ reports the NF-e is already
+// cancelled (rejection 218). Callers may treat this as an idempotent success
+// to reconcile local state with SEFAZ.
+func (r *EventoResponse) IsAlreadyCancelled() bool {
+	return r.StatusCode == "218"
+}
+
+// ParseEventoResponse parses the SOAP response from RecepcaoEvento4.
+// The top-level retEnvEvento cStat is 128 (lote processado); the per-event
+// result lives in retEvento/infEvento (135 = registered and linked).
+func ParseEventoResponse(soapBody []byte) (*EventoResponse, error) {
+	doc := etree.NewDocument()
+	if err := doc.ReadFromBytes(soapBody); err != nil {
+		return nil, fmt.Errorf("failed to parse SOAP response: %w", err)
+	}
+
+	resp := &EventoResponse{}
+
+	retEvento := doc.FindElement("//retEvento")
+	if retEvento != nil {
+		infEvento := retEvento.FindElement("infEvento")
+		if infEvento != nil {
+			resp.StatusCode = getElementText(infEvento, "cStat")
+			resp.StatusMotive = getElementText(infEvento, "xMotivo")
+			resp.Protocol = getElementText(infEvento, "nProt")
+			resp.AccessKey = getElementText(infEvento, "chNFe")
+			resp.DhRegEvento = getElementText(infEvento, "dhRegEvento")
+		}
+	} else {
+		retEvento := doc.FindElement("//retInutNFe")
+		if retEvento != nil {
+			infEvento := retEvento.FindElement("infInut")
+			if infEvento != nil {
+				resp.StatusCode = getElementText(infEvento, "cStat")
+				resp.StatusMotive = getElementText(infEvento, "xMotivo")
+				resp.Protocol = getElementText(infEvento, "nProt")
+				resp.AccessKey = getElementText(infEvento, "chNFe")
+				resp.DhRegEvento = getElementText(infEvento, "dhRegEvento")
+			}
+
+		}
+	}
+
+	if resp.StatusCode == "" {
+		// Fallback: top-level retEnvEvento cStat (e.g., 128, or a batch-level rejection)
+		retEnv := doc.FindElement("//retEnvEvento")
+		if retEnv == nil {
+			retEnv = doc.FindElement("//Body/retEnvEvento")
+		}
+		if retEnv != nil {
+			resp.StatusCode = getElementText(retEnv, "cStat")
+			resp.StatusMotive = getElementText(retEnv, "xMotivo")
+		}
+	}
+
+	return resp, nil
+}
+
 // getElementText returns the trimmed text of a child element, or empty string if not found.
 func getElementText(parent *etree.Element, tag string) string {
 	el := parent.FindElement(tag)

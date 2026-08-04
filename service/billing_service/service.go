@@ -520,6 +520,9 @@ func getSubscription(subID string) (*stripe.Subscription, error) {
 }
 
 func GetStripeSubscription(subID string) (*stripe.Subscription, error) {
+	if len(stripe.Key) == 0 {
+		return nil, fmt.Errorf("chave de acesso não encontrada")
+	}
 	return getSubscription(subID)
 }
 

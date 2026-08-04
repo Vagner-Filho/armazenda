@@ -298,6 +298,7 @@ The NF-e system implements **automatic SVC (SEFAZ Virtual de Contingência)** co
 | `draft` | No |
 | `pending` | No |
 | `authorized` | **Yes** |
+| `cancelled` | Yes — with "NF-e CANCELADA" banner |
 | `denied` | No |
 | `superseded` | No |
 
@@ -306,9 +307,21 @@ The NF-e system implements **automatic SVC (SEFAZ Virtual de Contingência)** co
 - `draft` invoices (≤ 24h old) → check SVC status; if active, auto-rebuild and send
 - `superseded` invoices → deferred cleanup after SVC deactivation (Phase 2)
 
+**Cancellation flow (evento 110111):**
+
+1. User clicks the cancel button on an `authorized` NF-e in the list, types a justification (15–256 chars) in the modal
+2. `CancelInvoice()` builds and signs a cancellation event (`<envEvento>` 1.00, `Id="ID110111"+chNFe+"01"`, `detEvento` with `nProt` + `xJust`)
+3. The event is sent to `RecepcaoEvento4` of the **same environment that authorized the NF-e** (origin SEFAZ for `tpEmis=1`, SVC for `tpEmis=6|7`) — per MOC Anexo III, SVC-authorized NF-e can only be cancelled at the SVC
+4. Success is `cStat=135` (event registered and linked); `218` (already cancelled at SEFAZ) is treated as idempotent success to reconcile local state
+5. On success → `status='cancelled'`, `cancellation_reason`, `cancelled_at`, and the signed event XML in `xml_cancel_event` (legal proof, keep ≥ 5 years)
+6. DANFE of a cancelled NF-e is still downloadable, rendered with a red "NF-e CANCELADA" banner (`GenerateCancelled()`)
+
 **Key implementation files:**
 - `pkg/nfe/defaults/agriculture.go` — `TpEmis` enum, `SVCForState()`
 - `pkg/nfe/sefaz/endpoints.go` — SVC-AN and SVC-RS endpoint sets
 - `pkg/nfe/xml/builder.go` — dynamic `tpEmis`, `<dhCont>`, `<xJust>`
-- `service/nfe_service/service.go` — `BuildInvoiceFromDeparture()` flow
+- `pkg/nfe/xml/sanitize.go` — `SanitizeSchemaString()`: all free-text XML fields (infCpl, xNome, xProd, xJust, ...) must pass through it — the schema `TString` pattern forbids newlines, control chars, and characters above U+00FF (SEFAZ rejects with `cvc-type.3.1.3` otherwise)
+- `pkg/nfe/xml/event.go` — cancellation event builder (`BuildCancellationEvent`)
+- `pkg/nfe/sefaz/response.go` — `EventoResponse` / `ParseEventoResponse`
+- `service/nfe_service/service.go` — `BuildInvoiceFromDeparture()` flow, `CancelInvoice()`
 - `service/nfe_service/worker.go` — draft auto-send logic

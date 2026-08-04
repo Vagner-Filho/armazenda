@@ -101,7 +101,7 @@ func processInvoice(inv nfe_model.InvoiceForRetry) error {
 		StateUF:     farmConfig.EmitterUF,
 		Timeout:     30 * time.Second,
 	}
-	invService := service.NewInvoiceService(nil, sefazCfg)
+	invService := service.NewInvoiceService(sefazCfg)
 
 	// Determine which endpoint to query based on the invoice's tpEmis
 	tpEmis := defaults.TpEmis(inv.TpEmis)
@@ -182,7 +182,7 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 		StateUF:     farmConfig.EmitterUF,
 		Timeout:     30 * time.Second,
 	}
-	invService := service.NewInvoiceService(nil, sefazCfg)
+	invService := service.NewInvoiceService(sefazCfg)
 
 	// Check if SVC is now operational
 	svcResp, svcErr := invService.CheckSVCStatus(farmConfig.CertificateData, certPassword)
@@ -248,7 +248,7 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 		return fmt.Errorf("failed to create contingency invoice: %w", createErr)
 	}
 
-	if err := nfeModel.UpdateInvoiceXML(newInvoiceID, newSignedXML); err != nil {
+	if err := nfeModel.UpdateInvoiceSignedXML(newInvoiceID, newSignedXML); err != nil {
 		return fmt.Errorf("failed to save contingency XML: %w", err)
 	}
 

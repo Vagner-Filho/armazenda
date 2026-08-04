@@ -123,8 +123,8 @@ var MTEndpointSet = &EndpointSet{
 		},
 		{
 			Name:         "RecepcaoEvento4",
-			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/RecepcaoEvento4",
-			SOAPAction:   "http://www.portalfiscal.inf.br/nfe/wsdl/RecepcaoEvento4/nfeRecepcaoEvento",
+			Namespace:    "http://www.portalfiscal.inf.br/nfe/wsdl/NFeRecepcaoEvento4",
+			SOAPAction:   "http://www.portalfiscal.inf.br/nfe/wsdl/NFeRecepcaoEvento4/nfeRecepcaoEvento",
 			Production:   "https://nfe.sefaz.mt.gov.br/nfews/v2/services/RecepcaoEvento4",
 			Homologation: "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/RecepcaoEvento4",
 		},

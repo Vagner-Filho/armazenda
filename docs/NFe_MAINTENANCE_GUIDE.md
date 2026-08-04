@@ -212,7 +212,7 @@ func NFeHealthCheck() error {
 3. Notify users: "SEFAZ em manutenção. NF-e será enviada automaticamente quando o serviço voltar."
 
 ### 9.2 SEFAZ Down (Unexpected Outage)
-1. Do not panic. Invoices in `signed` or `pending` status are safe.
+1. Do not panic. Invoices in `draft` or `pending` status are safe.
 2. User can download the signed XML manually (legally valid as backup)
 3. When SEFAZ returns, retry queue processes automatically
 4. **No invoice numbering is lost** — numbers are only allocated when building the XML

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	entity_public "armazenda/entity/public"
 	"armazenda/model/departure_model"
@@ -329,6 +330,8 @@ func UseNFeRoutes(router gin.IRoutes) {
 	router.GET("/list", getNFeList)
 	router.GET("/download/xml/:accessKey", downloadNFeXML)
 	router.GET("/download/danfe/:accessKey", downloadNFeDANFE)
+	router.GET("/cancel/modal/:accessKey", getNFeCancelModal)
+	router.POST("/cancel/:accessKey", cancelNFe)
 }
 
 func getNFePage(c *gin.Context) {
@@ -427,8 +430,9 @@ func downloadNFeDANFE(c *gin.Context) {
 		return
 	}
 
-	// DANFE can ONLY be generated for authorized invoices (legal requirement)
-	if invoice.Status != "authorized" {
+	// DANFE is available for authorized invoices, and for cancelled invoices
+	// rendered with an "NF-e CANCELADA" banner per MOC Anexo II.
+	if invoice.Status != "authorized" && invoice.Status != "cancelled" {
 		c.String(http.StatusForbidden, "DANFE somente disponivel para NF-e autorizada pela SEFAZ")
 		return
 	}
@@ -457,7 +461,13 @@ func downloadNFeDANFE(c *gin.Context) {
 	}
 
 	generator := nfe_pdf.NewDANFEGenerator()
-	pdfBytes, genErr := generator.Generate(*data)
+	var pdfBytes []byte
+	var genErr error
+	if invoice.Status == "cancelled" {
+		pdfBytes, genErr = generator.GenerateCancelled(*data)
+	} else {
+		pdfBytes, genErr = generator.Generate(*data)
+	}
 	if genErr != nil {
 		c.String(http.StatusInternalServerError, "Failed to generate DANFE")
 		return
@@ -532,6 +542,83 @@ func getNFeEmitModal(c *gin.Context) {
 		"CSPNonce":          nonce.(string),
 		"HasNFEFarmConfig":  hasConfig,
 	})
+}
+
+// getNFeCancelModal renders the cancellation confirmation modal for an
+// authorized NF-e. It warns when the invoice was authorized more than 24h ago,
+// since SEFAZ may reject cancellations past the legal deadline (rejection 501).
+func getNFeCancelModal(c *gin.Context) {
+	sid, _ := c.Cookie("session_id")
+	farmID := user_service.GetFarmFromToken(sid)
+
+	accessKey := c.Param("accessKey")
+	nfeModel := nfe_model.GetNFeModel()
+	invoice, err := nfeModel.GetInvoiceByAccessKey(accessKey)
+	if err != nil || invoice == nil {
+		c.String(http.StatusNotFound, "NF-e não encontrada")
+		return
+	}
+
+	// Verify the invoice belongs to the user's farm
+	dModel := departure_model.GetDepartureModel()
+	departure, depErr := dModel.GetDeparture(invoice.DepartureID)
+	if depErr != nil || departure.Farm != farmID {
+		c.String(http.StatusForbidden, "Access denied")
+		return
+	}
+
+	if invoice.Status != "authorized" {
+		c.String(http.StatusBadRequest, "Somente NF-e autorizadas podem ser canceladas")
+		return
+	}
+
+	pastDeadline := false
+	if t, ok := invoice.AuthorizedAt.(time.Time); ok && time.Since(t) > 24*time.Hour {
+		pastDeadline = true
+	}
+
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusOK, "nfe-cancel-modal", gin.H{
+		"Invoice":      invoice,
+		"PastDeadline": pastDeadline,
+		"CSPNonce":     nonce.(string),
+	})
+}
+
+// cancelNFe registers a cancellation event (110111) at SEFAZ for an authorized
+// NF-e. On success it returns the re-rendered list row so htmx swaps it in
+// place; on failure it only triggers a toast (no swap).
+func cancelNFe(c *gin.Context) {
+	sid, _ := c.Cookie("session_id")
+	farmID := user_service.GetFarmFromToken(sid)
+
+	accessKey := c.Param("accessKey")
+	justification := c.PostForm("justification")
+
+	svc := nfe_service.NewNFeService()
+	toast := svc.CancelInvoice(accessKey, justification, farmID)
+
+	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
+		c.Header("HX-Trigger", toast.ToJsonStr())
+		if toast.Type == entity_public.WarningToast {
+			c.Status(http.StatusBadRequest)
+		} else {
+			c.Status(http.StatusInternalServerError)
+		}
+		return
+	}
+
+	c.Header("HX-Trigger", toast.ToJsonStr())
+
+	// Re-fetch the invoice so the row reflects the new 'cancelled' status
+	nfeModel := nfe_model.GetNFeModel()
+	invoice, err := nfeModel.GetInvoiceByAccessKey(accessKey)
+	if err != nil || invoice == nil {
+		c.Status(http.StatusOK)
+		return
+	}
+
+	c.HTML(http.StatusOK, "nfe-list-item", invoice)
 }
 
 // parsePercentRateOrNil converts a form-submitted percentage string (e.g. "17,00")

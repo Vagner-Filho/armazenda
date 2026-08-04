@@ -12,9 +12,16 @@
 --
 
 -- Create test farm (required for the user)
-INSERT INTO farm (inscricao_estadual) 
-VALUES ('123456789')
+INSERT INTO farm (inscricao_estadual, uf)
+VALUES ('123456789', 'MT')
 ON CONFLICT (inscricao_estadual) DO NOTHING;
+
+INSERT INTO owner (owner_document, owner_document_type)
+VALUES ('11111111111', 2);
+
+INSERT INTO farm_owner_subscription
+  (farm_id, owner_id, stripe_customer_id, stripe_subscription_id, subscription_status, subscription_current_period_end, tier_key)
+VALUES (1, 1, 'cus_Uv8dHw5pTqc0GW', 'sub_1TvIM4KAorCSDWaVL0Rvjwe1', 'active', '2037-07-21 09:41:46', 'fiscal');
 
 -- Create farm config for test farm
 INSERT INTO farm_config (farm_id, name, humidity_progression_id, storage_name)

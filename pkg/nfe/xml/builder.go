@@ -87,7 +87,7 @@ func (b *Builder) buildIDE(parent *etree.Element, input entity.InvoiceInput, acc
 	ide := parent.CreateElement("ide")
 	ide.CreateElement("cUF").SetText(defaults.UFCode(input.Emitter.UF))
 	ide.CreateElement("cNF").SetText(input.CNF)
-	ide.CreateElement("natOp").SetText(input.NaturezaOp)
+	setSchemaText(ide, "natOp", input.NaturezaOp)
 	ide.CreateElement("mod").SetText(defaults.ModeloNFe)
 	ide.CreateElement("serie").SetText(strconv.Itoa(input.Serie))
 	ide.CreateElement("nNF").SetText(strconv.Itoa(input.Numero))
@@ -111,7 +111,7 @@ func (b *Builder) buildIDE(parent *etree.Element, input entity.InvoiceInput, acc
 			ide.CreateElement("dhCont").SetText(input.DhCont.Format(time.RFC3339))
 		}
 		if input.XJust != "" {
-			ide.CreateElement("xJust").SetText(input.XJust)
+			setSchemaText(ide, "xJust", input.XJust)
 		}
 	}
 
@@ -155,17 +155,17 @@ func (b *Builder) buildEmit(parent *etree.Element, emit entity.EmitterData) {
 	} else {
 		e.CreateElement("CNPJ").SetText(emit.Document)
 	}
-	e.CreateElement("xNome").SetText(emit.XNome)
+	setSchemaText(e, "xNome", emit.XNome)
 	if emit.XFant != "" {
-		e.CreateElement("xFant").SetText(emit.XFant)
+		setSchemaText(e, "xFant", emit.XFant)
 	}
 	enderEmit := e.CreateElement("enderEmit")
-	enderEmit.CreateElement("xLgr").SetText(emit.Logradouro)
-	enderEmit.CreateElement("nro").SetText(emit.Numero)
+	setSchemaText(enderEmit, "xLgr", emit.Logradouro)
+	setSchemaText(enderEmit, "nro", emit.Numero)
 	// xBairro is 1-1 mandatory (C09); the caller must ensure it's populated.
-	enderEmit.CreateElement("xBairro").SetText(emit.Bairro)
+	setSchemaText(enderEmit, "xBairro", emit.Bairro)
 	enderEmit.CreateElement("cMun").SetText(emit.CodigoMun)
-	enderEmit.CreateElement("xMun").SetText(emit.Municipio)
+	setSchemaText(enderEmit, "xMun", emit.Municipio)
 	enderEmit.CreateElement("UF").SetText(emit.UF)
 	// CEP is 1-1 mandatory (C13); "Informar os zeros não significativos."
 	cep := strings.ReplaceAll(emit.CEP, "-", "")
@@ -193,14 +193,14 @@ func (b *Builder) buildDest(parent *etree.Element, dest entity.RecipientData, en
 	if environment == 2 {
 		dest.XNome = "NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL"
 	}
-	d.CreateElement("xNome").SetText(dest.XNome)
+	setSchemaText(d, "xNome", dest.XNome)
 	enderDest := d.CreateElement("enderDest")
-	enderDest.CreateElement("xLgr").SetText(dest.Logradouro)
-	enderDest.CreateElement("nro").SetText(dest.Numero)
+	setSchemaText(enderDest, "xLgr", dest.Logradouro)
+	setSchemaText(enderDest, "nro", dest.Numero)
 	// xBairro is 1-1 mandatory (E09); the caller must ensure it's populated.
-	enderDest.CreateElement("xBairro").SetText(dest.Bairro)
+	setSchemaText(enderDest, "xBairro", dest.Bairro)
 	enderDest.CreateElement("cMun").SetText(dest.CodigoMun)
-	enderDest.CreateElement("xMun").SetText(dest.Municipio)
+	setSchemaText(enderDest, "xMun", dest.Municipio)
 	enderDest.CreateElement("UF").SetText(dest.UF)
 	if dest.CEP != "" {
 		enderDest.CreateElement("CEP").SetText(strings.ReplaceAll(dest.CEP, "-", ""))
@@ -222,7 +222,7 @@ func (b *Builder) buildDet(parent *etree.Element, item entity.ItemData, nItem in
 	prod := det.CreateElement("prod")
 	prod.CreateElement("cProd").SetText(item.Produto.Codigo)
 	prod.CreateElement("cEAN").SetText(item.Produto.CEAN)
-	prod.CreateElement("xProd").SetText(item.Produto.XProd)
+	setSchemaText(prod, "xProd", item.Produto.XProd)
 	prod.CreateElement("NCM").SetText(item.Produto.NCM)
 	prod.CreateElement("CFOP").SetText(item.Produto.CFOP)
 	prod.CreateElement("uCom").SetText(item.Produto.UCom)
@@ -242,7 +242,7 @@ func (b *Builder) buildDet(parent *etree.Element, item entity.ItemData, nItem in
 	b.buildCOFINS(imp, item.Imposto.COFINS)
 
 	if item.InfAdProd != "" {
-		det.CreateElement("infAdProd").SetText(item.InfAdProd)
+		setSchemaText(det, "infAdProd", item.InfAdProd)
 	}
 }
 
@@ -379,12 +379,12 @@ func (b *Builder) buildTransp(parent *etree.Element, transp entity.TransportData
 		} else {
 			transporta.CreateElement("CNPJ").SetText(transp.Transportadora.CNPJ)
 		}
-		transporta.CreateElement("xNome").SetText(transp.Transportadora.XNome)
+		setSchemaText(transporta, "xNome", transp.Transportadora.XNome)
 		if transp.Transportadora.IE != "" {
 			transporta.CreateElement("IE").SetText(transp.Transportadora.IE)
 		}
-		transporta.CreateElement("xEnder").SetText(transp.Transportadora.Endereco)
-		transporta.CreateElement("xMun").SetText(transp.Transportadora.Municipio)
+		setSchemaText(transporta, "xEnder", transp.Transportadora.Endereco)
+		setSchemaText(transporta, "xMun", transp.Transportadora.Municipio)
 		transporta.CreateElement("UF").SetText(transp.Transportadora.UF)
 	}
 
@@ -402,13 +402,13 @@ func (b *Builder) buildTransp(parent *etree.Element, transp entity.TransportData
 			vol := transpElem.CreateElement("vol")
 			vol.CreateElement("qVol").SetText(strconv.Itoa(v.QVol))
 			if v.Esp != "" {
-				vol.CreateElement("esp").SetText(v.Esp)
+				setSchemaText(vol, "esp", v.Esp)
 			}
 			if v.Marca != "" {
-				vol.CreateElement("marca").SetText(v.Marca)
+				setSchemaText(vol, "marca", v.Marca)
 			}
 			if v.NVol != "" {
-				vol.CreateElement("nVol").SetText(v.NVol)
+				setSchemaText(vol, "nVol", v.NVol)
 			}
 			vol.CreateElement("pesoL").SetText(formatDecimal(v.PesoL, 3))
 			vol.CreateElement("pesoB").SetText(formatDecimal(v.PesoB, 3))
@@ -444,7 +444,7 @@ func (b *Builder) buildPag(parent *etree.Element, pag entity.PaymentData) {
 
 func (b *Builder) buildInfAdic(parent *etree.Element, info string) {
 	infAdic := parent.CreateElement("infAdic")
-	infAdic.CreateElement("infCpl").SetText(info)
+	setSchemaText(infAdic, "infCpl", info)
 }
 
 func formatDecimal(d decimal.Decimal, places int32) string {

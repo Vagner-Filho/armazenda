@@ -3,8 +3,8 @@
   <td class="py-3 px-4 text-left" data-label="Romaneio">{{ .Id }}</td>
   <td class="py-3 px-4 text-left {{ if eq .Product "Milho" }}text-yellow-300{{ else }}text-emerald-300{{ end }}" data-label="Produto">{{ .Product }}</td>
   <td class="py-3 px-4 text-left truncate max-w-64" data-label="Origem">{{ .Origin }}</td>
-  <td class="py-3 px-4 text-left font-mono" data-label="Placa">{{ .VehiclePlate }}</td>
-  <td id="netWeight" class="py-3 px-4 text-left font-bold" data-label="Peso">{{ .NetWeight }}</td>
+  <td class="py-3 px-4 text-left font-mono" data-label="Placa" data-test_id="plate">{{ .VehiclePlate }}</td>
+  <td id="netWeight" class="py-3 px-4 text-left font-bold" data-label="Peso" data-test_id="net_weight">{{ .NetWeight }}</td>
   <td id="departureDate" class="py-3 px-4 text-left" data-label="Data de Saída" data-raw="{{ .DepartureDate }}">{{ .DepartureDate }}</td>
   <td class="py-3 px-4 text-left" data-label="Ações">
     <div class="flex items-center justify-end lg:justify-start gap-2 *:size-5">

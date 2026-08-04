@@ -6,6 +6,7 @@ import (
 	"armazenda/service/user_service"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -82,6 +83,9 @@ func UserRoutes(router *gin.Engine) {
 			c.Header("HX-Trigger", string(toast.ToJson()))
 			return
 		}
+
+		re := regexp.MustCompile(`[^0-9]`)
+		newUser.OwnerDocument = re.ReplaceAllString(newUser.OwnerDocument, "")
 
 		result := user_service.Create(newUser)
 		if result.CheckoutURL != "" {
@@ -520,6 +524,9 @@ func microsoftRegister(c *gin.Context) {
 	}
 
 	err = c.Bind(&form)
+	re := regexp.MustCompile(`[^0-9]`)
+	form.OwnerDocument = re.ReplaceAllString(form.OwnerDocument, "")
+
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		toast := entity_public.GetWarningToast("Preencha todos os campos", "")
@@ -588,6 +595,9 @@ func googleRegister(c *gin.Context) {
 	}
 
 	err = c.Bind(&form)
+	re := regexp.MustCompile(`[^0-9]`)
+	form.OwnerDocument = re.ReplaceAllString(form.OwnerDocument, "")
+
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		toast := entity_public.GetWarningToast("Preencha todos os campos", "")

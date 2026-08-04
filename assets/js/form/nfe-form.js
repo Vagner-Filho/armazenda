@@ -14,6 +14,10 @@ function handleNFeResponse(evt) {
         if (resultEl) {
             resultEl.classList.remove('hidden');
         }
+        const confirmBtn = document.querySelector('button#confirm-nfe');
+        if (confirmBtn) {
+            confirmBtn.remove();
+        }
     }
 }
 

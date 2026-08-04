@@ -12,6 +12,44 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+func TestBuilder_FreeTextFieldsSanitized(t *testing.T) {
+	builder := xml.NewBuilder()
+
+	t.Run("infCpl_with_newlines_and_emoji", func(t *testing.T) {
+		input := minimalInvoiceInput()
+		input.InformacoesAdicionais = "CND Fazenda:\nCert. Nº 222222, válido até 02/08/2026 🚀"
+		doc, err := builder.Build(input)
+		if err != nil {
+			t.Fatalf("Build failed: %v", err)
+		}
+		xmlStr, _ := doc.WriteToString()
+
+		if strings.Contains(xmlStr, "\n") && strings.Contains(xmlStr, "CND Fazenda:\n") {
+			t.Error("infCpl must not contain newlines (SEFAZ rejects with cvc-type.3.1.3)")
+		}
+		if !strings.Contains(xmlStr, "<infCpl>CND Fazenda:; Cert. Nº 222222, válido até 02/08/2026</infCpl>") {
+			t.Errorf("unexpected infCpl content in XML: %s", xmlStr)
+		}
+		if strings.Contains(xmlStr, "🚀") {
+			t.Error("characters above U+00FF must be dropped from infCpl")
+		}
+	})
+
+	t.Run("recipient_name_with_newline", func(t *testing.T) {
+		input := minimalInvoiceInput()
+		input.Environment = 1 // production keeps the recipient name as-is
+		input.Recipient.XNome = "Armazém\nTropical 🌾 Ltda"
+		doc, err := builder.Build(input)
+		if err != nil {
+			t.Fatalf("Build failed: %v", err)
+		}
+		xmlStr, _ := doc.WriteToString()
+		if !strings.Contains(xmlStr, "<xNome>Armazém; Tropical  Ltda</xNome>") {
+			t.Errorf("unexpected xNome content in XML: %s", xmlStr)
+		}
+	})
+}
+
 func TestBuilder_ContingencyFields(t *testing.T) {
 	builder := xml.NewBuilder()
 	now := time.Now()
@@ -90,7 +128,7 @@ func minimalInvoiceInput() entity.InvoiceInput {
 		TpEmis:      defaults.EmissaoNormal,
 		Emitter: entity.EmitterData{
 			Type:       1,
-			CNPJ:       "12345678000195",
+			Document:   "12345678000195",
 			XNome:      "Test Emitter",
 			Logradouro: "Rua Test",
 			Numero:     "100",
@@ -117,20 +155,20 @@ func minimalInvoiceInput() entity.InvoiceInput {
 			{
 				Numero: 1,
 				Produto: entity.ProdutoData{
-					Codigo:  "1",
-					CEAN:    "SEM GTIN",
-					XProd:   "Milho",
-					NCM:     "10059010",
-					CFOP:    "5102",
-					UCom:    "KG",
-					QCom:    decimal.NewFromInt(100),
-					VUnCom:  decimal.NewFromInt(10),
-					VProd:   decimal.NewFromInt(1000),
+					Codigo:   "1",
+					CEAN:     "SEM GTIN",
+					XProd:    "Milho",
+					NCM:      "10059010",
+					CFOP:     "5102",
+					UCom:     "KG",
+					QCom:     decimal.NewFromInt(100),
+					VUnCom:   decimal.NewFromInt(10),
+					VProd:    decimal.NewFromInt(1000),
 					CEANTrib: "SEM GTIN",
-					UTrib:   "KG",
-					QTrib:   decimal.NewFromInt(100),
-					VUnTrib: decimal.NewFromInt(10),
-					IndTot:  1,
+					UTrib:    "KG",
+					QTrib:    decimal.NewFromInt(100),
+					VUnTrib:  decimal.NewFromInt(10),
+					IndTot:   1,
 				},
 				Imposto: entity.ImpostoData{
 					ICMS: entity.ICMSData{

@@ -38,13 +38,13 @@
       </header>
       <div class="max-w-md mx-auto mb-8 w-full">
         <div class="glass-panel rounded-2xl p-1 flex" id="type-toggler">
-          <button type="button" id="toggler" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 bg-blue-500/70 text-white shadow-sm transition-colors duration-300" hx-trigger="click" hx-get="/entry/list" hx-target="#content-container">
+          <button type="button" id="toggler" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 bg-blue-500/70 text-white shadow-sm transition-colors duration-300" hx-trigger="click" hx-get="/entry/list" hx-target="#content-container" data-test-id="entry-toggler">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
               <path fill="currentColor" d="m15.5 5.69l2.81 2.81l-6.37 6.39h4.95v3.42H5.69V7.11h3.43v4.95z"/>
             </svg>
             <span class="font-semibold">Entrada</span>
           </button>
-          <button type="button" id="toggler" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 text-white/70 hover:bg-sky-50/10 transition-colors duration-300" hx-trigger="click" hx-get="/departure/list" hx-target="#content-container">
+          <button type="button" id="toggler" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 text-white/70 hover:bg-sky-50/10 transition-colors duration-300" hx-trigger="click" hx-get="/departure/list" hx-target="#content-container" data-test-id="departure-toggler">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
               <path fill="currentColor" d="M8.5 18.31L5.69 15.5l6.37-6.38H7.11V5.69h11.2v11.2h-3.42v-4.95z"/>
             </svg>
