@@ -1,5 +1,5 @@
 {{ block "nfe-emit-modal" . }}
-<dialog id="nfe-emit-dialog" class="glass-panel rounded-xl w-full max-w-lg transition-all duration-300">
+<dialog id="nfe-emit-dialog" class="glass-panel rounded-xl w-full max-w-lg md:max-w-4xl transition-all duration-300">
     <div class="p-6">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-bold text-white">Emitir NF-e</h2>
@@ -21,65 +21,207 @@
             </div>
             <form class="flex flex-col gap-4" hx-post="/nfe/preview/{{ .DepartureID }}" hx-target="#nfe-emit-step"
                 hx-swap="outerHTML" hx-indicator="#nfe-emit-spinner">
-                <div class="flex flex-col-reverse">
-                    <input type="text" inputmode="decimal" name="unitPrice" id="unitPrice" required
-                        class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                        placeholder="0,00">
-                    <label for="unitPrice"
-                        class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                        Preço Unitário (R$/KG)
-                    </label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2 min-w-0">
+                        <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
+                            Valores e Identificação Fiscal
+                        </legend>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" inputmode="decimal" name="unitPrice" id="unitPrice" required
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="0,00">
+                            <label for="unitPrice"
+                                class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Preço Unitário (R$/KG)
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <select name="cfop" id="cfop" required class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 w-full truncate">
+                                <option value="5101" selected>5101 - Venda de produção do estabelecimento</option>
+                                <option value="5102">5102 - Venda de mercadoria adquirida ou recebida de terceiros</option>
+                                <option value="5901">5901 - Remessa para industrialização</option>
+                            </select>
+                            <label for="cfop"
+                                class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                CFOP
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="naturezaOp" id="naturezaOp"
+                                value="{{ .DefaultNaturezaOp }}"
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="Venda de produção do estabelecimento">
+                            <label for="naturezaOp"
+                                class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Natureza da Operação
+                            </label>
+                        </div>
+                    </fieldset>
+                    <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2">
+                        <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
+                            Produto
+                        </legend>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="productDesc" id="productDesc"
+                                value="{{ .DefaultProductDesc }}"
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="Produto">
+                            <label for="productDesc"
+                                class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Descrição do Produto
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="ncm" id="ncm"
+                                    value="{{ .DefaultNCM }}"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="12019000">
+                                <label for="ncm"
+                                    class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    NCM
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="cest" id="cest"
+                                    value="{{ .DefaultCEST }}"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="">
+                                <label for="cest"
+                                    class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    CEST
+                                </label>
+                            </div>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <select name="unit" id="unit"
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                                <option value="KG" {{ if eq .DefaultUnit "KG" }}selected{{ end }}>KG - Quilograma</option>
+                                <option value="G" {{ if eq .DefaultUnit "G" }}selected{{ end }}>G - Grama</option>
+                                <option value="T" {{ if eq .DefaultUnit "T" }}selected{{ end }}>T - Tonelada</option>
+                                <option value="ST" {{ if eq .DefaultUnit "ST" }}selected{{ end }}>ST - Stone</option>
+                                <option value="SC" {{ if eq .DefaultUnit "SC" }}selected{{ end }}>SC - Saca</option>
+                                <option value="L" {{ if eq .DefaultUnit "L" }}selected{{ end }}>L - Litro</option>
+                                <option value="M" {{ if eq .DefaultUnit "M" }}selected{{ end }}>M - Metro</option>
+                                <option value="UN" {{ if eq .DefaultUnit "UN" }}selected{{ end }}>UN - Unidade</option>
+                            </select>
+                            <label for="unit"
+                                class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Unidade de Medida
+                            </label>
+                        </div>
+                    </fieldset>
+                    <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2">
+                        <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
+                            Transporte
+                        </legend>
+                        <div class="flex flex-col-reverse">
+                            <select name="modFrete" id="modFrete"
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                                <option value="0" {{ if eq .DefaultModFrete 0 }}selected{{ end }}>0 - Por conta do emitente (CIF)</option>
+                                <option value="1" {{ if eq .DefaultModFrete 1 }}selected{{ end }}>1 - Por conta do destinatário (FOB)</option>
+                                <option value="2" {{ if eq .DefaultModFrete 2 }}selected{{ end }}>2 - Por conta de terceiros</option>
+                                <option value="3" {{ if eq .DefaultModFrete 3 }}selected{{ end }}>3 - Próprio por conta do remetente</option>
+                                <option value="4" {{ if eq .DefaultModFrete 4 }}selected{{ end }}>4 - Próprio por conta do destinatário</option>
+                                <option value="9" {{ if eq .DefaultModFrete 9 }}selected{{ end }}>9 - Sem frete</option>
+                            </select>
+                            <label for="modFrete"
+                                class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Modalidade do Frete
+                            </label>
+                        </div>
+                    </fieldset>
+                    <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2">
+                        <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
+                            Tributação
+                        </legend>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="icmsCST" id="icmsCST"
+                                    value="{{ .DefaultICMSCST }}"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="00">
+                                <label for="icmsCST"
+                                    class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    CST ICMS
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="pisCST" id="pisCST"
+                                    value="{{ .DefaultPISCST }}"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="01">
+                                <label for="pisCST"
+                                    class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    CST PIS
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="cofinsCST" id="cofinsCST"
+                                    value="{{ .DefaultCOFINSCST }}"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="01">
+                                <label for="cofinsCST"
+                                    class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    CST COFINS
+                                </label>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-3 mt-2">
+                            <label class="flex items-center gap-2 cursor-pointer text-white/80 select-none">
+                                <input type="checkbox" name="useDefaultTaxRates" id="useDefaultTaxRates" checked
+                                    class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white">
+                                <span class="text-xs lg:text-sm uppercase tracking-wider font-medium">Usar taxa padrão</span>
+                            </label>
+                            <div class="flex flex-col gap-3 pl-2 border-l border-white/10">
+                                <div class="flex flex-col-reverse">
+                                    <input type="text" inputmode="decimal" name="icmsRate" id="icmsRate"
+                                        value="{{ .DefaultICMSRate }}" disabled
+                                        class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
+                                        placeholder="17,00">
+                                    <label for="icmsRate"
+                                        class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                        Alíquota ICMS (%)
+                                    </label>
+                                </div>
+                                <div class="flex flex-col-reverse">
+                                    <input type="text" inputmode="decimal" name="pisRate" id="pisRate"
+                                        value="{{ .DefaultPISRate }}" disabled
+                                        class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
+                                        placeholder="1,65">
+                                    <label for="pisRate"
+                                        class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                        Alíquota PIS (%)
+                                    </label>
+                                </div>
+                                <div class="flex flex-col-reverse">
+                                    <input type="text" inputmode="decimal" name="cofinsRate" id="cofinsRate"
+                                        value="{{ .DefaultCOFINSRate }}" disabled
+                                        class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
+                                        placeholder="7,60">
+                                    <label for="cofinsRate"
+                                        class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                        Alíquota COFINS (%)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
                 </div>
-                <div class="flex flex-col-reverse">
-                    <select name="cfop" id="cfop" required class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
-                        <option value="5101" selected>5101 - Venda de produção do estabelecimento</option>
-                        <option value="5102">5102 - Venda de mercadoria adquirida ou recebida de terceiros</option>
-                        <option value="5901">5901 - Remessa para industrialização</option>
-                    </select>
-                    <label for="cfop"
-                        class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                        CFOP
-                    </label>
-                </div>
-                <div class="text-white/80 text-xs flex flex-col gap-3">
-                    <label class="flex items-center gap-2 cursor-pointer text-white/80 select-none">
-                        <input type="checkbox" name="useDefaultTaxRates" id="useDefaultTaxRates" checked
-                            class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white">
-                        <span class="text-xs lg:text-sm uppercase tracking-wider font-medium">Usar taxa padrão</span>
-                    </label>
-                    <div class="flex flex-col gap-3 pl-2 border-l border-white/10">
-                        <div class="flex flex-col-reverse">
-                            <input type="text" inputmode="decimal" name="icmsRate" id="icmsRate"
-                                value="{{ .DefaultICMSRate }}" disabled
-                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
-                                placeholder="17,00">
-                            <label for="icmsRate"
-                                class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                                Alíquota ICMS (%)
-                            </label>
-                        </div>
-                        <div class="flex flex-col-reverse">
-                            <input type="text" inputmode="decimal" name="pisRate" id="pisRate"
-                                value="{{ .DefaultPISRate }}" disabled
-                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
-                                placeholder="1,65">
-                            <label for="pisRate"
-                                class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                                Alíquota PIS (%)
-                            </label>
-                        </div>
-                        <div class="flex flex-col-reverse">
-                            <input type="text" inputmode="decimal" name="cofinsRate" id="cofinsRate"
-                                value="{{ .DefaultCOFINSRate }}" disabled
-                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
-                                placeholder="7,60">
-                            <label for="cofinsRate"
-                                class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                                Alíquota COFINS (%)
-                            </label>
-                        </div>
+                <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2">
+                    <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
+                        Informações Complementares
+                    </legend>
+                    <div class="flex flex-col-reverse">
+                        <textarea name="infCpl" id="infCpl" rows="3"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 resize-none"
+                            placeholder="Informações complementares">{{ .DefaultInfCpl }}</textarea>
+                        <label for="infCpl"
+                            class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Informações Complementares
+                        </label>
                     </div>
-                </div>
+                </fieldset>
                 <div class="flex items-center justify-center gap-2">
                     <button type="submit" class="primary-glass-btn flex items-center gap-1 p-3">
                         <iconify-icon icon="mdi:receipt-text" width="20" height="20"></iconify-icon>

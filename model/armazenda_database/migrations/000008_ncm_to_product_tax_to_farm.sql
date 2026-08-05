@@ -18,8 +18,8 @@ WHERE p.ncm = '00000000';
 -- 3. Backfill well-known products by name. This covers fresh DBs where
 --    nfe_product_config never existed. The seed in database.go:seedProducts
 --    inserts these two rows, so the names are guaranteed to match.
-UPDATE product SET ncm = '10059000' WHERE name = 'Milho' AND ncm = '00000000';
-UPDATE product SET ncm = '12010010' WHERE name = 'Soja'  AND ncm = '00000000';
+UPDATE product SET ncm = '10059010' WHERE name = 'Milho' AND ncm = '00000000';
+UPDATE product SET ncm = '12019000' WHERE name = 'Soja'  AND ncm = '00000000';
 
 -- 4. Add the 10 per-farm fields to nfe_farm_config
 ALTER TABLE nfe_farm_config

@@ -224,6 +224,9 @@ func (b *Builder) buildDet(parent *etree.Element, item entity.ItemData, nItem in
 	prod.CreateElement("cEAN").SetText(item.Produto.CEAN)
 	setSchemaText(prod, "xProd", item.Produto.XProd)
 	prod.CreateElement("NCM").SetText(item.Produto.NCM)
+	if item.Produto.CEST != "" {
+		prod.CreateElement("CEST").SetText(item.Produto.CEST)
+	}
 	prod.CreateElement("CFOP").SetText(item.Produto.CFOP)
 	prod.CreateElement("uCom").SetText(item.Produto.UCom)
 	prod.CreateElement("qCom").SetText(formatDecimal(item.Produto.QCom, 4))

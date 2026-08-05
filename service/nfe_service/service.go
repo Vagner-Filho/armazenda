@@ -41,7 +41,9 @@ func NewNFeService() *NFeService {
 
 // prepareInvoiceBuildData fetches and validates all data needed to build an NF-e
 // without allocating a number, signing, or persisting anything.
-func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates) (entity.InvoiceInput, entity_public.Departure, *entity_public.FarmConfig, entity_public.Product, entity_public.Toast) {
+// The overrides struct carries per-emission user inputs that take precedence over
+// the farm config defaults. Nil fields in overrides mean "use the default".
+func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates, overrides *entity.InvoiceOverrides) (entity.InvoiceInput, entity_public.Departure, *entity_public.FarmConfig, entity_public.Product, entity_public.Toast) {
 	var emptyInput entity.InvoiceInput
 
 	// Get departure
@@ -119,14 +121,40 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 		product.Name = "Produto Agricola"
 	}
 
-	// Resolve CFOP and unit from the farm config (per-farm defaults)
+	// Resolve CFOP from input or farm config
 	effectiveCFOP := cfop
 	if effectiveCFOP == "" {
 		effectiveCFOP = farmNFeConfig.DefaultCFOP
 	}
+
+	// Resolve unit from overrides, farm config, or default to KG
 	effectiveUnit := farmNFeConfig.DefaultUnit
 	if effectiveUnit == "" {
 		effectiveUnit = "KG"
+	}
+	if overrides != nil && overrides.Unit != nil && *overrides.Unit != "" {
+		effectiveUnit = *overrides.Unit
+	}
+
+	// Resolve NCM from overrides or product
+	effectiveNCM := product.NCM
+	if overrides != nil && overrides.NCM != nil && *overrides.NCM != "" {
+		effectiveNCM = *overrides.NCM
+	}
+
+	// Resolve product description from overrides or product
+	effectiveDescription := product.Name
+	if overrides != nil && overrides.ProductDesc != nil && *overrides.ProductDesc != "" {
+		effectiveDescription = *overrides.ProductDesc
+	}
+
+	// Resolve CEST from overrides or farm config
+	effectiveCEST := ""
+	if farmNFeConfig.DefaultCEST != nil {
+		effectiveCEST = *farmNFeConfig.DefaultCEST
+	}
+	if overrides != nil && overrides.CEST != nil {
+		effectiveCEST = *overrides.CEST
 	}
 
 	// Validate required emitter fields
@@ -151,19 +179,27 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	// buildItems directly; the raw user input is returned separately so the
 	// caller can persist a partial-override row in nfe_invoice_tax_rates.
 	rates := MergeRates(userRates, farmNFeConfig)
-	items := s.buildItems(departure, unitPrice, product.NCM, effectiveUnit, product.Name, farmNFeConfig, effectiveCFOP, rates)
+	items := s.buildItems(departure, unitPrice, effectiveNCM, effectiveCEST, effectiveUnit, effectiveDescription, farmNFeConfig, effectiveCFOP, rates, overrides)
 
-	// Determine NaturezaOp from config or derive from CFOP
+	// Determine NaturezaOp from overrides, config, or derive from CFOP
 	naturezaOp := ""
-	if farmNFeConfig.DefaultNaturezaOp != nil && *farmNFeConfig.DefaultNaturezaOp != "" {
+	if overrides != nil && overrides.NaturezaOp != nil && *overrides.NaturezaOp != "" {
+		naturezaOp = *overrides.NaturezaOp
+	} else if farmNFeConfig.DefaultNaturezaOp != nil && *farmNFeConfig.DefaultNaturezaOp != "" {
 		naturezaOp = *farmNFeConfig.DefaultNaturezaOp
 	} else {
 		naturezaOp = defaults.NaturezaOpForCFOP(effectiveCFOP)
 	}
 
+	// Resolve ModFrete from overrides or farm config
+	effectiveModFrete := farmNFeConfig.DefaultModFrete
+	if overrides != nil && overrides.ModFrete != nil {
+		effectiveModFrete = *overrides.ModFrete
+	}
+
 	// Build transport data: map departure vehicle + weights
 	transport := entity.TransportData{
-		ModFrete: farmNFeConfig.DefaultModFrete,
+		ModFrete: effectiveModFrete,
 	}
 	if departure.Vehicle > 0 {
 		vModel := vehicle_model.GetVehicleModel()
@@ -185,28 +221,12 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	}
 
 	// Build CND additional info: certificate blocks first, then all metadata.
-	var cndParts []string
-	var metaParts []string
-	if farmBlock := formatCNDBlock("Fazenda", farmNFeConfig.CertificateNumber, farmNFeConfig.ExpDate); farmBlock != "" {
-		cndParts = append(cndParts, farmBlock)
+	infCpl := BuildDefaultInfCpl(farmNFeConfig.FarmCND, person.PersonCND)
+
+	// Allow user to override the auto-generated infCpl
+	if overrides != nil && overrides.InfCpl != nil {
+		infCpl = *overrides.InfCpl
 	}
-	if personBlock := formatCNDBlock("Destinatário", person.CertificateNumber, person.ExpDate); personBlock != "" {
-		cndParts = append(cndParts, personBlock)
-	}
-	if m := formatCNDMeta(farmNFeConfig.Meta); m != "" {
-		metaParts = append(metaParts, m)
-	}
-	if m := formatCNDMeta(person.Meta); m != "" {
-		metaParts = append(metaParts, m)
-	}
-	var infCplParts []string
-	if len(cndParts) > 0 {
-		infCplParts = append(infCplParts, strings.Join(cndParts, "; "))
-	}
-	if len(metaParts) > 0 {
-		infCplParts = append(infCplParts, strings.Join(metaParts, "; "))
-	}
-	infCpl := strings.Join(infCplParts, "; ")
 
 	// Build input
 	input := entity.InvoiceInput{
@@ -238,8 +258,8 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 // BuildInvoiceFromDeparture builds, signs, and attempts to send an NF-e for a departure.
 // If the normal SEFAZ is unavailable, it automatically tries SVC. If both are down,
 // the invoice is saved as 'draft' and an error is returned — no DANFE is issued.
-func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates) (string, entity_public.Toast) {
-	input, departure, farmNFeConfig, product, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop, userRates)
+func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates, overrides *entity.InvoiceOverrides) (string, entity_public.Toast) {
+	input, departure, farmNFeConfig, product, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop, userRates, overrides)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		return "", toast
 	}
@@ -287,9 +307,17 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	if hasAnyUserRate(userRates) {
 		ratesToPersist = &userRates
 	}
-	invoiceID, createErr := nfeModel.CreateInvoice(departureID, accessKey, farmNFeConfig.Serie, number,
+	// Ensure the effective infCpl is persisted so retries/SVC rebuilds use the
+	// exact same text (Option B).
+	if overrides == nil {
+		overrides = &entity.InvoiceOverrides{}
+	}
+	if overrides.InfCpl == nil {
+		overrides.InfCpl = &input.InformacoesAdicionais
+	}
+	invoiceID, createErr := nfeModel.CreateInvoiceWithEmission(departureID, accessKey, farmNFeConfig.Serie, number,
 		farmNFeConfig.DefaultCFOP, product.NCM, departure.NetWeight, unitPrice, input.TotalValue,
-		ratesToPersist)
+		1, nil, "", ratesToPersist, overrides)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateInvoice error: %v", createErr.Error()))
 		return "", entity_public.GetErrorToast("Failed to save invoice", "")
@@ -315,7 +343,7 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	svcResp, svcErr := invService.CheckSVCStatus(farmNFeConfig.CertificateData, certPassword)
 	if svcErr == nil && svcResp != nil && svcResp.IsSVCOperational() {
 		// SVC is active — rebuild with new number and contingency settings
-		return s.attemptSVCContingency(input, departure, farmNFeConfig, product, signedXML, invoiceID, accessKey, nfeModel, invService, certPassword, unitPrice, ratesToPersist)
+		return s.attemptSVCContingency(input, departure, farmNFeConfig, product, signedXML, invoiceID, accessKey, nfeModel, invService, certPassword, unitPrice, ratesToPersist, overrides)
 	}
 
 	// --- Step 3: Both SEFAZ and SVC are unavailable ---
@@ -384,7 +412,7 @@ func (s *NFeService) handleSefazResponse(sefazResp *sefaz.AutorizacaoResponse, i
 }
 
 // attemptSVCContingency tries to send the NF-e via SVC with a new number and contingency fields.
-func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure entity_public.Departure, farmNFeConfig *entity_public.FarmConfig, product entity_public.Product, oldSignedXML string, oldInvoiceID int, oldAccessKey string, nfeModel *nfe_model.NFeModel, invService *service.InvoiceService, certPassword string, unitPrice decimal.Decimal, taxRates *entity.TaxRates) (string, entity_public.Toast) {
+func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure entity_public.Departure, farmNFeConfig *entity_public.FarmConfig, product entity_public.Product, oldSignedXML string, oldInvoiceID int, oldAccessKey string, nfeModel *nfe_model.NFeModel, invService *service.InvoiceService, certPassword string, unitPrice decimal.Decimal, taxRates *entity.TaxRates, overrides *entity.InvoiceOverrides) (string, entity_public.Toast) {
 	// Allocate new number for the contingency invoice (required by MOC to avoid duplicate Chave Natural)
 	newNumber, allocErr := nfeModel.AllocateNumber(uint32(departure.Farm), farmNFeConfig.Serie)
 	if allocErr != nil {
@@ -402,11 +430,11 @@ func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure 
 		return "", entity_public.GetErrorToast("Failed to rebuild NF-e for SVC contingency", rebuildErr.Error())
 	}
 
-	// Save the new contingency invoice (same tax rates as the original attempt)
+	// Save the new contingency invoice (same tax rates and overrides as the original attempt)
 	newInvoiceID, createErr := nfeModel.CreateInvoiceWithEmission(
 		departure.Id, newAccessKey, farmNFeConfig.Serie, newNumber,
 		farmNFeConfig.DefaultCFOP, product.NCM, departure.NetWeight, unitPrice, input.TotalValue,
-		int(tpEmis), now, reason, taxRates,
+		int(tpEmis), now, reason, taxRates, overrides,
 	)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateInvoice (SVC) error: %v", createErr.Error()))
@@ -577,8 +605,8 @@ func (s *NFeService) CancelInvoice(accessKey, justification string, farmID uint3
 
 // GeneratePreviewDANFE builds a preview DANFE PDF without allocating an invoice number,
 // signing, or persisting anything. It returns the PDF bytes and any validation toast.
-func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates) ([]byte, entity_public.Toast) {
-	input, _, _, _, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop, userRates)
+func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates, overrides *entity.InvoiceOverrides) ([]byte, entity_public.Toast) {
+	input, _, _, _, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop, userRates, overrides)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		return nil, toast
 	}
@@ -720,7 +748,8 @@ func padLeftZeros(s string, length int) string {
 }
 
 // buildItems creates the NF-e item data from departure and configs.
-func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice decimal.Decimal, ncm string, unit string, description string, farmConfig *entity_public.FarmConfig, cfop string, rates entity.TaxRates) []entity.ItemData {
+// The overrides struct carries per-emission user inputs for CSTs and CEST.
+func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice decimal.Decimal, ncm string, cest string, unit string, description string, farmConfig *entity_public.FarmConfig, cfop string, rates entity.TaxRates, overrides *entity.InvoiceOverrides) []entity.ItemData {
 	totalValue := departure.NetWeight.Mul(unitPrice)
 	regime := defaults.TaxRegime(farmConfig.TaxRegime)
 
@@ -729,13 +758,15 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 	pisRate := *rates.PISRate
 	cofinsRate := *rates.COFINSRate
 
-	// Determine ICMS CST/CSOSN from farm config or defaults
+	// Determine ICMS CST/CSOSN from overrides, farm config, or defaults
 	var icmsCST, icmsCSOSN string
 	var vBC, vICMS decimal.Decimal
 	var picms decimal.Decimal
 
 	if regime == defaults.TaxRegimeSimplesNacional {
-		if farmConfig.DefaultICMSCST != nil && *farmConfig.DefaultICMSCST != "" {
+		if overrides != nil && overrides.ICMSCST != nil && *overrides.ICMSCST != "" {
+			icmsCSOSN = *overrides.ICMSCST
+		} else if farmConfig.DefaultICMSCST != nil && *farmConfig.DefaultICMSCST != "" {
 			icmsCSOSN = *farmConfig.DefaultICMSCST
 		} else {
 			icmsCSOSN = defaults.CSOSNSemPermissaoCredito // 102
@@ -745,7 +776,9 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 		vICMS = decimal.Zero
 		picms = decimal.Zero
 	} else {
-		if farmConfig.DefaultICMSCST != nil && *farmConfig.DefaultICMSCST != "" {
+		if overrides != nil && overrides.ICMSCST != nil && *overrides.ICMSCST != "" {
+			icmsCST = *overrides.ICMSCST
+		} else if farmConfig.DefaultICMSCST != nil && *farmConfig.DefaultICMSCST != "" {
 			icmsCST = *farmConfig.DefaultICMSCST
 		} else {
 			icmsCST = defaults.CSTTributadaIntegral // 00
@@ -755,13 +788,19 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 		picms = icmsRate.Mul(decimal.NewFromInt(100)) // rate as percentage
 	}
 
-	// Determine PIS and COFINS CST from farm config
+	// Determine PIS CST from overrides, farm config, or default
 	pisCST := "01"
-	if farmConfig.DefaultPISCST != nil && *farmConfig.DefaultPISCST != "" {
+	if overrides != nil && overrides.PISCST != nil && *overrides.PISCST != "" {
+		pisCST = *overrides.PISCST
+	} else if farmConfig.DefaultPISCST != nil && *farmConfig.DefaultPISCST != "" {
 		pisCST = *farmConfig.DefaultPISCST
 	}
+
+	// Determine COFINS CST from overrides, farm config, or default
 	cofinsCST := "01"
-	if farmConfig.DefaultCOFINSCST != nil && *farmConfig.DefaultCOFINSCST != "" {
+	if overrides != nil && overrides.COFINSCST != nil && *overrides.COFINSCST != "" {
+		cofinsCST = *overrides.COFINSCST
+	} else if farmConfig.DefaultCOFINSCST != nil && *farmConfig.DefaultCOFINSCST != "" {
 		cofinsCST = *farmConfig.DefaultCOFINSCST
 	}
 
@@ -783,6 +822,7 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 				CEAN:     "SEM GTIN",
 				XProd:    description,
 				NCM:      ncm,
+				CEST:     cest,
 				CFOP:     cfop,
 				UCom:     unit,
 				QCom:     departure.NetWeight,
@@ -1098,9 +1138,9 @@ func (s *NFeService) mapFullPersonToRecipient(person entity_public.FullPerson, n
 	return recipient
 }
 
-// formatCNDBlock returns the certificate portion of a CND block for the DANFE infCpl.
+// FormatCNDBlock returns the certificate portion of a CND block for the DANFE infCpl.
 // If the certificate number is absent, it returns an empty string.
-func formatCNDBlock(label string, certNumber *string, expDate *time.Time) string {
+func FormatCNDBlock(label string, certNumber *string, expDate *time.Time) string {
 	if certNumber == nil || *certNumber == "" {
 		return ""
 	}
@@ -1116,9 +1156,9 @@ func formatCNDBlock(label string, certNumber *string, expDate *time.Time) string
 	return strings.Join(parts, " ")
 }
 
-// formatCNDMeta returns the metadata lines for a CND entry.
+// FormatCNDMeta returns the metadata lines for a CND entry.
 // If there is no metadata, it returns an empty string.
-func formatCNDMeta(meta *map[string]interface{}) string {
+func FormatCNDMeta(meta *map[string]interface{}) string {
 	if meta == nil || len(*meta) == 0 {
 		return ""
 	}
@@ -1129,6 +1169,34 @@ func formatCNDMeta(meta *map[string]interface{}) string {
 	// "; " separator: the schema TString pattern forbids newlines in infCpl
 	// (SEFAZ rejects with cvc-type.3.1.3 otherwise).
 	return strings.Join(parts, "; ")
+}
+
+// BuildDefaultInfCpl builds the default infCpl text from farm and recipient CND
+// data. It is used both in the service layer and in the router to pre-populate
+// the emit modal.
+func BuildDefaultInfCpl(farmCND entity_public.FarmCND, personCND entity_public.PersonCND) string {
+	var cndParts []string
+	var metaParts []string
+	if farmBlock := FormatCNDBlock("Fazenda", farmCND.CertificateNumber, farmCND.ExpDate); farmBlock != "" {
+		cndParts = append(cndParts, farmBlock)
+	}
+	if personBlock := FormatCNDBlock("Destinatário", personCND.CertificateNumber, personCND.ExpDate); personBlock != "" {
+		cndParts = append(cndParts, personBlock)
+	}
+	if m := FormatCNDMeta(farmCND.Meta); m != "" {
+		metaParts = append(metaParts, m)
+	}
+	if m := FormatCNDMeta(personCND.Meta); m != "" {
+		metaParts = append(metaParts, m)
+	}
+	var infCplParts []string
+	if len(cndParts) > 0 {
+		infCplParts = append(infCplParts, strings.Join(cndParts, "; "))
+	}
+	if len(metaParts) > 0 {
+		infCplParts = append(infCplParts, strings.Join(metaParts, "; "))
+	}
+	return strings.Join(infCplParts, "; ")
 }
 
 // EncryptPassword encrypts a certificate password using AES-256-GCM with the env key.

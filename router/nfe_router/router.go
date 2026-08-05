@@ -13,7 +13,9 @@ import (
 	"armazenda/model/departure_model"
 	"armazenda/model/farm_config_model"
 	"armazenda/model/nfe_model"
+	"armazenda/model/person_model"
 	"armazenda/model/product_model"
+	"armazenda/pkg/nfe/defaults"
 	"armazenda/pkg/nfe/entity"
 	nfe_pdf "armazenda/pkg/nfe/service"
 	nfe_xml "armazenda/pkg/nfe/xml"
@@ -52,11 +54,13 @@ func buildNFe(c *gin.Context) {
 		return
 	}
 
+	overrides := parseInvoiceOverrides(c)
+
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
 
 	service := nfe_service.NewNFeService()
-	signedXML, toast := service.BuildInvoiceFromDeparture(uint32(departureID), unitPrice, farm, cfop, userRates)
+	signedXML, toast := service.BuildInvoiceFromDeparture(uint32(departureID), unitPrice, farm, cfop, userRates, overrides)
 
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		c.Header("HX-Trigger", string(toast.ToJson()))
@@ -100,11 +104,13 @@ func previewNFe(c *gin.Context) {
 		return
 	}
 
+	overrides := parseInvoiceOverrides(c)
+
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
 
 	svc := nfe_service.NewNFeService()
-	pdfBytes, toast := svc.GeneratePreviewDANFE(uint32(departureID), unitPrice, farm, cfop, userRates)
+	pdfBytes, toast := svc.GeneratePreviewDANFE(uint32(departureID), unitPrice, farm, cfop, userRates, overrides)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 		if toast.Type == entity_public.WarningToast {
@@ -131,17 +137,27 @@ func previewNFe(c *gin.Context) {
 
 	nonce, _ := c.Get("csp_nonce")
 	c.HTML(http.StatusOK, "nfe-preview", gin.H{
-		"DepartureID": departureID,
-		"Product":     productName,
-		"NetWeight":   departure.NetWeight,
-		"UnitPrice":   unitPrice,
-		"TotalValue":  departure.NetWeight.Mul(unitPrice),
-		"PDFBase64":   base64.StdEncoding.EncodeToString(pdfBytes),
-		"CFOP":        cfop,
-		"ICMSRate":    rateDisplayString(userRates.ICMSRate),
-		"PISRate":     rateDisplayString(userRates.PISRate),
-		"COFINSRate":  rateDisplayString(userRates.COFINSRate),
-		"CSPNonce":    nonce.(string),
+		"DepartureID":       departureID,
+		"Product":             productName,
+		"NetWeight":           departure.NetWeight,
+		"UnitPrice":           unitPrice,
+		"TotalValue":          departure.NetWeight.Mul(unitPrice),
+		"PDFBase64":           base64.StdEncoding.EncodeToString(pdfBytes),
+		"CFOP":                cfop,
+		"ICMSRate":            rateDisplayString(userRates.ICMSRate),
+		"PISRate":             rateDisplayString(userRates.PISRate),
+		"COFINSRate":          rateDisplayString(userRates.COFINSRate),
+		"NaturezaOp":          safeFormValue(c, "naturezaOp"),
+		"ProductDesc":         safeFormValue(c, "productDesc"),
+		"NCM":                 safeFormValue(c, "ncm"),
+		"CEST":                safeFormValue(c, "cest"),
+		"Unit":                safeFormValue(c, "unit"),
+		"ModFrete":            safeFormValue(c, "modFrete"),
+		"ICMSCST":             safeFormValue(c, "icmsCST"),
+		"PISCST":              safeFormValue(c, "pisCST"),
+		"COFINSCST":           safeFormValue(c, "cofinsCST"),
+		"InfCpl":              safeFormValue(c, "infCpl"),
+		"CSPNonce":            nonce.(string),
 	})
 }
 
@@ -524,12 +540,46 @@ func getNFeEmitModal(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farmID := user_service.GetFarmFromToken(sid)
 	var defaultICMS, defaultPIS, defaultCOFINS decimal.Decimal
+	var defaultNaturezaOp, defaultCEST, defaultUnit, defaultICMSCST, defaultPISCST, defaultCOFINSCST *string
+	var defaultModFrete int
+	var defaultCFOP string
+	var farmNFeConfig *entity_public.FarmConfig
 	hasConfig := false
 	if fc, fcErr := nfeModel.GetFarmConfig(farmID); fcErr == nil && fc != nil {
+		farmNFeConfig = fc
 		defaultICMS = fc.ICMSRate
 		defaultPIS = fc.PISRate
 		defaultCOFINS = fc.COFINSRate
+		defaultNaturezaOp = fc.DefaultNaturezaOp
+		defaultCEST = fc.DefaultCEST
+		defaultUnit = &fc.DefaultUnit
+		if fc.DefaultUnit == "" {
+			empty := "KG"
+			defaultUnit = &empty
+		}
+		defaultModFrete = fc.DefaultModFrete
+		defaultICMSCST = fc.DefaultICMSCST
+		defaultPISCST = fc.DefaultPISCST
+		defaultCOFINSCST = fc.DefaultCOFINSCST
+		defaultCFOP = fc.DefaultCFOP
 		hasConfig = true
+	}
+
+	// Derive default natureza op from CFOP if not configured
+	if (defaultNaturezaOp == nil || *defaultNaturezaOp == "") && hasConfig {
+		derived := defaults.NaturezaOpForCFOP(defaultCFOP)
+		defaultNaturezaOp = &derived
+	}
+
+	// Build the default infCpl from farm and recipient CND data so the user
+	// can review and edit it in the modal.
+	var defaultInfCpl string
+	if hasConfig && departure.Recipient != nil {
+		pModel := person_model.GetPersonModel()
+		person, personErr := pModel.GetFullPersonById(*departure.Recipient)
+		if personErr == nil {
+			defaultInfCpl = nfe_service.BuildDefaultInfCpl(farmNFeConfig.FarmCND, person.PersonCND)
+		}
 	}
 
 	c.HTML(http.StatusOK, "nfe-emit-modal", gin.H{
@@ -539,6 +589,16 @@ func getNFeEmitModal(c *gin.Context) {
 		"DefaultICMSRate":   percentDisplay(defaultICMS),
 		"DefaultPISRate":    percentDisplay(defaultPIS),
 		"DefaultCOFINSRate": percentDisplay(defaultCOFINS),
+		"DefaultNaturezaOp": safePtrString(defaultNaturezaOp),
+		"DefaultProductDesc": product.Name,
+		"DefaultNCM":        product.NCM,
+		"DefaultCEST":       safePtrString(defaultCEST),
+		"DefaultUnit":       safePtrString(defaultUnit),
+		"DefaultModFrete":   defaultModFrete,
+		"DefaultICMSCST":    safePtrString(defaultICMSCST),
+		"DefaultPISCST":     safePtrString(defaultPISCST),
+		"DefaultCOFINSCST":  safePtrString(defaultCOFINSCST),
+		"DefaultInfCpl":     defaultInfCpl,
 		"CSPNonce":          nonce.(string),
 		"HasNFEFarmConfig":  hasConfig,
 	})
@@ -681,4 +741,75 @@ func percentDisplay(rate decimal.Decimal) string {
 	// Use a fixed two-decimal representation; the shopspring/decimal String()
 	// method preserves trailing zeros for the value but does not pad.
 	return pct.StringFixed(2)
+}
+
+// parseInvoiceOverrides extracts optional per-emission override fields from the
+// form submission. Empty strings yield nil pointers so the service falls back
+// to the farm config defaults.
+func parseInvoiceOverrides(c *gin.Context) *entity.InvoiceOverrides {
+	o := &entity.InvoiceOverrides{}
+	hasValue := false
+
+	if v := strings.TrimSpace(c.PostForm("naturezaOp")); v != "" {
+		o.NaturezaOp = &v
+		hasValue = true
+	}
+	if v := strings.TrimSpace(c.PostForm("productDesc")); v != "" {
+		o.ProductDesc = &v
+		hasValue = true
+	}
+	if v := strings.TrimSpace(c.PostForm("ncm")); v != "" {
+		o.NCM = &v
+		hasValue = true
+	}
+	if v := strings.TrimSpace(c.PostForm("cest")); v != "" {
+		o.CEST = &v
+		hasValue = true
+	}
+	if v := strings.TrimSpace(c.PostForm("unit")); v != "" {
+		o.Unit = &v
+		hasValue = true
+	}
+	if v := strings.TrimSpace(c.PostForm("modFrete")); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			o.ModFrete = &i
+			hasValue = true
+		}
+	}
+	if v := strings.TrimSpace(c.PostForm("icmsCST")); v != "" {
+		o.ICMSCST = &v
+		hasValue = true
+	}
+	if v := strings.TrimSpace(c.PostForm("pisCST")); v != "" {
+		o.PISCST = &v
+		hasValue = true
+	}
+	if v := strings.TrimSpace(c.PostForm("cofinsCST")); v != "" {
+		o.COFINSCST = &v
+		hasValue = true
+	}
+	// infCpl is always parsed (even when empty) because the textarea is always
+	// submitted. An empty string means the user explicitly cleared the field.
+	if v, ok := c.GetPostForm("infCpl"); ok {
+		o.InfCpl = &v
+		hasValue = true
+	}
+
+	if !hasValue {
+		return nil
+	}
+	return o
+}
+
+// safeFormValue returns the trimmed form value or an empty string.
+func safeFormValue(c *gin.Context, key string) string {
+	return strings.TrimSpace(c.PostForm(key))
+}
+
+// safePtrString returns the string pointed to by p, or an empty string if p is nil.
+func safePtrString(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
 }

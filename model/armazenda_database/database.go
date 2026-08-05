@@ -63,7 +63,7 @@ func seedProducts(c *pgx.Conn) {
 	var products uint8
 	c.QueryRow(context.Background(), "SELECT COUNT(*) FROM product").Scan(&products)
 	if products == 0 {
-		_, err := c.Exec(context.Background(), "INSERT INTO product (name) VALUES ('Milho'), ('Soja')")
+		_, err := c.Exec(context.Background(), "INSERT INTO product (name, ncm) VALUES ('Milho', '10059010'), ('Soja', '12019000')")
 		if err != nil {
 			panic(err.Error())
 		}

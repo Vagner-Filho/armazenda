@@ -208,15 +208,19 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 	// Get the original user-typed tax rates from the persisted row.
 	// For legacy invoices (no row) or partially-set rows, individual rates will
 	// be nil and MergeRates will fall back to the farm config.
-	overrides := invoiceRecord.TaxRates
-	if overrides == nil {
-		overrides = &entity.TaxRates{}
+	 taxRateOverrides := invoiceRecord.TaxRates
+	if taxRateOverrides == nil {
+		taxRateOverrides = &entity.TaxRates{}
 	}
-	rates := MergeRates(*overrides, farmConfig)
+	rates := MergeRates(*taxRateOverrides, farmConfig)
+
+	// Rebuild the per-emission overrides from the invoice record so the
+	// contingency NF-e is identical to the original attempt.
+	invoiceOverrides := invoiceOverridesFromRecord(invoiceRecord)
 
 	// Get the original full invoice input data
 	nfeSvc := NewNFeService()
-	input, _, _, _, toast := nfeSvc.prepareInvoiceBuildData(departure.Id, invoiceRecord.UnitPrice, uint32(departure.Farm), "", rates)
+	input, _, _, _, toast := nfeSvc.prepareInvoiceBuildData(departure.Id, invoiceRecord.UnitPrice, uint32(departure.Farm), "", rates, invoiceOverrides)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		return fmt.Errorf("failed to prepare rebuild data: %s", toast.Message)
 	}
@@ -232,17 +236,16 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 		return fmt.Errorf("failed to rebuild for SVC: %w", rebuildErr)
 	}
 
-	// Persist the new contingency invoice. Carry the same user-typed rates so
-	// the worker's next retry uses the same values; the merged result would
-	// change if the product config shifts.
+	// Persist the new contingency invoice. Carry the same user-typed rates and
+	// overrides so the worker's next retry uses the same values.
 	var ratesToPersist *entity.TaxRates
-	if hasAnyUserRate(*overrides) {
-		ratesToPersist = overrides
+	if hasAnyUserRate(*taxRateOverrides) {
+		ratesToPersist = taxRateOverrides
 	}
 	newInvoiceID, createErr := nfeModel.CreateInvoiceWithEmission(
 		departure.Id, newAccessKey, farmConfig.Serie, newNumber,
 		invoiceRecord.CFOP, invoiceRecord.NCM, invoiceRecord.QuantityKG, invoiceRecord.UnitPrice, invoiceRecord.TotalValue,
-		int(tpEmis), now, reason, ratesToPersist,
+		int(tpEmis), now, reason, ratesToPersist, invoiceOverrides,
 	)
 	if createErr != nil {
 		return fmt.Errorf("failed to create contingency invoice: %w", createErr)
@@ -286,4 +289,57 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 
 	_ = nfeModel.SupersedeInvoice(inv.ID, newInvoiceID)
 	return nil
+}
+
+// invoiceOverridesFromRecord reconstructs an InvoiceOverrides struct from the
+// persisted invoice record so that draft retries and SVC rebuilds use the exact
+// same per-emission values the user originally entered.
+func invoiceOverridesFromRecord(inv *nfe_model.Invoice) *entity.InvoiceOverrides {
+	if inv == nil {
+		return nil
+	}
+	hasValue := false
+	o := &entity.InvoiceOverrides{}
+	if inv.NaturezaOp != nil && *inv.NaturezaOp != "" {
+		o.NaturezaOp = inv.NaturezaOp
+		hasValue = true
+	}
+	if inv.ProductDescription != nil && *inv.ProductDescription != "" {
+		o.ProductDesc = inv.ProductDescription
+		hasValue = true
+	}
+	if inv.CEST != nil && *inv.CEST != "" {
+		o.CEST = inv.CEST
+		hasValue = true
+	}
+	if inv.Unit != nil && *inv.Unit != "" {
+		o.Unit = inv.Unit
+		hasValue = true
+	}
+	if inv.ModFrete != nil {
+		o.ModFrete = inv.ModFrete
+		hasValue = true
+	}
+	if inv.ICMSCST != nil && *inv.ICMSCST != "" {
+		o.ICMSCST = inv.ICMSCST
+		hasValue = true
+	}
+	if inv.PISCST != nil && *inv.PISCST != "" {
+		o.PISCST = inv.PISCST
+		hasValue = true
+	}
+	if inv.COFINSCST != nil && *inv.COFINSCST != "" {
+		o.COFINSCST = inv.COFINSCST
+		hasValue = true
+	}
+	// infCpl is restored even when empty because the user may have explicitly
+	// cleared the field. A nil column means "not set at all" (legacy invoice).
+	if inv.InfCpl != nil {
+		o.InfCpl = inv.InfCpl
+		hasValue = true
+	}
+	if !hasValue {
+		return nil
+	}
+	return o
 }

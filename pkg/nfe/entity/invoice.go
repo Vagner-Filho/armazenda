@@ -99,6 +99,7 @@ type ProdutoData struct {
 	CEAN     string
 	XProd    string
 	NCM      string
+	CEST     string // Código Especificador da Substituição Tributária
 	CFOP     string
 	UCom     string
 	QCom     decimal.Decimal
@@ -127,6 +128,21 @@ type TaxRates struct {
 	ICMSRate   *decimal.Decimal
 	PISRate    *decimal.Decimal
 	COFINSRate *decimal.Decimal
+}
+
+// InvoiceOverrides holds per-emission user overrides that differ from the
+// farm config defaults. Nil pointers mean "use the farm config / product default".
+type InvoiceOverrides struct {
+	NaturezaOp  *string
+	ProductDesc *string
+	NCM         *string
+	CEST        *string
+	Unit        *string
+	ModFrete    *int
+	ICMSCST     *string
+	PISCST      *string
+	COFINSCST   *string
+	InfCpl      *string // Informações complementares; overrides the auto-generated CND text
 }
 
 // ICMSData holds ICMS tax information.

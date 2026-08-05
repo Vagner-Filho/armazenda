@@ -214,30 +214,54 @@ type Invoice struct {
 	SentAt              interface{}
 	AuthorizedAt        interface{}
 	TaxRates            *entity.TaxRates
+	NaturezaOp          *string
+	ProductDescription  *string
+	CEST                *string
+	Unit                *string
+	ModFrete            *int
+	ICMSCST             *string
+	PISCST              *string
+	COFINSCST           *string
+	InfCpl              *string
 }
 
 // CreateInvoice creates a new invoice record with default tpEmis=1 (normal).
 func (m *NFeModel) CreateInvoice(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal, taxRates *entity.TaxRates) (int, error) {
-	return m.CreateInvoiceWithEmission(departureID, accessKey, serie, number, cfop, ncm, quantityKG, unitPrice, totalValue, 1, nil, "", taxRates)
+	return m.CreateInvoiceWithEmission(departureID, accessKey, serie, number, cfop, ncm, quantityKG, unitPrice, totalValue, 1, nil, "", taxRates, nil)
 }
 
 // CreateInvoiceWithEmission creates a new invoice record with a specific emission type.
 // If taxRates is non-nil and contains at least one non-nil rate, a row is also
 // inserted into nfe_invoice_tax_rates recording the user-provided rates.
-func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal, tpEmis int, dhCont interface{}, xJust string, taxRates *entity.TaxRates) (int, error) {
+// If overrides is non-nil, the per-emission override fields are persisted so
+// draft retries and SVC contingency rebuilds reconstruct the exact same NF-e.
+func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal, tpEmis int, dhCont interface{}, xJust string, taxRates *entity.TaxRates, overrides *entity.InvoiceOverrides) (int, error) {
 	query := `
 		INSERT INTO nfe_invoice (
 			departure_id, access_key, serie, number, status,
 			cfop, ncm, quantity_kg, unit_price, total_value,
-			tp_emis, dh_cont, x_just
+			tp_emis, dh_cont, x_just,
+			natureza_op, product_description, cest, unit, mod_frete,
+			icms_cst, pis_cst, cofins_cst, inf_cpl
 		)
-		VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9, $10, $11, $12)
+		VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9, $10, $11, $12,
+			$13, $14, $15, $16, $17, $18, $19, $20, $21)
 		RETURNING id
 	`
 	var id int
 	err := m.pool.QueryRow(context.Background(), query,
 		departureID, accessKey, serie, number, cfop, ncm, quantityKG, unitPrice, totalValue,
-		tpEmis, dhCont, xJust).Scan(&id)
+		tpEmis, dhCont, xJust,
+		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.NaturezaOp }),
+		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.ProductDesc }),
+		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.CEST }),
+		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.Unit }),
+		safeInt(overrides, func(o *entity.InvoiceOverrides) *int { return o.ModFrete }),
+		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.ICMSCST }),
+		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.PISCST }),
+		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.COFINSCST }),
+		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.InfCpl }),
+	).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create invoice: %w", err)
 	}
@@ -246,6 +270,24 @@ func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey strin
 		return 0, err
 	}
 	return id, nil
+}
+
+// safeString returns a *string from overrides via the getter, or nil when
+// overrides itself is nil.
+func safeString(overrides *entity.InvoiceOverrides, getter func(*entity.InvoiceOverrides) *string) *string {
+	if overrides == nil {
+		return nil
+	}
+	return getter(overrides)
+}
+
+// safeInt returns an *int from overrides via the getter, or nil when
+// overrides itself is nil.
+func safeInt(overrides *entity.InvoiceOverrides, getter func(*entity.InvoiceOverrides) *int) *int {
+	if overrides == nil {
+		return nil
+	}
+	return getter(overrides)
 }
 
 // insertInvoiceTaxRates persists a row in nfe_invoice_tax_rates when at least
@@ -355,13 +397,15 @@ func (m *NFeModel) GetInvoiceByDeparture(departureID uint32) (*Invoice, error) {
 		       i.protocol, i.sefaz_status_code, i.sefaz_motive, i.rejection_reason, i.cancellation_reason,
 		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id, i.svc_endpoint_used,
 		       i.created_at, i.signed_at, i.sent_at, i.authorized_at,
-		       t.icms_rate, t.pis_rate, t.cofins_rate
-		FROM nfe_invoice i
-		LEFT JOIN nfe_invoice_tax_rates t ON t.invoice_id = i.id
-		WHERE i.departure_id = $1
-		ORDER BY i.id DESC
-		LIMIT 1
-	`
+		       t.icms_rate, t.pis_rate, t.cofins_rate,
+       i.natureza_op, i.product_description, i.cest, i.unit, i.mod_frete,
+               i.icms_cst, i.pis_cst, i.cofins_cst, i.inf_cpl
+        FROM nfe_invoice i
+        LEFT JOIN nfe_invoice_tax_rates t ON t.invoice_id = i.id
+        WHERE i.departure_id = $1
+        ORDER BY i.id DESC
+        LIMIT 1
+    `
 	row := m.pool.QueryRow(context.Background(), query, departureID)
 
 	inv, err := scanInvoice(row)
@@ -559,7 +603,9 @@ func (m *NFeModel) GetInvoicesByFarm(farmID uint32, page int) ([]Invoice, int, e
 		       i.protocol, i.sefaz_status_code, i.sefaz_motive, i.rejection_reason, i.cancellation_reason,
 		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id, i.svc_endpoint_used,
 		       i.created_at, i.signed_at, i.sent_at, i.authorized_at,
-		       t.icms_rate, t.pis_rate, t.cofins_rate
+		       t.icms_rate, t.pis_rate, t.cofins_rate,
+               i.natureza_op, i.product_description, i.cest, i.unit, i.mod_frete,
+               i.icms_cst, i.pis_cst, i.cofins_cst, i.inf_cpl
 		FROM nfe_invoice i
 		JOIN departure d ON d.id = i.departure_id
 		LEFT JOIN nfe_invoice_tax_rates t ON t.invoice_id = i.id
@@ -593,7 +639,9 @@ func (m *NFeModel) GetInvoiceByAccessKey(accessKey string) (*Invoice, error) {
 		       i.protocol, i.sefaz_status_code, i.sefaz_motive, i.rejection_reason, i.cancellation_reason,
 		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id, i.svc_endpoint_used,
 		       i.created_at, i.signed_at, i.sent_at, i.authorized_at,
-		       t.icms_rate, t.pis_rate, t.cofins_rate
+		       t.icms_rate, t.pis_rate, t.cofins_rate,
+               i.natureza_op, i.product_description, i.cest, i.unit, i.mod_frete,
+               i.icms_cst, i.pis_cst, i.cofins_cst, i.inf_cpl
 		FROM nfe_invoice i
 		LEFT JOIN nfe_invoice_tax_rates t ON t.invoice_id = i.id
 		WHERE i.access_key = $1
@@ -633,6 +681,8 @@ func scanInvoice(row invoiceScanner) (*Invoice, error) {
 		&cancellationReason, &inv.RetryCount, &inv.TpEmis, &inv.DhCont, &xJust, &contingencyParentID, &svcEndpoint,
 		&inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt,
 		&icmsRate, &pisRate, &cofinsRate,
+		&inv.NaturezaOp, &inv.ProductDescription, &inv.CEST, &inv.Unit, &inv.ModFrete,
+		&inv.ICMSCST, &inv.PISCST, &inv.COFINSCST, &inv.InfCpl,
 	)
 	if err != nil {
 		return nil, err
