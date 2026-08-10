@@ -183,43 +183,6 @@ func setSecurityHeaders(c *gin.Context) {
 	c.Header("Cross-Origin-Opener-Policy", "same-origin")
 }
 
-func adminOnlyMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		sessionCookie, cookieErr := c.Request.Cookie("session_id")
-		if cookieErr != nil {
-			if c.GetHeader("HX-Request") == "true" {
-				c.Header("HX-Redirect", "/")
-				c.AbortWithStatus(http.StatusUnauthorized)
-				return
-			}
-			c.HTML(http.StatusUnauthorized, "401", gin.H{})
-			c.Abort()
-			return
-		}
-
-		// Validate token and session
-		valid, err := user_service.ValidateTokenAndSession(sessionCookie.Value)
-		if err != nil || !valid {
-			if c.GetHeader("HX-Request") == "true" {
-				c.Header("HX-Redirect", "/")
-				c.AbortWithStatus(http.StatusUnauthorized)
-				return
-			}
-			c.HTML(http.StatusUnauthorized, "401", gin.H{})
-			c.Abort()
-			return
-		}
-
-		// Check admin status from JWT (if role changed, session should be deleted)
-		if !user_service.IsAdmin(sessionCookie.Value) {
-			c.String(http.StatusForbidden, "Acesso negado. Apenas administradores podem realizar esta ação.")
-			c.Abort()
-			return
-		}
-		c.Next()
-	}
-}
-
 func requireTierMiddleware(allowedTiers ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tierKey, exists := c.Get("tier_key")

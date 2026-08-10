@@ -62,6 +62,23 @@
                             Produto
                         </legend>
                         <div class="flex flex-col-reverse">
+                            <select name="unit" id="unit"
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                                <option value="KG" {{ if eq .DefaultUnit "KG" }}selected{{ end }}>KG - Quilograma</option>
+                                <option value="G" {{ if eq .DefaultUnit "G" }}selected{{ end }}>G - Grama</option>
+                                <option value="T" {{ if eq .DefaultUnit "T" }}selected{{ end }}>T - Tonelada</option>
+                                <option value="ST" {{ if eq .DefaultUnit "ST" }}selected{{ end }}>ST - Stone</option>
+                                <option value="SC" {{ if eq .DefaultUnit "SC" }}selected{{ end }}>SC - Saca</option>
+                                <option value="L" {{ if eq .DefaultUnit "L" }}selected{{ end }}>L - Litro</option>
+                                <option value="M" {{ if eq .DefaultUnit "M" }}selected{{ end }}>M - Metro</option>
+                                <option value="UN" {{ if eq .DefaultUnit "UN" }}selected{{ end }}>UN - Unidade</option>
+                            </select>
+                            <label for="unit"
+                                class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Unidade de Medida
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
                             <input type="text" name="productDesc" id="productDesc"
                                 value="{{ .DefaultProductDesc }}"
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
@@ -92,23 +109,6 @@
                                     CEST
                                 </label>
                             </div>
-                        </div>
-                        <div class="flex flex-col-reverse">
-                            <select name="unit" id="unit"
-                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
-                                <option value="KG" {{ if eq .DefaultUnit "KG" }}selected{{ end }}>KG - Quilograma</option>
-                                <option value="G" {{ if eq .DefaultUnit "G" }}selected{{ end }}>G - Grama</option>
-                                <option value="T" {{ if eq .DefaultUnit "T" }}selected{{ end }}>T - Tonelada</option>
-                                <option value="ST" {{ if eq .DefaultUnit "ST" }}selected{{ end }}>ST - Stone</option>
-                                <option value="SC" {{ if eq .DefaultUnit "SC" }}selected{{ end }}>SC - Saca</option>
-                                <option value="L" {{ if eq .DefaultUnit "L" }}selected{{ end }}>L - Litro</option>
-                                <option value="M" {{ if eq .DefaultUnit "M" }}selected{{ end }}>M - Metro</option>
-                                <option value="UN" {{ if eq .DefaultUnit "UN" }}selected{{ end }}>UN - Unidade</option>
-                            </select>
-                            <label for="unit"
-                                class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                                Unidade de Medida
-                            </label>
                         </div>
                     </fieldset>
                     <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2">

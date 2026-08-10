@@ -13,7 +13,10 @@ export function setupPersonCND(date, expDateSelector) {
         }
     }
 
-    const cndFieldsets = document.querySelectorAll('fieldset#pessoa-cnd-fieldset');
+    let cndFieldsets = document.querySelectorAll('fieldset#pessoa-cnd-fieldset');
+    if (!cndFieldsets || cndFieldsets.length === 0) {
+        cndFieldsets = document.querySelectorAll('fieldset#farm-cnd-fieldset');
+    }
     for (const fdset of cndFieldsets.values()) {
         const addMetaBtn = fdset.querySelector('#addMetaKeyValue');
         const metaContainer = fdset.querySelector('#meta-container');

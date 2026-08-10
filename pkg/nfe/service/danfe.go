@@ -109,6 +109,7 @@ func (g *DANFEGenerator) generatePDF(data entity.DANFEData, banner string) ([]by
 
 	if banner != "" {
 		pdf.SetFillColor(255, 200, 200)
+		pdf.SetLineWidth(0)
 		pdf.Rectangle(margin, y, right, y+24, "FD", 0.5, 0)
 		pdf.SetTextColor(180, 0, 0)
 		pdf.SetFont("serif-bold", "", 12)
@@ -168,7 +169,7 @@ func (g *DANFEGenerator) generatePDF(data entity.DANFEData, banner string) ([]by
 // --- Layout helpers ---
 
 func (g *DANFEGenerator) box(pdf *gopdf.GoPdf, x, y, w, h float64) {
-	pdf.Rectangle(x, y, x+w, y+h, "D", 0.5, 0)
+	pdf.Rectangle(x, y, x+w, y+h, "D", 3, 10)
 }
 
 // labelValue renders a label (6pt) and value at the given size inside a boxed cell.
@@ -180,7 +181,7 @@ func (g *DANFEGenerator) labelValue(pdf *gopdf.GoPdf, x, y, w, h float64, label,
 	pdf.Cell(nil, label)
 	if value != "" {
 		pdf.SetFont("serif", "", valueSize)
-		pdf.SetXY(x+4, y+h-8)
+		pdf.SetXY(x+4, y+h-10)
 		pdf.Cell(nil, value)
 	}
 }
@@ -277,28 +278,29 @@ func (g *DANFEGenerator) drawHeaderBlock(pdf *gopdf.GoPdf, data entity.DANFEData
 	pdf.SetXY(x+4, y+4)
 	pdf.Cell(nil, "RECEBEMOS DE")
 	pdf.SetFont("serif-bold", "", 8)
-	pdf.SetXY(x+4, y+10)
+	//pdf.SetXY(x+44, y+4)
 	// Wrap emitter name within the canhoto width (§3.1: represent full content)
 	canhotoW := w*0.55 - 8
-	pdf.SetFont("serif-bold", "", 8)
-	canhotoLines := wrapText(pdf, data.EmitterName, canhotoW)
-	canhotoY := y + 10.0
+	pdf.SetFont("serif-bold", "", 6)
+	canhotoLines := wrapText(pdf, strings.ToUpper(data.EmitterName), canhotoW)
+	canhotoY := y + 4
 	for _, line := range canhotoLines {
-		pdf.SetXY(x+4, canhotoY)
+		pdf.SetXY(x+54, canhotoY)
 		pdf.Cell(nil, line)
 		canhotoY += 7
 	}
 	pdf.SetFont("serif", "", 6)
-	pdf.SetXY(x+4, y+18)
+	pdf.SetXY(x+4, y+12)
 	pdf.Cell(nil, "OS PRODUTOS/SERVIÇOS CONSTANTES DA NOTA FISCAL INDICADA AO LADO")
 
-	pdf.SetXY(x+4, y+18)
-	pdf.Cell(nil, "DATA DE EMISSÃO")
+	pdf.SetXY(x+4, y+20)
+	pdf.Cell(nil, "DATA DE EMISSÃO:")
+	pdf.SetXY(x+64, y+20)
 	pdf.Cell(nil, data.EmissionDate)
 
-	pdf.SetXY(x+4, y+26)
+	pdf.SetXY(x+4, y+28)
 	pdf.Cell(nil, "DATA DO RECEBIMENTO: ______________________")
-	pdf.SetXY(x+4, y+34)
+	pdf.SetXY(x+4, y+36)
 	pdf.Cell(nil, "IDENTIFICAÇÃO E ASSINATURA DO RECEBEDOR: _________________________________")
 
 	// Right: DANFE title block
@@ -325,9 +327,9 @@ func (g *DANFEGenerator) drawHeaderBlock(pdf *gopdf.GoPdf, data entity.DANFEData
 	if tpNF == "" {
 		tpNF = "1" // default to saída
 	}
-	pdf.SetLineWidth(.25)
+	pdf.SetLineWidth(0)
 	pdf.Rectangle(rightX+66, y+26, rightX+80, y+44, "D", 2, 10)
-	pdf.SetLineWidth(.5)
+	pdf.SetLineWidth(0)
 	pdf.SetFont("serif-bold", "", 10)
 	pdf.SetXY(rightX+70, y+31)
 	pdf.Cell(nil, tpNF)
@@ -453,47 +455,18 @@ func (g *DANFEGenerator) drawAccessKeyBlock(pdf *gopdf.GoPdf, data entity.DANFED
 	// Divider line above Campo 1/2 area
 	pdf.Line(x, y+h-18, x+w, y+h-18)
 
-	// Campo 1 (full width, left side) and Campo 2 (right side) per §3.9
-	pdf.SetFont("serif", "", 6)
-	pdf.SetXY(x+4, y+h-14)
-	label1 := "1 — CONSULTA DE AUTENTICIDADE"
-	pdf.Cell(nil, label1)
-	pdf.SetFont("serif", "", 7)
-	pdf.SetXY(x+4, y+h-7)
-	pdf.Cell(nil, "www.nfe.fazenda.gov.br/portal ou no site da Sefaz Autorizadora")
-
-	// Campo 2 right side
-	c2X := x + w*0.55
-	pdf.SetFont("serif", "", 6)
-	pdf.SetXY(c2X, y+h-14)
-	pdf.Cell(nil, "2 — PROTOCOLO DE AUTORIZAÇÃO DE USO")
-	if data.Protocol != "" {
-		pdf.SetFont("serif-bold", "", 8)
-		protText := data.Protocol
-		if data.ProtocolDate != "" {
-			protText += " " + data.ProtocolDate
-		}
-		protLines := wrapText(pdf, protText, w*0.45-8)
-		protY := y + h - 7.0
-		for i := len(protLines) - 1; i >= 0; i-- {
-			pdf.SetXY(c2X, protY)
-			pdf.Cell(nil, protLines[i])
-			protY -= 7
-		}
-	}
-
 	return y + h
 }
 
 func (g *DANFEGenerator) drawNaturezaOp(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
-	h := 28.0
+	h := 24.0
 	g.cell(pdf, x, y, w, h, "NATUREZA DA OPERAÇÃO", data.NaturezaOp)
 	return y + h
 }
 
 func (g *DANFEGenerator) drawEmitente(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
-	h := 60.0
-	g.box(pdf, x, y, w, h)
+	h := 69.0
+	//g.box(pdf, x, y, w, h)
 
 	pdf.SetFont("serif", "", 6)
 	pdf.SetXY(x+4, y+3)
@@ -502,15 +475,16 @@ func (g *DANFEGenerator) drawEmitente(pdf *gopdf.GoPdf, data entity.DANFEData, x
 	// Razão Social (12pt bold per §3.7.6)
 	pdf.SetFont("serif-bold", "", 12)
 	nameLines := wrapText(pdf, data.EmitterName, w-8)
-	nameY := y + 11.0
+	nameY := y + 12.0
 	for _, line := range nameLines {
 		pdf.SetXY(x+4, nameY)
 		pdf.Cell(nil, line)
 		nameY += 10
 	}
+	g.box(pdf, x, y+10, w, h)
 
 	// CNPJ | IE | CRT (8pt per §3.7.6)
-	row1H := 20.0
+	row1H := 24.0
 	col1 := w * 0.35
 	col2 := w * 0.35
 	col3 := w - col1 - col2
@@ -535,8 +509,8 @@ func (g *DANFEGenerator) drawEmitente(pdf *gopdf.GoPdf, data entity.DANFEData, x
 }
 
 func (g *DANFEGenerator) drawDestinatario(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
-	h := 60.0
-	g.box(pdf, x, y, w, h)
+	h := 69.0
+	//g.box(pdf, x, y, w, h)
 
 	pdf.SetFont("serif", "", 6)
 	pdf.SetXY(x+4, y+3)
@@ -554,7 +528,7 @@ func (g *DANFEGenerator) drawDestinatario(pdf *gopdf.GoPdf, data entity.DANFEDat
 		nameY += 10
 	}
 
-	row1H := 20.0
+	row1H := 24.0
 	col1 := w * 0.35
 	col2 := w * 0.35
 	col3 := w - col1 - col2
@@ -579,7 +553,7 @@ func (g *DANFEGenerator) drawDestinatario(pdf *gopdf.GoPdf, data entity.DANFEDat
 
 func (g *DANFEGenerator) drawTaxCalc(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
 	h := 34.0
-	g.box(pdf, x, y, w, h)
+	//g.box(pdf, x, y, w, h)
 	pdf.SetFont("serif", "", 6)
 	pdf.SetXY(x+4, y+3)
 	pdf.Cell(nil, "CÁLCULO DO IMPOSTO")
@@ -610,15 +584,15 @@ func (g *DANFEGenerator) drawTaxCalc(pdf *gopdf.GoPdf, data entity.DANFEData, x,
 }
 
 func (g *DANFEGenerator) drawTransport(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
-	h := 60.0
-	g.box(pdf, x, y, w, h)
+	h := 72.0
+	//g.box(pdf, x, y, w, h)
 	pdf.SetFont("serif", "", 6)
 	pdf.SetXY(x+4, y+3)
 	pdf.Cell(nil, "TRANSPORTADOR / VOLUMES TRANSPORTADOS")
 
-	row1H := 18.0
-	row2H := 14.0
-	row3H := 18.0
+	row1H := 22.0
+	row2H := 18.0
+	row3H := 22.0
 
 	// Row 1
 	c1 := w * 0.12
@@ -704,10 +678,13 @@ func (g *DANFEGenerator) drawProductTable(pdf *gopdf.GoPdf, data entity.DANFEDat
 		h = headerH + baseRowH
 	}
 
-	g.box(pdf, x, y, w, h)
+	//g.box(pdf, x, y, w, h)
 	pdf.SetFont("serif", "", 6)
 	pdf.SetXY(x+4, y+3)
 	pdf.Cell(nil, "DADOS DO PRODUTO / SERVIÇO")
+
+	// content box
+	g.box(pdf, x, y+10, w, h-10)
 
 	// Header
 	cols := []struct {
@@ -800,9 +777,9 @@ func (g *DANFEGenerator) drawProductTable(pdf *gopdf.GoPdf, data entity.DANFEDat
 
 		// Item divider between items per §5.3
 		if i < len(data.Products)-1 {
-			pdf.SetLineWidth(0.2)
+			pdf.SetLineWidth(0)
 			pdf.Line(x+2, cyAcc+lh, x+w-2, cyAcc+lh)
-			pdf.SetLineWidth(0.5)
+			pdf.SetLineWidth(0)
 		}
 
 		cyAcc += lh
@@ -813,7 +790,7 @@ func (g *DANFEGenerator) drawProductTable(pdf *gopdf.GoPdf, data entity.DANFEDat
 
 func (g *DANFEGenerator) drawTotalNota(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
 	h := 34.0
-	g.box(pdf, x, y, w, h)
+	//g.box(pdf, x, y, w, h)
 	pdf.SetFont("serif", "", 6)
 	pdf.SetXY(x+4, y+3)
 	pdf.Cell(nil, "DADOS DOS TOTAIS DA NOTA")

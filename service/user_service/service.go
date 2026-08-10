@@ -656,11 +656,11 @@ func Login(cpf string, passwd string, ipAddress, userAgent string) (credentials,
 	}
 
 	// Check subscription status before creating session
-	status, tierKey := resolveSubscriptionForLogin(user.Farm, user.Email, user.Cpf)
-	if status != "active" && status != "trialing" && status != "past_due" {
-		toast = entity_public.GetWarningToast("Assinatura inativa", "subscription-inactive")
-		return credentials{Farm: user.Farm}, &toast
-	}
+	//status, tierKey := resolveSubscriptionForLogin(user.Farm, user.Email, user.Cpf)
+	//if status != "active" && status != "trialing" && status != "past_due" {
+	//	toast = entity_public.GetWarningToast("Assinatura inativa", "subscription-inactive")
+	//	return credentials{Farm: user.Farm}, &toast
+	//}
 
 	// Create session
 	sessionID, sessionErr := CreateSession(user.Id, ipAddress, userAgent)
@@ -669,7 +669,8 @@ func Login(cpf string, passwd string, ipAddress, userAgent string) (credentials,
 		return credentials{}, &toast
 	}
 
-	token, tokenErr := createToken(user.Name, user.Email, user.Farm, user.Role, user.Id, sessionID, tierKey)
+	//token, tokenErr := createToken(user.Name, user.Email, user.Farm, user.Role, user.Id, sessionID, tierKey)
+	token, tokenErr := createToken(user.Name, user.Email, user.Farm, user.Role, user.Id, sessionID, "fiscal")
 	if tokenErr != nil {
 		toast = entity_public.GetErrorToast("Desculpe, houve um erro interno :(", "")
 		return credentials{}, &toast
