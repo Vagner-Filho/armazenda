@@ -49,7 +49,8 @@ func (m *NFeModel) GetFarmConfig(farmID uint32) (*entity_public.FarmConfig, erro
 		       o.owner_document, f.inscricao_estadual, f.uf, nfc.default_mod_frete,
 		       nfc.default_cfop, nfc.default_cest, nfc.default_unit,
 		       nfc.default_icms_cst, nfc.default_pis_cst, nfc.default_cofins_cst, nfc.default_natureza_op,
-		       nfc.icms_rate, nfc.pis_rate, nfc.cofins_rate, fcnd.certificate_number, fcnd.exp_date, fcnd.meta
+		       nfc.icms_rate, nfc.pis_rate, nfc.cofins_rate, fcnd.certificate_number, fcnd.exp_date, fcnd.meta,
+		       nfc.cbs_rate, nfc.ibs_rate, nfc.cbs_cst, nfc.ibs_cst, nfc.c_class_trib
 		FROM nfe_farm_config nfc
 		LEFT JOIN farm_owner_subscription fos ON fos.farm_id = nfc.farm_id
 		LEFT JOIN farm f ON f.id = fos.farm_id
@@ -61,6 +62,7 @@ func (m *NFeModel) GetFarmConfig(farmID uint32) (*entity_public.FarmConfig, erro
 
 	var cfg entity_public.FarmConfig
 	var defaultCest, defaultIcmsCst, defaultPisCst, defaultCofinsCst, defaultNaturezaOp *string
+	var defaultCbsCst, defaultIbsCst, defaultCClassTrib *string
 	err := row.Scan(
 		&cfg.ID, &cfg.FarmID, &cfg.CertificatePath, &cfg.CertificateData, &cfg.CertificatePasswordEncrypted,
 		&cfg.Environment, &cfg.Serie, &cfg.NextNumber, &cfg.TaxRegime, &cfg.EmitterType,
@@ -68,6 +70,7 @@ func (m *NFeModel) GetFarmConfig(farmID uint32) (*entity_public.FarmConfig, erro
 		&cfg.DefaultCFOP, &defaultCest, &cfg.DefaultUnit,
 		&defaultIcmsCst, &defaultPisCst, &defaultCofinsCst, &defaultNaturezaOp,
 		&cfg.ICMSRate, &cfg.PISRate, &cfg.COFINSRate, &cfg.CertificateNumber, &cfg.ExpDate, &cfg.Meta,
+		&cfg.CBSRate, &cfg.IBSRate, &defaultCbsCst, &defaultIbsCst, &defaultCClassTrib,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -82,6 +85,9 @@ func (m *NFeModel) GetFarmConfig(farmID uint32) (*entity_public.FarmConfig, erro
 	cfg.DefaultPISCST = defaultPisCst
 	cfg.DefaultCOFINSCST = defaultCofinsCst
 	cfg.DefaultNaturezaOp = defaultNaturezaOp
+	cfg.DefaultCBSCST = defaultCbsCst
+	cfg.DefaultIBSCST = defaultIbsCst
+	cfg.DefaultCClassTrib = defaultCClassTrib
 	return &cfg, nil
 }
 
@@ -93,13 +99,15 @@ func (m *NFeModel) UpsertFarmConfig(cfg entity_public.FarmConfig) *model_error.M
 			serie, next_number, tax_regime, default_mod_frete,
 			default_cfop, default_cest, default_unit,
 			default_icms_cst, default_pis_cst, default_cofins_cst, default_natureza_op,
-			icms_rate, pis_rate, cofins_rate
+			icms_rate, pis_rate, cofins_rate,
+			cbs_rate, ibs_rate, cbs_cst, ibs_cst, c_class_trib
 		) VALUES (
 			@farm_id, @certificate_path, @certificate_data, @certificate_password_encrypted, @environment,
 			@serie, @next_number, @tax_regime, @default_mod_frete,
 			@default_cfop, @default_cest, @default_unit,
 			@default_icms_cst, @default_pis_cst, @default_cofins_cst, @default_natureza_op,
-			@icms_rate, @pis_rate, @cofins_rate
+			@icms_rate, @pis_rate, @cofins_rate,
+			@cbs_rate, @ibs_rate, @cbs_cst, @ibs_cst, @c_class_trib
 		)
 		ON CONFLICT (farm_id) DO UPDATE SET
 			certificate_path = EXCLUDED.certificate_path,
@@ -120,6 +128,11 @@ func (m *NFeModel) UpsertFarmConfig(cfg entity_public.FarmConfig) *model_error.M
 			icms_rate = EXCLUDED.icms_rate,
 			pis_rate = EXCLUDED.pis_rate,
 			cofins_rate = EXCLUDED.cofins_rate,
+			cbs_rate = EXCLUDED.cbs_rate,
+			ibs_rate = EXCLUDED.ibs_rate,
+			cbs_cst = EXCLUDED.cbs_cst,
+			ibs_cst = EXCLUDED.ibs_cst,
+			c_class_trib = EXCLUDED.c_class_trib,
 			modified_at = CURRENT_TIMESTAMP
 	`
 	_, err := m.pool.Exec(context.Background(), query, pgx.NamedArgs{
@@ -142,6 +155,11 @@ func (m *NFeModel) UpsertFarmConfig(cfg entity_public.FarmConfig) *model_error.M
 		"icms_rate":                      cfg.ICMSRate,
 		"pis_rate":                       cfg.PISRate,
 		"cofins_rate":                    cfg.COFINSRate,
+		"cbs_rate":                       cfg.CBSRate,
+		"ibs_rate":                       cfg.IBSRate,
+		"cbs_cst":                        cfg.DefaultCBSCST,
+		"ibs_cst":                        cfg.DefaultIBSCST,
+		"c_class_trib":                   cfg.DefaultCClassTrib,
 	})
 	if err != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("UpsertFarmConfig nfe_farm_config err: %s", err.Error()))
@@ -196,6 +214,11 @@ type Invoice struct {
 	UnitPrice           decimal.Decimal
 	TotalValue          decimal.Decimal
 	ICMSValue           *decimal.Decimal
+	// Tax reform totals (Reforma Tributária, NT 2025.002-RTC). Persisted
+	// from the per-item IBS/CBS sums so future reports can show tax burden
+	// per invoice without re-parsing the signed XML.
+	IBSValue            decimal.Decimal
+	CBSValue            decimal.Decimal
 	XMLSigned           *string
 	XMLAuthorized       *string
 	Protocol            *string
@@ -222,6 +245,11 @@ type Invoice struct {
 	ICMSCST             *string
 	PISCST              *string
 	COFINSCST           *string
+	// Tax reform (IBS/CBS) CST + cClassTrib persisted per invoice so draft
+	// retries and SVC contingency rebuilds reproduce the same XML.
+	IBSCST              *string
+	CBSCST              *string
+	CClassTrib          *string
 	InfCpl              *string
 }
 
@@ -242,10 +270,14 @@ func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey strin
 			cfop, ncm, quantity_kg, unit_price, total_value,
 			tp_emis, dh_cont, x_just,
 			natureza_op, product_description, cest, unit, mod_frete,
-			icms_cst, pis_cst, cofins_cst, inf_cpl
+			icms_cst, pis_cst, cofins_cst,
+			cbs_cst, ibs_cst, c_class_trib,
+			inf_cpl
 		)
 		VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9, $10, $11, $12,
-			$13, $14, $15, $16, $17, $18, $19, $20, $21)
+			$13, $14, $15, $16, $17, $18, $19, $20,
+			$21, $22, $23,
+			$24)
 		RETURNING id
 	`
 	var id int
@@ -260,6 +292,9 @@ func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey strin
 		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.ICMSCST }),
 		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.PISCST }),
 		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.COFINSCST }),
+		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.CBSCST }),
+		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.IBSCST }),
+		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.CClassTrib }),
 		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.InfCpl }),
 	).Scan(&id)
 	if err != nil {
@@ -297,13 +332,15 @@ func (m *NFeModel) insertInvoiceTaxRates(invoiceID int, taxRates *entity.TaxRate
 	if taxRates == nil {
 		return nil
 	}
-	if taxRates.ICMSRate == nil && taxRates.PISRate == nil && taxRates.COFINSRate == nil {
+	if taxRates.ICMSRate == nil && taxRates.PISRate == nil && taxRates.COFINSRate == nil &&
+		taxRates.IBSRate == nil && taxRates.CBSRate == nil {
 		return nil
 	}
 	_, err := m.pool.Exec(context.Background(),
-		`INSERT INTO nfe_invoice_tax_rates (invoice_id, icms_rate, pis_rate, cofins_rate)
-		 VALUES ($1, $2, $3, $4)`,
+		`INSERT INTO nfe_invoice_tax_rates (invoice_id, icms_rate, pis_rate, cofins_rate, cbs_rate, ibs_rate)
+		 VALUES ($1, $2, $3, $4, $5, $6)`,
 		invoiceID, taxRates.ICMSRate, taxRates.PISRate, taxRates.COFINSRate,
+		taxRates.CBSRate, taxRates.IBSRate,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to insert invoice tax rates: %w", err)
@@ -317,11 +354,11 @@ func (m *NFeModel) insertInvoiceTaxRates(invoiceID int, taxRates *entity.TaxRate
 func (m *NFeModel) GetInvoiceTaxRates(invoiceID int) (*entity.TaxRates, error) {
 	var tr entity.TaxRates
 	err := m.pool.QueryRow(context.Background(),
-		`SELECT icms_rate, pis_rate, cofins_rate
+		`SELECT icms_rate, pis_rate, cofins_rate, cbs_rate, ibs_rate
 		 FROM nfe_invoice_tax_rates
 		 WHERE invoice_id = $1`,
 		invoiceID,
-	).Scan(&tr.ICMSRate, &tr.PISRate, &tr.COFINSRate)
+	).Scan(&tr.ICMSRate, &tr.PISRate, &tr.COFINSRate, &tr.CBSRate, &tr.IBSRate)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -393,13 +430,14 @@ func (m *NFeModel) UpdateInvoiceCancelled(id int, reason, eventXML, sefazCode, s
 func (m *NFeModel) GetInvoiceByDeparture(departureID uint32) (*Invoice, error) {
 	query := `
 		SELECT i.id, i.departure_id, i.access_key, i.serie, i.number, i.status, i.cfop, i.ncm,
-		       i.quantity_kg, i.unit_price, i.total_value, i.icms_value, i.xml_signed, i.xml_authorized,
+		       i.quantity_kg, i.unit_price, i.total_value, i.icms_value, i.ibs_value, i.cbs_value,
+		       i.xml_signed, i.xml_authorized,
 		       i.protocol, i.sefaz_status_code, i.sefaz_motive, i.rejection_reason, i.cancellation_reason,
 		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id, i.svc_endpoint_used,
 		       i.created_at, i.signed_at, i.sent_at, i.authorized_at,
-		       t.icms_rate, t.pis_rate, t.cofins_rate,
+		       t.icms_rate, t.pis_rate, t.cofins_rate, t.cbs_rate, t.ibs_rate,
        i.natureza_op, i.product_description, i.cest, i.unit, i.mod_frete,
-               i.icms_cst, i.pis_cst, i.cofins_cst, i.inf_cpl
+               i.icms_cst, i.pis_cst, i.cofins_cst, i.cbs_cst, i.ibs_cst, i.c_class_trib, i.inf_cpl
         FROM nfe_invoice i
         LEFT JOIN nfe_invoice_tax_rates t ON t.invoice_id = i.id
         WHERE i.departure_id = $1
@@ -599,13 +637,14 @@ func (m *NFeModel) GetInvoicesByFarm(farmID uint32, page int) ([]Invoice, int, e
 
 	query := `
 		SELECT i.id, i.departure_id, i.access_key, i.serie, i.number, i.status, i.cfop, i.ncm,
-		       i.quantity_kg, i.unit_price, i.total_value, i.icms_value, i.xml_signed, i.xml_authorized,
+		       i.quantity_kg, i.unit_price, i.total_value, i.icms_value, i.ibs_value, i.cbs_value,
+		       i.xml_signed, i.xml_authorized,
 		       i.protocol, i.sefaz_status_code, i.sefaz_motive, i.rejection_reason, i.cancellation_reason,
 		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id, i.svc_endpoint_used,
 		       i.created_at, i.signed_at, i.sent_at, i.authorized_at,
-		       t.icms_rate, t.pis_rate, t.cofins_rate,
+		       t.icms_rate, t.pis_rate, t.cofins_rate, t.cbs_rate, t.ibs_rate,
                i.natureza_op, i.product_description, i.cest, i.unit, i.mod_frete,
-               i.icms_cst, i.pis_cst, i.cofins_cst, i.inf_cpl
+               i.icms_cst, i.pis_cst, i.cofins_cst, i.cbs_cst, i.ibs_cst, i.c_class_trib, i.inf_cpl
 		FROM nfe_invoice i
 		JOIN departure d ON d.id = i.departure_id
 		LEFT JOIN nfe_invoice_tax_rates t ON t.invoice_id = i.id
@@ -635,13 +674,14 @@ func (m *NFeModel) GetInvoicesByFarm(farmID uint32, page int) ([]Invoice, int, e
 func (m *NFeModel) GetInvoiceByAccessKey(accessKey string) (*Invoice, error) {
 	query := `
 		SELECT i.id, i.departure_id, i.access_key, i.serie, i.number, i.status, i.cfop, i.ncm,
-		       i.quantity_kg, i.unit_price, i.total_value, i.icms_value, i.xml_signed, i.xml_authorized,
+		       i.quantity_kg, i.unit_price, i.total_value, i.icms_value, i.ibs_value, i.cbs_value,
+		       i.xml_signed, i.xml_authorized,
 		       i.protocol, i.sefaz_status_code, i.sefaz_motive, i.rejection_reason, i.cancellation_reason,
 		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id, i.svc_endpoint_used,
 		       i.created_at, i.signed_at, i.sent_at, i.authorized_at,
-		       t.icms_rate, t.pis_rate, t.cofins_rate,
+		       t.icms_rate, t.pis_rate, t.cofins_rate, t.cbs_rate, t.ibs_rate,
                i.natureza_op, i.product_description, i.cest, i.unit, i.mod_frete,
-               i.icms_cst, i.pis_cst, i.cofins_cst, i.inf_cpl
+               i.icms_cst, i.pis_cst, i.cofins_cst, i.cbs_cst, i.ibs_cst, i.c_class_trib, i.inf_cpl
 		FROM nfe_invoice i
 		LEFT JOIN nfe_invoice_tax_rates t ON t.invoice_id = i.id
 		WHERE i.access_key = $1
@@ -673,16 +713,18 @@ func scanInvoice(row invoiceScanner) (*Invoice, error) {
 	var icmsValue *decimal.Decimal
 	var xmlSigned, xmlAuthorized, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason, xJust, svcEndpoint *string
 	var contingencyParentID *int
-	var icmsRate, pisRate, cofinsRate *decimal.Decimal
+	var icmsRate, pisRate, cofinsRate, cbsRate, ibsRate *decimal.Decimal
+	var ibsCST, cbsCST, cClassTrib *string
 	err := row.Scan(
 		&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Serie, &inv.Number, &inv.Status,
 		&inv.CFOP, &inv.NCM, &inv.QuantityKG, &inv.UnitPrice, &inv.TotalValue, &icmsValue,
+		&inv.IBSValue, &inv.CBSValue,
 		&xmlSigned, &xmlAuthorized, &protocol, &sefazCode, &sefazMotive, &rejectionReason,
 		&cancellationReason, &inv.RetryCount, &inv.TpEmis, &inv.DhCont, &xJust, &contingencyParentID, &svcEndpoint,
 		&inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt,
-		&icmsRate, &pisRate, &cofinsRate,
+		&icmsRate, &pisRate, &cofinsRate, &cbsRate, &ibsRate,
 		&inv.NaturezaOp, &inv.ProductDescription, &inv.CEST, &inv.Unit, &inv.ModFrete,
-		&inv.ICMSCST, &inv.PISCST, &inv.COFINSCST, &inv.InfCpl,
+		&inv.ICMSCST, &inv.PISCST, &inv.COFINSCST, &cbsCST, &ibsCST, &cClassTrib, &inv.InfCpl,
 	)
 	if err != nil {
 		return nil, err
@@ -699,12 +741,17 @@ func scanInvoice(row invoiceScanner) (*Invoice, error) {
 	inv.XJust = xJust
 	inv.ContingencyParentID = contingencyParentID
 	inv.SVCEndpointUsed = svcEndpoint
+	inv.CBSCST = cbsCST
+	inv.IBSCST = ibsCST
+	inv.CClassTrib = cClassTrib
 
-	if icmsRate != nil || pisRate != nil || cofinsRate != nil {
+	if icmsRate != nil || pisRate != nil || cofinsRate != nil || cbsRate != nil || ibsRate != nil {
 		inv.TaxRates = &entity.TaxRates{
 			ICMSRate:   icmsRate,
 			PISRate:    pisRate,
 			COFINSRate: cofinsRate,
+			CBSRate:    cbsRate,
+			IBSRate:    ibsRate,
 		}
 	}
 	return &inv, nil

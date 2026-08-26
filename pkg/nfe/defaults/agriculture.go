@@ -121,6 +121,11 @@ type ProductDefaults struct {
 	ICMSCST     string
 	PISCST      string
 	COFINSCST   string
+	// Tax reform (IBS/CBS) defaults applied when the farm config does not
+	// override them. CClassTrib is the NT 2025.002-RTC classification code
+	// that ties IBS/CBS to a specific tax regime / sector rule.
+	IBSCBSCST   string
+	CClassTrib  string
 }
 
 // GetProductDefaults returns the default fiscal configuration for a product.
@@ -139,6 +144,8 @@ func GetProductDefaults(productName string, regime TaxRegime) ProductDefaults {
 			ICMSCST:     defaultICMSCST(regime),
 			PISCST:      defaultPISCST(regime),
 			COFINSCST:   defaultCOFINSCST(regime),
+			IBSCBSCST:   IBSCBSCSTTributadaIntegral,
+			CClassTrib:  CClassTribDefault,
 		}
 	}
 }
@@ -152,6 +159,8 @@ func productDefaultsMilho(regime TaxRegime) ProductDefaults {
 		ICMSCST:     defaultICMSCST(regime),
 		PISCST:      defaultPISCST(regime),
 		COFINSCST:   defaultCOFINSCST(regime),
+		IBSCBSCST:   IBSCBSCSTTributadaIntegral,
+		CClassTrib:  CClassTribDefault,
 	}
 }
 
@@ -164,6 +173,8 @@ func productDefaultsSoja(regime TaxRegime) ProductDefaults {
 		ICMSCST:     defaultICMSCST(regime),
 		PISCST:      defaultPISCST(regime),
 		COFINSCST:   defaultCOFINSCST(regime),
+		IBSCBSCST:   IBSCBSCSTTributadaIntegral,
+		CClassTrib:  CClassTribDefault,
 	}
 }
 

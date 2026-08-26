@@ -14,7 +14,7 @@ const (
 	// TpEventoCancelamento is the NF-e cancellation event type.
 	TpEventoCancelamento = "110111"
 	// VersaoEvento is the layout version of the event envelope.
-	VersaoEvento = "1.00"
+	VersaoEvento = "2v2"
 	// Justification bounds per MOC (xJust: 15-256 characters).
 	justificativaMinLen = 15
 	justificativaMaxLen = 256

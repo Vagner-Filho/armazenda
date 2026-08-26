@@ -243,6 +243,10 @@ func (b *Builder) buildDet(parent *etree.Element, item entity.ItemData, nItem in
 	b.buildICMS(imp, item.Imposto.ICMS)
 	b.buildPIS(imp, item.Imposto.PIS)
 	b.buildCOFINS(imp, item.Imposto.COFINS)
+	// IBSCBS is emitted for every item: when IsTaxReformActive is false the
+	// caller passes zero-valued IBSCBSData so the group renders but stays
+	// zero-valued (stable schema across years).
+	b.buildIBSCBS(imp, item.Imposto.IBSCBS)
 
 	if item.InfAdProd != "" {
 		setSchemaText(det, "infAdProd", item.InfAdProd)
@@ -336,17 +340,48 @@ func (b *Builder) buildCOFINS(parent *etree.Element, cofins entity.COFINSData) {
 	cofinsAliq.CreateElement("vCOFINS").SetText(formatDecimal(cofins.VCOFINS, 2))
 }
 
+// buildIBSCBS emits the per-item <IBSCBS> group required by the indirect tax
+// reform (NT 2025.002-RTC / MOC 7.0). For the 2026 symbolic phase the IBS rate
+// is allocated entirely to the state share (pIBSUF) and the municipal share
+// stays zero — state-level split rates are not yet published. vIBS equals
+// vIBSUF in this allocation.
+//
+// Emitted always (even with zero values) so the schema stays stable when the
+// caller passes zero-valued IBSCBSData for pre-reform emissions.
+func (b *Builder) buildIBSCBS(parent *etree.Element, ibscbs entity.IBSCBSData) {
+	ibscbsElem := parent.CreateElement("IBSCBS")
+	ibscbsElem.CreateElement("CST").SetText(ibscbs.CST)
+	ibscbsElem.CreateElement("cClassTrib").SetText(ibscbs.CClassTrib)
+
+	gIBSCBS := ibscbsElem.CreateElement("gIBSCBS")
+	gIBSUF := gIBSCBS.CreateElement("gIBSUF")
+	gIBSUF.CreateElement("pIBSUF").SetText(formatDecimal(ibscbs.PIBS, 4))
+	gIBSUF.CreateElement("vIBSUF").SetText(formatDecimal(ibscbs.VIBS, 2))
+
+	gIBSMun := gIBSCBS.CreateElement("gIBSMun")
+	gIBSMun.CreateElement("pIBSMun").SetText("0.0000")
+	gIBSMun.CreateElement("vIBSMun").SetText("0.00")
+
+	gCBS := gIBSCBS.CreateElement("gCBS")
+	gCBS.CreateElement("pCBS").SetText(formatDecimal(ibscbs.PCBS, 4))
+	gCBS.CreateElement("vCBS").SetText(formatDecimal(ibscbs.VCBS, 2))
+}
+
 func (b *Builder) buildTotal(parent *etree.Element, input entity.InvoiceInput) {
 	total := parent.CreateElement("total")
 	icmsTot := total.CreateElement("ICMSTot")
 
 	var vBC, vICMS, vProd, vPIS, vCOFINS decimal.Decimal
+	var vBCIBSCBS, vIBS, vCBS decimal.Decimal
 	for _, item := range input.Items {
 		vBC = vBC.Add(item.Imposto.ICMS.VBC)
 		vICMS = vICMS.Add(item.Imposto.ICMS.VICMS)
 		vProd = vProd.Add(item.Produto.VProd)
 		vPIS = vPIS.Add(item.Imposto.PIS.VPIS)
 		vCOFINS = vCOFINS.Add(item.Imposto.COFINS.VCOFINS)
+		vBCIBSCBS = vBCIBSCBS.Add(item.Imposto.IBSCBS.VBC)
+		vIBS = vIBS.Add(item.Imposto.IBSCBS.VIBS)
+		vCBS = vCBS.Add(item.Imposto.IBSCBS.VCBS)
 	}
 	vNF := input.TotalValue
 
@@ -369,6 +404,20 @@ func (b *Builder) buildTotal(parent *etree.Element, input entity.InvoiceInput) {
 	icmsTot.CreateElement("vCOFINS").SetText(formatDecimal(vCOFINS, 2))
 	icmsTot.CreateElement("vOutro").SetText("0.00")
 	icmsTot.CreateElement("vNF").SetText(formatDecimal(vNF, 2))
+
+	// IBSCBSTot — sibling of ICMSTot inside <total>. Mandatory in the NF-e
+	// layout from August 2026 (Reforma Tributária). The IBS total equals the
+	// UF share for now (municipal share is zero in the 2026 symbolic phase).
+	ibscbsTot := total.CreateElement("IBSCBSTot")
+	ibscbsTot.CreateElement("vBCIBSCBS").SetText(formatDecimal(vBCIBSCBS, 2))
+	gIBS := ibscbsTot.CreateElement("gIBS")
+	gIBSUF := gIBS.CreateElement("gIBSUF")
+	gIBSUF.CreateElement("vIBSUF").SetText(formatDecimal(vIBS, 2))
+	gIBSMun := gIBS.CreateElement("gIBSMun")
+	gIBSMun.CreateElement("vIBSMun").SetText("0.00")
+	gIBS.CreateElement("vIBS").SetText(formatDecimal(vIBS, 2))
+	gCBS := ibscbsTot.CreateElement("gCBS")
+	gCBS.CreateElement("vCBS").SetText(formatDecimal(vCBS, 2))
 }
 
 func (b *Builder) buildTransp(parent *etree.Element, transp entity.TransportData) {

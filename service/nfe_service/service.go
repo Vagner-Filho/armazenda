@@ -597,6 +597,7 @@ func (s *NFeService) CancelInvoice(accessKey, justification string, farmID uint3
 			fmt.Sprintf("Motivo registrado: %s", justification))
 	}
 
+	model_error.GetLoggerModel().Log(fmt.Sprintf("SEFAZ cancelamento: status %s | movito: %s", resp.StatusCode, resp.StatusMotive))
 	return entity_public.GetWarningToast(
 		fmt.Sprintf("SEFAZ rejeitou o cancelamento (%s)", resp.StatusCode),
 		resp.StatusMotive,
@@ -676,15 +677,22 @@ func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.
 				VPIS:      imp.PIS.VPIS,
 				PCOFINS:   imp.COFINS.PCOFINS,
 				VCOFINS:   imp.COFINS.VCOFINS,
+				PIBS:      imp.IBSCBS.PIBS,
+				VIBS:      imp.IBSCBS.VIBS,
+				PCBS:      imp.IBSCBS.PCBS,
+				VCBS:      imp.IBSCBS.VCBS,
 			},
 		},
-		TotalValue: input.TotalValue,
-		VBC:        imp.ICMS.VBC,
-		VICMS:      imp.ICMS.VICMS,
-		VPIS:       imp.PIS.VPIS,
-		VCOFINS:    imp.COFINS.VCOFINS,
-		ModFrete:   strconv.Itoa(transport.ModFrete),
-		InfCpl:     input.InformacoesAdicionais,
+		TotalValue:  input.TotalValue,
+		VBC:         imp.ICMS.VBC,
+		VICMS:       imp.ICMS.VICMS,
+		VPIS:        imp.PIS.VPIS,
+		VCOFINS:     imp.COFINS.VCOFINS,
+		VBCIBSCBS:   imp.IBSCBS.VBC,
+		VIBS:        imp.IBSCBS.VIBS,
+		VCBS:        imp.IBSCBS.VCBS,
+		ModFrete:    strconv.Itoa(transport.ModFrete),
+		InfCpl:      input.InformacoesAdicionais,
 	}
 
 	if transport.Transportadora != nil {
@@ -757,6 +765,8 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 	icmsRate := *rates.ICMSRate
 	pisRate := *rates.PISRate
 	cofinsRate := *rates.COFINSRate
+	ibsRate := *rates.IBSRate
+	cbsRate := *rates.CBSRate
 
 	// Determine ICMS CST/CSOSN from overrides, farm config, or defaults
 	var icmsCST, icmsCSOSN string
@@ -814,6 +824,36 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 		}
 	}
 
+	// Tax reform (IBS/CBS) — CSTs, cClassTrib and computed values per item.
+	// vBC for IBS/CBS equals the item total. Rates are stored as decimal
+	// rates; the XML builder multiplies by 100 to render pIBSUF / pCBS as
+	// percentage strings. For pre-reform emissions (year < 2026) the values
+	// are still emitted but stay zero so the schema stays stable.
+	//
+	// NT 2025.002-RTC defines a single IBSCBS CST (3 digits) shared by IBS
+	// and CBS in the per-item <IBSCBS> group. Per-emission overrides let the
+	// user supply either CBS or IBS CST — the override applies to the shared
+	// <CST> element, with CBSCST taking precedence.
+	ibsCbsCST := defaults.IBSCBSCSTTributadaIntegral
+	if overrides != nil && overrides.CBSCST != nil && *overrides.CBSCST != "" {
+		ibsCbsCST = *overrides.CBSCST
+	} else if overrides != nil && overrides.IBSCST != nil && *overrides.IBSCST != "" {
+		ibsCbsCST = *overrides.IBSCST
+	}
+	cClassTrib := defaults.CClassTribDefault
+	if overrides != nil && overrides.CClassTrib != nil && *overrides.CClassTrib != "" {
+		cClassTrib = *overrides.CClassTrib
+	}
+
+	// Compute per-item IBS/CBS values. Even when IsTaxReformActive is false
+	// the group is emitted with zero values to keep the schema stable.
+	var ibsVBC, ibsVIBS, ibsVCBS decimal.Decimal
+	if defaults.IsTaxReformActive(time.Now()) {
+		ibsVBC = totalValue
+		ibsVIBS = totalValue.Mul(ibsRate)
+		ibsVCBS = totalValue.Mul(cbsRate)
+	}
+
 	return []entity.ItemData{
 		{
 			Numero: 1,
@@ -856,6 +896,15 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 					PCOFINS: cofinsRate.Mul(decimal.NewFromInt(100)),
 					VCOFINS: totalValue.Mul(cofinsRate),
 				},
+				IBSCBS: entity.IBSCBSData{
+					CST:        ibsCbsCST,
+					CClassTrib: cClassTrib,
+					VBC:        ibsVBC,
+					PIBS:       ibsRate.Mul(decimal.NewFromInt(100)),
+					VIBS:       ibsVIBS,
+					PCBS:       cbsRate.Mul(decimal.NewFromInt(100)),
+					VCBS:       ibsVCBS,
+				},
 			},
 		},
 	}
@@ -865,19 +914,23 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 // User-provided rates are authoritative when non-nil (even if zero). For nil
 // values, fall back to the farm config; if the farm config is also zero for
 // that rate, use the last-resort default (the historical pre-migration values
-// for grain sales).
+// for grain sales, plus the 2026 symbolic IBS/CBS rates from the tax reform).
 //
-// All three returned pointers are non-nil by construction, so callers (e.g.
+// All five returned pointers are non-nil by construction, so callers (e.g.
 // buildItems) can safely dereference without nil checks.
 func MergeRates(overrides entity.TaxRates, farmConfig *entity_public.FarmConfig) entity.TaxRates {
 	var pICMS, pPIS, pCOFINS decimal.Decimal
+	var pIBS, pCBS decimal.Decimal
 	if farmConfig != nil {
 		pICMS, pPIS, pCOFINS = farmConfig.ICMSRate, farmConfig.PISRate, farmConfig.COFINSRate
+		pIBS, pCBS = farmConfig.IBSRate, farmConfig.CBSRate
 	}
 	return entity.TaxRates{
 		ICMSRate:   pickRate(overrides.ICMSRate, pICMS, decimal.NewFromFloat(0.17)),
 		PISRate:    pickRate(overrides.PISRate, pPIS, decimal.NewFromFloat(0.0165)),
 		COFINSRate: pickRate(overrides.COFINSRate, pCOFINS, decimal.NewFromFloat(0.076)),
+		IBSRate:    pickRate(overrides.IBSRate, pIBS, defaults.IBSRate2026),
+		CBSRate:    pickRate(overrides.CBSRate, pCBS, defaults.CBSRate2026),
 	}
 }
 
@@ -894,7 +947,8 @@ func pickRate(override *decimal.Decimal, product, fallback decimal.Decimal) *dec
 // hasAnyUserRate reports whether the user typed at least one rate in the form.
 // Used to decide whether to persist a row in nfe_invoice_tax_rates.
 func hasAnyUserRate(rates entity.TaxRates) bool {
-	return rates.ICMSRate != nil || rates.PISRate != nil || rates.COFINSRate != nil
+	return rates.ICMSRate != nil || rates.PISRate != nil || rates.COFINSRate != nil ||
+		rates.IBSRate != nil || rates.CBSRate != nil
 }
 
 // mapFarmToEmitter maps farm config and farm data to NF-e emitter data.

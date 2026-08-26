@@ -188,6 +188,15 @@ func minimalInvoiceInput() entity.InvoiceInput {
 						PCOFINS: decimal.NewFromFloat(7.6),
 						VCOFINS: decimal.NewFromInt(76),
 					},
+					IBSCBS: entity.IBSCBSData{
+						CST:        "000",
+						CClassTrib: "000001",
+						VBC:        decimal.NewFromInt(1000),
+						PIBS:       decimal.NewFromFloat(0.10),
+						VIBS:       decimal.NewFromFloat(1.00),
+						PCBS:       decimal.NewFromFloat(0.90),
+						VCBS:       decimal.NewFromFloat(9.00),
+					},
 				},
 			},
 		},
@@ -316,5 +325,74 @@ func TestBuilder_MultiplePaymentsSeparateDetPag(t *testing.T) {
 	count := strings.Count(xmlStr, "<detPag>")
 	if count != 2 {
 		t.Errorf("expected 2 <detPag> elements, got %d", count)
+	}
+}
+
+// TestBuilder_IBSCBS verifies the tax-reform <IBSCBS> and <IBSCBSTot> groups
+// per NT 2025.002-RTC: per-item <IBSCBS> appears after <COFINS> inside
+// <imposto>, and <IBSCBSTot> appears as a sibling of <ICMSTot> inside <total>.
+func TestBuilder_IBSCBS(t *testing.T) {
+	builder := xml.NewBuilder()
+	input := minimalInvoiceInput()
+	doc, err := builder.Build(input)
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	xmlStr, _ := doc.WriteToString()
+
+	// Per-item <IBSCBS> presence + ordering: must be after <COFINS>...</COFINS>
+	if !strings.Contains(xmlStr, "<COFINS>") {
+		t.Fatal("expected <COFINS> in XML (prerequisite for ordering check)")
+	}
+	if !strings.Contains(xmlStr, "<IBSCBS>") {
+		t.Fatal("expected <IBSCBS> group in XML")
+	}
+	cofinsIdx := strings.Index(xmlStr, "</COFINS>")
+	ibscbsIdx := strings.Index(xmlStr, "<IBSCBS>")
+	if ibscbsIdx <= cofinsIdx {
+		t.Errorf("expected <IBSCBS> to appear after </COFINS>, got IBSCBS at %d after COFINS close at %d", ibscbsIdx, cofinsIdx)
+	}
+
+	// Per-item required children of <IBSCBS>
+	for _, want := range []string{
+		"<CST>000</CST>",
+		"<cClassTrib>000001</cClassTrib>",
+		"<gIBSCBS>",
+		"<gIBSUF>",
+		"<pIBSUF>0.1000</pIBSUF>",
+		"<vIBSUF>1.00</vIBSUF>",
+		"<gIBSMun>",
+		"<pIBSMun>0.0000</pIBSMun>",
+		"<vIBSMun>0.00</vIBSMun>",
+		"<gCBS>",
+		"<pCBS>0.9000</pCBS>",
+		"<vCBS>9.00</vCBS>",
+	} {
+		if !strings.Contains(xmlStr, want) {
+			t.Errorf("expected %q in XML", want)
+		}
+	}
+
+	// <IBSCBSTot> presence + ordering: must be after </ICMSTot>
+	if !strings.Contains(xmlStr, "<IBSCBSTot>") {
+		t.Fatal("expected <IBSCBSTot> group in XML")
+	}
+	icmsTotIdx := strings.Index(xmlStr, "</ICMSTot>")
+	ibscbsTotIdx := strings.Index(xmlStr, "<IBSCBSTot>")
+	if ibscbsTotIdx <= icmsTotIdx {
+		t.Errorf("expected <IBSCBSTot> to appear after </ICMSTot>, got IBSCBSTot at %d after ICMSTot close at %d", ibscbsTotIdx, icmsTotIdx)
+	}
+
+	// Per-NF-e totals: vBCIBSCBS + gIBS (with vIBSUF + vIBSMun + vIBS) + gCBS (with vCBS)
+	for _, want := range []string{
+		"<vBCIBSCBS>1000.00</vBCIBSCBS>",
+		"<vIBSUF>1.00</vIBSUF>",
+		"<vIBSMun>0.00</vIBSMun>",
+		"<vIBS>1.00</vIBS>",
+		"<vCBS>9.00</vCBS>",
+	} {
+		if !strings.Contains(xmlStr, want) {
+			t.Errorf("expected %q in XML totals", want)
+		}
 	}
 }

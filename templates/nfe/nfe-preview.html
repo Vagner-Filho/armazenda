@@ -21,6 +21,8 @@
         <input type="hidden" name="icmsRate" value="{{ .ICMSRate }}">
         <input type="hidden" name="pisRate" value="{{ .PISRate }}">
         <input type="hidden" name="cofinsRate" value="{{ .COFINSRate }}">
+        <input type="hidden" name="ibsRate" value="{{ .IBSRate }}">
+        <input type="hidden" name="cbsRate" value="{{ .CBSRate }}">
         <input type="hidden" name="naturezaOp" value="{{ .NaturezaOp }}">
         <input type="hidden" name="productDesc" value="{{ .ProductDesc }}">
         <input type="hidden" name="ncm" value="{{ .NCM }}">
@@ -30,6 +32,9 @@
         <input type="hidden" name="icmsCST" value="{{ .ICMSCST }}">
         <input type="hidden" name="pisCST" value="{{ .PISCST }}">
         <input type="hidden" name="cofinsCST" value="{{ .COFINSCST }}">
+        <input type="hidden" name="ibsCST" value="{{ .IBSCST }}">
+        <input type="hidden" name="cbsCST" value="{{ .CBSCST }}">
+        <input type="hidden" name="cClassTrib" value="{{ .CClassTrib }}">
         <input type="hidden" name="infCpl" value="{{ .InfCpl }}">
         <div class="flex items-center justify-center gap-2">
             <button type="button" hx-get="/nfe/modal/{{ .DepartureID }}" hx-target="#nfe-emit-dialog"

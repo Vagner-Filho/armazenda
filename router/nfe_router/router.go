@@ -147,6 +147,8 @@ func previewNFe(c *gin.Context) {
 		"ICMSRate":            rateDisplayString(userRates.ICMSRate),
 		"PISRate":             rateDisplayString(userRates.PISRate),
 		"COFINSRate":          rateDisplayString(userRates.COFINSRate),
+		"IBSRate":             rateDisplayString(userRates.IBSRate),
+		"CBSRate":             rateDisplayString(userRates.CBSRate),
 		"NaturezaOp":          safeFormValue(c, "naturezaOp"),
 		"ProductDesc":         safeFormValue(c, "productDesc"),
 		"NCM":                 safeFormValue(c, "ncm"),
@@ -156,6 +158,9 @@ func previewNFe(c *gin.Context) {
 		"ICMSCST":             safeFormValue(c, "icmsCST"),
 		"PISCST":              safeFormValue(c, "pisCST"),
 		"COFINSCST":           safeFormValue(c, "cofinsCST"),
+		"CBSCST":              safeFormValue(c, "cbsCST"),
+		"IBSCST":              safeFormValue(c, "ibsCST"),
+		"CClassTrib":          safeFormValue(c, "cClassTrib"),
 		"InfCpl":              safeFormValue(c, "infCpl"),
 		"CSPNonce":            nonce.(string),
 	})
@@ -189,6 +194,11 @@ func getNFeConfigForm(c *gin.Context) {
 		"ICMSRatePct":   percentDisplay(config.ICMSRate),
 		"PISRatePct":    percentDisplay(config.PISRate),
 		"COFINSRatePct": percentDisplay(config.COFINSRate),
+		"IBSRatePct":    percentDisplay(config.IBSRate),
+		"CBSRatePct":    percentDisplay(config.CBSRate),
+		"CBSCST":        safePtrString(config.DefaultCBSCST),
+		"IBSCST":        safePtrString(config.DefaultIBSCST),
+		"CClassTrib":    safePtrString(config.DefaultCClassTrib),
 	})
 }
 
@@ -226,6 +236,18 @@ func saveNFeConfig(c *gin.Context) {
 		trimmed := strings.TrimSpace(*fConfig.DefaultCOFINSCST)
 		fConfig.DefaultCOFINSCST = &trimmed
 	}
+	if fConfig.DefaultCBSCST != nil {
+		trimmed := strings.TrimSpace(*fConfig.DefaultCBSCST)
+		fConfig.DefaultCBSCST = &trimmed
+	}
+	if fConfig.DefaultIBSCST != nil {
+		trimmed := strings.TrimSpace(*fConfig.DefaultIBSCST)
+		fConfig.DefaultIBSCST = &trimmed
+	}
+	if fConfig.DefaultCClassTrib != nil {
+		trimmed := strings.TrimSpace(*fConfig.DefaultCClassTrib)
+		fConfig.DefaultCClassTrib = &trimmed
+	}
 	if fConfig.DefaultNaturezaOp != nil {
 		trimmed := strings.TrimSpace(*fConfig.DefaultNaturezaOp)
 		fConfig.DefaultNaturezaOp = &trimmed
@@ -252,6 +274,22 @@ func saveNFeConfig(c *gin.Context) {
 		c.HTML(http.StatusBadRequest, "nfe-config-form", gin.H{
 			"FarmID": farmID,
 			"Error":  "Alíquota COFINS inválida: " + cofinsRateErr.Error(),
+		})
+		return
+	}
+	ibsRate, ibsRateErr := parsePercentRateOrNil(c.PostForm("ibsRate"))
+	if ibsRateErr != nil {
+		c.HTML(http.StatusBadRequest, "nfe-config-form", gin.H{
+			"FarmID": farmID,
+			"Error":  "Alíquota IBS inválida: " + ibsRateErr.Error(),
+		})
+		return
+	}
+	cbsRate, cbsRateErr := parsePercentRateOrNil(c.PostForm("cbsRate"))
+	if cbsRateErr != nil {
+		c.HTML(http.StatusBadRequest, "nfe-config-form", gin.H{
+			"FarmID": farmID,
+			"Error":  "Alíquota CBS inválida: " + cbsRateErr.Error(),
 		})
 		return
 	}
@@ -307,6 +345,11 @@ func saveNFeConfig(c *gin.Context) {
 		ICMSRate:                     derefDecimal(icmsRate),
 		PISRate:                      derefDecimal(pisRate),
 		COFINSRate:                   derefDecimal(cofinsRate),
+		IBSRate:                      derefDecimal(ibsRate),
+		CBSRate:                      derefDecimal(cbsRate),
+		DefaultCBSCST:                fConfig.DefaultCBSCST,
+		DefaultIBSCST:                fConfig.DefaultIBSCST,
+		DefaultCClassTrib:            fConfig.DefaultCClassTrib,
 		FarmCND: entity_public.FarmCND{
 			CertificateNumber: fConfig.CertificateNumber,
 			ExpDate:           fConfig.ExpDate,
@@ -539,8 +582,9 @@ func getNFeEmitModal(c *gin.Context) {
 	// show empty defaults.
 	sid, _ := c.Cookie("session_id")
 	farmID := user_service.GetFarmFromToken(sid)
-	var defaultICMS, defaultPIS, defaultCOFINS decimal.Decimal
+	var defaultICMS, defaultPIS, defaultCOFINS, defaultIBS, defaultCBS decimal.Decimal
 	var defaultNaturezaOp, defaultCEST, defaultUnit, defaultICMSCST, defaultPISCST, defaultCOFINSCST *string
+	var defaultCBSCST, defaultIBSCST, defaultCClassTrib *string
 	var defaultModFrete int
 	var defaultCFOP string
 	var farmNFeConfig *entity_public.FarmConfig
@@ -550,6 +594,8 @@ func getNFeEmitModal(c *gin.Context) {
 		defaultICMS = fc.ICMSRate
 		defaultPIS = fc.PISRate
 		defaultCOFINS = fc.COFINSRate
+		defaultIBS = fc.IBSRate
+		defaultCBS = fc.CBSRate
 		defaultNaturezaOp = fc.DefaultNaturezaOp
 		defaultCEST = fc.DefaultCEST
 		defaultUnit = &fc.DefaultUnit
@@ -561,6 +607,9 @@ func getNFeEmitModal(c *gin.Context) {
 		defaultICMSCST = fc.DefaultICMSCST
 		defaultPISCST = fc.DefaultPISCST
 		defaultCOFINSCST = fc.DefaultCOFINSCST
+		defaultCBSCST = fc.DefaultCBSCST
+		defaultIBSCST = fc.DefaultIBSCST
+		defaultCClassTrib = fc.DefaultCClassTrib
 		defaultCFOP = fc.DefaultCFOP
 		hasConfig = true
 	}
@@ -589,6 +638,8 @@ func getNFeEmitModal(c *gin.Context) {
 		"DefaultICMSRate":   percentDisplay(defaultICMS),
 		"DefaultPISRate":    percentDisplay(defaultPIS),
 		"DefaultCOFINSRate": percentDisplay(defaultCOFINS),
+		"DefaultIBSRate":    percentDisplay(defaultIBS),
+		"DefaultCBSRate":    percentDisplay(defaultCBS),
 		"DefaultNaturezaOp": safePtrString(defaultNaturezaOp),
 		"DefaultProductDesc": product.Name,
 		"DefaultNCM":        product.NCM,
@@ -598,6 +649,9 @@ func getNFeEmitModal(c *gin.Context) {
 		"DefaultICMSCST":    safePtrString(defaultICMSCST),
 		"DefaultPISCST":     safePtrString(defaultPISCST),
 		"DefaultCOFINSCST":  safePtrString(defaultCOFINSCST),
+		"DefaultCBSCST":     safePtrString(defaultCBSCST),
+		"DefaultIBSCST":     safePtrString(defaultIBSCST),
+		"DefaultCClassTrib": safePtrString(defaultCClassTrib),
 		"DefaultInfCpl":     defaultInfCpl,
 		"CSPNonce":          nonce.(string),
 		"HasNFEFarmConfig":  hasConfig,
@@ -702,9 +756,11 @@ func parsePercentRateOrNil(s string) (*decimal.Decimal, error) {
 	return &rate, nil
 }
 
-// parseUserTaxRates extracts the three rate fields from a form submission.
-// An error from any of the three field parses is returned (the caller converts
-// it into a 400 response). Empty fields are tolerated and yield nil pointers.
+// parseUserTaxRates extracts the rate fields from a form submission. It now
+// reads all five tax axes (ICMS, PIS, COFINS, IBS, CBS) so the same parser
+// covers the tax reform fields added in 2026. An error from any field parse
+// is returned (the caller converts it into a 400 response). Empty fields
+// are tolerated and yield nil pointers.
 func parseUserTaxRates(c *gin.Context) (entity.TaxRates, error) {
 	icms, err := parsePercentRateOrNil(c.PostForm("icmsRate"))
 	if err != nil {
@@ -718,7 +774,21 @@ func parseUserTaxRates(c *gin.Context) (entity.TaxRates, error) {
 	if err != nil {
 		return entity.TaxRates{}, fmt.Errorf("COFINS: %w", err)
 	}
-	return entity.TaxRates{ICMSRate: icms, PISRate: pis, COFINSRate: cofins}, nil
+	ibs, err := parsePercentRateOrNil(c.PostForm("ibsRate"))
+	if err != nil {
+		return entity.TaxRates{}, fmt.Errorf("IBS: %w", err)
+	}
+	cbs, err := parsePercentRateOrNil(c.PostForm("cbsRate"))
+	if err != nil {
+		return entity.TaxRates{}, fmt.Errorf("CBS: %w", err)
+	}
+	return entity.TaxRates{
+		ICMSRate:   icms,
+		PISRate:    pis,
+		COFINSRate: cofins,
+		IBSRate:    ibs,
+		CBSRate:    cbs,
+	}, nil
 }
 
 // rateDisplayString converts an optional decimal rate back to the percentage
@@ -786,6 +856,19 @@ func parseInvoiceOverrides(c *gin.Context) *entity.InvoiceOverrides {
 	}
 	if v := strings.TrimSpace(c.PostForm("cofinsCST")); v != "" {
 		o.COFINSCST = &v
+		hasValue = true
+	}
+	// Tax reform (IBS/CBS) CST + cClassTrib — all optional overrides.
+	if v := strings.TrimSpace(c.PostForm("cbsCST")); v != "" {
+		o.CBSCST = &v
+		hasValue = true
+	}
+	if v := strings.TrimSpace(c.PostForm("ibsCST")); v != "" {
+		o.IBSCST = &v
+		hasValue = true
+	}
+	if v := strings.TrimSpace(c.PostForm("cClassTrib")); v != "" {
+		o.CClassTrib = &v
 		hasValue = true
 	}
 	// infCpl is always parsed (even when empty) because the textarea is always

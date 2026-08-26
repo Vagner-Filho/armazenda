@@ -194,6 +194,48 @@
                     Alíquota COFINS (%)
                 </label>
             </div>
+            <div class="flex flex-col-reverse">
+                <input type="text" inputmode="decimal" name="ibsRate" id="ibsRate"
+                    value="{{ .IBSRatePct }}"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                    placeholder="0,10">
+                <label for="ibsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Alíquota IBS (%) <span class="text-white/40 normal-case tracking-normal">— Reforma Tributária</span>
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <input type="text" inputmode="decimal" name="cbsRate" id="cbsRate"
+                    value="{{ .CBSRatePct }}"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                    placeholder="0,90">
+                <label for="cbsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Alíquota CBS (%) <span class="text-white/40 normal-case tracking-normal">— Reforma Tributária</span>
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <input type="text" name="defaultIBSCST" id="defaultIBSCST" value="{{ .IBSCST }}"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                    placeholder="(opcional) ex: 000" maxlength="3">
+                <label for="defaultIBSCST" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    CST IBS Padrão
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <input type="text" name="defaultCBSCST" id="defaultCBSCST" value="{{ .CBSCST }}"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                    placeholder="(opcional) ex: 000" maxlength="3">
+                <label for="defaultCBSCST" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    CST CBS Padrão
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <input type="text" name="defaultCClassTrib" id="defaultCClassTrib" value="{{ .CClassTrib }}"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                    placeholder="(opcional) ex: 000001" maxlength="10">
+                <label for="defaultCClassTrib" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    cClassTrib Padrão
+                </label>
+            </div>
             <div class="flex flex-col-reverse md:col-span-2">
                 <input type="text" name="defaultNaturezaOp" id="defaultNaturezaOp" value="{{ if .Config.DefaultNaturezaOp }}{{ .Config.DefaultNaturezaOp }}{{ end }}"
                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"

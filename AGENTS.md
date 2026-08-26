@@ -324,4 +324,38 @@ The NF-e system implements **automatic SVC (SEFAZ Virtual de Contingência)** co
 - `pkg/nfe/xml/event.go` — cancellation event builder (`BuildCancellationEvent`)
 - `pkg/nfe/sefaz/response.go` — `EventoResponse` / `ParseEventoResponse`
 - `service/nfe_service/service.go` — `BuildInvoiceFromDeparture()` flow, `CancelInvoice()`
+
+### Tax Reform (IBS / CBS)
+
+Armazenda emits the per-item `<IBSCBS>` group and the per-NF-e `<IBSCBSTot>` block required by the indirect tax reform (EC 132/2023, NT 2025.002-RTC / MOC 7.0). Mandatory in the NF-e layout from August 2026.
+
+**Tax axes:**
+- **IBS** — Imposto sobre Bens e Serviços, state + municipal (replaces ICMS + ISS over time)
+- **CBS** — Contribuição sobre Bens e Serviços, federal (replaces PIS + COFINS over time)
+
+**2026 symbolic rates** (per Ato Conjunto RFB/CGIBS):
+- CBS = 0.9 %, IBS = 0.1 % (informational; no financial effect in 2026)
+- Stored as decimal *rates* (CBS=0.009, IBS=0.001); XML `pIBSUF` / `pCBS` multiply by 100
+
+**XML structure** (`pkg/nfe/xml/builder.go`):
+- Per-item `<IBSCBS>` is emitted after `<COFINS>` inside `<imposto>` (always, even pre-reform — keeps schema stable)
+- Per-NF-e `<IBSCBSTot>` is emitted as a sibling of `<ICMSTot>` inside `<total>`
+- The 2026 phase allocates the full IBS rate to the state share (`<gIBSUF>`); municipal (`<gIBSMun>`) stays zero — replace when state/municipal split rates are published
+
+**Gate:**
+- `defaults.IsTaxReformActive(t)` returns true from 2026-01-01 onwards
+- Pre-reform: the XML group is still emitted but with zero rates/values so consumers see a stable schema
+- 2026+: rates come from `MergeRates(userRates, farmNFeConfig)` which resolves `user > farm > 2026 fallback`
+
+**Persistence:**
+- `nfe_farm_config`: `cbs_rate`, `ibs_rate`, `cbs_cst`, `ibs_cst`, `c_class_trib` (per-farm defaults)
+- `nfe_invoice_tax_rates`: `cbs_rate`, `ibs_rate` (per-emission user overrides)
+- `nfe_invoice`: `cbs_value`, `ibs_value`, `cbs_cst`, `ibs_cst`, `c_class_trib` (totals + CST persisted per invoice for retry / SVC rebuild)
+
+**Migration:** `model/armazenda_database/migrations/000019_add_ibs_cbs.sql` (idempotent `ADD COLUMN IF NOT EXISTS`).
+
+**Out of scope (explicit):**
+- Bank-mediated split payment collection at Pix/card settlement (the MOC's "split payment" feature for separating taxes at the moment of financial settlement)
+- NFS-e (services) layout changes — only NF-e (goods) is implemented
+- Credit balance tracking for "Superinteligente" mode
 - `service/nfe_service/worker.go` — draft auto-send logic

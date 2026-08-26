@@ -21,9 +21,10 @@ function handleNFeResponse(evt) {
     }
 }
 
-// Wires the "Usar taxa padrão" checkbox to the three tax rate inputs.
-// When checked, the inputs are readonly (showing the product config defaults).
-// When unchecked, the inputs become editable so the user can override.
+// Wires the "Usar taxa padrão" checkbox to the five tax rate inputs
+// (ICMS, PIS, COFINS, IBS, CBS). When checked, the inputs are readonly
+// (showing the product config defaults). When unchecked, the inputs
+// become editable so the user can override.
 function setupTaxRateToggle(dialogEl) {
     const checkbox = dialogEl.querySelector('#useDefaultTaxRates');
     if (!checkbox) return;
@@ -31,6 +32,8 @@ function setupTaxRateToggle(dialogEl) {
         dialogEl.querySelector('#icmsRate'),
         dialogEl.querySelector('#pisRate'),
         dialogEl.querySelector('#cofinsRate'),
+        dialogEl.querySelector('#ibsRate'),
+        dialogEl.querySelector('#cbsRate'),
     ].filter(Boolean);
     if (rateInputs.length === 0) return;
 

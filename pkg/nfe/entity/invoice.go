@@ -117,6 +117,28 @@ type ImpostoData struct {
 	ICMS   ICMSData
 	PIS    PISData
 	COFINS COFINSData
+	// IBSCBS carries the IBS/CBS groups required by the 2026 indirect tax
+	// reform (NT 2025.002-RTC / MOC 7.0). When IsTaxReformActive is false the
+	// XML builder still emits a zero-valued <IBSCBS> so the schema stays stable
+	// across years; downstream consumers should treat zero rates as "not yet
+	// reform-active".
+	IBSCBS IBSCBSData
+}
+
+// IBSCBSData holds the per-item IBS + CBS values for the indirect tax reform.
+// CST is the 3-digit IBSCBS classification (see defaults.IBSCBSCST* constants).
+// CClassTrib is the NT 2025.002-RTC regime classification. VBC is the tax
+// base (same as vProd for grain sales). pIBS/vIBS and pCBS/vCBS are the
+// rates and amounts; rates are stored as decimal *rates* (0.009 = 0.9 %)
+// and the XML builder multiplies by 100 to produce pIBS/pCBS percentage strings.
+type IBSCBSData struct {
+	CST       string
+	CClassTrib string
+	VBC       decimal.Decimal
+	PIBS      decimal.Decimal
+	VIBS      decimal.Decimal
+	PCBS      decimal.Decimal
+	VCBS      decimal.Decimal
 }
 
 // TaxRates holds tax rate inputs for an emission.
@@ -128,6 +150,11 @@ type TaxRates struct {
 	ICMSRate   *decimal.Decimal
 	PISRate    *decimal.Decimal
 	COFINSRate *decimal.Decimal
+	// IBSRate / CBSRate are the per-item decimal rates (e.g. 0.001 = 0.1 %
+	// IBS, 0.009 = 0.9 % CBS). Nil means "fall back to the farm config /
+	// 2026 default".
+	IBSRate *decimal.Decimal
+	CBSRate *decimal.Decimal
 }
 
 // InvoiceOverrides holds per-emission user overrides that differ from the
@@ -142,7 +169,12 @@ type InvoiceOverrides struct {
 	ICMSCST     *string
 	PISCST      *string
 	COFINSCST   *string
-	InfCpl      *string // Informações complementares; overrides the auto-generated CND text
+	// Tax reform overrides (IBS/CBS). All optional; nil falls back to farm
+	// config (which itself defaults to the 2026 symbolic rates).
+	CBSCST    *string
+	IBSCST    *string
+	CClassTrib *string
+	InfCpl    *string // Informações complementares; overrides the auto-generated CND text
 }
 
 // ICMSData holds ICMS tax information.

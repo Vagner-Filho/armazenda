@@ -51,5 +51,13 @@ type FarmConfig struct {
 	ICMSRate                     decimal.Decimal `form:"icmsRate"`
 	PISRate                      decimal.Decimal `form:"pisRate"`
 	COFINSRate                   decimal.Decimal `form:"cofinsRate"`
+	// Tax reform (IBS / CBS) — Reforma Tributária, NT 2025.002-RTC.
+	// IBSRate / CBSRate are decimal *rates* (e.g. 0.001 = 0.1 % IBS,
+	// 0.009 = 0.9 % CBS). CST fields hold the 3-digit IBSCBS classification.
+	IBSRate                     decimal.Decimal `form:"ibsRate"`
+	CBSRate                     decimal.Decimal `form:"cbsRate"`
+	DefaultIBSCST               *string         `form:"defaultIBSCST"`
+	DefaultCBSCST               *string         `form:"defaultCBSCST"`
+	DefaultCClassTrib           *string         `form:"defaultCClassTrib"`
 	FarmCND
 }
