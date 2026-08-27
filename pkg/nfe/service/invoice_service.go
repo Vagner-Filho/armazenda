@@ -156,8 +156,8 @@ func (s *InvoiceService) SendCancellationEvent(signedEventXML string, certData [
 		return nil, err
 	}
 
-	soapBody := xml.BuildSOAPEnvelope(ns, signedEventXML)
-	fmt.Println(signedEventXML)
+	cUF := defaults.UFCode(s.config.StateUF)
+	soapBody := xml.BuildSOAPEnvelopeWithCabecMsg(ns, signedEventXML, cUF, "1.00")
 	resp, err := client.Post(url, action, []byte(soapBody))
 	if err != nil {
 		return nil, fmt.Errorf("failed to send cancellation event to SEFAZ: %w", err)

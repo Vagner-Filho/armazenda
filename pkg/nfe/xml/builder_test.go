@@ -9,6 +9,7 @@ import (
 	"armazenda/pkg/nfe/entity"
 	"armazenda/pkg/nfe/xml"
 
+	"github.com/beevik/etree"
 	"github.com/shopspring/decimal"
 )
 
@@ -192,8 +193,9 @@ func minimalInvoiceInput() entity.InvoiceInput {
 						CST:        "000",
 						CClassTrib: "000001",
 						VBC:        decimal.NewFromInt(1000),
-						PIBS:       decimal.NewFromFloat(0.10),
-						VIBS:       decimal.NewFromFloat(1.00),
+						VIBSUF:     decimal.NewFromFloat(1.00), // state share (UF)
+						VIBSMun:    decimal.Zero,                  // municipal share (zero in 2026 phase)
+						VIBS:       decimal.NewFromFloat(1.00),   // per-item total = UF + VIBSMun
 						PCBS:       decimal.NewFromFloat(0.90),
 						VCBS:       decimal.NewFromFloat(9.00),
 					},
@@ -358,12 +360,26 @@ func TestBuilder_IBSCBS(t *testing.T) {
 		"<CST>000</CST>",
 		"<cClassTrib>000001</cClassTrib>",
 		"<gIBSCBS>",
+		// vBC is mandatory inside gIBSCBS (UB16, occurrence 1-1) — the very
+		// first child of gIBSCBS.
+		"<vBC>1000.00</vBC>",
+		// <gIBS> wrapper is mandatory inside <gIBSCBS> before <gCBS>.
+		// SEFAZ rejects 215 if the wrapper is missing.
+		"<gIBS>",
 		"<gIBSUF>",
 		"<pIBSUF>0.1000</pIBSUF>",
 		"<vIBSUF>1.00</vIBSUF>",
 		"<gIBSMun>",
 		"<pIBSMun>0.0000</pIBSMun>",
 		"<vIBSMun>0.00</vIBSMun>",
+		// Per-item <vIBS> (total) is mandatory inside <gIBS> and must appear
+		// BEFORE <gCBS> as a sibling inside <gIBSCBS>.
+		"<vIBS>1.00</vIBS>",
+		// vCredPres + vCredPresCondSus are TOTALS-ONLY — they must NOT appear
+		// as direct children of per-item <gIBS>. Emitting them here would
+		// produce SEFAZ 215 with cvc-complex-type.2.4.d. Per-item credit-
+		// presumption fields belong inside the optional <gIBSCredPres> /
+		// <gCBSCredPres> subgroups, which we don't emit in the 2026 phase.
 		"<gCBS>",
 		"<pCBS>0.9000</pCBS>",
 		"<vCBS>9.00</vCBS>",
@@ -383,16 +399,193 @@ func TestBuilder_IBSCBS(t *testing.T) {
 		t.Errorf("expected <IBSCBSTot> to appear after </ICMSTot>, got IBSCBSTot at %d after ICMSTot close at %d", ibscbsTotIdx, icmsTotIdx)
 	}
 
-	// Per-NF-e totals: vBCIBSCBS + gIBS (with vIBSUF + vIBSMun + vIBS) + gCBS (with vCBS)
+	// Per-NF-e totals — every mandatory child of <IBSCBSTot>/<gIBS>/<gCBSUF>/
+	// <gIBSMun>/<gCBS> per NT 2025.002-RTC v1.36 §6.7.4. SEFAZ rejects with
+	// status 215 when any of these are missing.
 	for _, want := range []string{
 		"<vBCIBSCBS>1000.00</vBCIBSCBS>",
+		// gIBSUF (totals): vDif + vDevTrib + vIBSUF, in that order
+		"<vDif>0.00</vDif>",
+		"<vDevTrib>0.00</vDevTrib>",
 		"<vIBSUF>1.00</vIBSUF>",
+		// gIBSMun (totals): vDif + vDevTrib + vIBSMun, in that order
 		"<vIBSMun>0.00</vIBSMun>",
+		// gIBS (totals): vIBS, vCredPres, vCredPresCondSus
 		"<vIBS>1.00</vIBS>",
+		// vCredPres + vCredPresCondSus DO appear in totals <gIBS> as direct
+		// children (W48, W49). Distinct from the per-item block, where they
+		// are forbidden.
+		"<vCredPres>0.00</vCredPres>",
+		"<vCredPresCondSus>0.00</vCredPresCondSus>",
+		// gCBS (totals): vDif + vDevTrib + vCBS + vCredPres + vCredPresCondSus
 		"<vCBS>9.00</vCBS>",
 	} {
 		if !strings.Contains(xmlStr, want) {
 			t.Errorf("expected %q in XML totals", want)
 		}
+	}
+}
+
+// TestBuilder_IBSCBS_ElementOrder walks both the per-item <gIBSCBS> wrapper
+// and the totals <IBSCBSTot> group and asserts the canonical element order
+// per NT 2025.002-RTC v1.36 §6.7.4. This is the regression guard for the
+// two SEFAZ 215 patterns that have already cost emissions:
+//
+//  1. Per-item <gIBSCBS> missing the <gIBS> wrapper — parser sees <gCBS>
+//     where it expected <vIBS>.
+//  2. Totals <IBSCBSTot>/<gIBS>/<gCBS> children missing or out of order
+//     — parser sees <vCBS> where it expected <vDif>.
+func TestBuilder_IBSCBS_ElementOrder(t *testing.T) {
+	builder := xml.NewBuilder()
+	doc, err := builder.Build(minimalInvoiceInput())
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+
+	childNames := func(parent *etree.Element) []string {
+		names := make([]string, 0, len(parent.ChildElements()))
+		for _, c := range parent.ChildElements() {
+			names = append(names, c.Tag)
+		}
+		return names
+	}
+
+	root := doc.Root()
+
+	// --- Per-item side -----------------------------------------------------
+	// <gIBSCBS> is the only <gIBSCBS> in the fixture (the totals block uses
+	// <IBSCBSTot> as its container, which has no direct child <gIBSCBS>).
+	var perItemGIBSCBS *etree.Element
+	for _, c := range root.FindElements("./infNFe/det/imposto/IBSCBS/gIBSCBS") {
+		perItemGIBSCBS = c
+		break
+	}
+	if perItemGIBSCBS == nil {
+		t.Fatal("per-item <gIBSCBS> not found in built XML")
+	}
+	if got, want := strings.Join(childNames(perItemGIBSCBS), ","), defaults.PerItemGIBSCBSOrder; got != want {
+		t.Errorf("per-item <gIBSCBS> child order = %q, want %q", got, want)
+	}
+
+	// Per-item <gIBS> wrapper does NOT exist (NT 2025.002-RTC v1.51 §6.7.4
+	// UB15 is a FLAT sequence). gIBSUF/gIBSMun/gCBS are direct siblings of
+	// vIBS inside <gIBSCBS>. This is the canonical structure that fixes the
+	// 4th SEFAZ 215 error ("Invalid content starting with element 'gIBS'.
+	// One of 'gIBSUF' is expected").
+	//
+	// Per-item <gIBSUF> children (direct child of gIBSCBS)
+	var perItemGIBSUF *etree.Element
+	for _, c := range perItemGIBSCBS.FindElements("./gIBSUF") {
+		perItemGIBSUF = c
+		break
+	}
+	if perItemGIBSUF == nil {
+		t.Fatal("per-item <gIBSUF> not found as direct child of <gIBSCBS>")
+	}
+	if got, want := strings.Join(childNames(perItemGIBSUF), ","), defaults.PerItemGIBSUFOrder; got != want {
+		t.Errorf("per-item <gIBSUF> child order = %q, want %q", got, want)
+	}
+
+	// Per-item <gIBSMun> children (direct child of gIBSCBS)
+	var perItemGIBSMun *etree.Element
+	for _, c := range perItemGIBSCBS.FindElements("./gIBSMun") {
+		perItemGIBSMun = c
+		break
+	}
+	if perItemGIBSMun == nil {
+		t.Fatal("per-item <gIBSMun> not found as direct child of <gIBSCBS>")
+	}
+	if got, want := strings.Join(childNames(perItemGIBSMun), ","), defaults.PerItemGIBSMunOrder; got != want {
+		t.Errorf("per-item <gIBSMun> child order = %q, want %q", got, want)
+	}
+
+	// Per-item <gCBS> children (direct sibling of <gIBSUF>/<gIBSMun>/<vIBS>)
+	var perItemGCBS *etree.Element
+	for _, c := range perItemGIBSCBS.FindElements("./gCBS") {
+		perItemGCBS = c
+		break
+	}
+	if perItemGCBS == nil {
+		t.Fatal("per-item <gCBS> not found as direct child of <gIBSCBS>")
+	}
+	if got, want := strings.Join(childNames(perItemGCBS), ","), defaults.PerItemGCBSOrder; got != want {
+		t.Errorf("per-item <gCBS> child order = %q, want %q", got, want)
+	}
+
+	// --- Totals side -------------------------------------------------------
+	var ibscbsTot *etree.Element
+	for _, child := range root.FindElements("//IBSCBSTot") {
+		ibscbsTot = child
+		break
+	}
+	if ibscbsTot == nil {
+		t.Fatal("<IBSCBSTot> not found in built XML")
+	}
+
+	// Totals gIBSUF
+	var tGIBSUF *etree.Element
+	for _, c := range ibscbsTot.FindElements("//gIBSUF") {
+		// skip per-item one (already covered above)
+		if c.Parent().Parent().Parent() != nil && c.Parent().Parent().Parent().Tag == "IBSCBSTot" {
+			tGIBSUF = c
+			break
+		}
+	}
+	if tGIBSUF == nil {
+		// fallback: find any gIBSUF under IBSCBSTot
+		for _, c := range ibscbsTot.FindElements(".//gIBSUF") {
+			tGIBSUF = c
+			break
+		}
+	}
+	if tGIBSUF == nil {
+		t.Fatal("totals <gIBSUF> not found inside <IBSCBSTot>")
+	}
+	if got, want := strings.Join(childNames(tGIBSUF), ","), defaults.IBSCBSTotGIBSUFOrder; got != want {
+		t.Errorf("totals gIBSUF child order = %q, want %q", got, want)
+	}
+
+	// Totals gIBSMun
+	var tGIBSMun *etree.Element
+	for _, c := range ibscbsTot.FindElements(".//gIBSMun") {
+		tGIBSMun = c
+		break
+	}
+	if tGIBSMun == nil {
+		t.Fatal("totals <gIBSMun> not found inside <IBSCBSTot>")
+	}
+	if got, want := strings.Join(childNames(tGIBSMun), ","), defaults.IBSCBSTotGIBSMunOrder; got != want {
+		t.Errorf("totals gIBSMun child order = %q, want %q", got, want)
+	}
+
+	// Totals gCBS
+	var tGCBS *etree.Element
+	for _, c := range ibscbsTot.FindElements("./gCBS") {
+		tGCBS = c
+		break
+	}
+	if tGCBS == nil {
+		t.Fatal("totals <gCBS> not found inside <IBSCBSTot>")
+	}
+	if got, want := strings.Join(childNames(tGCBS), ","), defaults.IBSCBSTotGCBSOrder; got != want {
+		t.Errorf("totals gCBS child order = %q, want %q", got, want)
+	}
+
+	// Totals gIBS siblings
+	var tGIBS *etree.Element
+	for _, c := range ibscbsTot.FindElements("./gIBS") {
+		tGIBS = c
+		break
+	}
+	if tGIBS == nil {
+		t.Fatal("totals <gIBS> not found inside <IBSCBSTot>")
+	}
+	if got, want := strings.Join(childNames(tGIBS), ","), defaults.IBSCBSTotGIBSOrder; got != want {
+		t.Errorf("totals gIBS child order = %q, want %q", got, want)
+	}
+
+	// IBSCBSTot root
+	if got, want := strings.Join(childNames(ibscbsTot), ","), defaults.IBSCBSTotRootOrder; got != want {
+		t.Errorf("IBSCBSTot child order = %q, want %q", got, want)
 	}
 }

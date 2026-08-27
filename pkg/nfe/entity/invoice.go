@@ -128,17 +128,23 @@ type ImpostoData struct {
 // IBSCBSData holds the per-item IBS + CBS values for the indirect tax reform.
 // CST is the 3-digit IBSCBS classification (see defaults.IBSCBSCST* constants).
 // CClassTrib is the NT 2025.002-RTC regime classification. VBC is the tax
-// base (same as vProd for grain sales). pIBS/vIBS and pCBS/vCBS are the
-// rates and amounts; rates are stored as decimal *rates* (0.009 = 0.9 %)
-// and the XML builder multiplies by 100 to produce pIBS/pCBS percentage strings.
+// base (same as vProd for grain sales). VIBSUF and VIBSMun are the state and
+// municipal shares of the per-item IBS; VIBS is the per-item total
+// (VIBSUF + VIBSMun) — the SEFAZ schema requires both the split values
+// inside <gIBSUF>/<gIBSMun> and the total inside <gIBS> at this nesting
+// level. PCBS/VCBS are the federal CBS rate and amount.
+//
+// Rates are stored as decimal *rates* (0.009 = 0.9 %); the XML builder
+// multiplies by 100 to produce pIBSUF / pCBS percentage strings.
 type IBSCBSData struct {
-	CST       string
+	CST        string
 	CClassTrib string
-	VBC       decimal.Decimal
-	PIBS      decimal.Decimal
-	VIBS      decimal.Decimal
-	PCBS      decimal.Decimal
-	VCBS      decimal.Decimal
+	VBC        decimal.Decimal
+	VIBSUF     decimal.Decimal
+	VIBSMun    decimal.Decimal
+	VIBS       decimal.Decimal
+	PCBS       decimal.Decimal
+	VCBS       decimal.Decimal
 }
 
 // TaxRates holds tax rate inputs for an emission.

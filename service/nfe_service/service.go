@@ -315,8 +315,17 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	if overrides.InfCpl == nil {
 		overrides.InfCpl = &input.InformacoesAdicionais
 	}
+	// Sum the per-item IBS/CBS totals to persist in the nfe_invoice row.
+	// Mirrors the aggregation in buildTotal; safe to call here because every
+	// input.Items[*].Imposto.IBSCBS has already been populated by buildItems.
+	var totalIBSValue, totalCBSValue decimal.Decimal
+	for _, item := range input.Items {
+		totalIBSValue = totalIBSValue.Add(item.Imposto.IBSCBS.VIBS)
+		totalCBSValue = totalCBSValue.Add(item.Imposto.IBSCBS.VCBS)
+	}
 	invoiceID, createErr := nfeModel.CreateInvoiceWithEmission(departureID, accessKey, farmNFeConfig.Serie, number,
 		farmNFeConfig.DefaultCFOP, product.NCM, departure.NetWeight, unitPrice, input.TotalValue,
+		totalIBSValue, totalCBSValue,
 		1, nil, "", ratesToPersist, overrides)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateInvoice error: %v", createErr.Error()))
@@ -431,9 +440,16 @@ func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure 
 	}
 
 	// Save the new contingency invoice (same tax rates and overrides as the original attempt)
+	// Sum the per-item IBS/CBS totals from the rebuilt input for the totals columns.
+	var totalIBSValue, totalCBSValue decimal.Decimal
+	for _, item := range input.Items {
+		totalIBSValue = totalIBSValue.Add(item.Imposto.IBSCBS.VIBS)
+		totalCBSValue = totalCBSValue.Add(item.Imposto.IBSCBS.VCBS)
+	}
 	newInvoiceID, createErr := nfeModel.CreateInvoiceWithEmission(
 		departure.Id, newAccessKey, farmNFeConfig.Serie, newNumber,
 		farmNFeConfig.DefaultCFOP, product.NCM, departure.NetWeight, unitPrice, input.TotalValue,
+		totalIBSValue, totalCBSValue,
 		int(tpEmis), now, reason, taxRates, overrides,
 	)
 	if createErr != nil {
@@ -677,10 +693,12 @@ func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.
 				VPIS:      imp.PIS.VPIS,
 				PCOFINS:   imp.COFINS.PCOFINS,
 				VCOFINS:   imp.COFINS.VCOFINS,
-				PIBS:      imp.IBSCBS.PIBS,
-				VIBS:      imp.IBSCBS.VIBS,
-				PCBS:      imp.IBSCBS.PCBS,
-				VCBS:      imp.IBSCBS.VCBS,
+				// PIBS is derived from VIBSUF / VBC * 100 since the per-item
+				// rate is no longer persisted on the entity (only the values).
+				PIBS:  perItemRate(imp.IBSCBS.VIBSUF, imp.IBSCBS.VBC),
+				VIBS:  imp.IBSCBS.VIBS,
+				PCBS:  imp.IBSCBS.PCBS,
+				VCBS:  imp.IBSCBS.VCBS,
 			},
 		},
 		TotalValue:  input.TotalValue,
@@ -847,10 +865,16 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 
 	// Compute per-item IBS/CBS values. Even when IsTaxReformActive is false
 	// the group is emitted with zero values to keep the schema stable.
-	var ibsVBC, ibsVIBS, ibsVCBS decimal.Decimal
+	//
+	// In the 2026 symbolic phase the full IBS rate is allocated to the state
+	// share (vIBSUF); the municipal share stays zero. The per-item total
+	// <vIBS> = <vIBSUF> + <vIBSMun> — emitted inside the <gIBS> wrapper.
+	var ibsVBC, ibsVIBSUF, ibsVIBSMun, ibsVIBS, ibsVCBS decimal.Decimal
 	if defaults.IsTaxReformActive(time.Now()) {
 		ibsVBC = totalValue
-		ibsVIBS = totalValue.Mul(ibsRate)
+		ibsVIBSUF = totalValue.Mul(ibsRate)
+		ibsVIBSMun = decimal.Zero
+		ibsVIBS = ibsVIBSUF.Add(ibsVIBSMun)
 		ibsVCBS = totalValue.Mul(cbsRate)
 	}
 
@@ -900,7 +924,8 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 					CST:        ibsCbsCST,
 					CClassTrib: cClassTrib,
 					VBC:        ibsVBC,
-					PIBS:       ibsRate.Mul(decimal.NewFromInt(100)),
+					VIBSUF:     ibsVIBSUF,
+					VIBSMun:    ibsVIBSMun,
 					VIBS:       ibsVIBS,
 					PCBS:       cbsRate.Mul(decimal.NewFromInt(100)),
 					VCBS:       ibsVCBS,
@@ -1340,6 +1365,16 @@ func deriveKey(keyStr string) []byte {
 		padded[i] = keyBytes[i%len(keyBytes)]
 	}
 	return padded
+}
+
+// perItemRate computes value / base * 100 with a zero-base guard. Used by
+// the DANFE preview to render the per-item IBS rate as a percentage when the
+// entity stores only the value.
+func perItemRate(value, base decimal.Decimal) decimal.Decimal {
+	if base.IsZero() {
+		return decimal.Zero
+	}
+	return value.Div(base).Mul(decimal.NewFromInt(100))
 }
 
 // generateRandomCNF generates a random 8-digit numeric code for the NF-e cNF field.

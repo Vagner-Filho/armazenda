@@ -13,6 +13,8 @@ import (
 	"armazenda/pkg/nfe/entity"
 	"armazenda/pkg/nfe/service"
 	nfe_xml "armazenda/pkg/nfe/xml"
+
+	"github.com/shopspring/decimal"
 )
 
 // StartRetryWorker starts the background worker that retries pending invoices.
@@ -242,9 +244,17 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 	if hasAnyUserRate(*taxRateOverrides) {
 		ratesToPersist = taxRateOverrides
 	}
+	// Sum the per-item IBS/CBS totals from the rebuilt input for the totals
+	// columns. input.Items was populated by prepareInvoiceBuildData above.
+	var totalIBSValue, totalCBSValue decimal.Decimal
+	for _, item := range input.Items {
+		totalIBSValue = totalIBSValue.Add(item.Imposto.IBSCBS.VIBS)
+		totalCBSValue = totalCBSValue.Add(item.Imposto.IBSCBS.VCBS)
+	}
 	newInvoiceID, createErr := nfeModel.CreateInvoiceWithEmission(
 		departure.Id, newAccessKey, farmConfig.Serie, newNumber,
 		invoiceRecord.CFOP, invoiceRecord.NCM, invoiceRecord.QuantityKG, invoiceRecord.UnitPrice, invoiceRecord.TotalValue,
+		totalIBSValue, totalCBSValue,
 		int(tpEmis), now, reason, ratesToPersist, invoiceOverrides,
 	)
 	if createErr != nil {

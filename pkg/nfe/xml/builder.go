@@ -341,30 +341,62 @@ func (b *Builder) buildCOFINS(parent *etree.Element, cofins entity.COFINSData) {
 }
 
 // buildIBSCBS emits the per-item <IBSCBS> group required by the indirect tax
-// reform (NT 2025.002-RTC / MOC 7.0). For the 2026 symbolic phase the IBS rate
-// is allocated entirely to the state share (pIBSUF) and the municipal share
-// stays zero — state-level split rates are not yet published. vIBS equals
-// vIBSUF in this allocation.
+// reform (NT 2025.002-RTC v1.51 §6.7.4, Grupo UB). For the 2026 symbolic
+// phase the IBS rate is allocated entirely to the state share (pIBSUF) and
+// the municipal share stays zero — state-level split rates are not yet
+// published. vIBSUF + vIBSMun = vIBS (per-item total, UB54a).
 //
 // Emitted always (even with zero values) so the schema stays stable when the
 // caller passes zero-valued IBSCBSData for pre-reform emissions.
+//
+// Per-item <gIBSCBS> (UB15) is a FLAT sequence — gIBSUF, gIBSMun, vIBS,
+// gCBS are direct siblings of each other inside gIBSCBS. There is NO
+// <gIBS> wrapper at this level (the totals block uses one, but the per-item
+// block does not). SEFAZ rejects with status 215 cvc-complex-type.2.4.a
+// ("Invalid content starting with element 'gIBS'. One of 'gIBSUF' is
+// expected") when a <gIBS> wrapper is mistakenly added.
 func (b *Builder) buildIBSCBS(parent *etree.Element, ibscbs entity.IBSCBSData) {
 	ibscbsElem := parent.CreateElement("IBSCBS")
 	ibscbsElem.CreateElement("CST").SetText(ibscbs.CST)
 	ibscbsElem.CreateElement("cClassTrib").SetText(ibscbs.CClassTrib)
 
 	gIBSCBS := ibscbsElem.CreateElement("gIBSCBS")
+	// gIBSCBS children per UB15/NT v1.51: vBC, gIBSUF, gIBSMun, vIBS, gCBS.
+	// vBC is mandatory (UB16, 1-1). gIBSUF (UB17), gIBSMun (UB36), gCBS
+	// (UB55) are mandatory inner groups. vIBS (UB54a) is the per-item IBS
+	// total = vIBSUF + vIBSMun, mandatory 1-1 directly under gIBSCBS.
+	gIBSCBS.CreateElement("vBC").SetText(formatDecimal(ibscbs.VBC, 2))
+
 	gIBSUF := gIBSCBS.CreateElement("gIBSUF")
-	gIBSUF.CreateElement("pIBSUF").SetText(formatDecimal(ibscbs.PIBS, 4))
-	gIBSUF.CreateElement("vIBSUF").SetText(formatDecimal(ibscbs.VIBS, 2))
+	gIBSUF.CreateElement("pIBSUF").SetText(formatDecimal(perItemIBSRate(ibscbs), 4))
+	gIBSUF.CreateElement("vIBSUF").SetText(formatDecimal(ibscbs.VIBSUF, 2))
 
 	gIBSMun := gIBSCBS.CreateElement("gIBSMun")
 	gIBSMun.CreateElement("pIBSMun").SetText("0.0000")
-	gIBSMun.CreateElement("vIBSMun").SetText("0.00")
+	gIBSMun.CreateElement("vIBSMun").SetText(formatDecimal(ibscbs.VIBSMun, 2))
+
+	// <vIBS> (UB54a): per-item IBS total = vIBSUF + vIBSMun.
+	gIBSCBS.CreateElement("vIBS").SetText(formatDecimal(ibscbs.VIBS, 2))
 
 	gCBS := gIBSCBS.CreateElement("gCBS")
 	gCBS.CreateElement("pCBS").SetText(formatDecimal(ibscbs.PCBS, 4))
 	gCBS.CreateElement("vCBS").SetText(formatDecimal(ibscbs.VCBS, 2))
+	// Per-item <vCredPres> / <vCredPresCondSus> are NOT direct children of
+	// <gCBS> — they are totals-only fields (W48/W49 in totals; per-item
+	// credit-presumption fields belong inside the optional <gIBSCredPres>
+	// and <gCBSCredPres> subgroups, which we don't emit in the 2026 phase).
+}
+
+// perItemIBSRate recovers the per-item IBS rate (as a percentage value, e.g.
+// 0.10 for 0.1%) from VIBSUF/VBC. Used by buildIBSCBS to keep <pIBSUF>
+// consistent with <vIBSUF> in the per-item <gIBSUF> group. The 2026 phase
+// allocates the full IBS rate to the UF share (vIBSMun = 0).
+func perItemIBSRate(ibscbs entity.IBSCBSData) decimal.Decimal {
+	if ibscbs.VBC.IsZero() {
+		return decimal.Zero
+	}
+	rate := ibscbs.VIBSUF.Div(ibscbs.VBC)
+	return rate.Mul(decimal.NewFromInt(100))
 }
 
 func (b *Builder) buildTotal(parent *etree.Element, input entity.InvoiceInput) {
@@ -408,16 +440,45 @@ func (b *Builder) buildTotal(parent *etree.Element, input entity.InvoiceInput) {
 	// IBSCBSTot — sibling of ICMSTot inside <total>. Mandatory in the NF-e
 	// layout from August 2026 (Reforma Tributária). The IBS total equals the
 	// UF share for now (municipal share is zero in the 2026 symbolic phase).
+	//
+	// Element order and occurrence are dictated by NT 2025.002-RTC v1.36 §6.7.4
+	// and verified against the NFe_Util 2Gv5.02b reference. SEFAZ rejects the
+	// document (status 215, cvc-complex-type.2.4.a) when children are missing
+	// or out of order — this is the canonical sequence:
+	//
+	//   IBSCBSTot: vBCIBSCBS, gIBS, gCBS            (gMono optional 0-1, skipped)
+	//   gIBS:      gIBSUF, gIBSMun, vIBS, vCredPres, vCredPresCondSus
+	//   gIBSUF:    vDif, vDevTrib, vIBSUF           (all 1-1)
+	//   gIBSMun:   vDif, vDevTrib, vIBSMun          (all 1-1)
+	//   gCBS:      vDif, vDevTrib, vCBS, vCredPres, vCredPresCondSus
+	//
+	// Deferral / credit fields (pDif, vDif, vDevTrib, pRedAliq, pAliqEfet,
+	// gIBSCredPres, gCBSCredPres per item) are 0-1 and skipped — grain sales
+	// do not exercise them in the 2026 symbolic phase.
 	ibscbsTot := total.CreateElement("IBSCBSTot")
 	ibscbsTot.CreateElement("vBCIBSCBS").SetText(formatDecimal(vBCIBSCBS, 2))
+
 	gIBS := ibscbsTot.CreateElement("gIBS")
 	gIBSUF := gIBS.CreateElement("gIBSUF")
-	gIBSUF.CreateElement("vIBSUF").SetText(formatDecimal(vIBS, 2))
+	gIBSUF.CreateElement("vDif").SetText("0.00")                          // W38
+	gIBSUF.CreateElement("vDevTrib").SetText("0.00")                      // W39
+	gIBSUF.CreateElement("vIBSUF").SetText(formatDecimal(vIBS, 2))        // W41
+
 	gIBSMun := gIBS.CreateElement("gIBSMun")
-	gIBSMun.CreateElement("vIBSMun").SetText("0.00")
-	gIBS.CreateElement("vIBS").SetText(formatDecimal(vIBS, 2))
+	gIBSMun.CreateElement("vDif").SetText("0.00")                         // W43
+	gIBSMun.CreateElement("vDevTrib").SetText("0.00")                     // W44
+	gIBSMun.CreateElement("vIBSMun").SetText("0.00")                      // W46
+
+	gIBS.CreateElement("vIBS").SetText(formatDecimal(vIBS, 2))            // W47
+	gIBS.CreateElement("vCredPres").SetText("0.00")                       // W48
+	gIBS.CreateElement("vCredPresCondSus").SetText("0.00")                // W49
+
 	gCBS := ibscbsTot.CreateElement("gCBS")
-	gCBS.CreateElement("vCBS").SetText(formatDecimal(vCBS, 2))
+	gCBS.CreateElement("vDif").SetText("0.00")                            // W53
+	gCBS.CreateElement("vDevTrib").SetText("0.00")                        // W54
+	gCBS.CreateElement("vCBS").SetText(formatDecimal(vCBS, 2))            // W56
+	gCBS.CreateElement("vCredPres").SetText("0.00")                       // W51
+	gCBS.CreateElement("vCredPresCondSus").SetText("0.00")                // W52
 }
 
 func (b *Builder) buildTransp(parent *etree.Element, transp entity.TransportData) {

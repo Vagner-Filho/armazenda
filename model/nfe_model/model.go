@@ -254,8 +254,10 @@ type Invoice struct {
 }
 
 // CreateInvoice creates a new invoice record with default tpEmis=1 (normal).
+// Legacy path that doesn't track IBS/CBS totals — the totals columns stay at
+// their DEFAULT (0.00). Use CreateInvoiceWithEmission for the full picture.
 func (m *NFeModel) CreateInvoice(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal, taxRates *entity.TaxRates) (int, error) {
-	return m.CreateInvoiceWithEmission(departureID, accessKey, serie, number, cfop, ncm, quantityKG, unitPrice, totalValue, 1, nil, "", taxRates, nil)
+	return m.CreateInvoiceWithEmission(departureID, accessKey, serie, number, cfop, ncm, quantityKG, unitPrice, totalValue, decimal.Zero, decimal.Zero, 1, nil, "", taxRates, nil)
 }
 
 // CreateInvoiceWithEmission creates a new invoice record with a specific emission type.
@@ -263,7 +265,11 @@ func (m *NFeModel) CreateInvoice(departureID uint32, accessKey string, serie, nu
 // inserted into nfe_invoice_tax_rates recording the user-provided rates.
 // If overrides is non-nil, the per-emission override fields are persisted so
 // draft retries and SVC contingency rebuilds reconstruct the exact same NF-e.
-func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal, tpEmis int, dhCont interface{}, xJust string, taxRates *entity.TaxRates, overrides *entity.InvoiceOverrides) (int, error) {
+// totalIBSValue and totalCBSValue are the per-NF-e totals (sum of per-item VIBS
+// and VCBS values) and are persisted in the ibs_value and cbs_value columns so
+// reports and the NF-e list can show tax burden without re-parsing the signed
+// XML.
+func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal, totalIBSValue decimal.Decimal, totalCBSValue decimal.Decimal, tpEmis int, dhCont interface{}, xJust string, taxRates *entity.TaxRates, overrides *entity.InvoiceOverrides) (int, error) {
 	query := `
 		INSERT INTO nfe_invoice (
 			departure_id, access_key, serie, number, status,
@@ -272,12 +278,14 @@ func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey strin
 			natureza_op, product_description, cest, unit, mod_frete,
 			icms_cst, pis_cst, cofins_cst,
 			cbs_cst, ibs_cst, c_class_trib,
-			inf_cpl
+			inf_cpl,
+			ibs_value, cbs_value
 		)
 		VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9, $10, $11, $12,
 			$13, $14, $15, $16, $17, $18, $19, $20,
 			$21, $22, $23,
-			$24)
+			$24,
+			$25, $26)
 		RETURNING id
 	`
 	var id int
@@ -296,6 +304,8 @@ func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey strin
 		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.IBSCST }),
 		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.CClassTrib }),
 		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.InfCpl }),
+		totalIBSValue,
+		totalCBSValue,
 	).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create invoice: %w", err)

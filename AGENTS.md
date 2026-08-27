@@ -342,6 +342,37 @@ Armazenda emits the per-item `<IBSCBS>` group and the per-NF-e `<IBSCBSTot>` blo
 - Per-NF-e `<IBSCBSTot>` is emitted as a sibling of `<ICMSTot>` inside `<total>`
 - The 2026 phase allocates the full IBS rate to the state share (`<gIBSUF>`); municipal (`<gIBSMun>`) stays zero — replace when state/municipal split rates are published
 
+**Canonical element order** (per NT 2025.002-RTC v1.51 §6.7.4 + NFe_Util 2Gv5.02b reference). **SEFAZ rejects the NF-e with status 215 / `cvc-complex-type.2.4.a` when children are missing or out of order, and `cvc-complex-type.2.4.d` ("no child element is expected at this point") when extras are present.** The constants in `pkg/nfe/defaults/reform.go` are the source of truth; `TestBuilder_IBSCBS_ElementOrder` is the regression guard for both the per-item structure and the totals ordering.
+
+Per-item (`<IBSCBS>` / `<gIBSCBS>`, Group UB, NT 2025.002-RTC v1.51):
+
+```
+IBSCBS:    CST, cClassTrib, [indDoacao 0-1], gIBSCBS
+gIBSCBS:   vBC, gIBSUF, gIBSMun, vIBS, gCBS       ← FLAT sequence (no <gIBS> wrapper)
+gIBSUF:    pIBSUF, [optional inner seq], vIBSUF
+gIBSMun:   pIBSMun, [optional inner seq], vIBSMun
+gCBS:      pCBS, [optional inner seq], vCBS         ← NO vCredPres/vCredPresCondSus (totals-only)
+```
+
+> **The per-item `<gIBSCBS>` has NO `<gIBS>` wrapper.** `gIBSUF`, `gIBSMun`, `vIBS`, `gCBS` are siblings of each other inside `gIBSCBS`. This is asymmetric with the totals block (which DOES use a `<gIBS>` wrapper) and is by design per NT 2025.002-RTC v1.51 §6.7.4 UB15. Adding a `<gIBS>` wrapper here produces SEFAZ 215 with `cvc-complex-type.2.4.a` ("Invalid content starting with element 'gIBS'. One of 'gIBSUF' is expected").
+
+> **`<vCredPres>` / `<vCredPresCondSus>` are TOTALS-ONLY fields.** They must NOT appear as direct children of per-item `<gIBS>` or `<gCBS>`. Per-item credit-presumption fields belong inside the optional `<gIBSCredPres>` (UB78, 0-1) and `<gCBSCredPres>` (UB120, 0-1) subgroups, which are siblings of `<gIBSUF>`/`<gIBSMun>`/`<gCBS>` inside `<gIBSCBS>`. Emitting them per-item produces SEFAZ 215 with `cvc-complex-type.2.4.d` ("Invalid content starting with element 'vCredPres'. No child element is expected at this point").
+
+> **`<vIBS>` (UB54a) is the per-item IBS total = `<vIBSUF>` + `<vIBSMun>`.** Mandatory 1-1 as a direct sibling of `<gIBSUF>`/`<gIBSMun>`/`<gCBS>` inside `<gIBSCBS>`. Added to the schema in NT 2025.002 v1.20 (not present in v1.00).
+
+Totals (`<IBSCBSTot>` / `<gIBS>` / `<gCBS>`, Group W):
+
+```
+IBSCBSTot: vBCIBSCBS, gIBS, gCBS                 ← gMono optional 0-1 (skipped for grain)
+gIBS:      gIBSUF, gIBSMun, vIBS, vCredPres, vCredPresCondSus
+gIBSUF:    vDif, vDevTrib, vIBSUF                 ← all 1-1 (W38, W39, W41)
+gIBSMun:   vDif, vDevTrib, vIBSMun                ← all 1-1 (W43, W44, W46)
+gCBS:      vDif, vDevTrib, vCBS, vCredPres, vCredPresCondSus
+                                                ← (W53, W54, W56, W51, W52)
+```
+
+Optional fields skipped for the 2026 grain-sale phase (0-1 in schema): `pDif`, `vDif`, `vDevTrib`, `pRedAliq`, `pAliqEfet`, `gIBSCredPres`, `gCBSCredPres` per item; `<gMono>` block in totals. Re-add them when Armazenda starts supporting deferral / credit / monofásico regimes.
+
 **Gate:**
 - `defaults.IsTaxReformActive(t)` returns true from 2026-01-01 onwards
 - Pre-reform: the XML group is still emitted but with zero rates/values so consumers see a stable schema
