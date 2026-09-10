@@ -202,18 +202,18 @@ func (m *NFeModel) AllocateNumber(farmID uint32, serie int) (int, error) {
 
 // Invoice represents a tracked NF-e invoice.
 type Invoice struct {
-	ID                  int
-	DepartureID         uint32
-	AccessKey           string
-	Serie               int
-	Number              int
-	Status              string
-	CFOP                string
-	NCM                 string
-	QuantityKG          decimal.Decimal
-	UnitPrice           decimal.Decimal
-	TotalValue          decimal.Decimal
-	ICMSValue           *decimal.Decimal
+	ID          int
+	DepartureID uint32
+	AccessKey   string
+	Serie       int
+	Number      int
+	Status      string
+	CFOP        string
+	NCM         string
+	QuantityKG  decimal.Decimal
+	UnitPrice   decimal.Decimal
+	TotalValue  decimal.Decimal
+	ICMSValue   *decimal.Decimal
 	// Tax reform totals (Reforma Tributária, NT 2025.002-RTC). Persisted
 	// from the per-item IBS/CBS sums so future reports can show tax burden
 	// per invoice without re-parsing the signed XML.
@@ -247,16 +247,17 @@ type Invoice struct {
 	COFINSCST           *string
 	// Tax reform (IBS/CBS) CST + cClassTrib persisted per invoice so draft
 	// retries and SVC contingency rebuilds reproduce the same XML.
-	IBSCST              *string
-	CBSCST              *string
-	CClassTrib          *string
-	InfCpl              *string
+	IBSCST     *string
+	CBSCST     *string
+	CClassTrib *string
+	InfCpl     *string
 }
 
 // CreateInvoice creates a new invoice record with default tpEmis=1 (normal).
 // Legacy path that doesn't track IBS/CBS totals — the totals columns stay at
 // their DEFAULT (0.00). Use CreateInvoiceWithEmission for the full picture.
-func (m *NFeModel) CreateInvoice(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal, taxRates *entity.TaxRates) (int, error) {
+// Deprecated.
+func (m *NFeModel) CreateInvoiceDeprecated(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal, taxRates *entity.TaxRates) (int, error) {
 	return m.CreateInvoiceWithEmission(departureID, accessKey, serie, number, cfop, ncm, quantityKG, unitPrice, totalValue, decimal.Zero, decimal.Zero, 1, nil, "", taxRates, nil)
 }
 

@@ -134,7 +134,7 @@ func (g *DANFEGenerator) generatePDF(data entity.DANFEData, banner string) ([]by
 	y = g.drawNaturezaOp(&pdf, data, margin, y, usableW)
 
 	// Section 4: Emitente
-	y = g.drawEmitente(&pdf, data, margin, y, usableW)
+	y = g.drawEmitente(&pdf, data, margin, y+4, usableW)
 
 	// Section 5: Destinatário
 	y = g.drawDestinatario(&pdf, data, margin, y, usableW)
@@ -481,7 +481,7 @@ func (g *DANFEGenerator) drawEmitente(pdf *gopdf.GoPdf, data entity.DANFEData, x
 		pdf.Cell(nil, line)
 		nameY += 10
 	}
-	g.box(pdf, x, y+10, w, h)
+	// g.box(pdf, x, y+10, w, h)
 
 	// CNPJ | IE | CRT (8pt per §3.7.6)
 	row1H := 24.0
