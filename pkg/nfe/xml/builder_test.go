@@ -28,7 +28,7 @@ func TestBuilder_FreeTextFieldsSanitized(t *testing.T) {
 		if strings.Contains(xmlStr, "\n") && strings.Contains(xmlStr, "CND Fazenda:\n") {
 			t.Error("infCpl must not contain newlines (SEFAZ rejects with cvc-type.3.1.3)")
 		}
-		if !strings.Contains(xmlStr, "<infCpl>CND Fazenda:; Cert. Nº 222222, válido até 02/08/2026</infCpl>") {
+		if !strings.Contains(xmlStr, "<infCpl>CND Fazenda:; Cert. No 222222, valido ate 02/08/2026</infCpl>") {
 			t.Errorf("unexpected infCpl content in XML: %s", xmlStr)
 		}
 		if strings.Contains(xmlStr, "🚀") {
@@ -45,7 +45,7 @@ func TestBuilder_FreeTextFieldsSanitized(t *testing.T) {
 			t.Fatalf("Build failed: %v", err)
 		}
 		xmlStr, _ := doc.WriteToString()
-		if !strings.Contains(xmlStr, "<xNome>Armazém; Tropical  Ltda</xNome>") {
+		if !strings.Contains(xmlStr, "<xNome>Armazem; Tropical  Ltda</xNome>") {
 			t.Errorf("unexpected xNome content in XML: %s", xmlStr)
 		}
 	})

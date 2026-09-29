@@ -25,6 +25,7 @@ test: test-unit test-e2e
 test-unit:
 	$(GO) test ./service/entry_service/test/
 	$(GO) test ./pkg/calculator/
+	$(GO) test ./pkg/nfe/...
 
 test-e2e:
 	cd test && $(BUN) run test:e2e

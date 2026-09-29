@@ -3,27 +3,31 @@ package service
 import (
 	"bytes"
 	"fmt"
-	"path/filepath"
-	"runtime"
 	"strings"
 
+	// Internal - Config
+	"armazenda/pkg/nfe/config"
+
+	// Internal - Entities
 	"armazenda/pkg/nfe/entity"
 
+	// Third-party
 	"github.com/shopspring/decimal"
 	"github.com/signintech/gopdf"
 )
 
-func getFontPath(bold bool) string {
-	_, filename, _, _ := runtime.Caller(0)
-	// filename is .../pkg/nfe/service/danfe.go
-	// Go up 3 directories to reach project root
-	dir := filepath.Dir(filename)
-	dir = filepath.Dir(dir)
-	name := "LiberationSerif-Regular.ttf"
+// getFont returns the embedded TTF for the DANFE. Fonts are embedded via
+// config.FontsFS so no runtime filesystem lookup is needed.
+func getFont(bold bool) ([]byte, error) {
+	name := "fonts/LiberationSerif-Regular.ttf"
 	if bold {
-		name = "LiberationSerif-Bold.ttf"
+		name = "fonts/LiberationSerif-Bold.ttf"
 	}
-	return filepath.Join(dir, "config", "fonts", name)
+	fontBytes, readErr := config.FontsFS.ReadFile(name)
+	if readErr != nil {
+		return nil, fmt.Errorf("failed to read embedded font %s: %w", name, readErr)
+	}
+	return fontBytes, nil
 }
 
 // DANFEGenerator generates DANFE PDFs.
@@ -73,12 +77,18 @@ func (g *DANFEGenerator) generatePDF(data entity.DANFEData, banner string) ([]by
 	const right = pageW - margin
 	const usableW = pageW - margin*2
 
-	fontPath := getFontPath(false)
-	if err := pdf.AddTTFFont("serif", fontPath); err != nil {
+	regularFont, fontErr := getFont(false)
+	if fontErr != nil {
+		return nil, fmt.Errorf("failed to add regular font: %w", fontErr)
+	}
+	if err := pdf.AddTTFFontByReader("serif", bytes.NewReader(regularFont)); err != nil {
 		return nil, fmt.Errorf("failed to add regular font: %w", err)
 	}
-	boldFontPath := getFontPath(true)
-	if err := pdf.AddTTFFont("serif-bold", boldFontPath); err != nil {
+	boldFont, boldErr := getFont(true)
+	if boldErr != nil {
+		return nil, fmt.Errorf("failed to add bold font: %w", boldErr)
+	}
+	if err := pdf.AddTTFFontByReader("serif-bold", bytes.NewReader(boldFont)); err != nil {
 		return nil, fmt.Errorf("failed to add bold font: %w", err)
 	}
 
@@ -473,24 +483,29 @@ func (g *DANFEGenerator) drawEmitente(pdf *gopdf.GoPdf, data entity.DANFEData, x
 	pdf.Cell(nil, "EMITENTE")
 
 	// Razão Social (12pt bold per §3.7.6)
-	pdf.SetFont("serif-bold", "", 12)
 	nameLines := wrapText(pdf, data.EmitterName, w-8)
 	nameY := y + 12.0
+
+	pdf.SetXY(x+4, nameY)
+	g.box(pdf, x, nameY-2, w, 22)
+	pdf.Cell(nil, "NOME / RAZÃO SOCIAL")
+	nameY += 10
+
+	pdf.SetFont("serif-bold", "", 12)
 	for _, line := range nameLines {
 		pdf.SetXY(x+4, nameY)
 		pdf.Cell(nil, line)
 		nameY += 10
 	}
-	// g.box(pdf, x, y+10, w, h)
 
 	// CNPJ | IE | CRT (8pt per §3.7.6)
 	row1H := 24.0
 	col1 := w * 0.35
 	col2 := w * 0.35
 	col3 := w - col1 - col2
-	g.cellEmit(pdf, x, y+22, col1, row1H, "CNPJ", formatCNPJ(data.EmitterCNPJ))
-	g.cellEmit(pdf, x+col1, y+22, col2, row1H, "INSCRIÇÃO ESTADUAL", data.EmitterIE)
-	g.cellEmit(pdf, x+col1+col2, y+22, col3, row1H, "REGIME TRIBUTÁRIO", crtLabel(data.EmitterCRT))
+	g.cellEmit(pdf, x, nameY, col1, row1H, "CNPJ", formatCNPJ(data.EmitterCNPJ))
+	g.cellEmit(pdf, x+col1, nameY, col2, row1H, "INSCRIÇÃO ESTADUAL", data.EmitterIE)
+	g.cellEmit(pdf, x+col1+col2, nameY, col3, row1H, "REGIME TRIBUTÁRIO", crtLabel(data.EmitterCRT))
 
 	// Endereço completo (8pt per §3.7.6)
 	row2H := h - 22 - row1H
@@ -503,9 +518,9 @@ func (g *DANFEGenerator) drawEmitente(pdf *gopdf.GoPdf, data entity.DANFEData, x
 		fmt.Sprintf("%s/%s", data.EmitterCity, data.EmitterUF),
 		data.EmitterPhone,
 	)
-	g.cellEmit(pdf, x, y+22+row1H, w, row2H, "ENDEREÇO", addr)
+	g.cellEmit(pdf, x, nameY+row1H, w, row2H, "ENDEREÇO", addr)
 
-	return y + h
+	return y + h + 12
 }
 
 func (g *DANFEGenerator) drawDestinatario(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
@@ -516,12 +531,15 @@ func (g *DANFEGenerator) drawDestinatario(pdf *gopdf.GoPdf, data entity.DANFEDat
 	pdf.SetXY(x+4, y+3)
 	pdf.Cell(nil, "DESTINATÁRIO / REMETENTE")
 
-	// Razão Social (12pt bold — §3.7.9 says 10pt minimum for demais campos,
-	// but razão social of dest/emit benefits from the same 12pt as emitente
-	// for legibility; 12 ≥ 10 satisfies the minimum)
-	pdf.SetFont("serif-bold", "", 12)
 	nameLines := wrapText(pdf, data.DestName, w-8)
-	nameY := y + 11.0
+	nameY := y + 12.0
+
+	pdf.SetXY(x+4, nameY)
+	g.box(pdf, x, nameY-2, w, 22)
+	pdf.Cell(nil, "NOME / RAZÃO SOCIAL")
+	nameY += 10
+
+	pdf.SetFont("serif-bold", "", 12)
 	for _, line := range nameLines {
 		pdf.SetXY(x+4, nameY)
 		pdf.Cell(nil, line)
@@ -532,9 +550,9 @@ func (g *DANFEGenerator) drawDestinatario(pdf *gopdf.GoPdf, data entity.DANFEDat
 	col1 := w * 0.35
 	col2 := w * 0.35
 	col3 := w - col1 - col2
-	g.cell(pdf, x, y+22, col1, row1H, "CNPJ/CPF", formatCNPJ(data.DestCNPJ))
-	g.cell(pdf, x+col1, y+22, col2, row1H, "INSCRIÇÃO ESTADUAL", data.DestIE)
-	g.cell(pdf, x+col1+col2, y+22, col3, row1H, "INDICADOR IE DEST.", indIEDestLabel(data.DestIndIEDest))
+	g.cell(pdf, x, nameY, col1, row1H, "CNPJ/CPF", formatCNPJ(data.DestCNPJ))
+	g.cell(pdf, x+col1, nameY, col2, row1H, "INSCRIÇÃO ESTADUAL", data.DestIE)
+	g.cell(pdf, x+col1+col2, nameY, col3, row1H, "INDICADOR IE DEST.", indIEDestLabel(data.DestIndIEDest))
 
 	row2H := h - 22 - row1H
 	addr := joinNonEmpty(
@@ -546,9 +564,9 @@ func (g *DANFEGenerator) drawDestinatario(pdf *gopdf.GoPdf, data entity.DANFEDat
 		fmt.Sprintf("%s/%s", data.DestCity, data.DestUF),
 		data.DestPhone,
 	)
-	g.cell(pdf, x, y+22+row1H, w, row2H, "ENDEREÇO", addr)
+	g.cell(pdf, x, nameY+row1H, w, row2H, "ENDEREÇO", addr)
 
-	return y + h
+	return y + h + 12
 }
 
 func (g *DANFEGenerator) drawTaxCalc(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {

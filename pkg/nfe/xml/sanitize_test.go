@@ -8,7 +8,8 @@ import (
 )
 
 // tStringPattern mirrors the schema TString type restriction:
-// printable Latin-1 only, no leading/trailing space.
+// printable Latin-1 only, no leading/trailing space. Sanitized output is a
+// stricter ASCII subset, so it always matches.
 var tStringPattern = regexp.MustCompile(`^([!-ÿ]|[!-ÿ][ -ÿ]*[!-ÿ])$`)
 
 func TestSanitizeSchemaString(t *testing.T) {
@@ -18,8 +19,10 @@ func TestSanitizeSchemaString(t *testing.T) {
 		want  string
 	}{
 		{"empty", "", ""},
-		{"plain text unchanged", "Soja em grão Nº 123", "Soja em grão Nº 123"},
-		{"accents preserved", "válido até çÇ áéíóú", "válido até çÇ áéíóú"},
+		{"ascii text unchanged", "Soja 123", "Soja 123"},
+		{"accents folded", "Soja em grão Nº 123", "Soja em grao No 123"},
+		{"accents folded mixed case", "válido até çÇ áéíóú", "valido ate cC aeiou"},
+		{"mt rejection justification folded", "teste de cancelamento em homologação", "teste de cancelamento em homologacao"},
 		{"newline becomes separator", "linha1\nlinha2", "linha1; linha2"},
 		{"CRLF becomes separator", "linha1\r\nlinha2", "linha1; linha2"},
 		{"multiple newlines collapse", "a\n\n\nb", "a; b"},
@@ -29,7 +32,7 @@ func TestSanitizeSchemaString(t *testing.T) {
 		{"tab becomes space", "a\tb", "a b"},
 		{"control chars dropped", "a\x00\x07b", "ab"},
 		{"emoji dropped", "nota fiscal 🚀 emitida", "nota fiscal  emitida"},
-		{"char above latin1 dropped", "texto – com travessão", "texto  com travessão"},
+		{"char above latin1 dropped", "texto – com travessão", "texto  com travessao"},
 		{"only newlines", "\n\n\n", ""},
 		{"only forbidden chars", "\x00\x01", ""},
 	}

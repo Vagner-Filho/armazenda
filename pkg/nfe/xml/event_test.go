@@ -46,7 +46,7 @@ func TestBuildCancellationEvent(t *testing.T) {
 		`<verEvento>1.00</verEvento>`,
 		`<descEvento>Cancelamento</descEvento>`,
 		`<nProt>151250123456789</nProt>`,
-		`<xJust>Emissão com dados incorretos do destinatário</xJust>`,
+		`<xJust>Emissao com dados incorretos do destinatario</xJust>`,
 	}
 	for _, want := range checks {
 		if !strings.Contains(str, want) {
@@ -127,7 +127,7 @@ func TestBuildCancellationEvent_SanitizesJustification(t *testing.T) {
 	}
 	str, _ := doc.WriteToString()
 
-	want := "<xJust>Emissão com dados incorretos; do destinatário</xJust>"
+	want := "<xJust>Emissao com dados incorretos; do destinatario</xJust>"
 	if !strings.Contains(str, want) {
 		t.Errorf("expected sanitized xJust %q, got: %s", want, str)
 	}

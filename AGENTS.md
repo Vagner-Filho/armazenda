@@ -320,7 +320,7 @@ The NF-e system implements **automatic SVC (SEFAZ Virtual de Contingência)** co
 - `pkg/nfe/defaults/agriculture.go` — `TpEmis` enum, `SVCForState()`
 - `pkg/nfe/sefaz/endpoints.go` — SVC-AN and SVC-RS endpoint sets
 - `pkg/nfe/xml/builder.go` — dynamic `tpEmis`, `<dhCont>`, `<xJust>`
-- `pkg/nfe/xml/sanitize.go` — `SanitizeSchemaString()`: all free-text XML fields (infCpl, xNome, xProd, xJust, ...) must pass through it — the schema `TString` pattern forbids newlines, control chars, and characters above U+00FF (SEFAZ rejects with `cvc-type.3.1.3` otherwise)
+- `pkg/nfe/xml/sanitize.go` — `SanitizeSchemaString()`: all free-text XML fields (infCpl, xNome, xProd, xJust, ...) must pass through it — newlines/control chars are normalized and accented Latin-1 characters are folded to their ASCII base letter (`ç`→`c`, `ã`→`a`). SEFAZ-MT rejects accented code points in the área de dados with cStat 402 ("codificação diferente de UTF-8"), so the output is a strict ASCII subset of UTF-8. Characters above U+007E that are not folded are dropped (the schema `TString` pattern would otherwise reject with `cvc-type.3.1.3`)
 - `pkg/nfe/xml/event.go` — cancellation event builder (`BuildCancellationEvent`)
 - `pkg/nfe/sefaz/response.go` — `EventoResponse` / `ParseEventoResponse`
 - `service/nfe_service/service.go` — `BuildInvoiceFromDeparture()` flow, `CancelInvoice()`
