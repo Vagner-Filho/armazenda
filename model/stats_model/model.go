@@ -245,70 +245,129 @@ func (sm *StatsModel) GetWorstQualitySupplier(farmId uint32) (entity_public.Stat
 	}, nil
 }
 
-func (sm *StatsModel) GetNominalMostProductiveField(farmID uint32) ([]entity_public.ProductiveField, error) {
-	query := `
+// GetProductTotals aggregates, per product used by the farm, the total
+// weight received (entries) and sent (departures). Global products and the
+// farm's own products are considered; products with no movements are
+// omitted.
+func (sm *StatsModel) GetProductTotals(farmId uint32) ([]entity_public.ProductVolumeStat, *model_error.ModelError) {
+	stmt := `
 		SELECT
-			f.name,
-			SUM(e.netweight) as total_weight
-		FROM
-			entry e
-		JOIN
-			field f ON e.field = f.id
-		LEFT JOIN
-			inactive_entry ie ON e.id = ie.entry_id
-		WHERE
-			e.farm = @farm AND ie.entry_id IS NULL
-		GROUP BY
-			f.name
-		ORDER BY
-			total_weight DESC
-		LIMIT 5;`
+			p.name,
+			COALESCE(entry_tot.total, 0) AS entry_total,
+			COALESCE(dep_tot.total, 0) AS departure_total
+		FROM product p
+		LEFT JOIN (
+			SELECT c.product, SUM(e.netweight) AS total
+			FROM entry e
+			JOIN crop c ON e.crop = c.id
+			LEFT JOIN inactive_entry ie ON ie.entry_id = e.id
+			WHERE e.farm = @farm AND ie.entry_id IS NULL
+			GROUP BY c.product
+		) entry_tot ON entry_tot.product = p.id
+		LEFT JOIN (
+			SELECT c.product, SUM(d.netweight) AS total
+			FROM departure d
+			JOIN crop c ON d.crop = c.id
+			LEFT JOIN inactive_departure idp ON idp.departure_id = d.id
+			WHERE d.farm = @farm AND idp.departure_id IS NULL
+			GROUP BY c.product
+		) dep_tot ON dep_tot.product = p.id
+		WHERE entry_tot.product IS NOT NULL OR dep_tot.product IS NOT NULL
+		ORDER BY COALESCE(entry_tot.total, 0) + COALESCE(dep_tot.total, 0) DESC;
+	`
 
-	rows, queryErr := sm.pool.Query(context.Background(), query, pgx.NamedArgs{"farm": farmID})
+	rows, queryErr := sm.pool.Query(context.Background(), stmt, pgx.NamedArgs{"farm": farmId})
 	if queryErr != nil {
 		fmt.Printf("\n queryErr: %v\n", queryErr.Error())
-		return []entity_public.ProductiveField{}, &model_error.ModelError{Message: queryErr.Error()}
+		return []entity_public.ProductVolumeStat{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
-	data, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.ProductiveField])
+	data, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.ProductVolumeStat])
 	if collectErr != nil {
 		fmt.Printf("\n collectErr: %v\n", collectErr.Error())
-		return []entity_public.ProductiveField{}, &model_error.ModelError{Message: collectErr.Error()}
+		return []entity_public.ProductVolumeStat{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
 
 	return data, nil
-
 }
 
-func (sm *StatsModel) GetRelativeMostProductiveField(farmID uint32) ([]entity_public.ProductiveField, error) {
+// getFieldProductSubquery filters fields to the top N by the given metric
+// (total volume or kg/ha), so each chart covers the same five fields.
+func getFieldProductSubquery(metric string) string {
+	return `
+		SELECT f2.id FROM entry e2
+		JOIN field f2 ON e2.field = f2.id
+		LEFT JOIN inactive_entry ie2 ON ie2.entry_id = e2.id
+		WHERE e2.farm = @farm AND ie2.entry_id IS NULL AND f2.hectares > 0
+		GROUP BY f2.id, f2.hectares
+		ORDER BY ` + metric + ` DESC
+		LIMIT 5
+	`
+}
+
+// GetNominalFieldProductTotals returns, for the five fields with the
+// biggest received volume, one row per (field, product) pair.
+func (sm *StatsModel) GetNominalFieldProductTotals(farmID uint32) ([]entity_public.FieldProductTotal, error) {
 	query := `
 		SELECT
 			f.name,
-			SUM(e.netweight) / f.hectares as productivity
-		FROM
-			entry e
-		JOIN
-			field f ON e.field = f.id
-		LEFT JOIN
-			inactive_entry ie ON e.id = ie.entry_id
-		WHERE
-			e.farm = @farm AND ie.entry_id IS NULL AND f.hectares > 0
-		GROUP BY
-			f.name, f.hectares
-		ORDER BY
-			productivity DESC
-		LIMIT 5;`
+			p.name,
+			SUM(e.netweight) AS total_weight,
+			0.0 AS productivity
+		FROM entry e
+		JOIN field f ON e.field = f.id
+		JOIN crop c ON e.crop = c.id
+		JOIN product p ON c.product = p.id
+		LEFT JOIN inactive_entry ie ON ie.entry_id = e.id
+		WHERE e.farm = @farm AND ie.entry_id IS NULL
+			AND f.id IN (` + getFieldProductSubquery("SUM(e2.netweight)") + `)
+		GROUP BY f.id, f.name, p.name
+		ORDER BY SUM(SUM(e.netweight)) OVER (PARTITION BY f.id) DESC, SUM(e.netweight) DESC;`
 
 	rows, queryErr := sm.pool.Query(context.Background(), query, pgx.NamedArgs{"farm": farmID})
 	if queryErr != nil {
 		fmt.Printf("\n queryErr: %v\n", queryErr.Error())
-		return []entity_public.ProductiveField{}, &model_error.ModelError{Message: queryErr.Error()}
+		return []entity_public.FieldProductTotal{}, &model_error.ModelError{Message: queryErr.Error()}
 	}
 
-	data, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.ProductiveField])
+	data, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.FieldProductTotal])
 	if collectErr != nil {
 		fmt.Printf("\n collectErr: %v\n", collectErr.Error())
-		return []entity_public.ProductiveField{}, &model_error.ModelError{Message: collectErr.Error()}
+		return []entity_public.FieldProductTotal{}, &model_error.ModelError{Message: collectErr.Error()}
+	}
+
+	return data, nil
+}
+
+// GetRelativeFieldProductTotals returns, for the five most productive
+// fields (net weight / hectares), one row per (field, product).
+func (sm *StatsModel) GetRelativeFieldProductTotals(farmID uint32) ([]entity_public.FieldProductTotal, error) {
+	query := `
+		SELECT
+			f.name,
+			p.name,
+			SUM(e.netweight) AS total_weight,
+			SUM(e.netweight) / f.hectares AS productivity
+		FROM entry e
+		JOIN field f ON e.field = f.id
+		JOIN crop c ON e.crop = c.id
+		JOIN product p ON c.product = p.id
+		LEFT JOIN inactive_entry ie ON ie.entry_id = e.id
+		WHERE e.farm = @farm AND ie.entry_id IS NULL
+			AND f.id IN (` + getFieldProductSubquery("(SUM(e2.netweight) / f2.hectares)") + `)
+		GROUP BY f.id, f.name, p.name, f.hectares
+		ORDER BY (SUM(SUM(e.netweight)) OVER (PARTITION BY f.id) / f.hectares) DESC, SUM(e.netweight) DESC;`
+
+	rows, queryErr := sm.pool.Query(context.Background(), query, pgx.NamedArgs{"farm": farmID})
+	if queryErr != nil {
+		fmt.Printf("\n queryErr: %v\n", queryErr.Error())
+		return []entity_public.FieldProductTotal{}, &model_error.ModelError{Message: queryErr.Error()}
+	}
+
+	data, collectErr := pgx.CollectRows(rows, pgx.RowToStructByPos[entity_public.FieldProductTotal])
+	if collectErr != nil {
+		fmt.Printf("\n collectErr: %v\n", collectErr.Error())
+		return []entity_public.FieldProductTotal{}, &model_error.ModelError{Message: collectErr.Error()}
 	}
 
 	return data, nil

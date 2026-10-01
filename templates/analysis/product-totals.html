@@ -1,0 +1,18 @@
+{{ define "product-totals" }}
+<div class="col-span-1 sm:col-span-2 lg:col-span-3 mt-4" id="product-totals-container">
+  <h3 class="text-lg font-semibold text-white mb-4 px-2">Visão por Produto</h3>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {{ range . }}
+    <div class="glass-panel rounded-xl p-4" data-stat-type="product_total" data-product="{{ .ProductName }}">
+      <h3 class="text-sm font-medium text-white/80">{{ .ProductName }}</h3>
+      <p class="text-2xl font-semibold text-white mt-1 weight-value">{{ printf "%.2f" .EntryTotal }}</p>
+      <p class="text-xs text-white/70 mt-1">Enviado: <span class="weight-value">{{ printf "%.2f" .DepartureTotal }}</span></p>
+    </div>
+    {{ else }}
+    <div class="glass-panel rounded-xl p-4 col-span-full">
+      <p class="text-white/70">Nenhum registro</p>
+    </div>
+    {{ end }}
+  </div>
+</div>
+{{ end }}

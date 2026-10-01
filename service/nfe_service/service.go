@@ -107,12 +107,12 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	// Get emitter
 	emitter := s.mapFarmToEmitter(farmNFeConfig, farmData, nfeModel)
 
-	// Get the product for the crop — NCM and name come from the product table
+	// Get the product for the crop — NCM and name come from the product tables
 	prodModel := product_model.GetProductModel()
-	product, productErr := prodModel.GetProductById(departure.Crop)
+	product, productErr := prodModel.GetProductByCrop(departure.Crop)
 	if productErr != nil {
 		// Non-fatal: fall back to NCMSoja and a generic name
-		model_error.GetLoggerModel().Log(fmt.Sprintf("GetProductById error: %v", productErr.Error()))
+		model_error.GetLoggerModel().Log(fmt.Sprintf("GetProductByCrop error: %v", productErr.Error()))
 	}
 	if product.NCM == "" || product.NCM == "00000000" {
 		product.NCM = defaults.NCMSoja
@@ -695,22 +695,22 @@ func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.
 				VCOFINS:   imp.COFINS.VCOFINS,
 				// PIBS is derived from VIBSUF / VBC * 100 since the per-item
 				// rate is no longer persisted on the entity (only the values).
-				PIBS:  perItemRate(imp.IBSCBS.VIBSUF, imp.IBSCBS.VBC),
-				VIBS:  imp.IBSCBS.VIBS,
-				PCBS:  imp.IBSCBS.PCBS,
-				VCBS:  imp.IBSCBS.VCBS,
+				PIBS: perItemRate(imp.IBSCBS.VIBSUF, imp.IBSCBS.VBC),
+				VIBS: imp.IBSCBS.VIBS,
+				PCBS: imp.IBSCBS.PCBS,
+				VCBS: imp.IBSCBS.VCBS,
 			},
 		},
-		TotalValue:  input.TotalValue,
-		VBC:         imp.ICMS.VBC,
-		VICMS:       imp.ICMS.VICMS,
-		VPIS:        imp.PIS.VPIS,
-		VCOFINS:     imp.COFINS.VCOFINS,
-		VBCIBSCBS:   imp.IBSCBS.VBC,
-		VIBS:        imp.IBSCBS.VIBS,
-		VCBS:        imp.IBSCBS.VCBS,
-		ModFrete:    strconv.Itoa(transport.ModFrete),
-		InfCpl:      input.InformacoesAdicionais,
+		TotalValue: input.TotalValue,
+		VBC:        imp.ICMS.VBC,
+		VICMS:      imp.ICMS.VICMS,
+		VPIS:       imp.PIS.VPIS,
+		VCOFINS:    imp.COFINS.VCOFINS,
+		VBCIBSCBS:  imp.IBSCBS.VBC,
+		VIBS:       imp.IBSCBS.VIBS,
+		VCBS:       imp.IBSCBS.VCBS,
+		ModFrete:   strconv.Itoa(transport.ModFrete),
+		InfCpl:     input.InformacoesAdicionais,
 	}
 
 	if transport.Transportadora != nil {

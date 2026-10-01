@@ -1,0 +1,26 @@
+{{ block "product-list-item" . }}
+<tr class="text-sm border-b border-sky-50/30 hover:bg-sky-50/10 whitespace-nowrap" id="product-{{ .Id }}">
+  <td class="py-3 px-4 text-left truncate max-w-64 font-bold" data-label="NOME" title="{{ .Name }}">
+    {{ .Name }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="NCM">
+    {{ .NCM }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="ORIGEM">
+    {{ if .IsFarm }}Próprio da fazenda{{ else }}Global{{ end }}
+  </td>
+  <td class="py-3 px-4 text-left" data-label="AÇÕES">
+    {{ if .IsFarm }}
+    <button type="button" class="icon-btn" hx-get="/produto/form/{{ .Id }}" hx-target="body"
+      hx-swap="beforeend" title="Editar Produto">
+      <iconify-icon icon="mdi:pencil" class="text-xl"></iconify-icon>
+    </button>
+    <button type="button" class="icon-btn opacity-40 cursor-not-allowed" disabled title="Exclusão disponível em breve">
+      <iconify-icon icon="mdi:trash-can" class="text-xl"></iconify-icon>
+    </button>
+    {{ else }}
+    <iconify-icon icon="mdi:lock-outline" class="text-xl text-white/40" title="Produto global — somente leitura"></iconify-icon>
+    {{ end }}
+  </td>
+</tr>
+{{ end }}

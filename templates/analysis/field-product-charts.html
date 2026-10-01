@@ -1,0 +1,24 @@
+{{ define "field-product-charts" }}
+<div class="col-span-1 sm:col-span-2 lg:col-span-3 mt-4" id="field-product-charts-container"
+     data-nominal-labels="{{ .NominalLabelsJSON }}"
+     data-nominal-datasets="{{ .NominalDatasetsJSON }}"
+     data-relative-labels="{{ .RelativeLabelsJSON }}"
+     data-relative-datasets="{{ .RelativeDatasetsJSON }}">
+  <div>
+    <h3 class="text-lg font-semibold text-white mb-2 px-2">Produção por Talhão</h3>
+    {{ if .HasData }}
+    <p class="text-xs text-white/70 mb-4 px-2">5 talhões com maior recebimento • cada cor é um produto</p>
+    <div class="grid grid-cols-1 gap-4">
+      <div class="h-60 sm:h-80 w-full glass-panel p-4 rounded-xl">
+        <canvas id="fieldProductVolumeChart"></canvas>
+      </div>
+      <div class="h-60 sm:h-80 w-full glass-panel p-4 rounded-xl">
+        <canvas id="fieldProductivityChart"></canvas>
+      </div>
+    </div>
+    {{ else }}
+    <p class="text-sm text-white/70 px-2">Nenhum registro encontrado</p>
+    {{ end }}
+  </div>
+</div>
+{{ end }}

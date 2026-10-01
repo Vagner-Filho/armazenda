@@ -10,13 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type ProductiveFieldsViewData struct {
-	Nominal            []entity_public.ProductiveField
-	Relative           []entity_public.ProductiveField
-	NominalNamesJSON   string
-	NominalValuesJSON  string
-	RelativeNamesJSON  string
-	RelativeValuesJSON string
+type FieldProductChartsViewData struct {
+	NominalLabelsJSON    string
+	NominalDatasetsJSON  string
+	RelativeLabelsJSON   string
+	RelativeDatasetsJSON string
+	HasData              bool
 }
 
 func TopSupplierCard(c *gin.Context) {
@@ -86,44 +85,87 @@ func GetAnalysisPage(c *gin.Context) {
 	})
 }
 
-func GetProductiveFields(c *gin.Context) {
+// buildFieldProductSeries converts (field, product) rows into a grouped-bar
+// chart payload: labels are fields (in query order) and one dataset per
+// product, values aligned to labels with zero fill for absent pairs.
+func buildFieldProductSeries(rows []entity_public.FieldProductTotal, metric func(entity_public.FieldProductTotal) float64) entity_public.FieldProductSeries {
+	series := entity_public.FieldProductSeries{
+		Labels:   []string{},
+		Datasets: []entity_public.ProductDataset{},
+	}
+	labelIndex := make(map[string]int)
+	datasetIndex := make(map[string]int)
+
+	for _, row := range rows {
+		li, ok := labelIndex[row.FieldName]
+		if !ok {
+			li = len(series.Labels)
+			labelIndex[row.FieldName] = li
+			series.Labels = append(series.Labels, row.FieldName)
+			// extend every existing dataset with a zero for the new field
+			for di := range series.Datasets {
+				series.Datasets[di].Values = append(series.Datasets[di].Values, 0)
+			}
+		}
+
+		di, ok := datasetIndex[row.ProductName]
+		if !ok {
+			di = len(series.Datasets)
+			datasetIndex[row.ProductName] = di
+			values := make([]float64, len(series.Labels))
+			values[li] = metric(row)
+			series.Datasets = append(series.Datasets, entity_public.ProductDataset{
+				Product: row.ProductName,
+				Values:  values,
+			})
+			continue
+		}
+
+		series.Datasets[di].Values[li] = metric(row)
+	}
+
+	return series
+}
+
+func GetFieldProductCharts(c *gin.Context) {
 	sessionCookie, _ := c.Request.Cookie("session_id")
 	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
-	fields, toast := stats_service.GetProductiveFields(farmId)
+	charts, toast := stats_service.GetFieldProductTotals(farmId)
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 		return
 	}
 
-	// Extract names and values for JSON marshaling
-	nominalNames := make([]string, len(fields.Nominal))
-	nominalValues := make([]float64, len(fields.Nominal))
-	for i, f := range fields.Nominal {
-		nominalNames[i] = f.Name
-		nominalValues[i] = f.Productivity
+	nominalSeries := buildFieldProductSeries(charts.Nominal, func(r entity_public.FieldProductTotal) float64 {
+		return r.TotalWeight
+	})
+	relativeSeries := buildFieldProductSeries(charts.Relative, func(r entity_public.FieldProductTotal) float64 {
+		return r.Productivity
+	})
+
+	nominalLabelsJSON, _ := json.Marshal(nominalSeries.Labels)
+	nominalDatasetsJSON, _ := json.Marshal(nominalSeries.Datasets)
+	relativeLabelsJSON, _ := json.Marshal(relativeSeries.Labels)
+	relativeDatasetsJSON, _ := json.Marshal(relativeSeries.Datasets)
+
+	viewData := FieldProductChartsViewData{
+		NominalLabelsJSON:    string(nominalLabelsJSON),
+		NominalDatasetsJSON:  string(nominalDatasetsJSON),
+		RelativeLabelsJSON:   string(relativeLabelsJSON),
+		RelativeDatasetsJSON: string(relativeDatasetsJSON),
+		HasData:              len(charts.Nominal) > 0 || len(charts.Relative) > 0,
 	}
 
-	relativeNames := make([]string, len(fields.Relative))
-	relativeValues := make([]float64, len(fields.Relative))
-	for i, f := range fields.Relative {
-		relativeNames[i] = f.Name
-		relativeValues[i] = f.Productivity
+	c.HTML(http.StatusOK, "field-product-charts", viewData)
+}
+
+func ProductTotals(c *gin.Context) {
+	sessionCookie, _ := c.Request.Cookie("session_id")
+	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
+	totals, toast := stats_service.GetProductTotals(farmId)
+	if toast != nil {
+		c.Header("HX-Trigger", string(toast.ToJson()))
+		return
 	}
-
-	// Marshal to JSON strings
-	nominalNamesJSON, _ := json.Marshal(nominalNames)
-	nominalValuesJSON, _ := json.Marshal(nominalValues)
-	relativeNamesJSON, _ := json.Marshal(relativeNames)
-	relativeValuesJSON, _ := json.Marshal(relativeValues)
-
-	viewData := ProductiveFieldsViewData{
-		Nominal:            fields.Nominal,
-		Relative:           fields.Relative,
-		NominalNamesJSON:   string(nominalNamesJSON),
-		NominalValuesJSON:  string(nominalValuesJSON),
-		RelativeNamesJSON:  string(relativeNamesJSON),
-		RelativeValuesJSON: string(relativeValuesJSON),
-	}
-
-	c.HTML(http.StatusOK, "most-productive-field", viewData)
+	c.HTML(http.StatusOK, "product-totals", totals)
 }

@@ -39,7 +39,7 @@ func GetProductModel() *ProductModel {
 }
 
 func (pm *ProductModel) GetProducts() ([]entity_public.Product, error) {
-	rows, err := pm.pool.Query(context.Background(), "SELECT * FROM product")
+	rows, err := pm.pool.Query(context.Background(), "SELECT id, name, ncm FROM product")
 	if err != nil {
 		return []entity_public.Product{}, &model_error.ModelError{Message: err.Error()}
 	}
@@ -53,8 +53,9 @@ func (pm *ProductModel) GetProducts() ([]entity_public.Product, error) {
 	return products, nil
 }
 
+// GetProductById resolves a product from the global catalog by id.
 func (pm *ProductModel) GetProductById(id uint8) (entity_public.Product, error) {
-	rows, err := pm.pool.Query(context.Background(), "SELECT * FROM product WHERE id = @id", pgx.NamedArgs{"id": id})
+	rows, err := pm.pool.Query(context.Background(), "SELECT id, name, ncm FROM product WHERE id = @id", pgx.NamedArgs{"id": id})
 	if err != nil {
 		model_error.GetLoggerModel().Log(err.Error())
 		return entity_public.Product{}, &model_error.ModelError{Message: err.Error()}
@@ -72,8 +73,13 @@ func (pm *ProductModel) GetProductById(id uint8) (entity_public.Product, error) 
 	return product, nil
 }
 
+// GetProductByCrop resolves the global product a crop belongs to.
 func (pm *ProductModel) GetProductByCrop(cropId uint8) (entity_public.Product, error) {
-	rows, err := pm.pool.Query(context.Background(), "SELECT p.* FROM product p JOIN crop c ON c.product = p.id WHERE c.id = @id", pgx.NamedArgs{"id": cropId})
+	rows, err := pm.pool.Query(context.Background(), `
+		SELECT p.id, p.name, p.ncm
+		FROM product p
+		JOIN crop c ON c.product = p.id
+		WHERE c.id = @id`, pgx.NamedArgs{"id": cropId})
 	if err != nil {
 		model_error.GetLoggerModel().Log(err.Error())
 		return entity_public.Product{}, &model_error.ModelError{Message: err.Error()}

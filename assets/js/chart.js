@@ -7,39 +7,64 @@ const FIELD_PROD_COLORS = [
     { bg: 'rgba(217, 119, 6, 0.85)', border: 'rgba(217, 119, 6, 1)' }     // Amber 600
 ];
 
-function getColorArray(dataLength, type) {
-    const colors = [];
-    for (let i = 0; i < dataLength; i++) {
-        colors.push(FIELD_PROD_COLORS[i % FIELD_PROD_COLORS.length][type]);
+// Representative colors for the well-known products; any other product falls
+// back to the generic palette by dataset order.
+const PRODUCT_COLORS = {
+    'milho': { bg: 'rgba(245, 158, 11, 0.85)', border: 'rgba(245, 158, 11, 1)' },   // Amber (corn)
+    'soja':  { bg: 'rgba(34, 197, 94, 0.85)',  border: 'rgba(34, 197, 94, 1)' }     // Green (soy)
+};
+
+function getProductColor(productName, fallbackIndex) {
+    const normalized = (productName || '').trim().toLowerCase();
+    if (PRODUCT_COLORS[normalized]) {
+        return PRODUCT_COLORS[normalized];
     }
-    return colors;
+    return FIELD_PROD_COLORS[fallbackIndex % FIELD_PROD_COLORS.length];
 }
 
-export function setupFieldProdChart(elementId, title, labels, data) {
+/**
+ * Stacked bar chart: labels are fields and each dataset is a product, so
+ * every field's bar is stacked by product. Colors are assigned per dataset
+ * index so a product keeps the same color across all charts on the page.
+ * @param {string} elementId - canvas element id
+ * @param {string} title - chart title
+ * @param {string[]} labels - field names
+ * @param {{product: string, values: number[]}[]} datasets - one series per product
+ */
+export function setupProductStackedChart(elementId, title, labels, datasets) {
     new Chart(document.getElementById(elementId), {
         type: 'bar',
         data: {
             labels: labels,
-            datasets: [
-                {
-                    data: data,
-                    backgroundColor: getColorArray(data.length, 'bg'),
-                    borderColor: getColorArray(data.length, 'border'),
+            datasets: datasets.map((dataset, index) => {
+                const color = getProductColor(dataset.product, index);
+                return {
+                    label: dataset.product,
+                    data: dataset.values,
+                    backgroundColor: color.bg,
+                    borderColor: color.border,
                     borderWidth: 2
-                }
-            ]
+                };
+            })
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
+                x: {
+                    stacked: true
+                },
                 y: {
+                    stacked: true,
                     beginAtZero: true
                 }
             },
             plugins: {
                 legend: {
-                    display: false
+                    display: true,
+                    labels: {
+                        color: '#ffffff99'
+                    }
                 },
                 title: {
                     display: true,

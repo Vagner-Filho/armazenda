@@ -1,0 +1,69 @@
+{{ block "product-form" . }}
+<dialog id="productFormDialog" class="glass-panel rounded-xl w-72 sm:w-96">
+    <div class="p-4 relative">
+        {{ template "close-dialog-btn" (dict "selector" "dialog#productFormDialog" "CSPNonce" .CSPNonce) }}
+        <header class="text-center mb-4">
+            <h1 class="text-xl lg:text-2xl font-bold text-white/95 font-[Noto_Sans]">
+                {{ if .Product }}Editar Produto{{ else }}Novo Produto{{ end }}
+            </h1>
+            <p class="text-sm text-white/90 mt-2">
+                Preencha os campos abaixo para cadastrar um novo produto da fazenda.
+            </p>
+        </header>
+        <form class="flex flex-col gap-4"
+            {{ if .Product }}
+              hx-put="/produto/{{ .Product.Id }}" hx-target="#product-{{ .Product.Id }}" hx-swap="outerHTML"
+            {{ else }}
+              hx-post="/produto" hx-target="#products-rows" hx-swap="beforeend"
+            {{ end }}>
+            <div class="flex flex-col-reverse">
+                <input type="text" name="name" id="product-name"
+                    class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required autofocus
+                    {{ if .Product }} value="{{ .Product.Name }}" {{ end }}>
+                <label for="product-name" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Nome do Produto
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <input type="text" name="ncm" id="product-ncm" inputmode="numeric"
+                    class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required
+                    pattern="[0-9]{8}" maxlength="8" title="Informe os 8 dígitos do NCM"
+                    placeholder="00000000"
+                    {{ if .Product }} value="{{ .Product.NCM }}" {{ end }}>
+                <label for="product-ncm" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    NCM
+                    <i class="text-xs font-normal text-white/60 normal-case">(8 dígitos)</i>
+                </label>
+            </div>
+            <div class="flex items-center justify-around mt-4 w-52 mx-auto">
+                <button type="button" class="cancel-btn" onclick="window.closeProductForm && window.closeProductForm()">
+                    Cancelar
+                </button>
+                <button class="primary-glass-btn" type="submit">
+                    {{ if .Product }}Salvar{{ else }}Adicionar{{ end }}
+                </button>
+            </div>
+        </form>
+    </div>
+    <script nonce="{{ .CSPNonce }}" type="module">
+        import { closeModal } from "/public/assets/js/utils.js";
+
+        const dialogEl = document.querySelector("dialog#productFormDialog")
+        dialogEl.showModal()
+
+        window.closeProductForm = () => closeModal("dialog#productFormDialog")
+
+        // digits only for NCM
+        const ncmInput = dialogEl.querySelector("input#product-ncm")
+        ncmInput.addEventListener('input', () => {
+            ncmInput.value = ncmInput.value.replace(/\D/g, '').slice(0, 8)
+        })
+
+        dialogEl.querySelector("form").addEventListener('htmx:afterRequest', function (evt) {
+            if (evt.detail.successful) {
+                window.closeProductForm()
+            }
+        })
+    </script>
+</dialog>
+{{ end }}

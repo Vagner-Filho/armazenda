@@ -7,6 +7,7 @@ import (
 	"armazenda/model/entry_model"
 	model_error "armazenda/model/error"
 	"armazenda/model/farm_config_model"
+	"armazenda/model/farm_product_model"
 	"armazenda/model/field_model"
 	"armazenda/model/humidity_progression_model"
 	"armazenda/model/nfe_model"
@@ -29,6 +30,7 @@ import (
 	"armazenda/router/humidity_progression_router"
 	"armazenda/router/nfe_router"
 	"armazenda/router/person_router"
+	"armazenda/router/product_router"
 	"armazenda/router/report_router"
 	"armazenda/router/stats_router"
 	"armazenda/router/sync_router"
@@ -242,6 +244,7 @@ func main() {
 	entry_model.InitEntryModel(pool)
 	departure_model.InitDepartureModel(pool)
 	product_model.InitProductModel(pool)
+	farm_product_model.InitFarmProductModel(pool)
 	person_model.InitPersonModel(pool)
 	humidity_progression_model.InitHumidityProgressionModel(pool)
 	report_model.InitReportModel(pool)
@@ -311,6 +314,7 @@ func main() {
 	entry_router.UseEntryRoutes(router)
 	departure_router.UseDepartureRoutes(router)
 	crop_router.UseCropRoutes(router)
+	product_router.UseProductRoutes(router)
 	field_router.UseFieldRoutes(router)
 	vehicle_router.UseVehicleRouter(router)
 	person_router.UsePersonRoutes(router)

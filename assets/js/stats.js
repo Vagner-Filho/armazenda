@@ -8,7 +8,8 @@ document.addEventListener("DOMContentLoaded", function() {
     "top_buyer": { icon: "mdi:cart-check", color: "#2196F3" },
     "most_frequent_supplier": { icon: "mdi:truck-fast", color: "#FF9800" },
     "best_quality_supplier": { icon: "mdi:star-check", color: "#8BC34A" },
-    "worst_quality_supplier": { icon: "mdi:alert-circle", color: "#F44336" }
+    "worst_quality_supplier": { icon: "mdi:alert-circle", color: "#F44336" },
+    "product_total": { icon: "mdi:barley", color: "#26A69A" }
   };
 
   statCards.forEach(card => {

@@ -25,7 +25,7 @@
           Análise
         </h1>
         <p class="text-sm text-white/90 mt-2">
-          Gere relatórios detalhados sobre as operações do seu armazém.
+          Estude a eficiência operacional do seu armazém.
         </p>
       </header>
       <div class="glass-panel rounded-xl shadow-center p-4 overflow-y-auto">
@@ -33,23 +33,24 @@
           <div hx-get="/stats/top-supplier" hx-trigger="load" hx-swap="outerHTML"></div>
           <div hx-get="/stats/top-buyer" hx-trigger="load" hx-swap="outerHTML"></div>
           <div hx-get="/stats/most-frequent-supplier" hx-trigger="load" hx-swap="outerHTML"></div>
-          <div hx-get="/analise/most-productive-field" hx-trigger="load" hx-swap="outerHTML"></div>
         </div>
+        <div hx-get="/stats/product-totals" hx-trigger="load" hx-swap="outerHTML"></div>
+        <div hx-get="/analise/product-charts" hx-trigger="load" hx-swap="outerHTML"></div>
       </div>
     </section>
     <script nonce="{{ .CSPNonce }}" type="module">
-      import { setupFieldProdChart } from "/public/assets/js/chart.js";
+      import { setupProductStackedChart } from "/public/assets/js/chart.js";
 
       document.body.addEventListener('htmx:afterSwap', function(evt) {
         const container = evt.detail.elt;
-        if (container && container.id === "productive-field-container") {
-          const nominalNames = JSON.parse(container.dataset.nominalNames);
-          const nominalValues = JSON.parse(container.dataset.nominalValues);
-          const relativeNames = JSON.parse(container.dataset.relativeNames);
-          const relativeValues = JSON.parse(container.dataset.relativeValues);
+        if (container && container.id === "field-product-charts-container") {
+          const nominalLabels = JSON.parse(container.dataset.nominalLabels);
+          const nominalDatasets = JSON.parse(container.dataset.nominalDatasets);
+          const relativeLabels = JSON.parse(container.dataset.relativeLabels);
+          const relativeDatasets = JSON.parse(container.dataset.relativeDatasets);
 
-          setupFieldProdChart('fieldVolumeProdChart', 'Talhão Maior Volume', nominalNames, nominalValues);
-          setupFieldProdChart('fieldSizeRelativeProdChart', 'Talhão Mais Produtivo (Peso Líquido / hectare)', relativeNames, relativeValues);
+          setupProductStackedChart('fieldProductVolumeChart', 'Volume por Talhão e Produto', nominalLabels, nominalDatasets);
+          setupProductStackedChart('fieldProductivityChart', 'Produtividade por Talhão e Produto (Peso Líquido / hectare)', relativeLabels, relativeDatasets);
         }
       });
     </script>

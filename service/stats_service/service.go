@@ -55,21 +55,32 @@ func GetWorstQualitySupplierStat(farmId uint32) (*entity_public.StatCard, *entit
 	return &stat, nil
 }
 
-func GetProductiveFields(farmID uint32) (*entity_public.ProductiveFields, *entity_public.Toast) {
+func GetProductTotals(farmId uint32) ([]entity_public.ProductVolumeStat, *entity_public.Toast) {
+	sm := stats_model.GetStatsModel()
+	totals, err := sm.GetProductTotals(farmId)
+	if err != nil {
+		toast := entity_public.GetErrorToast("Erro ao buscar totais por produto", "")
+		return nil, &toast
+	}
+	return totals, nil
+}
+
+func GetFieldProductTotals(farmID uint32) (*entity_public.FieldProductCharts, *entity_public.Toast) {
 	model := stats_model.GetStatsModel()
-	nominal, err := model.GetNominalMostProductiveField(farmID)
+
+	nominal, err := model.GetNominalFieldProductTotals(farmID)
 	if err != nil {
-		toast := entity_public.GetErrorToast("Houve um erro interno ao buscar o campo produtivo nominal", "")
+		toast := entity_public.GetErrorToast("Houve um erro interno ao buscar o volume por talhão e produto", "")
 		return nil, &toast
 	}
 
-	relative, err := model.GetRelativeMostProductiveField(farmID)
+	relative, err := model.GetRelativeFieldProductTotals(farmID)
 	if err != nil {
-		toast := entity_public.GetErrorToast("Houve um erro interno ao buscar o campo produtivo relativo", "")
+		toast := entity_public.GetErrorToast("Houve um erro interno ao buscar a produtividade por talhão e produto", "")
 		return nil, &toast
 	}
 
-	return &entity_public.ProductiveFields{
+	return &entity_public.FieldProductCharts{
 		Nominal:  nominal,
 		Relative: relative,
 	}, nil
