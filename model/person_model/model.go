@@ -836,3 +836,86 @@ func (bm *PersonModel) GetModifiedCount(since time.Time, farm uint32) (int, erro
 
 	return count, nil
 }
+
+// DetachedRecipientInput holds the data needed to create a person for a detached NF-e
+type DetachedRecipientInput struct {
+	Name         string
+	Document     string // CPF or CNPJ
+	IE           *string
+	Street       *string
+	Number       *string
+	Neighborhood *string
+	City         *string
+	State        *string
+	CEP          *string
+	PhoneNumber  *string
+	Email        *string
+}
+
+// CreatePersonForDetachedNFe creates a new person record for a detached NF-e recipient
+// docType: 1 = natural (CPF), 2 = legal (CNPJ)
+func (bm *PersonModel) CreatePersonForDetachedNFe(farmID uint32, docType int, input DetachedRecipientInput) (uint32, *model_error.ModelError) {
+	ctx := context.Background()
+	tx, err := bm.pool.Begin(ctx)
+	if err != nil {
+		return 0, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+	}
+	defer tx.Rollback(ctx)
+
+	// 1. Insert Person
+	var personID uint32
+	ie := ""
+	if input.IE != nil {
+		ie = *input.IE
+	}
+	err = tx.QueryRow(ctx, "INSERT INTO person (ie, farm) VALUES ($1, $2) RETURNING id", ie, farmID).Scan(&personID)
+	if err != nil {
+		return 0, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+	}
+
+	// 2. Insert Legal or Natural Person
+	if docType == 2 {
+		// Legal person (CNPJ)
+		_, err = tx.Exec(ctx,
+			"INSERT INTO legal_person (cnpj, personId, companyName) VALUES ($1, $2, $3)",
+			input.Document, personID, input.Name)
+		if err != nil {
+			return 0, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+		}
+	} else {
+		// Natural person (CPF)
+		_, err = tx.Exec(ctx,
+			"INSERT INTO natural_person (name, cpf, personId) VALUES ($1, $2, $3)",
+			input.Name, input.Document, personID)
+		if err != nil {
+			return 0, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+		}
+	}
+
+	// 3. Insert Address (if required fields are present)
+	if input.Street != nil && input.CEP != nil && input.Neighborhood != nil && input.City != nil && input.State != nil {
+		var addressID uint32
+		err = tx.QueryRow(ctx, `INSERT INTO address 
+			(street, cep, number, neighborhood, city, state, person_id) 
+			VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+			input.Street, input.CEP, input.Number, input.Neighborhood, input.City, input.State, personID).Scan(&addressID)
+		if err != nil {
+			return 0, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+		}
+	}
+
+	// 4. Insert Contact
+	if input.Email != nil || input.PhoneNumber != nil {
+		_, err = tx.Exec(ctx, "INSERT INTO contact (email, phone_number, person_id) VALUES ($1, $2, $3)",
+			input.Email, input.PhoneNumber, personID)
+		if err != nil {
+			return 0, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+		}
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return 0, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+	}
+
+	return personID, nil
+}

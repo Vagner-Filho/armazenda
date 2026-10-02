@@ -8,6 +8,7 @@
             <thead
                 class="border-b border-white/10 text-xs text-gray-400 uppercase tracking-wider *:font-medium">
                 <tr>
+                    <th class="py-3 px-4 text-left">Tipo</th>
                     <th class="py-3 px-4 text-left">Chave de Acesso</th>
                     <th class="py-3 px-4 text-left">Série/Número</th>
                     <th class="py-3 px-4 text-left">Valor Total</th>
@@ -16,11 +17,15 @@
                 </tr>
             </thead>
             <tbody class="text-white/80">
-                {{ range .Invoices }}
-                {{ template "nfe-list-item" . }}
-                {{ else }}
+                {{ range .DepartureInvoices }}
+                {{ template "nfe-list-item" (dict "Invoice" . "Type" "Romaneio") }}
+                {{ end }}
+                {{ range .DetachedInvoices }}
+                {{ template "nfe-list-item" (dict "Invoice" . "Type" "Avulsa") }}
+                {{ end }}
+                {{ if and (eq (len .DepartureInvoices) 0) (eq (len .DetachedInvoices) 0) }}
                 <tr>
-                    <td colspan="5" class="py-8 text-center text-white/50">
+                    <td colspan="6" class="py-8 text-center text-white/50">
                         Nenhuma NF-e emitida ainda.
                     </td>
                 </tr>

@@ -391,6 +391,9 @@ func UseNFeRoutes(router gin.IRoutes) {
 	router.GET("/download/danfe/:accessKey", downloadNFeDANFE)
 	router.GET("/cancel/modal/:accessKey", getNFeCancelModal)
 	router.POST("/cancel/:accessKey", cancelNFe)
+
+	// Detached NF-e routes
+	UseDetachedNFeRoutes(router)
 }
 
 func getNFePage(c *gin.Context) {
@@ -411,12 +414,23 @@ func getNFeList(c *gin.Context) {
 	}
 
 	nfeModel := nfe_model.GetNFeModel()
-	invoices, total, err := nfeModel.GetInvoicesByFarm(farmID, page)
+	
+	// Get departure-based invoices
+	departureInvoices, departureTotal, err := nfeModel.GetInvoicesByFarm(farmID, page)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Failed to get invoices")
 		return
 	}
 
+	// Get detached invoices
+	detachedInvoices, detachedTotal, err := nfeModel.GetDetachedInvoicesByFarm(farmID, page)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Failed to get detached invoices")
+		return
+	}
+
+	// Calculate totals
+	total := departureTotal + detachedTotal
 	pageSize := 10
 	totalPages := 0
 	if total > 0 {
@@ -424,13 +438,14 @@ func getNFeList(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "nfe-list", gin.H{
-		"Invoices":    invoices,
-		"CurrentPage": page,
-		"TotalPages":  totalPages,
-		"HasPrev":     page > 1,
-		"PrevPage":    page - 1,
-		"HasNext":     page < totalPages,
-		"NextPage":    page + 1,
+		"DepartureInvoices": departureInvoices,
+		"DetachedInvoices":  detachedInvoices,
+		"CurrentPage":       page,
+		"TotalPages":        totalPages,
+		"HasPrev":           page > 1,
+		"PrevPage":          page - 1,
+		"HasNext":           page < totalPages,
+		"NextPage":          page + 1,
 	})
 }
 

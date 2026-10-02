@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link href="/public/assets/static/css/output.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="/public/assets/favicon.ico">
+    <title>Emitir NF-e Avulsa - Armazenda</title>
+    <script nonce="{{ .CSPNonce }}" src="/public/assets/static/htmx.min.js.gz" defer></script>
+    <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/toast.js"></script>
+    <script nonce="{{ .CSPNonce }}" src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
+</head>
+<body class="main-bg">
+    {{ template "navbar" . }}
+    {{ template "menu" (dict "page" "nfe-emitir" "CSPNonce" .CSPNonce "TierKey" .TierKey) }}
+    <section class="content-container">
+        <header class="text-center mb-4 2xl:mb-8">
+            <h1 class="text-xl 2xl:text-3xl font-bold text-white font-[Noto_Sans] drop-shadow-lg">
+                Emitir NF-e Avulsa
+            </h1>
+            <p class="text-sm text-white/90 mt-2">
+                Emita uma NF-e independente de romaneio.
+            </p>
+        </header>
+
+        {{ if not .HasNFEFarmConfig }}
+        <div class="bg-orange-200 rounded-lg p-4 border-2 border-orange-600 text-orange-700 shadow shadow-orange-600 mx-auto text-lg flex gap-2">
+            {{ template "info-icon" "size-7 shrink-0" }}
+            <p>
+                Não encontramos a configuração de NF-e para realizar a emissão. Acesse <strong>Configurações &rarr; NF-e</strong> para inserir os dados necessários.
+            </p>
+        </div>
+        {{ else }}
+        <form id="detached-nfe-form" class="glass-panel rounded-xl p-6 space-y-6" hx-post="/nfe/emitir/build" hx-target="this" hx-swap="none">
+            <!-- Recipient Section -->
+            <fieldset class="flex flex-col gap-4 p-4 glass-panel rounded-xl">
+                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
+                    Destinatário
+                </legend>
+                
+                <div class="flex gap-4 mb-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="recipientType" value="existing" checked class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white">
+                        <span class="text-white/80 text-sm">Selecionar existente</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="recipientType" value="new" class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white">
+                        <span class="text-white/80 text-sm">Novo destinatário</span>
+                    </label>
+                </div>
+
+                <!-- Existing recipient selection -->
+                <div id="existing-recipient-section">
+                    <div class="flex flex-col-reverse">
+                        <select name="recipientPersonId" id="recipientPersonId" class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 w-full">
+                            <option value="">Selecione um destinatário</option>
+                            {{ range .People }}
+                            {{ if .Id }}
+                            <option value="{{ .Id }}">{{ .Name }}</option>
+                            {{ end }}
+                            {{ end }}
+                        </select>
+                        <label for="recipientPersonId" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Destinatário
+                        </label>
+                    </div>
+                </div>
+
+                <!-- New recipient form -->
+                <div id="new-recipient-section" class="hidden space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="recipientName" id="recipientName" required
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="Nome / Razão Social">
+                            <label for="recipientName" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Nome / Razão Social
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="recipientDocument" id="recipientDocument" required
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="CPF / CNPJ">
+                            <label for="recipientDocument" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                CPF / CNPJ
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="recipientIE" id="recipientIE"
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="Inscrição Estadual">
+                            <label for="recipientIE" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Inscrição Estadual
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="recipientPhone" id="recipientPhone"
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="Telefone">
+                            <label for="recipientPhone" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Telefone
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="flex flex-col-reverse md:col-span-2">
+                            <input type="text" name="recipientStreet" id="recipientStreet"
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="Logradouro">
+                            <label for="recipientStreet" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Logradouro
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="recipientNumber" id="recipientNumber"
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="Número">
+                            <label for="recipientNumber" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Número
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="recipientNeighborhood" id="recipientNeighborhood"
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="Bairro">
+                            <label for="recipientNeighborhood" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Bairro
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="recipientCity" id="recipientCity"
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="Cidade">
+                            <label for="recipientCity" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Cidade
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="recipientState" id="recipientState"
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="UF">
+                            <label for="recipientState" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                UF
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="recipientCEP" id="recipientCEP"
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="CEP">
+                            <label for="recipientCEP" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                CEP
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <!-- Items Section -->
+            <fieldset class="flex flex-col gap-4 p-4 glass-panel rounded-xl">
+                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
+                    Itens
+                </legend>
+                
+                <div id="items-container" class="space-y-4">
+                    <!-- Item 0 (template) -->
+                    <div class="item-row p-4 bg-white/5 rounded-lg border border-white/10" data-item-index="0">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="items[0].productName" required
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="Descrição do produto">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    Descrição
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="items[0].ncm"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="NCM">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    NCM
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="items[0].quantity" inputmode="decimal" required
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="0,000">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    Quantidade
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="items[0].unitPrice" inputmode="decimal" required
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="0,00">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    Preço Unitário (R$)
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="items[0].grossWeight" inputmode="decimal"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="0,000">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    Peso Bruto
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <select name="items[0].unit" class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                                    <option value="KG" selected>KG - Quilograma</option>
+                                    <option value="T">T - Tonelada</option>
+                                    <option value="SC">SC - Saca</option>
+                                    <option value="L">L - Litro</option>
+                                    <option value="UN">UN - Unidade</option>
+                                </select>
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    Unidade
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="items[0].cest"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="CEST (opcional)">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    CEST
+                                </label>
+                            </div>
+                        </div>
+                        <button type="button" class="remove-item-btn mt-2 text-red-400 hover:text-red-300 text-sm hidden">
+                            Remover item
+                        </button>
+                    </div>
+                </div>
+
+                <button type="button" id="add-item-btn" class="primary-glass-btn flex items-center gap-2 p-3 mt-4">
+                    <iconify-icon icon="mdi:plus" width="20" height="20"></iconify-icon>
+                    Adicionar Item
+                </button>
+            </fieldset>
+
+            <!-- Invoice-level fields -->
+            <fieldset class="flex flex-col gap-4 p-4 glass-panel rounded-xl">
+                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
+                    Dados da NF-e
+                </legend>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex flex-col-reverse">
+                        <select name="cfop" id="cfop" required class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 w-full">
+                            <option value="5101" selected>5101 - Venda de produção do estabelecimento</option>
+                            <option value="5102">5102 - Venda de mercadoria adquirida ou recebida de terceiros</option>
+                            <option value="5901">5901 - Remessa para industrialização</option>
+                        </select>
+                        <label for="cfop" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            CFOP
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="naturezaOp" id="naturezaOp"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="Natureza da Operação">
+                        <label for="naturezaOp" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Natureza da Operação
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex flex-col-reverse">
+                    <textarea name="infCpl" id="infCpl" rows="3"
+                        class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 resize-none"
+                        placeholder="Informações Complementares"></textarea>
+                    <label for="infCpl" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                        Informações Complementares
+                    </label>
+                </div>
+            </fieldset>
+
+            <!-- Submit -->
+            <div class="flex items-center justify-center gap-4">
+                <button type="submit" class="primary-glass-btn flex items-center gap-2 p-4 text-lg">
+                    <iconify-icon icon="mdi:receipt-text" width="24" height="24"></iconify-icon>
+                    Emitir NF-e
+                </button>
+            </div>
+
+            <input type="hidden" name="itemCount" id="itemCount" value="1">
+        </form>
+
+        <script nonce="{{ .CSPNonce }}">
+            // Toggle between existing and new recipient
+            document.querySelectorAll('input[name="recipientType"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    const existingSection = document.getElementById('existing-recipient-section');
+                    const newSection = document.getElementById('new-recipient-section');
+                    
+                    if (e.target.value === 'existing') {
+                        existingSection.classList.remove('hidden');
+                        newSection.classList.add('hidden');
+                    } else {
+                        existingSection.classList.add('hidden');
+                        newSection.classList.remove('hidden');
+                    }
+                });
+            });
+
+            // Add item functionality
+            let itemIndex = 1;
+            const itemsContainer = document.getElementById('items-container');
+            const addItemBtn = document.getElementById('add-item-btn');
+            const itemCountInput = document.getElementById('itemCount');
+
+            addItemBtn.addEventListener('click', () => {
+                const template = itemsContainer.querySelector('.item-row').cloneNode(true);
+                template.setAttribute('data-item-index', itemIndex);
+                
+                // Update all input names
+                template.querySelectorAll('input, select').forEach(input => {
+                    const name = input.getAttribute('name');
+                    if (name) {
+                        input.setAttribute('name', name.replace(/\[\d+\]/, `[${itemIndex}]`));
+                    }
+                    // Clear values
+                    if (input.type !== 'select-one') {
+                        input.value = '';
+                    }
+                });
+
+                // Show remove button
+                const removeBtn = template.querySelector('.remove-item-btn');
+                removeBtn.classList.remove('hidden');
+                removeBtn.addEventListener('click', () => {
+                    template.remove();
+                    updateItemCount();
+                    updateRemoveButtons();
+                });
+
+                itemsContainer.appendChild(template);
+                itemIndex++;
+                updateItemCount();
+                updateRemoveButtons();
+            });
+
+            function updateItemCount() {
+                itemCountInput.value = itemsContainer.querySelectorAll('.item-row').length;
+            }
+
+            function updateRemoveButtons() {
+                const rows = itemsContainer.querySelectorAll('.item-row');
+                rows.forEach((row, index) => {
+                    const removeBtn = row.querySelector('.remove-item-btn');
+                    if (rows.length === 1) {
+                        removeBtn.classList.add('hidden');
+                    } else {
+                        removeBtn.classList.remove('hidden');
+                    }
+                });
+            }
+        </script>
+        {{ end }}
+    </section>
+</body>
+</html>

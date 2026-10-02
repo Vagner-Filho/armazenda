@@ -2,6 +2,68 @@
 
 This document provides guidelines for AI agents working on the Armazenda codebase.
 
+## SDD Pattern (Spec-Driven Development)
+
+Before implementing any feature or fix, agents must create the SDD artifacts under `docs/`. Specs first, code second.
+
+### Folder & File Conventions
+
+1. Create a folder `docs/sdd/<feature-or-fix>/` named after the feature or fix being worked on (use snake_case)
+2. Inside it, create two files:
+   - **`sdd.md`** — the specification (what and why)
+   - **`plan.md`** — the implementation plan (how)
+
+```
+docs/
+└── sdd/
+    └── nfe_cancellation/       # folder = feature or fix name (snake_case)
+        ├── sdd.md              # specification
+        └── plan.md             # implementation plan
+```
+
+### sdd.md — Specification
+
+The specification file must contain, in this order: **Status**, **Goal**, **Requirements**, and **Acceptance Criteria**.
+
+````markdown
+# sdd:<feature-or-fix>
+
+## Status
+<!-- One of: Backlog | WIP | Done -->
+
+## Goal
+<!-- Brief description of what this feature/fix delivers and why -->
+
+## Requirements
+
+### Functional
+<!-- What the system must do -->
+
+### Non-Functional
+<!-- Performance, security, accessibility, observability, compatibility, etc. -->
+
+## Acceptance Criteria
+<!-- Verifiable, ideally testable conditions; each one should map to how the work is validated -->
+````
+
+### plan.md — Implementation Plan
+
+The plan file describes how the implementation shall be done and may be divided into **phases** (e.g. Phase 1: schema/migration, Phase 2: service layer, Phase 3: UI, Phase 4: tests). Reference the concrete files, packages, and commands involved (following the project's Layered architecture: Entity → Model → Service → Router), and note risks or out-of-scope items when relevant.
+
+### Workflow
+
+1. Write `docs/sdd/<name>/sdd.md` — set `Status: Backlog` initially
+2. Write the phased `docs/sdd/<name>/plan.md`
+3. When starting implementation, update `Status: WIP`
+4. Implement, following the acceptance criteria in `sdd.md`
+5. When all acceptance criteria are met (tests passing), update `Status: Done`
+
+### Rules
+
+- Do **not** start coding before `sdd.md` and `plan.md` exist
+- Keep the specs updated if scope changes during implementation
+- Small fixes do not need SDD when the change is trivial and self-explanatory (`Status: Done` on completion is not required for those)
+
 ## Development Environment
 
 - **Go**: 1.25.4

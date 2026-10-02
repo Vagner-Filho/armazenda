@@ -81,9 +81,9 @@
         </li>
         {{ if eq .TierKey "fiscal" }}
         <li>
-            <details id="nfe-menu" class="group{{ if or (eq .page "nfe") (eq .page "produto") }} bg-white/10 rounded-xl border-l-4 border-emerald-500{{ end }}" {{ if or (eq .page "nfe") (eq .page "produto") }}open{{ end }}>
+            <details id="nfe-menu" class="group{{ if or (eq .page "nfe") (eq .page "produto") (eq .page "nfe-emitir") }} bg-white/10 rounded-xl border-l-4 border-emerald-500{{ end }}" {{ if or (eq .page "nfe") (eq .page "produto") (eq .page "nfe-emitir") }}open{{ end }}>
                 <summary data-test_id="nfe-menu-option"
-                    class="outline-none list-none flex items-center gap-2 2xl:gap-3 px-1.5 2xl:px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all cursor-pointer{{ if or (eq .page "nfe") (eq .page "produto") }} text-white font-medium{{ end }}"
+                    class="outline-none list-none flex items-center gap-2 2xl:gap-3 px-1.5 2xl:px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all cursor-pointer{{ if or (eq .page "nfe") (eq .page "produto") (eq .page "nfe-emitir") }} text-white font-medium{{ end }}"
                     title="Notas Fiscais">
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-6" viewBox="0 0 24 24">
                         <path d="M0 0h24v24H0z" fill="none" />
@@ -117,12 +117,12 @@
                         </a>
                     </li>
                     <li>
-                        <span data-test_id="nfe-emit-menu-option" class="flex items-center gap-2 pl-2 pr-2 py-2 text-sm text-gray-600 cursor-default" title="Em breve">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <a href="/nfe/emitir" data-test_id="nfe-emit-menu-option" class="flex items-center gap-2 pl-2 pr-2 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all{{ if eq .page "nfe-emitir" }} text-white font-medium{{ end }}" title="Emitir NF-e avulsa">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-white/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" />
                             </svg>
                             Emitir
-                        </span>
+                        </a>
                     </li>
                 </ul>
             </details>

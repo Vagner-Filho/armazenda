@@ -31,12 +31,14 @@ func StartRetryWorker() {
 
 		// Run immediately on startup — don't wait for first ticker tick.
 		processPendingInvoices()
+		processDetachedPendingInvoices()
 
 		ticker := time.NewTicker(5 * time.Minute)
 		defer ticker.Stop()
 
 		for range ticker.C {
 			processPendingInvoices()
+			processDetachedPendingInvoices()
 		}
 	}()
 }
@@ -352,4 +354,150 @@ func invoiceOverridesFromRecord(inv *nfe_model.Invoice) *entity.InvoiceOverrides
 		return nil
 	}
 	return o
+}
+
+// processDetachedPendingInvoices processes pending and draft detached invoices
+func processDetachedPendingInvoices() {
+	nfeModel := nfe_model.GetNFeModel()
+
+	// Process pending detached invoices (status polling for already-sent NF-e)
+	pendingInvoices, err := nfeModel.GetPendingDetachedInvoicesForRetry()
+	if err != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: failed to get pending detached invoices: %v", err))
+		return
+	}
+	for _, inv := range pendingInvoices {
+		if err := processDetachedInvoice(inv); err != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: failed to process pending detached invoice %d: %v", inv.ID, err))
+		}
+	}
+
+	// Process draft detached invoices (auto-retry via SVC when available, max 24h old)
+	draftInvoices, err := nfeModel.GetDraftDetachedInvoicesForRetry()
+	if err != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: failed to get draft detached invoices: %v", err))
+		return
+	}
+	for _, inv := range draftInvoices {
+		if err := processDetachedDraftInvoice(inv); err != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: failed to process draft detached invoice %d: %v", inv.ID, err))
+		}
+	}
+}
+
+// processDetachedInvoice processes a pending detached invoice by querying SEFAZ for its status
+func processDetachedInvoice(inv nfe_model.DetachedInvoice) error {
+	nfeModel := nfe_model.GetNFeModel()
+
+	// Get farm NFe config
+	farmConfig, cfgErr := nfeModel.GetFarmConfig(inv.FarmID)
+	if cfgErr != nil {
+		return fmt.Errorf("failed to get farm config: %w", cfgErr)
+	}
+	if farmConfig == nil {
+		return fmt.Errorf("farm has no NFe config")
+	}
+
+	certPassword := decryptPassword(farmConfig.CertificatePasswordEncrypted)
+	sefazCfg := config.SefazConfig{
+		Environment: config.Environment(farmConfig.Environment),
+		StateUF:     farmConfig.EmitterUF,
+		Timeout:     30 * time.Second,
+	}
+	invService := service.NewInvoiceService(sefazCfg)
+
+	// Determine which endpoint to query based on the invoice's tpEmis
+	tpEmis := defaults.TpEmis(inv.TpEmis)
+	if tpEmis == defaults.EmissaoNormal {
+		tpEmis = defaults.EmissaoNormal
+	}
+
+	resp, queryErr := invService.QueryInvoiceStatusWithEmission(inv.AccessKey, farmConfig.CertificateData, certPassword, tpEmis)
+	if queryErr != nil {
+		// Network error — keep pending, do NOT increment retry count
+		return queryErr
+	}
+
+	if resp == nil {
+		return fmt.Errorf("empty query response from SEFAZ")
+	}
+
+	// We got a response from SEFAZ — now count this as a real retry attempt
+	if err := nfeModel.IncrementDetachedRetryCount(inv.ID); err != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: failed to increment retry count for detached invoice %d: %v", inv.ID, err))
+	}
+
+	if resp.IsAuthorized() {
+		updErr := nfeModel.UpdateDetachedInvoiceStatus(inv.ID, "authorized", resp.Protocol, resp.StatusCode, resp.StatusMotive)
+		if updErr != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: failed to update detached invoice status: %v", updErr))
+		}
+		// Build and store the <nfeProc> wrapper so the DANFE parser can
+		// extract nProt/dhRecbto from the stored XML.
+		if inv.XMLSigned != nil && *inv.XMLSigned != "" {
+			if authXML, buildErr := nfe_xml.BuildAuthorizedXML(*inv.XMLSigned, inv.AccessKey, resp.Protocol, resp.DhRecbto, resp.StatusCode, resp.StatusMotive); buildErr == nil {
+				if xmlErr := nfeModel.UpdateDetachedInvoiceAuthorizedXML(inv.ID, authXML); xmlErr != nil {
+					model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: UpdateDetachedInvoiceAuthorizedXML error: %v", xmlErr.Error()))
+				}
+			} else {
+				model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: BuildAuthorizedXML error: %v", buildErr.Error()))
+			}
+		}
+	} else if isProcessingStatusCode(resp.StatusCode) {
+		// Still processing — keep pending
+		updErr := nfeModel.UpdateDetachedInvoiceStatus(inv.ID, "pending", resp.Protocol, resp.StatusCode, resp.StatusMotive)
+		if updErr != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: failed to update detached invoice status: %v", updErr))
+		}
+	} else {
+		// Definitive non-success response (rejection, not found, etc.) — mark as denied
+		updErr := nfeModel.UpdateDetachedInvoiceStatus(inv.ID, "denied", resp.Protocol, resp.StatusCode, resp.StatusMotive)
+		if updErr != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: failed to update detached invoice status: %v", updErr))
+		}
+	}
+
+	return nil
+}
+
+// processDetachedDraftInvoice processes a draft detached invoice by attempting to send via SVC
+func processDetachedDraftInvoice(inv nfe_model.DetachedInvoice) error {
+	nfeModel := nfe_model.GetNFeModel()
+
+	// Get farm NFe config
+	farmConfig, cfgErr := nfeModel.GetFarmConfig(inv.FarmID)
+	if cfgErr != nil {
+		return fmt.Errorf("failed to get farm config: %w", cfgErr)
+	}
+	if farmConfig == nil {
+		return fmt.Errorf("farm has no NFe config")
+	}
+
+	certPassword := decryptPassword(farmConfig.CertificatePasswordEncrypted)
+	sefazCfg := config.SefazConfig{
+		Environment: config.Environment(farmConfig.Environment),
+		StateUF:     farmConfig.EmitterUF,
+		Timeout:     30 * time.Second,
+	}
+	invService := service.NewInvoiceService(sefazCfg)
+
+	// Check if SVC is now operational
+	svcResp, svcErr := invService.CheckSVCStatus(farmConfig.CertificateData, certPassword)
+	if svcErr != nil || svcResp == nil || !svcResp.IsSVCOperational() {
+		// SVC still not available — keep as draft, increment retry count
+		if err := nfeModel.IncrementDetachedRetryCount(inv.ID); err != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: failed to increment retry count for draft detached invoice %d: %v", inv.ID, err))
+		}
+		return nil
+	}
+
+	// SVC is active — for now, just increment retry count
+	// TODO: Implement full rebuild logic for detached invoices
+	// This would require storing the full InvoiceInput or parsing the signed XML
+	// For now, users can manually retry by re-emitting the invoice
+	if err := nfeModel.IncrementDetachedRetryCount(inv.ID); err != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: failed to increment retry count for draft detached invoice %d: %v", inv.ID, err))
+	}
+
+	return nil
 }
