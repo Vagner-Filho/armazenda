@@ -73,6 +73,8 @@ The plan file describes how the implementation shall be done and may be divided 
 
 ## Build & Run Commands
 
+`make` shortcuts exist (`make build` = CSS + WASM + Go, `make test` = test-unit + e2e) — but note `make test-unit` only covers `service/entry_service/test/`, `pkg/calculator/` and `pkg/nfe/...`; use `go test ./...` for the full run.
+
 ```bash
 # Build the Go application
 go build -o ./tmp/main .
@@ -140,6 +142,10 @@ bun run db:start    # Start test database
 bun run db:seed     # Seed test data
 bun run db:stop     # Stop test database
 ```
+
+**E2E auto-setup:** Playwright's `global-setup.js` starts the Docker test DB (localhost:5433), starts the Go app (http://localhost:8100), and seeds fixtures automatically — manual `db:start`/`db:seed` is only needed for debugging.
+
+**App requires DB env vars to run:** `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME`, `DB_PORT` (set with no defaults in code).
 
 ### Run All Tests
 ```bash
@@ -220,7 +226,8 @@ func (e *ModelError) Error() string {
 - Return `*model_error.ModelError` from model functions
 - Set `IsServerErr: true` for internal/server errors (log these, show generic message to user)
 - Set `IsServerErr: false` for user-facing validation errors (show specific message)
-- Use `pgxmock` for mocking database operations in tests
+- Log internal errors via the logger model: `model_error.GetLoggerModel().Log(...)`
+- Service functions typically return the entity plus `*entity_public.Toast` (`GetWarningToast`/`GetErrorToast` on failure, message in pt-br) instead of errors — see `service/field/service.go`
 
 ### Language Requirements
 
@@ -237,7 +244,7 @@ Internal-only strings (log messages, comments, variable names) may remain in Eng
 - Use `pgx` driver with connection pooling
 - Use `pgx.NamedArgs` for parameterized queries: `pgx.NamedArgs{"field_id": id}`
 - Use `pgx.CollectRows` for scanning multiple rows into structs
-- Mock database operations using `pgxmock` in tests
+- Each model is a singleton: `Init<X>Model(pool)` at startup, then `Get<X>Model()` from services; services depend on model interfaces (see `service/entry_service/interfaces.go`) so tests can inject hand-written mocks (see `service/entry_service/test/mocks.go`)
 
 ### Authentication
 
@@ -276,21 +283,26 @@ The system uses stateful JWT authentication with session validation:
 
 ```
 armazenda/
-├── entity/public/          # Domain entities (Entry, Field, Person, etc.)
+├── entity/public/          # Domain entities (Entry, Field, Person, Toast, etc.)
 ├── model/                  # Data access layer
 │   ├── field_model/        # Package: snake_case + _model suffix
 │   ├── entry_model/
-│   └── error/              # Custom error types
+│   ├── armazenda_database/ # Pool, migrations, stored procedures
+│   └── error/              # Custom ModelError type + logger model
 ├── service/                # Business logic
 │   ├── entry_service/
-│   └── person_service/
+│   └── person_service/     # dir omits suffix, package name keeps it
+├── view/                   # Display/render layer (DTOs & queries feeding templates)
 ├── router/                 # HTTP handlers (Gin framework)
-│   ├── entry_router/
-│   └── person_router/
-├── pkg/calculator/         # Shared calculation logic (also WASM)
-├── templates/              # HTML templates
-└── assets/                 # Static files, JS, CSS, WASM
+├── pkg/calculator/         # Shared calculation logic (also compiled to WASM)
+├── pkg/nfe/                # NF-e domain: xml/, sefaz/, danfe service, sign, config
+├── templates/              # HTML templates (embedded via //go:embed in main.go)
+└── assets/                 # Static files, JS, CSS, WASM, service worker
 ```
+
+> **Directory name vs package name:** directories drop the layer suffix (`service/person/`, `model/field_model/` excepted) but the package name keeps it (`package person_service`, `package field_router`). Create new layers following this split.
+
+**Domain reference docs** live in `pkg/nfe/resources/` (MOC layout, DANFE rules, adding-a-state guide, maintenance guide) and `docs/` (feature summaries, research notes, SDD specs).
 
 ### Database Migrations
 
@@ -317,7 +329,7 @@ The project uses a lightweight, custom migration system with raw SQL files.
 
 - Test files use `_test` suffix in package name: `package calculator_test`
 - Place tests in same directory as code being tested
-- Use `pgxmock` for database mocking
+- Mock models with hand-written mocks implementing the model interfaces (`service/entry_service/test/mocks.go` is the reference pattern) — no mocking framework is used
 - Test functions use PascalCase starting with Test: `TestCalculateEntry`
 - Use descriptive test names with underscores: `TestEntry_WithExceedingHumidity`
 
@@ -387,6 +399,14 @@ The NF-e system implements **automatic SVC (SEFAZ Virtual de Contingência)** co
 - `pkg/nfe/sefaz/response.go` — `EventoResponse` / `ParseEventoResponse`
 - `service/nfe_service/service.go` — `BuildInvoiceFromDeparture()` flow, `CancelInvoice()`
 
+### Detached NF-e (NF-e Avulsa)
+
+A parallel emission flow independent of departures (romaneios), with its **own tables and service** — do not mix it with the departure-linked `nfe_invoice` flow:
+
+- Migration `000021_detached_nfe.sql`: `detached_nfe_invoice` + `detached_nfe_tax_rates` (multi-item via JSONB)
+- Model: `model/nfe_model/detached_model.go`; service: `service/nfe_service/detached_service.go`
+- Feature summary: `docs/DETACHED_NFE_IMPLEMENTATION.md`
+
 ### Tax Reform (IBS / CBS)
 
 Armazenda emits the per-item `<IBSCBS>` group and the per-NF-e `<IBSCBSTot>` block required by the indirect tax reform (EC 132/2023, NT 2025.002-RTC / MOC 7.0). Mandatory in the NF-e layout from August 2026.
@@ -438,7 +458,7 @@ Optional fields skipped for the 2026 grain-sale phase (0-1 in schema): `pDif`, `
 **Gate:**
 - `defaults.IsTaxReformActive(t)` returns true from 2026-01-01 onwards
 - Pre-reform: the XML group is still emitted but with zero rates/values so consumers see a stable schema
-- 2026+: rates come from `MergeRates(userRates, farmNFeConfig)` which resolves `user > farm > 2026 fallback`
+- 2026+: rates come from `MergeRates(userRates, farmNFeConfig)` (`service/nfe_service/service.go`) which resolves `user > farm > 2026 fallback`
 
 **Persistence:**
 - `nfe_farm_config`: `cbs_rate`, `ibs_rate`, `cbs_cst`, `ibs_cst`, `c_class_trib` (per-farm defaults)
@@ -452,3 +472,9 @@ Optional fields skipped for the 2026 grain-sale phase (0-1 in schema): `pDif`, `
 - NFS-e (services) layout changes — only NF-e (goods) is implemented
 - Credit balance tracking for "Superinteligente" mode
 - `service/nfe_service/worker.go` — draft auto-send logic
+
+## Other Subsystems
+
+- **Billing/Subscriptions** (`service/billing_service/`, Stripe): webhook endpoint `POST /stripe/webhook` validates the `Stripe-Signature` header — never weaken that check
+- **Offline/PWA** (`assets/sw.js`, `assets/manifest.json`, WASM calculator): architecture doc in `OFFLINE.md`; calculation logic must stay single-source in `pkg/calculator/` (shared server + WASM), never forked into JS
+- **UI/design system**: `.agents/skills/ui-design/SKILL.md` + its `references/REFERENCE.md` define the project's GUI patterns — consult when touching templates
