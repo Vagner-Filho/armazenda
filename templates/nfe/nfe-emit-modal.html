@@ -81,10 +81,13 @@
                         <div class="flex flex-col-reverse">
                             <input type="text" name="productDesc" id="productDesc"
                                 value="{{ .DefaultProductDesc }}"
-                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                                placeholder="Produto">
+                                class="no-default cursor-default bg-white/10 border-none text-white/60 placeholder-white/50 rounded-lg px-3 py-2 outline-0"
+                                placeholder="Produto"
+                                readonly
+                            >
                             <label for="productDesc"
-                                class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                class="text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider flex items-center gap-1.5">
+                                {{ template "lock-icon" }}
                                 Descrição do Produto
                             </label>
                         </div>
@@ -92,10 +95,13 @@
                             <div class="flex flex-col-reverse">
                                 <input type="text" name="ncm" id="ncm"
                                     value="{{ .DefaultNCM }}"
-                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                                    placeholder="12019000">
+                                    class="no-default cursor-default bg-white/10 border-none text-white/60 placeholder-white/50 rounded-lg px-3 py-2 outline-0"
+                                    placeholder="12019000"
+                                    readonly
+                                >
                                 <label for="ncm"
-                                    class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    class="text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider flex items-center gap-1.5">
+                                    {{ template "lock-icon" }}
                                     NCM
                                 </label>
                             </div>

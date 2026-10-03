@@ -16,7 +16,7 @@
 <body class="main-bg">
     {{ template "navbar" . }}
     {{ template "menu" (dict "page" "nfe-emitir" "CSPNonce" .CSPNonce "TierKey" .TierKey) }}
-    <section class="content-container">
+    <section class="content-container overflow-y-auto">
         <header class="text-center mb-4 2xl:mb-8">
             <h1 class="text-xl 2xl:text-3xl font-bold text-white font-[Noto_Sans] drop-shadow-lg">
                 Emitir NF-e Avulsa
@@ -34,7 +34,7 @@
             </p>
         </div>
         {{ else }}
-        <form id="detached-nfe-form" class="glass-panel rounded-xl p-6 space-y-6" hx-post="/nfe/emitir/build" hx-target="this" hx-swap="none">
+        <form id="detached-nfe-form" class="glass-panel rounded-xl p-6 space-y-6" hx-post="/nfe/emitir/preview" hx-target="#nfe-detached-preview" hx-swap="innerHTML">
             <!-- Recipient Section -->
             <fieldset class="flex flex-col gap-4 p-4 glass-panel rounded-xl">
                 <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
@@ -104,6 +104,14 @@
                                 Telefone
                             </label>
                         </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="email" name="recipientEmail" id="recipientEmail"
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="E-mail">
+                            <label for="recipientEmail" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                E-mail
+                            </label>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -169,6 +177,17 @@
                     <!-- Item 0 (template) -->
                     <div class="item-row p-4 bg-white/5 rounded-lg border border-white/10" data-item-index="0">
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="flex flex-col-reverse md:col-span-2">
+                                <select name="items[0].farmProductId" class="farm-product-select peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 truncate">
+                                    <option value="">Produto cadastrado (opcional)</option>
+                                    {{ range .FarmProducts }}
+                                    <option value="{{ .Id }}" data-name="{{ .Name }}" data-ncm="{{ .NCM }}">{{ .Name }}</option>
+                                    {{ end }}
+                                </select>
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    Produto cadastrado
+                                </label>
+                            </div>
                             <div class="flex flex-col-reverse">
                                 <input type="text" name="items[0].productName" required
                                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
@@ -261,6 +280,7 @@
                     </div>
                     <div class="flex flex-col-reverse">
                         <input type="text" name="naturezaOp" id="naturezaOp"
+                            value="{{ .DefaultNaturezaOp }}"
                             class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                             placeholder="Natureza da Operação">
                         <label for="naturezaOp" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -279,16 +299,160 @@
                 </div>
             </fieldset>
 
+            <!-- Transporte -->
+            <fieldset class="flex flex-col gap-4 p-4 glass-panel rounded-xl">
+                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
+                    Transporte
+                </legend>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex flex-col-reverse">
+                        <select name="modFrete" id="modFrete"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                            <option value="0" {{ if eq .DefaultModFrete 0 }}selected{{ end }}>0 - Por conta do emitente (CIF)</option>
+                            <option value="1" {{ if eq .DefaultModFrete 1 }}selected{{ end }}>1 - Por conta do destinatário (FOB)</option>
+                            <option value="2" {{ if eq .DefaultModFrete 2 }}selected{{ end }}>2 - Por conta de terceiros</option>
+                            <option value="3" {{ if eq .DefaultModFrete 3 }}selected{{ end }}>3 - Próprio por conta do remetente</option>
+                            <option value="4" {{ if eq .DefaultModFrete 4 }}selected{{ end }}>4 - Próprio por conta do destinatário</option>
+                            <option value="9" {{ if eq .DefaultModFrete 9 }}selected{{ end }}>9 - Sem frete</option>
+                        </select>
+                        <label for="modFrete" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Modalidade do Frete
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+
+            <!-- Tributação -->
+            <fieldset class="flex flex-col gap-4 p-4 glass-panel rounded-xl">
+                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
+                    Tributação
+                </legend>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="icmsCST" id="icmsCST"
+                            value="{{ .DefaultICMSCST }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="00">
+                        <label for="icmsCST" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            CST ICMS
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="pisCST" id="pisCST"
+                            value="{{ .DefaultPISCST }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="01">
+                        <label for="pisCST" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            CST PIS
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="cofinsCST" id="cofinsCST"
+                            value="{{ .DefaultCOFINSCST }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="01">
+                        <label for="cofinsCST" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            CST COFINS
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="ibsCST" id="ibsCST"
+                            value="{{ .DefaultIBSCST }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="000" maxlength="3">
+                        <label for="ibsCST" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            CST IBS
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="cbsCST" id="cbsCST"
+                            value="{{ .DefaultCBSCST }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="000" maxlength="3">
+                        <label for="cbsCST" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            CST CBS
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="cClassTrib" id="cClassTrib"
+                            value="{{ .DefaultCClassTrib }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="000001" maxlength="10">
+                        <label for="cClassTrib" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            cClassTrib
+                        </label>
+                    </div>
+                </div>
+
+                <label class="flex items-center gap-2 cursor-pointer text-white/80 select-none mt-2">
+                    <input type="checkbox" name="useDefaultTaxRates" id="useDefaultTaxRates" checked
+                        class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white">
+                    <span class="text-xs lg:text-sm uppercase tracking-wider font-medium">Usar taxa padrão</span>
+                </label>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-l border-white/10 pl-2">
+                    <div class="flex flex-col-reverse">
+                        <input type="text" inputmode="decimal" name="icmsRate" id="icmsRate"
+                            value="{{ .DefaultICMSRate }}" disabled
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
+                            placeholder="17,00">
+                        <label for="icmsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Alíquota ICMS (%)
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" inputmode="decimal" name="pisRate" id="pisRate"
+                            value="{{ .DefaultPISRate }}" disabled
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
+                            placeholder="1,65">
+                        <label for="pisRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Alíquota PIS (%)
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" inputmode="decimal" name="cofinsRate" id="cofinsRate"
+                            value="{{ .DefaultCOFINSRate }}" disabled
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
+                            placeholder="7,60">
+                        <label for="cofinsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Alíquota COFINS (%)
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" inputmode="decimal" name="ibsRate" id="ibsRate"
+                            value="{{ .DefaultIBSRate }}" disabled
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
+                            placeholder="0,10">
+                        <label for="ibsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Alíquota IBS (%) <span class="text-white/40 normal-case tracking-normal">— Reforma Tributária</span>
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" inputmode="decimal" name="cbsRate" id="cbsRate"
+                            value="{{ .DefaultCBSRate }}" disabled
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
+                            placeholder="0,90">
+                        <label for="cbsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Alíquota CBS (%) <span class="text-white/40 normal-case tracking-normal">— Reforma Tributária</span>
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+
             <!-- Submit -->
             <div class="flex items-center justify-center gap-4">
                 <button type="submit" class="primary-glass-btn flex items-center gap-2 p-4 text-lg">
-                    <iconify-icon icon="mdi:receipt-text" width="24" height="24"></iconify-icon>
-                    Emitir NF-e
+                    <iconify-icon icon="mdi:eye" width="24" height="24"></iconify-icon>
+                    Gerar Pré-visualização
                 </button>
             </div>
 
             <input type="hidden" name="itemCount" id="itemCount" value="1">
         </form>
+
+        <!-- Preview region: filled by POST /nfe/emitir/preview and replaced by
+             the result fragment after confirmation -->
+        <div id="nfe-detached-preview"></div>
 
         <script nonce="{{ .CSPNonce }}">
             // Toggle between existing and new recipient
@@ -297,60 +461,137 @@
                     const existingSection = document.getElementById('existing-recipient-section');
                     const newSection = document.getElementById('new-recipient-section');
                     
-                    if (e.target.value === 'existing') {
-                        existingSection.classList.remove('hidden');
-                        newSection.classList.add('hidden');
-                    } else {
-                        existingSection.classList.add('hidden');
-                        newSection.classList.remove('hidden');
-                    }
+                    const isExisting = e.target.value === 'existing';
+
+                    existingSection.classList.toggle('hidden', !isExisting);
+                    newSection.classList.toggle('hidden', isExisting);
+
+                    // Keep `required` in sync with visibility: a hidden required
+                    // input blocks submission with "An invalid form control ...
+                    // is not focusable".
+                    [document.getElementById('recipientName'), document.getElementById('recipientDocument')].forEach(input => {
+                        if (isExisting) {
+                            input.removeAttribute('required');
+                        } else {
+                            input.setAttribute('required', '');
+                        }
+                    });
                 });
             });
 
+            // Apply the initial state (existing recipient is checked by default,
+            // so the hidden new-recipient inputs must not be required).
+            const initialRecipientType = document.querySelector('input[name="recipientType"]:checked');
+            if (initialRecipientType) {
+                initialRecipientType.dispatchEvent(new Event('change'));
+            }
+
+            // "Usar taxa padrão" keeps the five rate inputs disabled so they are
+            // not submitted and the service falls back to the farm config.
+            // Unchecking enables per-emission percentage overrides.
+            const useDefaultTaxRates = document.getElementById('useDefaultTaxRates');
+            const taxRateInputs = ['icmsRate', 'pisRate', 'cofinsRate', 'ibsRate', 'cbsRate']
+                .map(id => document.getElementById(id))
+                .filter(Boolean);
+
+            function applyTaxRateState() {
+                if (!useDefaultTaxRates) return;
+                taxRateInputs.forEach(input => {
+                    if (useDefaultTaxRates.checked) {
+                        input.setAttribute('disabled', '');
+                    } else {
+                        input.removeAttribute('disabled');
+                    }
+                });
+            }
+
+            if (useDefaultTaxRates) {
+                useDefaultTaxRates.addEventListener('change', applyTaxRateState);
+                applyTaxRateState();
+            }
+
             // Add item functionality
-            let itemIndex = 1;
             const itemsContainer = document.getElementById('items-container');
             const addItemBtn = document.getElementById('add-item-btn');
             const itemCountInput = document.getElementById('itemCount');
 
+            // Selecting a farm product fills the row's description and NCM;
+            // clearing the selection restores manual entry.
+            itemsContainer.addEventListener('change', (e) => {
+                const select = e.target;
+                if (!select.classList || !select.classList.contains('farm-product-select')) return;
+
+                const row = select.closest('.item-row');
+                if (!row) return;
+
+                const option = select.selectedOptions[0];
+                const productNameInput = row.querySelector('input[name$=".productName"]');
+                const ncmInput = row.querySelector('input[name$=".ncm"]');
+                const useFarmProduct = option && option.value !== '';
+
+                if (productNameInput) {
+                    productNameInput.value = useFarmProduct ? (option.dataset.name || '') : '';
+                }
+                if (ncmInput) {
+                    ncmInput.value = useFarmProduct ? (option.dataset.ncm || '') : '';
+                }
+            });
+
+            // Renumber every row contiguously (items[0..n-1]) and keep the
+            // itemCount hidden input in sync. Without this, removing a middle
+            // row leaves gaps and the backend reads a nonexistent item or
+            // silently drops the last one.
+            function reindexItems() {
+                const rows = itemsContainer.querySelectorAll('.item-row');
+                rows.forEach((row, index) => {
+                    row.setAttribute('data-item-index', index);
+                    row.querySelectorAll('input, select').forEach(input => {
+                        const name = input.getAttribute('name');
+                        if (name) {
+                            input.setAttribute('name', name.replace(/\[\d+\]/, `[${index}]`));
+                        }
+                    });
+                });
+
+                itemCountInput.value = rows.length;
+                updateRemoveButtons();
+            }
+
+            // Removal is delegated so every row (including the initial one)
+            // is covered; the remaining rows are reindexed afterwards.
+            itemsContainer.addEventListener('click', (e) => {
+                if (!(e.target instanceof Element)) return;
+                const removeBtn = e.target.closest('.remove-item-btn');
+                if (!removeBtn) return;
+
+                removeBtn.closest('.item-row')?.remove();
+                reindexItems();
+            });
+
             addItemBtn.addEventListener('click', () => {
                 const template = itemsContainer.querySelector('.item-row').cloneNode(true);
-                template.setAttribute('data-item-index', itemIndex);
-                
-                // Update all input names
+
+                // Clear values so the new row starts empty (select elements
+                // keep their default selection).
                 template.querySelectorAll('input, select').forEach(input => {
-                    const name = input.getAttribute('name');
-                    if (name) {
-                        input.setAttribute('name', name.replace(/\[\d+\]/, `[${itemIndex}]`));
-                    }
-                    // Clear values
                     if (input.type !== 'select-one') {
                         input.value = '';
                     }
                 });
 
-                // Show remove button
-                const removeBtn = template.querySelector('.remove-item-btn');
-                removeBtn.classList.remove('hidden');
-                removeBtn.addEventListener('click', () => {
-                    template.remove();
-                    updateItemCount();
-                    updateRemoveButtons();
+                // Cloned rows start with no farm product selected (the clone
+                // source may have one, and its label inputs were just cleared).
+                template.querySelectorAll('.farm-product-select').forEach(select => {
+                    select.value = '';
                 });
 
                 itemsContainer.appendChild(template);
-                itemIndex++;
-                updateItemCount();
-                updateRemoveButtons();
+                reindexItems();
             });
-
-            function updateItemCount() {
-                itemCountInput.value = itemsContainer.querySelectorAll('.item-row').length;
-            }
 
             function updateRemoveButtons() {
                 const rows = itemsContainer.querySelectorAll('.item-row');
-                rows.forEach((row, index) => {
+                rows.forEach((row) => {
                     const removeBtn = row.querySelector('.remove-item-btn');
                     if (rows.length === 1) {
                         removeBtn.classList.add('hidden');

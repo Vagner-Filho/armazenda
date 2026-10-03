@@ -23,7 +23,7 @@ docs/
 
 ### sdd.md — Specification
 
-The specification file must contain, in this order: **Status**, **Goal**, **Requirements**, and **Acceptance Criteria**.
+The specification file must contain, in this order: **Status**, **Goal**, **Requirements**, and **Acceptance Criteria**. Acceptance criteria must be verifiable and identify how each behavior will be tested or manually checked.
 
 ````markdown
 # sdd:<feature-or-fix>
@@ -43,26 +43,44 @@ The specification file must contain, in this order: **Status**, **Goal**, **Requ
 <!-- Performance, security, accessibility, observability, compatibility, etc. -->
 
 ## Acceptance Criteria
-<!-- Verifiable, ideally testable conditions; each one should map to how the work is validated -->
+<!-- Verifiable conditions. Map each one to an automated test/command or a justified manual check. -->
+
+## Verification Results
+<!-- Commands run and PASS/FAIL/NOT RUN, with reasons for failures or skips. -->
 ````
 
 ### plan.md — Implementation Plan
 
-The plan file describes how the implementation shall be done and may be divided into **phases** (e.g. Phase 1: schema/migration, Phase 2: service layer, Phase 3: UI, Phase 4: tests). Reference the concrete files, packages, and commands involved (following the project's Layered architecture: Entity → Model → Service → Router), and note risks or out-of-scope items when relevant.
+The plan file describes how the implementation shall be done and may be divided into **phases** (e.g. schema/migration, service layer, UI). Reference the concrete files, packages, and commands involved (following the project's Layered architecture: Entity → Model → Service → Router), and note risks or out-of-scope items when relevant. Include a test strategy before implementation starts: list the behaviors to cover, test locations/layers, fixtures or environment needs, and commands. Put test tasks in the relevant implementation phases; do not defer all testing to a final phase.
 
 ### Workflow
 
-1. Write `docs/sdd/<name>/sdd.md` — set `Status: Backlog` initially
-2. Write the phased `docs/sdd/<name>/plan.md`
-3. When starting implementation, update `Status: WIP`
-4. Implement, following the acceptance criteria in `sdd.md`
-5. When all acceptance criteria are met (tests passing), update `Status: Done`
+1. Write `docs/sdd/<name>/sdd.md` — set `Status: Backlog` initially. Make each behavioral acceptance criterion verifiable and map it to an automated test and command, or describe the manual check and why automation is impractical.
+2. Write `docs/sdd/<name>/plan.md` with the test strategy, relevant test layers/locations, environment needs, and commands. Include tests alongside the implementation phases, not only as a final phase.
+3. Before implementation, run relevant existing tests when practical and note any pre-existing failures; then update `Status: WIP`.
+4. Implement in small slices. For behavioral bug fixes, add a regression test before or with the fix by default. For new behavior, add/update tests in the same implementation phase. Run focused tests as you work.
+5. Before completion, run the applicable verification for the changed behavior (see Test Selection below). Record exact commands and PASS/FAIL/NOT RUN results in the SDD or delivery summary. Do not report an unrun or failing command as passing.
+6. Update `Status: Done` only when the acceptance criteria are met and applicable checks pass. If an unrelated baseline failure or environment limitation prevents a check, document it and confirm the affected behavior with the best available check; keep the spec WIP if an acceptance criterion remains unverified.
+
+### Test Selection
+
+Choose the narrowest suite that gives meaningful coverage during development, then run the applicable completion checks. E2E is for user-visible browser flows and cross-layer behavior; it is not required for every code change.
+
+| Change | During development | Before completion |
+|--------|--------------------|-------------------|
+| Go backend or shared Go logic | `go test ./path/to/package` (and focused `-run` as needed) | `make test-go` (`go test ./...`) |
+| JavaScript unit-tested behavior | Run the focused Bun test where practical | `make test-js` |
+| Browser flow, template interaction, or cross-layer user journey | Focused Playwright test where practical | `make test-e2e` runs the full E2E suite; use Playwright filtering for a focused run when appropriate |
+| Cross-cutting change affecting multiple layers/suites | Focused tests for each affected layer | `make test` |
+| Documentation-only or formatting-only change with no behavior impact | No runtime test required | State that tests are not applicable |
+
+Behavioral code changes should normally add or update automated coverage. If a behavior cannot reasonably be automated, document the manual verification and the reason. This expectation also applies to trivial fixes that qualify for the SDD exception below. Report unrelated pre-existing failures accurately rather than hiding or changing tests just to obtain a green result.
 
 ### Rules
 
 - Do **not** start coding before `sdd.md` and `plan.md` exist
 - Keep the specs updated if scope changes during implementation
-- Small fixes do not need SDD when the change is trivial and self-explanatory (`Status: Done` on completion is not required for those)
+- Small fixes do not need SDD when the change is trivial and self-explanatory; this exception does not waive appropriate tests for behavioral code changes
 
 ## Development Environment
 
@@ -73,7 +91,7 @@ The plan file describes how the implementation shall be done and may be divided 
 
 ## Build & Run Commands
 
-`make` shortcuts exist (`make build` = CSS + WASM + Go, `make test` = test-unit + e2e) — but note `make test-unit` only covers `service/entry_service/test/`, `pkg/calculator/` and `pkg/nfe/...`; use `go test ./...` for the full run.
+`make` shortcuts exist: `make build` builds CSS + WASM + Go; `make test` runs all Go tests, JavaScript unit tests, and E2E tests. Use `make test-unit` for both unit suites without E2E, or `make test-go`, `make test-js`, and `make test-e2e` to run an individual suite. E2E requires Docker and is slower than the unit targets.
 
 ```bash
 # Build the Go application
@@ -93,7 +111,10 @@ GOOS=js GOARCH=wasm go build -o ./assets/wasm/calculator.wasm ./pkg/calculator/w
 
 ### Go Tests (Backend)
 ```bash
-# Run all tests
+# Run the full Go suite (same as make test-go)
+make test-go
+
+# Or run directly
 go test ./...
 
 # Run tests in a specific package
@@ -111,20 +132,23 @@ go test -v ./pkg/calculator/
 
 ### Unit Tests (JavaScript)
 ```bash
-# Run unit tests (Bun test runner)
-cd test
-bun test
+# Run JavaScript unit tests (same as make test-js)
+make test-js
+
+# Or run directly from the project root
+cd test && bun test unit/
 
 # Run with watch mode
+cd test
 bun run test:watch
-
-# Run from project root
-cd test && bun test unit/
 ```
 
 ### E2E Tests (Playwright)
 ```bash
-# Run all E2E tests
+# Run all E2E tests (same as make test-e2e)
+make test-e2e
+
+# Or run directly
 cd test/e2e
 bun run test
 
@@ -147,10 +171,16 @@ bun run db:stop     # Stop test database
 
 **App requires DB env vars to run:** `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME`, `DB_PORT` (set with no defaults in code).
 
-### Run All Tests
+### Run Test Suites Together
 ```bash
-cd test
-bun run test:all    # Runs both unit and E2E tests
+# Fast unit suites: all Go tests + JavaScript unit tests
+make test-unit
+
+# Full suite: Go + JavaScript unit + E2E
+make test
+
+# `test:all` is a JavaScript-test-directory convenience only; it runs Bun unit + E2E and does not run Go tests
+cd test && bun run test:all
 ```
 
 ## Code Style Guidelines

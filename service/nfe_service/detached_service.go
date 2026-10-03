@@ -2,11 +2,13 @@ package nfe_service
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
 	entity_public "armazenda/entity/public"
 	model_error "armazenda/model/error"
+	"armazenda/model/farm_config_model"
 	"armazenda/model/nfe_model"
 	"armazenda/model/person_model"
 	"armazenda/pkg/nfe/config"
@@ -63,31 +65,71 @@ type DetachedInvoiceInput struct {
 	Items     []DetachedItemInput
 }
 
-// BuildDetachedInvoice builds, signs, and attempts to send a detached NF-e
-func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (string, entity_public.Toast) {
+// DetachedInvoiceResult is returned when a detached NF-e was built and
+// submitted to SEFAZ. AccessKey identifies the persisted invoice so the
+// caller can offer the signed XML for download.
+type DetachedInvoiceResult struct {
+	XML       string
+	AccessKey string
+}
+
+// detachedBuildData carries the validated mapping produced by
+// prepareDetachedBuildData. It is shared by the emission and preview paths;
+// ItemsForDB, RecipientID and the tax totals are only consumed by the
+// emission path.
+type detachedBuildData struct {
+	InvoiceInput entity.InvoiceInput
+	ItemsForDB   []nfe_model.DetachedInvoiceItem
+	FarmConfig   *entity_public.FarmConfig
+	RecipientID  uint32
+	TotalIBS     decimal.Decimal
+	TotalCBS     decimal.Decimal
+}
+
+// prepareDetachedBuildData fetches the farm config, resolves the recipient,
+// validates emitter/recipient/items and maps the request into the
+// entity.InvoiceInput consumed by the XML builder. It is the single-source
+// preparation step shared by the emission and preview paths.
+//
+// When dryRun is true it performs no writes: an inline recipient is mapped to
+// RecipientData without creating a person row (RecipientID stays zero). The
+// preview calls it with dryRun=true; the emission calls it with false.
+func (s *NFeService) prepareDetachedBuildData(input DetachedInvoiceInput, dryRun bool) (detachedBuildData, entity_public.Toast) {
 	nfeModel := nfe_model.GetNFeModel()
+	empty := detachedBuildData{}
 
 	// Get farm NFe config
 	farmNFeConfig, dbErr := nfeModel.GetFarmConfig(input.FarmID)
 	if dbErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("GetFarmConfig error: %v", dbErr.Error()))
-		return "", entity_public.GetErrorToast("Falha ao buscar configuração da NF-e", "")
+		return empty, entity_public.GetErrorToast("Falha ao buscar configuração da NF-e", "")
 	}
 	if farmNFeConfig == nil {
-		return "", entity_public.GetWarningToast("NF-e não configurada", "acesse NF-e em Configurações")
+		return empty, entity_public.GetWarningToast("NF-e não configurada", "acesse NF-e em Configurações")
+	}
+
+	// Get full farm data for the emitter address (same source as the
+	// departure flow)
+	farmData, farmErr := farm_config_model.GetFarmConfigModel().GetFarmConfig(input.FarmID)
+	if farmErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("GetFarmConfig (farm data) error: %v", farmErr.Error()))
+		return empty, entity_public.GetErrorToast("Falha ao buscar os dados da fazenda", "")
+	}
+	if farmData == nil {
+		return empty, entity_public.GetWarningToast("Fazenda não encontrada", "complete o cadastro da fazenda")
 	}
 
 	// Resolve or create recipient
-	recipientID, recipient, toast := s.resolveOrCreateRecipient(input.Recipient, input.FarmID, nfeModel)
+	recipientID, recipient, toast := s.resolveOrCreateRecipient(input.Recipient, input.FarmID, nfeModel, dryRun)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
-		return "", toast
+		return empty, toast
 	}
 
 	// Validate emitter
-	emitter := s.mapFarmToEmitterForDetached(farmNFeConfig, nfeModel)
+	emitter := s.mapFarmToEmitterForDetached(farmNFeConfig, farmData, nfeModel)
 	validationErrors := s.validateEmitter(emitter, farmNFeConfig.Serie)
 	if len(validationErrors) > 0 {
-		return "", entity_public.GetWarningToast(
+		return empty, entity_public.GetWarningToast(
 			"Configuração de NF-e incompleta",
 			strings.Join(validationErrors, "; "),
 		)
@@ -96,7 +138,7 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (string, e
 	// Validate recipient
 	recipientErrors := validateRecipient(recipient)
 	if len(recipientErrors) > 0 {
-		return "", entity_public.GetWarningToast(
+		return empty, entity_public.GetWarningToast(
 			"Dados do destinatário incompletos",
 			strings.Join(recipientErrors, "; "),
 		)
@@ -111,7 +153,7 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (string, e
 	// Build items
 	items, itemsForDB, totalValue, totalIBS, totalCBS := s.buildDetachedItems(input.Items, effectiveCFOP, farmNFeConfig, input.TaxRates, input.Overrides)
 	if len(items) == 0 {
-		return "", entity_public.GetWarningToast("Nenhum item informado", "Adicione pelo menos um item à NF-e")
+		return empty, entity_public.GetWarningToast("Nenhum item informado", "Adicione pelo menos um item à NF-e")
 	}
 
 	// Resolve NaturezaOp
@@ -160,11 +202,13 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (string, e
 		infCpl = *input.Overrides.InfCpl
 	}
 
-	// Build invoice input
+	// Build invoice input (number/CNF are allocated later by the emission
+	// path; the preview consumes this as-is with Numero 0)
 	invoiceInput := entity.InvoiceInput{
 		Serie:       farmNFeConfig.Serie,
 		Numero:      0,
 		Environment: farmNFeConfig.Environment,
+		TpEmis:      defaults.EmissaoNormal,
 		NaturezaOp:  naturezaOp,
 		Emitter:     emitter,
 		Recipient:   recipient,
@@ -184,11 +228,39 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (string, e
 		InformacoesAdicionais: infCpl,
 	}
 
+	return detachedBuildData{
+		InvoiceInput: invoiceInput,
+		ItemsForDB:   itemsForDB,
+		FarmConfig:   farmNFeConfig,
+		RecipientID:  recipientID,
+		TotalIBS:     totalIBS,
+		TotalCBS:     totalCBS,
+	}, entity_public.Toast{}
+}
+
+// BuildDetachedInvoice builds, signs, and attempts to send a detached NF-e
+func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (DetachedInvoiceResult, entity_public.Toast) {
+	nfeModel := nfe_model.GetNFeModel()
+
+	build, toast := s.prepareDetachedBuildData(input, false)
+	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
+		return DetachedInvoiceResult{}, toast
+	}
+
+	farmNFeConfig := build.FarmConfig
+	invoiceInput := build.InvoiceInput
+
+	// Values resolved during preparation, kept local for persistence below.
+	effectiveCFOP := invoiceInput.Items[0].Produto.CFOP
+	naturezaOp := invoiceInput.NaturezaOp
+	effectiveModFrete := invoiceInput.Transport.ModFrete
+	infCpl := invoiceInput.InformacoesAdicionais
+
 	// Allocate number
 	number, allocErr := nfeModel.AllocateDetachedNumber(input.FarmID, farmNFeConfig.Serie)
 	if allocErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("AllocateDetachedNumber error: %v", allocErr.Error()))
-		return "", entity_public.GetErrorToast("Falha ao alocar número da NF-e", "")
+		return DetachedInvoiceResult{}, entity_public.GetErrorToast("Falha ao alocar número da NF-e", "")
 	}
 	invoiceInput.Numero = number
 	invoiceInput.CNF = generateRandomCNF()
@@ -218,7 +290,7 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (string, e
 	signedXML, signErr := invService.BuildAndSign(invoiceInput, farmNFeConfig.CertificateData, certPassword)
 	if signErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("BuildAndSign error: %v", signErr.Error()))
-		return "", entity_public.GetErrorToast("Falha ao construir e assinar NF-e", signErr.Error())
+		return DetachedInvoiceResult{}, entity_public.GetErrorToast("Falha ao construir e assinar NF-e", signErr.Error())
 	}
 
 	// Persist invoice
@@ -234,14 +306,14 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (string, e
 	}
 
 	invoiceID, createErr := nfeModel.CreateDetachedInvoice(
-		input.FarmID, recipientID, accessKey, farmNFeConfig.Serie, number,
+		input.FarmID, build.RecipientID, accessKey, farmNFeConfig.Serie, number,
 		effectiveCFOP, &naturezaOp, &effectiveModFrete,
-		totalValue, totalIBS, totalCBS,
-		1, ratesToPersist, input.Overrides, itemsForDB,
+		invoiceInput.TotalValue, build.TotalIBS, build.TotalCBS,
+		1, ratesToPersist, input.Overrides, build.ItemsForDB,
 	)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateDetachedInvoice error: %v", createErr.Error()))
-		return "", entity_public.GetErrorToast("Falha ao salvar NF-e", "")
+		return DetachedInvoiceResult{}, entity_public.GetErrorToast("Falha ao salvar NF-e", "")
 	}
 
 	// Store signed XML
@@ -252,13 +324,13 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (string, e
 	// Send to SEFAZ
 	sefazResp, sendErr := invService.SendToSefaz(signedXML, farmNFeConfig.CertificateData, certPassword)
 	if sendErr == nil && sefazResp != nil {
-		return s.handleDetachedSefazResponse(sefazResp, invoiceID, signedXML, nfeModel)
+		return s.handleDetachedSefazResponse(sefazResp, invoiceID, signedXML, accessKey, nfeModel)
 	}
 
 	// SEFAZ failed - check SVC
 	svcResp, svcErr := invService.CheckSVCStatus(farmNFeConfig.CertificateData, certPassword)
 	if svcErr == nil && svcResp != nil && svcResp.IsSVCOperational() {
-		return s.attemptDetachedSVCContingency(invoiceInput, input, farmNFeConfig, signedXML, invoiceID, accessKey, nfeModel, invService, certPassword, ratesToPersist, itemsForDB)
+		return s.attemptDetachedSVCContingency(invoiceInput, input, farmNFeConfig, signedXML, invoiceID, accessKey, nfeModel, invService, certPassword, ratesToPersist, build.ItemsForDB)
 	}
 
 	// Both SEFAZ and SVC unavailable
@@ -273,18 +345,20 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (string, e
 			model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateDetachedInvoiceStatus error: %v", errUpd.Error()))
 		}
 	}
-	return "", entity_public.GetErrorToast(
+	return DetachedInvoiceResult{}, entity_public.GetErrorToast(
 		"SEFAZ e SVC indisponiveis",
 		"NF-e nao pode ser emitida no momento. Tente novamente mais tarde.",
 	)
 }
 
-// resolveOrCreateRecipient resolves an existing recipient or creates a new one
-func (s *NFeService) resolveOrCreateRecipient(input DetachedRecipient, farmID uint32, nfeModel *nfe_model.NFeModel) (uint32, entity.RecipientData, entity_public.Toast) {
-	pModel := person_model.GetPersonModel()
-
+// resolveOrCreateRecipient resolves an existing recipient or maps a new
+// inline recipient. When dryRun is false the inline recipient is also
+// persisted as a person row; when true (preview) only the mapping runs and
+// the returned recipientID is zero.
+func (s *NFeService) resolveOrCreateRecipient(input DetachedRecipient, farmID uint32, nfeModel *nfe_model.NFeModel, dryRun bool) (uint32, entity.RecipientData, entity_public.Toast) {
 	// If PersonID is set, fetch existing person
 	if input.PersonID != nil {
+		pModel := person_model.GetPersonModel()
 		person, personErr := pModel.GetFullPersonById(*input.PersonID)
 		if personErr != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("GetFullPersonById error: %v", personErr.Error()))
@@ -294,14 +368,16 @@ func (s *NFeService) resolveOrCreateRecipient(input DetachedRecipient, farmID ui
 		return *input.PersonID, recipient, entity_public.Toast{}
 	}
 
-	// Create new person
-	// Determine type from document
-	docType := 1 // natural (CPF)
-	if len(input.Document) > 11 {
-		docType = 2 // legal (CNPJ)
+	// Map the inline data to the XML recipient struct (no writes).
+	recipient := s.mapInlineRecipientData(input, nfeModel)
+
+	// Preview: dry-run only, never create the person row.
+	if dryRun {
+		return 0, recipient, entity_public.Toast{}
 	}
 
-	// Create person record
+	// Create person record (emission only)
+	pModel := person_model.GetPersonModel()
 	recipientInput := person_model.DetachedRecipientInput{
 		Name:         input.Name,
 		Document:     input.Document,
@@ -315,13 +391,19 @@ func (s *NFeService) resolveOrCreateRecipient(input DetachedRecipient, farmID ui
 		PhoneNumber:  input.PhoneNumber,
 		Email:        input.Email,
 	}
-	personID, createErr := pModel.CreatePersonForDetachedNFe(farmID, docType, recipientInput)
+	personID, createErr := pModel.CreatePersonForDetachedNFe(farmID, detachedDocumentType(input.Document), recipientInput)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreatePersonForDetachedNFe error: %v", createErr.Error()))
 		return 0, entity.RecipientData{}, entity_public.GetErrorToast("Falha ao criar destinatário", "")
 	}
 
-	// Build recipient data
+	return personID, recipient, entity_public.Toast{}
+}
+
+// mapInlineRecipientData maps the inline recipient form data to the
+// entity.RecipientData consumed by the XML builder. It performs no writes;
+// the only database access is the municipality-code lookup.
+func (s *NFeService) mapInlineRecipientData(input DetachedRecipient, nfeModel *nfe_model.NFeModel) entity.RecipientData {
 	recipient := entity.RecipientData{
 		Type:       1, // default CNPJ
 		XNome:      input.Name,
@@ -336,7 +418,7 @@ func (s *NFeService) resolveOrCreateRecipient(input DetachedRecipient, farmID ui
 		IndIEDest:  "9",
 	}
 
-	if docType == 2 {
+	if detachedDocumentType(input.Document) == 2 {
 		recipient.Type = 1 // CNPJ
 		recipient.CNPJ = input.Document
 	} else {
@@ -381,32 +463,23 @@ func (s *NFeService) resolveOrCreateRecipient(input DetachedRecipient, farmID ui
 		}
 	}
 
-	return personID, recipient, entity_public.Toast{}
+	return recipient
 }
 
-// mapFarmToEmitterForDetached maps farm config to emitter data for detached invoices
-func (s *NFeService) mapFarmToEmitterForDetached(cfg *entity_public.FarmConfig, nfeModel *nfe_model.NFeModel) entity.EmitterData {
-	emitter := entity.EmitterData{
-		Type:       cfg.EmitterType,
-		IE:         cfg.IEEmitter,
-		XNome:      "",
-		Logradouro: "",
-		Numero:     "",
-		Bairro:     "",
-		CodigoMun:  "",
-		Municipio:  "",
-		UF:         cfg.EmitterUF,
-		CEP:        "",
-		Fone:       "",
-		CRT:        defaults.TaxRegime(cfg.TaxRegime).CRT(),
-		Document:   *cfg.DocEmitter,
+// detachedDocumentType infers the person type from the document length:
+// 2 (legal / CNPJ) above 11 characters, 1 (natural / CPF) otherwise.
+func detachedDocumentType(document string) int {
+	if len(document) > 11 {
+		return 2
 	}
+	return 1
+}
 
-	// For detached invoices, we need to get farm data for address
-	// This is a simplified version - in production you'd fetch the full farm data
-	// For now, we'll use what's available in the config
-
-	return emitter
+// mapFarmToEmitterForDetached maps farm config and farm address data to
+// emitter data for detached invoices. It delegates to the departure-flow
+// mapper so both emissions produce identical emitter groups.
+func (s *NFeService) mapFarmToEmitterForDetached(cfg *entity_public.FarmConfig, farm *entity_public.Farm, nfeModel *nfe_model.NFeModel) entity.EmitterData {
+	return s.mapFarmToEmitter(cfg, farm, nfeModel)
 }
 
 // buildDetachedItems builds item data for detached invoices
@@ -601,6 +674,161 @@ func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, defaultCFOP 
 	return items, itemsForDB, totalValue, totalIBS, totalCBS
 }
 
+// GenerateDetachedPreviewDANFE builds a non-fiscal preview DANFE PDF for a
+// detached NF-e. It runs the same validation as the emission path but performs
+// no side effects: no number allocation, no person creation, no signing and no
+// persistence.
+func (s *NFeService) GenerateDetachedPreviewDANFE(input DetachedInvoiceInput) ([]byte, entity_public.Toast) {
+	build, toast := s.prepareDetachedBuildData(input, true)
+	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
+		return nil, toast
+	}
+
+	data := s.buildDetachedDANFEData(build.InvoiceInput)
+
+	generator := service.NewDANFEGenerator()
+	pdfBytes, genErr := generator.GeneratePreview(data)
+	if genErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("GeneratePreview (detached) error: %v", genErr.Error()))
+		return nil, entity_public.GetErrorToast("Falha ao gerar a pré-visualização da DANFE", genErr.Error())
+	}
+
+	return pdfBytes, entity_public.Toast{}
+}
+
+// buildDetachedDANFEData maps a prepared InvoiceInput to the DANFEData used
+// for the non-fiscal preview PDF. All items are mapped (not just the first,
+// unlike the departure flow) and invoice-level totals are summed across them
+// so the preview shows the same values the emitted XML will carry.
+func (s *NFeService) buildDetachedDANFEData(input entity.InvoiceInput) entity.DANFEData {
+	now := time.Now()
+
+	tpAmb := "1"
+	if input.Environment == 2 {
+		tpAmb = "2"
+	}
+
+	products := make([]entity.DANFEProduct, 0, len(input.Items))
+	var vbc, vicms, vpis, vcofins, vbcIBSCBS, vibs, vcbs decimal.Decimal
+	for _, item := range input.Items {
+		product := item.Produto
+		imp := item.Imposto
+
+		// Simples Nacional emits CSOSN instead of CST; the DANFE column is
+		// shared, so show whichever code the emitted XML will carry.
+		icmsCode := imp.ICMS.CST
+		if icmsCode == "" {
+			icmsCode = imp.ICMS.CSOSN
+		}
+
+		products = append(products, entity.DANFEProduct{
+			Code:      product.Codigo,
+			Desc:      product.XProd,
+			NCM:       product.NCM,
+			CST:       icmsCode,
+			CFOP:      product.CFOP,
+			Unit:      product.UCom,
+			Quantity:  product.QCom,
+			UnitPrice: product.VUnCom,
+			Total:     product.VProd,
+			UTrib:     product.UTrib,
+			QTrib:     product.QTrib,
+			VUnTrib:   product.VUnTrib,
+			InfAdProd: item.InfAdProd,
+			VBC:       imp.ICMS.VBC,
+			PICMS:     imp.ICMS.PICMS,
+			VICMS:     imp.ICMS.VICMS,
+			PPIS:      imp.PIS.PPIS,
+			VPIS:      imp.PIS.VPIS,
+			PCOFINS:   imp.COFINS.PCOFINS,
+			VCOFINS:   imp.COFINS.VCOFINS,
+			// PIBS is derived from VIBSUF / VBC * 100 since the per-item
+			// rate is no longer persisted on the entity (only the values).
+			PIBS: perItemRate(imp.IBSCBS.VIBSUF, imp.IBSCBS.VBC),
+			VIBS: imp.IBSCBS.VIBS,
+			PCBS: imp.IBSCBS.PCBS,
+			VCBS: imp.IBSCBS.VCBS,
+		})
+
+		vbc = vbc.Add(imp.ICMS.VBC)
+		vicms = vicms.Add(imp.ICMS.VICMS)
+		vpis = vpis.Add(imp.PIS.VPIS)
+		vcofins = vcofins.Add(imp.COFINS.VCOFINS)
+		vbcIBSCBS = vbcIBSCBS.Add(imp.IBSCBS.VBC)
+		vibs = vibs.Add(imp.IBSCBS.VIBS)
+		vcbs = vcbs.Add(imp.IBSCBS.VCBS)
+	}
+
+	data := entity.DANFEData{
+		AccessKey:           "",
+		Numero:              0,
+		Serie:               input.Serie,
+		NaturezaOp:          input.NaturezaOp,
+		EmissionDate:        now.Format("02/01/2006 15:04:05"),
+		TpEmis:              input.TpEmis.String(),
+		TpAmb:               tpAmb,
+		TpNF:                "1", // saída (matches builder.go:95)
+		EmitterName:         input.Emitter.XNome,
+		EmitterCNPJ:         s.formatDocument(input.Emitter.Document, input.Emitter.Document),
+		EmitterIE:           input.Emitter.IE,
+		EmitterCRT:          input.Emitter.CRT,
+		EmitterAddress:      input.Emitter.Logradouro,
+		EmitterNumber:       input.Emitter.Numero,
+		EmitterNeighborhood: input.Emitter.Bairro,
+		EmitterCEP:          input.Emitter.CEP,
+		EmitterCity:         input.Emitter.Municipio,
+		EmitterUF:           input.Emitter.UF,
+		EmitterPhone:        input.Emitter.Fone,
+		DestName:            input.Recipient.XNome,
+		DestCNPJ:            s.formatDocument(input.Recipient.CNPJ, input.Recipient.CPF),
+		DestIE:              input.Recipient.IE,
+		DestIndIEDest:       input.Recipient.IndIEDest,
+		DestAddress:         input.Recipient.Logradouro,
+		DestNumber:          input.Recipient.Numero,
+		DestNeighborhood:    input.Recipient.Bairro,
+		DestCEP:             input.Recipient.CEP,
+		DestCity:            input.Recipient.Municipio,
+		DestUF:              input.Recipient.UF,
+		DestPhone:           input.Recipient.Fone,
+		Products:            products,
+		TotalValue:          input.TotalValue,
+		VBC:                 vbc,
+		VICMS:               vicms,
+		VPIS:                vpis,
+		VCOFINS:             vcofins,
+		VBCIBSCBS:           vbcIBSCBS,
+		VIBS:                vibs,
+		VCBS:                vcbs,
+		ModFrete:            strconv.Itoa(input.Transport.ModFrete),
+		InfCpl:              input.InformacoesAdicionais,
+	}
+
+	transport := input.Transport
+	if transport.Transportadora != nil {
+		data.TranspName = transport.Transportadora.XNome
+		data.TranspCNPJ = s.formatDocument(transport.Transportadora.CNPJ, transport.Transportadora.CPF)
+		data.TranspIE = transport.Transportadora.IE
+		data.TranspAddress = transport.Transportadora.Endereco
+		data.TranspCity = transport.Transportadora.Municipio
+		data.TranspUF = transport.Transportadora.UF
+	}
+	if len(transport.Volumes) > 0 {
+		vol := transport.Volumes[0]
+		data.QVol = strconv.Itoa(vol.QVol)
+		data.Esp = vol.Esp
+		data.Marca = vol.Marca
+		data.NVol = vol.NVol
+		data.PesoL = vol.PesoL
+		data.PesoB = vol.PesoB
+	}
+	if transport.Veiculo != nil {
+		data.VeicPlate = transport.Veiculo.Placa
+		data.VeicUF = transport.Veiculo.UF
+	}
+
+	return data
+}
+
 // safeStringPtr returns the string pointed to by p, or empty string if nil
 func safeStringPtr(p *string) string {
 	if p == nil {
@@ -610,13 +838,15 @@ func safeStringPtr(p *string) string {
 }
 
 // handleDetachedSefazResponse processes the SEFAZ response for detached invoices
-func (s *NFeService) handleDetachedSefazResponse(sefazResp *sefaz.AutorizacaoResponse, invoiceID int, signedXML string, nfeModel *nfe_model.NFeModel) (string, entity_public.Toast) {
+func (s *NFeService) handleDetachedSefazResponse(sefazResp *sefaz.AutorizacaoResponse, invoiceID int, signedXML, accessKey string, nfeModel *nfe_model.NFeModel) (DetachedInvoiceResult, entity_public.Toast) {
+	result := DetachedInvoiceResult{XML: signedXML, AccessKey: accessKey}
+
 	if sefazResp.IsAuthorized() {
 		errUpd := nfeModel.UpdateDetachedInvoiceStatus(invoiceID, "authorized", sefazResp.Protocol, sefazResp.StatusCode, sefazResp.StatusMotive)
 		if errUpd != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateDetachedInvoiceStatus error: %v", errUpd.Error()))
 		}
-		return signedXML, entity_public.GetSuccessToast("NF-e autorizada pela SEFAZ", fmt.Sprintf("Protocolo: %s", sefazResp.Protocol))
+		return result, entity_public.GetSuccessToast("NF-e autorizada pela SEFAZ", fmt.Sprintf("Protocolo: %s", sefazResp.Protocol))
 	}
 
 	if sefazResp.IsProcessing() || sefazResp.IsAccepted() {
@@ -624,7 +854,7 @@ func (s *NFeService) handleDetachedSefazResponse(sefazResp *sefaz.AutorizacaoRes
 		if errUpd != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateDetachedInvoiceStatus error: %v", errUpd.Error()))
 		}
-		return signedXML, entity_public.GetSuccessToast("NF-e enviada à SEFAZ e em processamento", fmt.Sprintf("Status: %s - %s", sefazResp.StatusCode, sefazResp.StatusMotive))
+		return result, entity_public.GetSuccessToast("NF-e enviada à SEFAZ e em processamento", fmt.Sprintf("Status: %s - %s", sefazResp.StatusCode, sefazResp.StatusMotive))
 	}
 
 	if sefazResp.IsRejected() {
@@ -632,7 +862,7 @@ func (s *NFeService) handleDetachedSefazResponse(sefazResp *sefaz.AutorizacaoRes
 		if errUpd != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateDetachedInvoiceStatus error: %v", errUpd.Error()))
 		}
-		return signedXML, entity_public.GetErrorToast(
+		return result, entity_public.GetErrorToast(
 			fmt.Sprintf("NF-e rejeitada pela SEFAZ (%s)", sefazResp.StatusCode),
 			sefazResp.StatusMotive,
 		)
@@ -642,16 +872,16 @@ func (s *NFeService) handleDetachedSefazResponse(sefazResp *sefaz.AutorizacaoRes
 	if errUpd != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateDetachedInvoiceStatus error: %v", errUpd.Error()))
 	}
-	return signedXML, entity_public.GetSuccessToast("NF-e enviada à SEFAZ e em processamento", fmt.Sprintf("Status: %s", sefazResp.StatusMotive))
+	return result, entity_public.GetSuccessToast("NF-e enviada à SEFAZ e em processamento", fmt.Sprintf("Status: %s", sefazResp.StatusMotive))
 }
 
 // attemptDetachedSVCContingency tries to send the detached NF-e via SVC
-func (s *NFeService) attemptDetachedSVCContingency(input entity.InvoiceInput, detachedInput DetachedInvoiceInput, farmNFeConfig *entity_public.FarmConfig, oldSignedXML string, oldInvoiceID int, oldAccessKey string, nfeModel *nfe_model.NFeModel, invService *service.InvoiceService, certPassword string, taxRates *entity.TaxRates, itemsForDB []nfe_model.DetachedInvoiceItem) (string, entity_public.Toast) {
+func (s *NFeService) attemptDetachedSVCContingency(input entity.InvoiceInput, detachedInput DetachedInvoiceInput, farmNFeConfig *entity_public.FarmConfig, oldSignedXML string, oldInvoiceID int, oldAccessKey string, nfeModel *nfe_model.NFeModel, invService *service.InvoiceService, certPassword string, taxRates *entity.TaxRates, itemsForDB []nfe_model.DetachedInvoiceItem) (DetachedInvoiceResult, entity_public.Toast) {
 	// Allocate new number
 	newNumber, allocErr := nfeModel.AllocateDetachedNumber(detachedInput.FarmID, farmNFeConfig.Serie)
 	if allocErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("AllocateDetachedNumber (SVC) error: %v", allocErr.Error()))
-		return "", entity_public.GetErrorToast("Falha ao alocar número para contingência", "")
+		return DetachedInvoiceResult{}, entity_public.GetErrorToast("Falha ao alocar número para contingência", "")
 	}
 
 	tpEmis := defaults.SVCForState(farmNFeConfig.EmitterUF)
@@ -660,7 +890,7 @@ func (s *NFeService) attemptDetachedSVCContingency(input entity.InvoiceInput, de
 	newSignedXML, newAccessKey, rebuildErr := invService.RebuildForContingency(input, newNumber, generateRandomCNF(), tpEmis, reason, farmNFeConfig.CertificateData, certPassword)
 	if rebuildErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("RebuildForContingency error: %v", rebuildErr.Error()))
-		return "", entity_public.GetErrorToast("Falha ao reconstruir NF-e para SVC", rebuildErr.Error())
+		return DetachedInvoiceResult{}, entity_public.GetErrorToast("Falha ao reconstruir NF-e para SVC", rebuildErr.Error())
 	}
 
 	// Calculate totals
@@ -689,13 +919,13 @@ func (s *NFeService) attemptDetachedSVCContingency(input entity.InvoiceInput, de
 	)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateDetachedInvoice (SVC) error: %v", createErr.Error()))
-		return "", entity_public.GetErrorToast("Falha ao salvar NF-e de contingência", "")
+		return DetachedInvoiceResult{}, entity_public.GetErrorToast("Falha ao salvar NF-e de contingência", "")
 	}
 
 	xmlErr := nfeModel.UpdateDetachedInvoiceSignedXML(newInvoiceID, newSignedXML)
 	if xmlErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateDetachedInvoiceSignedXML (SVC) error: %v", xmlErr.Error()))
-		return "", entity_public.GetErrorToast("Falha ao salvar XML assinado de contingência", "")
+		return DetachedInvoiceResult{}, entity_public.GetErrorToast("Falha ao salvar XML assinado de contingência", "")
 	}
 
 	// Send to SVC
@@ -706,7 +936,7 @@ func (s *NFeService) attemptDetachedSVCContingency(input entity.InvoiceInput, de
 			model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateDetachedInvoiceStatus (SVC) error: %v", errUpd.Error()))
 		}
 		_ = nfeModel.SupersedeDetachedInvoice(oldInvoiceID, newInvoiceID)
-		return "", entity_public.GetErrorToast(
+		return DetachedInvoiceResult{}, entity_public.GetErrorToast(
 			"SEFAZ e SVC indisponiveis",
 			"NF-e nao pode ser emitida no momento. Tente novamente mais tarde.",
 		)
@@ -718,16 +948,16 @@ func (s *NFeService) attemptDetachedSVCContingency(input entity.InvoiceInput, de
 			model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateDetachedInvoiceStatus (SVC) error: %v", errUpd.Error()))
 		}
 		_ = nfeModel.SupersedeDetachedInvoice(oldInvoiceID, newInvoiceID)
-		return "", entity_public.GetErrorToast(
+		return DetachedInvoiceResult{}, entity_public.GetErrorToast(
 			"SEFAZ e SVC indisponiveis",
 			"NF-e nao pode ser emitida no momento. Tente novamente mais tarde.",
 		)
 	}
 
 	// SVC responded
-	resultXML, resultToast := s.handleDetachedSefazResponse(sefazResp, newInvoiceID, newSignedXML, nfeModel)
+	result, resultToast := s.handleDetachedSefazResponse(sefazResp, newInvoiceID, newSignedXML, newAccessKey, nfeModel)
 	_ = nfeModel.SupersedeDetachedInvoice(oldInvoiceID, newInvoiceID)
-	return resultXML, resultToast
+	return result, resultToast
 }
 
 // CancelDetachedInvoice cancels a detached NF-e

@@ -1,0 +1,16 @@
+{{ block "nfe-detached-result" . }}
+<div data-test-id="detached-nfe-result" class="p-4 bg-white/5 rounded-lg border border-white/10 flex flex-col items-center gap-3 text-center">
+    {{ if .AccessKey }}
+    <p class="text-sm text-white/80 break-all">
+        Chave de acesso: <span class="font-mono">{{ .AccessKey }}</span>
+    </p>
+    <a href="/nfe/avulsa/download/xml/{{ .AccessKey }}" download="nfe_{{ .AccessKey }}.xml"
+        class="primary-glass-btn flex items-center gap-2 p-3">
+        <iconify-icon icon="mdi:download" width="20" height="20"></iconify-icon>
+        Baixar XML Assinado
+    </a>
+    {{ else }}
+    <p class="text-sm text-white/80">NF-e processada.</p>
+    {{ end }}
+</div>
+{{ end }}

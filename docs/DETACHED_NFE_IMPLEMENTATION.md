@@ -32,6 +32,8 @@ Implemented a new feature allowing users to emit NF-e (Brazilian electronic invo
 - `DetachedRecipient` struct supporting both existing persons and inline creation
 - `DetachedItemInput` struct for item data
 - `DetachedInvoiceInput` struct for complete invoice input
+- `prepareDetachedBuildData`: single-source validation/mapping shared by preview and emission (dry-run mode performs no writes)
+- `GenerateDetachedPreviewDANFE`: non-fiscal preview PDF with all items and summed totals
 - `BuildDetachedInvoice`: Main method that builds, signs, and sends to SEFAZ
 - `CancelDetachedInvoice`: Cancels authorized invoices
 - Helper methods for recipient resolution and item building
@@ -43,6 +45,7 @@ Implemented a new feature allowing users to emit NF-e (Brazilian electronic invo
 
 ### 5. Router Layer (`router/nfe_router/detached_router.go`)
 - `GET /nfe/emitir` - Full-page emission form
+- `POST /nfe/emitir/preview` - Non-fiscal DANFE preview (no number allocation, no person creation, no persistence, no SEFAZ call)
 - `POST /nfe/emitir/build` - Submit and emit invoice
 - `GET /nfe/avulsa/list` - List detached invoices
 - `GET /nfe/avulsa/download/xml/:accessKey` - Download XML
@@ -58,10 +61,19 @@ Implemented a new feature allowing users to emit NF-e (Brazilian electronic invo
 ### 7. UI Layer
 - **Menu**: Enabled "Emitir" link in NF-e submenu
 - **Emission Form** (`templates/pages/nfe-emit.html`):
-  - Recipient selection (existing or new)
-  - Multi-item support with dynamic add/remove
+  - Recipient selection (existing or new, including optional e-mail)
+  - Multi-item support with dynamic add/remove (rows are reindexed contiguously on removal)
+  - Per-item farm product selector that auto-fills description and NCM
   - All standard NF-e fields (CFOP, nature operation, complementary info)
-  - Tax rate overrides
+  - Transporte fieldset (modalidade do frete)
+  - Tributação fieldset (CST/cClassTrib + "Usar taxa padrão" rate overrides)
+  - "Gerar Pré-visualização" submits to the preview endpoint; the form stays
+    in the DOM so its values survive a "Voltar" from the preview
+- **Preview Fragment** (`templates/nfe/nfe-detached-preview.html`):
+  - Non-fiscal DANFE ("Documento de Pré-visualização — Sem Valor Fiscal")
+  - Carries every parsed field as a hidden input, so "Confirmar e Emitir"
+    re-parses the exact data the preview was generated from
+  - Success feedback with signed XML download link (`nfe-detached-result`)
 - **List View** (`templates/nfe/nfe-list.html`):
   - Updated to show both departure-based and detached invoices
   - Added "Tipo" column showing "Romaneio" or "Avulsa"
@@ -142,10 +154,18 @@ Implemented a new feature allowing users to emit NF-e (Brazilian electronic invo
 - Full rebuild would require storing complete InvoiceInput
 - Users can manually retry by re-emitting
 
-### Farm Product Integration
-- Form doesn't yet integrate with `farm_product` table
-- All products entered manually
-- Can be enhanced to allow selection from farm products
+### Vehicle Data
+- The router parses `vehicleId` but the form does not expose it yet
+- The service has a `TODO: fetch vehicle plate` and skips vehicle data
+- Add the field only after the backend completes the vehicle lookup
+
+### Payment Conditions
+- Service hardcodes `IndPag: 1` / `TPag: "90"` (other)
+- Needs a `DetachedInvoiceInput` extension before the UI can offer payment forms
+
+### Volume / Freight Value Details
+- Volumes are auto-derived ("Granel", single entry from total weights)
+- Needs transport-data support in the service before the UI can collect them
 
 ## Testing
 
@@ -169,8 +189,11 @@ Tests cover:
 - `model/nfe_model/detached_model_test.go`
 - `service/nfe_service/detached_service.go`
 - `service/nfe_service/detached_service_test.go`
+- `service/nfe_service/detached_preview_test.go`
 - `router/nfe_router/detached_router.go`
 - `templates/pages/nfe-emit.html`
+- `templates/nfe/nfe-detached-preview.html`
+- `templates/nfe/nfe-detached-result.html`
 
 ### Modified Files
 - `model/person_model/model.go` - Added CreatePersonForDetachedNFe
@@ -187,15 +210,20 @@ Tests cover:
 3. Adds one or more items with product details
 4. Configures CFOP, nature operation, and optional complementary info
 5. Optionally overrides tax rates
-6. Clicks "Emitir NF-e"
-7. System builds, signs, and sends to SEFAZ
-8. On success, invoice appears in unified list with "Avulsa" badge
-9. User can download XML, view status, or cancel if authorized
+6. Clicks "Gerar Pré-visualização"
+7. System validates the same way emission would and renders a non-fiscal DANFE
+   preview — no number allocated, no person created, nothing persisted, no
+   SEFAZ call. Every form field travels with the preview as a hidden input.
+8. User confirms with "Confirmar e Emitir" (or clicks "Voltar" to adjust the
+   form, whose values are preserved)
+9. System allocates the number, signs, persists, and sends to SEFAZ
+10. On success, the result panel offers the signed XML download and the invoice
+    appears in the unified list with the "Avulsa" badge
+11. User can download XML, view status, or cancel if authorized
 
 ## Future Enhancements
 
 1. Implement DANFE PDF generation for detached invoices
-2. Add farm product selector integration
-3. Store full InvoiceInput for complete SVC rebuild capability
-4. Add filtering/search in unified list
-5. Add export/reporting features for detached invoices
+2. Store full InvoiceInput for complete SVC rebuild capability
+3. Add filtering/search in unified list
+4. Add export/reporting features for detached invoices

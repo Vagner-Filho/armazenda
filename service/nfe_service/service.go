@@ -994,6 +994,12 @@ func (s *NFeService) mapFarmToEmitter(cfg *entity_public.FarmConfig, farm *entit
 		Document:   *cfg.DocEmitter,
 	}
 
+	// The farm may be nil when only the NFe config exists; the missing fields
+	// are surfaced later by validateEmitter.
+	if farm == nil {
+		return emitter
+	}
+
 	// Populate emitter name and address from farm data
 	if farm.Name != nil {
 		emitter.XNome = *farm.Name

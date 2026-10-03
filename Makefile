@@ -1,9 +1,11 @@
 # Armazenda Build Makefile
 # Usage:
 #   make              Run full pipeline (test + build)
-#   make test         Run all tests
-#   make test-unit    Run Go unit tests only
-#   make test-e2e     Run E2E tests only
+#   make test         Run all Go, JavaScript unit, and E2E tests
+#   make test-unit    Run Go and JavaScript unit tests (no E2E)
+#   make test-go      Run all Go tests
+#   make test-js      Run JavaScript unit tests
+#   make test-e2e     Run Playwright E2E tests only
 #   make build        Build everything (CSS + WASM + Go)
 #   make build-go     Build only the main Go binary
 #   make clean        Remove build artifacts
@@ -15,17 +17,20 @@ BUN      ?= bun
 OUTPUT_DIR ?= ./tmp
 
 # --- Default target ---
-.PHONY: all test test-unit test-e2e build build-css build-wasm build-go clean
+.PHONY: all test test-unit test-go test-js test-e2e build build-css build-wasm build-go clean
 
 all: test build
 
 # --- Test targets ---
 test: test-unit test-e2e
 
-test-unit:
-	$(GO) test ./service/entry_service/test/
-	$(GO) test ./pkg/calculator/
-	$(GO) test ./pkg/nfe/...
+test-unit: test-go test-js
+
+test-go:
+	$(GO) test ./...
+
+test-js:
+	cd test && $(BUN) test unit/
 
 test-e2e:
 	cd test && $(BUN) run test:e2e

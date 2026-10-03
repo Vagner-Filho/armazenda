@@ -1,0 +1,108 @@
+{{ block "nfe-detached-preview" . }}
+<div id="nfe-detached-preview-panel" data-test-id="detached-nfe-preview" class="glass-panel rounded-xl p-6 space-y-6 mt-6">
+    <div class="p-3 rounded-lg bg-yellow-500/15 border border-yellow-500/40 text-yellow-200 text-xs text-center font-bold uppercase tracking-wide">
+        Documento de Pré-visualização — Sem Valor Fiscal
+    </div>
+    <div class="mx-auto rounded-lg overflow-hidden border border-white/10 bg-white/5" style="aspect-ratio: 1/1.414; max-height: 65vh;">
+        <iframe src="data:application/pdf;base64,{{ .PDFBase64 }}" class="w-full h-full border-0"
+            title="Pré-visualização DANFE"></iframe>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-white/80 text-base *:text-center">
+        <p><strong>Destinatário:</strong> {{ .RecipientLabel }}</p>
+        <p><strong>Itens:</strong> {{ .ItemCount }}</p>
+        <p><strong>Valor Total:</strong> <span data-raw-value="{{ .TotalValue }}">{{ .TotalValue }}</span></p>
+        <p class="md:col-span-3 text-sm text-white/60">
+            Série {{ .Serie }} · {{ if eq .Environment 2 }}Homologação{{ else }}Produção{{ end }}
+        </p>
+    </div>
+
+    <form class="flex flex-col gap-4" hx-post="/nfe/emitir/build" hx-target="#nfe-detached-preview" hx-swap="innerHTML"
+        hx-indicator="#detached-nfe-confirm-spinner">
+        {{ if .PersonID }}
+        <input type="hidden" name="recipientPersonId" value="{{ .PersonID }}">
+        {{ else }}
+        <input type="hidden" name="recipientName" value="{{ .RecipientName }}">
+        <input type="hidden" name="recipientDocument" value="{{ .RecipientDocument }}">
+        <input type="hidden" name="recipientIE" value="{{ .RecipientIE }}">
+        <input type="hidden" name="recipientStreet" value="{{ .RecipientStreet }}">
+        <input type="hidden" name="recipientNumber" value="{{ .RecipientNumber }}">
+        <input type="hidden" name="recipientNeighborhood" value="{{ .RecipientNeighborhood }}">
+        <input type="hidden" name="recipientCity" value="{{ .RecipientCity }}">
+        <input type="hidden" name="recipientState" value="{{ .RecipientState }}">
+        <input type="hidden" name="recipientCEP" value="{{ .RecipientCEP }}">
+        <input type="hidden" name="recipientPhone" value="{{ .RecipientPhone }}">
+        <input type="hidden" name="recipientEmail" value="{{ .RecipientEmail }}">
+        {{ end }}
+
+        <input type="hidden" name="itemCount" value="{{ .ItemCount }}">
+        {{ range .Items }}
+        <input type="hidden" name="items[{{ .Index }}].farmProductId" value="{{ .FarmProductID }}">
+        <input type="hidden" name="items[{{ .Index }}].productName" value="{{ .ProductName }}">
+        <input type="hidden" name="items[{{ .Index }}].ncm" value="{{ .NCM }}">
+        <input type="hidden" name="items[{{ .Index }}].cest" value="{{ .CEST }}">
+        <input type="hidden" name="items[{{ .Index }}].quantity" value="{{ .Quantity }}">
+        <input type="hidden" name="items[{{ .Index }}].grossWeight" value="{{ .GrossWeight }}">
+        <input type="hidden" name="items[{{ .Index }}].unitPrice" value="{{ .UnitPrice }}">
+        <input type="hidden" name="items[{{ .Index }}].unit" value="{{ .Unit }}">
+        {{ end }}
+
+        <input type="hidden" name="cfop" value="{{ .CFOP }}">
+        <input type="hidden" name="naturezaOp" value="{{ .NaturezaOp }}">
+        <input type="hidden" name="infCpl" value="{{ .InfCpl }}">
+        <input type="hidden" name="modFrete" value="{{ .ModFrete }}">
+
+        <input type="hidden" name="icmsRate" value="{{ .ICMSRate }}">
+        <input type="hidden" name="pisRate" value="{{ .PISRate }}">
+        <input type="hidden" name="cofinsRate" value="{{ .COFINSRate }}">
+        <input type="hidden" name="ibsRate" value="{{ .IBSRate }}">
+        <input type="hidden" name="cbsRate" value="{{ .CBSRate }}">
+
+        <input type="hidden" name="icmsCST" value="{{ .ICMSCST }}">
+        <input type="hidden" name="pisCST" value="{{ .PISCST }}">
+        <input type="hidden" name="cofinsCST" value="{{ .COFINSCST }}">
+        <input type="hidden" name="ibsCST" value="{{ .IBSCST }}">
+        <input type="hidden" name="cbsCST" value="{{ .CBSCST }}">
+        <input type="hidden" name="cClassTrib" value="{{ .CClassTrib }}">
+
+        <div class="flex items-center justify-center gap-2">
+            <button type="button" id="detached-nfe-preview-back" class="glass-btn flex items-center gap-1 p-3">
+                <iconify-icon icon="mdi:arrow-left" width="20" height="20"></iconify-icon>
+                Voltar
+            </button>
+            <button type="submit" class="primary-glass-btn flex items-center gap-1 p-3" data-test-id="confirm-detached-nfe">
+                <iconify-icon icon="mdi:receipt-text" width="20" height="20"></iconify-icon>
+                Confirmar e Emitir
+            </button>
+            <span id="detached-nfe-confirm-spinner" class="htmx-indicator animate-spin text-white">
+                <iconify-icon icon="mdi:loading" width="24" height="24"></iconify-icon>
+            </span>
+        </div>
+    </form>
+</div>
+<script nonce="{{ .CSPNonce }}" type="module">
+    (function() {
+        const region = document.getElementById('nfe-detached-preview');
+        const panel = document.getElementById('nfe-detached-preview-panel');
+
+        const back = document.getElementById('detached-nfe-preview-back');
+        if (back && region) {
+            back.addEventListener('click', () => {
+                region.innerHTML = '';
+                document.getElementById('detached-nfe-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        if (panel) {
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        const currencyFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+        document.querySelectorAll('[data-raw-value]').forEach(el => {
+            const val = parseFloat(el.dataset.rawValue);
+            if (!isNaN(val)) {
+                el.textContent = currencyFmt.format(val);
+            }
+        });
+    })();
+</script>
+{{ end }}

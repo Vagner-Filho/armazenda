@@ -1,14 +1,18 @@
 package nfe_router
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
 	entity_public "armazenda/entity/public"
+	"armazenda/model/farm_product_model"
 	"armazenda/model/nfe_model"
 	"armazenda/model/person_model"
+	"armazenda/pkg/nfe/defaults"
+	"armazenda/pkg/nfe/entity"
 	"armazenda/service/nfe_service"
 	"armazenda/service/user_service"
 
@@ -29,56 +33,107 @@ func getDetachedNFePage(c *gin.Context) {
 	pModel := person_model.GetPersonModel()
 	people, _ := pModel.GetPeopleByFarm(farmID)
 
+	// Get the farm's own products for the per-item selector
+	farmProducts, _ := farm_product_model.GetFarmProductModel().GetFarmProductsByFarm(farmID)
+
+	// Resolve the farm-config defaults that pre-fill the tax and transport
+	// inputs. Missing config is non-fatal: the form renders with empty
+	// defaults and the "no config" banner blocks emission.
+	var defaultICMS, defaultPIS, defaultCOFINS, defaultIBS, defaultCBS decimal.Decimal
+	var defaultNaturezaOp, defaultCEST, defaultICMSCST, defaultPISCST, defaultCOFINSCST *string
+	var defaultCBSCST, defaultIBSCST, defaultCClassTrib *string
+	var defaultModFrete int
+	if farmNFeConfig != nil {
+		defaultICMS = farmNFeConfig.ICMSRate
+		defaultPIS = farmNFeConfig.PISRate
+		defaultCOFINS = farmNFeConfig.COFINSRate
+		defaultIBS = farmNFeConfig.IBSRate
+		defaultCBS = farmNFeConfig.CBSRate
+		defaultNaturezaOp = farmNFeConfig.DefaultNaturezaOp
+		defaultCEST = farmNFeConfig.DefaultCEST
+		defaultModFrete = farmNFeConfig.DefaultModFrete
+		defaultICMSCST = farmNFeConfig.DefaultICMSCST
+		defaultPISCST = farmNFeConfig.DefaultPISCST
+		defaultCOFINSCST = farmNFeConfig.DefaultCOFINSCST
+		defaultCBSCST = farmNFeConfig.DefaultCBSCST
+		defaultIBSCST = farmNFeConfig.DefaultIBSCST
+		defaultCClassTrib = farmNFeConfig.DefaultCClassTrib
+
+		// Derive the natureza da operação from the configured CFOP when unset
+		if defaultNaturezaOp == nil || *defaultNaturezaOp == "" {
+			derived := defaults.NaturezaOpForCFOP(farmNFeConfig.DefaultCFOP)
+			defaultNaturezaOp = &derived
+		}
+	}
+
 	nonce, _ := c.Get("csp_nonce")
 	c.HTML(http.StatusOK, "nfe-emit.html", gin.H{
-		"FarmID":           farmID,
-		"People":           people,
-		"HasNFEFarmConfig": farmNFeConfig != nil,
-		"DefaultCFOP":      "5101",
-		"DefaultUnit":      "KG",
-		"CSPNonce":         nonce.(string),
-		"TierKey":          user_service.GetTierKeyFromContext(c),
+		"FarmID":            farmID,
+		"People":            people,
+		"FarmProducts":      farmProducts,
+		"HasNFEFarmConfig":  farmNFeConfig != nil,
+		"DefaultCFOP":       "5101",
+		"DefaultUnit":       "KG",
+		"DefaultICMSRate":   percentDisplay(defaultICMS),
+		"DefaultPISRate":    percentDisplay(defaultPIS),
+		"DefaultCOFINSRate": percentDisplay(defaultCOFINS),
+		"DefaultIBSRate":    percentDisplay(defaultIBS),
+		"DefaultCBSRate":    percentDisplay(defaultCBS),
+		"DefaultNaturezaOp": safePtrString(defaultNaturezaOp),
+		"DefaultCEST":       safePtrString(defaultCEST),
+		"DefaultModFrete":   defaultModFrete,
+		"DefaultICMSCST":    safePtrString(defaultICMSCST),
+		"DefaultPISCST":     safePtrString(defaultPISCST),
+		"DefaultCOFINSCST":  safePtrString(defaultCOFINSCST),
+		"DefaultIBSCST":     safePtrString(defaultIBSCST),
+		"DefaultCBSCST":     safePtrString(defaultCBSCST),
+		"DefaultCClassTrib": safePtrString(defaultCClassTrib),
+		"CSPNonce":          nonce.(string),
+		"TierKey":           user_service.GetTierKeyFromContext(c),
 	})
 }
 
-// buildDetachedNFe handles the form submission to emit a detached NF-e
-func buildDetachedNFe(c *gin.Context) {
-	sid, _ := c.Cookie("session_id")
-	farmID := user_service.GetFarmFromToken(sid)
+// detachedFormData carries every field parsed from the detached NF-e form.
+// The preview and the emission handlers both build their
+// nfe_service.DetachedInvoiceInput from it so the two paths cannot drift.
+type detachedFormData struct {
+	Recipient nfe_service.DetachedRecipient
+	Items     []nfe_service.DetachedItemInput
+	CFOP      string
+	TaxRates  entity.TaxRates
+	Overrides *entity.InvoiceOverrides
+	VehicleID *uint16
+}
 
-	// Parse recipient
+// isFailureToast reports whether a toast represents a failure the request must
+// not proceed past.
+func isFailureToast(toast entity_public.Toast) bool {
+	return toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast
+}
+
+// parseDetachedForm parses every field the detached emission form submits.
+// Preview and emission consume the same parsed data, so the previewed values
+// are exactly what the confirm step re-submits.
+func parseDetachedForm(c *gin.Context) (detachedFormData, entity_public.Toast) {
 	recipient, toast := parseDetachedRecipient(c)
-	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
-		c.Header("HX-Trigger", toast.ToJsonStr())
-		c.Status(http.StatusBadRequest)
-		return
+	if isFailureToast(toast) {
+		return detachedFormData{}, toast
 	}
 
-	// Parse items
 	items, itemsToast := parseDetachedItems(c)
-	if itemsToast.Type == entity_public.ErrorToast || itemsToast.Type == entity_public.WarningToast {
-		c.Header("HX-Trigger", itemsToast.ToJsonStr())
-		c.Status(http.StatusBadRequest)
-		return
+	if isFailureToast(itemsToast) {
+		return detachedFormData{}, itemsToast
 	}
 
-	// Parse invoice-level fields
 	cfop := c.PostForm("cfop")
 	if cfop == "" {
 		cfop = "5101"
 	}
 
-	// Parse tax rates
 	userRates, rateErr := parseUserTaxRates(c)
 	if rateErr != nil {
-		toast := entity_public.GetWarningToast("Falha ao identificar as alíquotas", rateErr.Error())
-		c.Header("HX-Trigger", toast.ToJsonStr())
-		c.Status(http.StatusBadRequest)
-		return
+		return detachedFormData{}, entity_public.GetWarningToast("Falha ao identificar as alíquotas", rateErr.Error())
 	}
-
-	// Parse overrides
-	overrides := parseInvoiceOverrides(c)
 
 	// Parse vehicle (optional)
 	var vehicleID *uint16
@@ -89,20 +144,45 @@ func buildDetachedNFe(c *gin.Context) {
 		}
 	}
 
-	input := nfe_service.DetachedInvoiceInput{
-		FarmID:    farmID,
+	return detachedFormData{
 		Recipient: recipient,
-		VehicleID: vehicleID,
+		Items:     items,
 		CFOP:      cfop,
 		TaxRates:  userRates,
-		Overrides: overrides,
-		Items:     items,
+		Overrides: parseInvoiceOverrides(c),
+		VehicleID: vehicleID,
+	}, entity_public.Toast{}
+}
+
+// detachedInputFromForm maps the parsed form into the service input.
+func detachedInputFromForm(farmID uint32, form detachedFormData) nfe_service.DetachedInvoiceInput {
+	return nfe_service.DetachedInvoiceInput{
+		FarmID:    farmID,
+		Recipient: form.Recipient,
+		VehicleID: form.VehicleID,
+		CFOP:      form.CFOP,
+		TaxRates:  form.TaxRates,
+		Overrides: form.Overrides,
+		Items:     form.Items,
+	}
+}
+
+// buildDetachedNFe handles the form submission to emit a detached NF-e
+func buildDetachedNFe(c *gin.Context) {
+	sid, _ := c.Cookie("session_id")
+	farmID := user_service.GetFarmFromToken(sid)
+
+	form, toast := parseDetachedForm(c)
+	if isFailureToast(toast) {
+		c.Header("HX-Trigger", toast.ToJsonStr())
+		c.Status(http.StatusBadRequest)
+		return
 	}
 
 	svc := nfe_service.NewNFeService()
-	signedXML, toast := svc.BuildDetachedInvoice(input)
+	result, toast := svc.BuildDetachedInvoice(detachedInputFromForm(farmID, form))
 
-	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
+	if isFailureToast(toast) {
 		c.Header("HX-Trigger", toast.ToJsonStr())
 		if toast.Type == entity_public.WarningToast {
 			c.Status(http.StatusBadRequest)
@@ -112,9 +192,209 @@ func buildDetachedNFe(c *gin.Context) {
 		return
 	}
 
+	// Success: the toast carries the SEFAZ status and the fragment offers the
+	// signed XML for download (served by the existing access-key route).
 	c.Header("HX-Trigger", toast.ToJsonStr())
-	c.Header("Content-Type", "application/xml")
-	c.String(http.StatusOK, signedXML)
+	c.HTML(http.StatusOK, "nfe-detached-result", gin.H{
+		"AccessKey": result.AccessKey,
+	})
+}
+
+// detachedPreviewItem is the hidden-field representation of one parsed item.
+type detachedPreviewItem struct {
+	Index         int
+	FarmProductID string
+	ProductName   string
+	NCM           string
+	CEST          string
+	Quantity      string
+	GrossWeight   string
+	UnitPrice     string
+	Unit          string
+}
+
+// detachedPreviewView is the view model for the nfe-detached-preview
+// fragment: the preview PDF plus every parsed field rendered as a hidden
+// input so the confirm step is stateless.
+type detachedPreviewView struct {
+	PDFBase64   string
+	Serie       int
+	Environment int
+	CSPNonce    string
+
+	// Summary (display only)
+	RecipientLabel string
+	TotalValue     decimal.Decimal
+	ItemCount      int
+
+	// Recipient: PersonID when an existing person was selected, otherwise
+	// the inline fields.
+	PersonID              string
+	RecipientName         string
+	RecipientDocument     string
+	RecipientIE           string
+	RecipientStreet       string
+	RecipientNumber       string
+	RecipientNeighborhood string
+	RecipientCity         string
+	RecipientState        string
+	RecipientCEP          string
+	RecipientPhone        string
+	RecipientEmail        string
+
+	Items []detachedPreviewItem
+
+	CFOP       string
+	NaturezaOp string
+	InfCpl     string
+	ModFrete   string
+
+	// Rates (percentage strings; empty means "use the farm config default")
+	ICMSRate   string
+	PISRate    string
+	COFINSRate string
+	IBSRate    string
+	CBSRate    string
+
+	// CST / cClassTrib overrides (empty means "not provided")
+	ICMSCST    string
+	PISCST     string
+	COFINSCST  string
+	IBSCST     string
+	CBSCST     string
+	CClassTrib string
+}
+
+// buildDetachedPreviewViewData assembles the view model for the
+// nfe-detached-preview fragment. Everything except the display-only
+// serie/environment comes from the parsed form, so the hidden fields
+// reproduce the exact input the preview was generated from.
+func buildDetachedPreviewViewData(farmID uint32, form detachedFormData, pdfBytes []byte, nonce string) detachedPreviewView {
+	items := make([]detachedPreviewItem, 0, len(form.Items))
+	var totalValue decimal.Decimal
+	for i, item := range form.Items {
+		items = append(items, detachedPreviewItem{
+			Index:         i,
+			FarmProductID: uint16PtrString(item.FarmProductID),
+			ProductName:   item.ProductName,
+			NCM:           item.NCM,
+			CEST:          safePtrString(item.CEST),
+			Quantity:      item.Quantity.String(),
+			GrossWeight:   item.GrossWeight.String(),
+			UnitPrice:     item.UnitPrice.String(),
+			Unit:          item.Unit,
+		})
+		totalValue = totalValue.Add(item.Quantity.Mul(item.UnitPrice))
+	}
+
+	// Serie/environment are display-only context; a missing config is
+	// non-fatal here because the preview service would have rejected the
+	// request already.
+	serie := 0
+	environment := 1
+	if cfg, err := nfe_model.GetNFeModel().GetFarmConfig(farmID); err == nil && cfg != nil {
+		serie = cfg.Serie
+		environment = cfg.Environment
+	}
+
+	recipientLabel := form.Recipient.Name
+	if form.Recipient.PersonID != nil {
+		recipientLabel = "Destinatário selecionado"
+		if person, err := person_model.GetPersonModel().GetFullPersonById(*form.Recipient.PersonID); err == nil {
+			recipientLabel = person.Name
+		}
+	}
+
+	view := detachedPreviewView{
+		PDFBase64:             base64.StdEncoding.EncodeToString(pdfBytes),
+		Serie:                 serie,
+		Environment:           environment,
+		CSPNonce:              nonce,
+		RecipientLabel:        recipientLabel,
+		TotalValue:            totalValue,
+		ItemCount:             len(items),
+		PersonID:              uint32PtrString(form.Recipient.PersonID),
+		RecipientName:         form.Recipient.Name,
+		RecipientDocument:     form.Recipient.Document,
+		RecipientIE:           safePtrString(form.Recipient.IE),
+		RecipientStreet:       safePtrString(form.Recipient.Street),
+		RecipientNumber:       safePtrString(form.Recipient.Number),
+		RecipientNeighborhood: safePtrString(form.Recipient.Neighborhood),
+		RecipientCity:         safePtrString(form.Recipient.City),
+		RecipientState:        safePtrString(form.Recipient.State),
+		RecipientCEP:          safePtrString(form.Recipient.CEP),
+		RecipientPhone:        safePtrString(form.Recipient.PhoneNumber),
+		RecipientEmail:        safePtrString(form.Recipient.Email),
+		Items:                 items,
+		CFOP:                  form.CFOP,
+		ICMSRate:              rateDisplayString(form.TaxRates.ICMSRate),
+		PISRate:               rateDisplayString(form.TaxRates.PISRate),
+		COFINSRate:            rateDisplayString(form.TaxRates.COFINSRate),
+		IBSRate:               rateDisplayString(form.TaxRates.IBSRate),
+		CBSRate:               rateDisplayString(form.TaxRates.CBSRate),
+	}
+
+	if o := form.Overrides; o != nil {
+		view.NaturezaOp = safePtrString(o.NaturezaOp)
+		view.InfCpl = safePtrString(o.InfCpl)
+		if o.ModFrete != nil {
+			view.ModFrete = strconv.Itoa(*o.ModFrete)
+		}
+		view.ICMSCST = safePtrString(o.ICMSCST)
+		view.PISCST = safePtrString(o.PISCST)
+		view.COFINSCST = safePtrString(o.COFINSCST)
+		view.IBSCST = safePtrString(o.IBSCST)
+		view.CBSCST = safePtrString(o.CBSCST)
+		view.CClassTrib = safePtrString(o.CClassTrib)
+	}
+
+	return view
+}
+
+// previewDetachedNFe renders the non-fiscal DANFE preview for a detached
+// NF-e. It creates no person, allocates no number and persists nothing; the
+// fragment carries all parsed fields as hidden inputs for the confirm step.
+func previewDetachedNFe(c *gin.Context) {
+	sid, _ := c.Cookie("session_id")
+	farmID := user_service.GetFarmFromToken(sid)
+
+	form, toast := parseDetachedForm(c)
+	if isFailureToast(toast) {
+		c.Header("HX-Trigger", toast.ToJsonStr())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	svc := nfe_service.NewNFeService()
+	pdfBytes, toast := svc.GenerateDetachedPreviewDANFE(detachedInputFromForm(farmID, form))
+	if isFailureToast(toast) {
+		c.Header("HX-Trigger", toast.ToJsonStr())
+		if toast.Type == entity_public.WarningToast {
+			c.Status(http.StatusBadRequest)
+		} else {
+			c.Status(http.StatusInternalServerError)
+		}
+		return
+	}
+
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusOK, "nfe-detached-preview", buildDetachedPreviewViewData(farmID, form, pdfBytes, nonce.(string)))
+}
+
+// uint16PtrString formats an optional uint16 identifier for a hidden input.
+func uint16PtrString(p *uint16) string {
+	if p == nil {
+		return ""
+	}
+	return strconv.FormatUint(uint64(*p), 10)
+}
+
+// uint32PtrString formats an optional uint32 identifier for a hidden input.
+func uint32PtrString(p *uint32) string {
+	if p == nil {
+		return ""
+	}
+	return strconv.FormatUint(uint64(*p), 10)
 }
 
 // parseDetachedRecipient parses the recipient from the form
@@ -361,6 +641,7 @@ func cancelDetachedNFe(c *gin.Context) {
 // UseDetachedNFeRoutes registers the detached NF-e routes
 func UseDetachedNFeRoutes(router gin.IRoutes) {
 	router.GET("/emitir", getDetachedNFePage)
+	router.POST("/emitir/preview", previewDetachedNFe)
 	router.POST("/emitir/build", buildDetachedNFe)
 	router.GET("/avulsa/list", getDetachedNFeList)
 	router.GET("/avulsa/download/xml/:accessKey", downloadDetachedNFeXML)
