@@ -1,0 +1,20 @@
+{{ block "cfop-selector" . }}
+<div class="flex flex-col w-full" data-test-id="cfop-selector">
+  <label class="w-full px-2 text-white/70 text-xs lg:text-sm font-medium uppercase tracking-wider">
+    CFOP
+  </label>
+  <div class="flex flex-wrap w-full gap-2">
+    <input type="text" class="cfop-search peer grow bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+           placeholder="Buscar CFOP…" autocomplete="off" aria-label="Buscar CFOP" data-test-id="cfop-search">
+    <select name="{{ .Name }}" class="cfop-select peer grow bg-white/10 border border-white/20 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 truncate"
+            aria-label="CFOP" required data-cfop-select data-test-id="cfop-select">
+      {{ template "cfop-options" (dict "Options" .Options "Selected" .Selected) }}
+    </select>
+    <button class="icon-btn text-[24px] flex items-center" type="button" data-cfop-add
+            hx-get="/nfe/cfop/form" hx-target="body" hx-swap="beforeend" data-test-id="cfop-add"
+            title="Cadastrar CFOP">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m5 11h-4v4h-2v-4H7v-2h4V7h2v4h4z"/></svg>
+    </button>
+  </div>
+</div>
+{{ end }}

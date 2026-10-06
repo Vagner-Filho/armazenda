@@ -2,6 +2,7 @@ package main
 
 import (
 	"armazenda/model/armazenda_database"
+	"armazenda/model/cfop_model"
 	"armazenda/model/crop_model"
 	"armazenda/model/departure_model"
 	"armazenda/model/entry_model"
@@ -245,6 +246,7 @@ func main() {
 	departure_model.InitDepartureModel(pool)
 	product_model.InitProductModel(pool)
 	farm_product_model.InitFarmProductModel(pool)
+	cfop_model.InitCfopModel(pool)
 	person_model.InitPersonModel(pool)
 	humidity_progression_model.InitHumidityProgressionModel(pool)
 	report_model.InitReportModel(pool)

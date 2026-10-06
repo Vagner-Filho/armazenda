@@ -10,6 +10,7 @@ import (
 	"armazenda/model/nfe_model"
 	"armazenda/pkg/nfe/entity"
 	"armazenda/service/nfe_service"
+	cfop_view "armazenda/view/cfop"
 
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
@@ -199,7 +200,7 @@ func TestDetachedProfileFormView_Rates(t *testing.T) {
 				ICMSRate: &icms,
 				PISRate:  &zero,
 			},
-		}, nil, nil, "nonce")
+		}, nil, nil, cfop_view.CfopOptions{Default: "5101"}, "nonce")
 
 		if view["ICMSRate"].(string) != "17.00" {
 			t.Errorf("expected ICMS rate 17.00, got %q", view["ICMSRate"])
@@ -216,14 +217,14 @@ func TestDetachedProfileFormView_Rates(t *testing.T) {
 	})
 
 	t.Run("no explicit rates uses farm defaults", func(t *testing.T) {
-		view := detachedProfileFormView(&nfe_model.DetachedProfile{ID: 2, Name: "Rascunho"}, nil, nil, "nonce")
+		view := detachedProfileFormView(&nfe_model.DetachedProfile{ID: 2, Name: "Rascunho"}, nil, nil, cfop_view.CfopOptions{Default: "5101"}, "nonce")
 		if !view["UseDefaultTaxRates"].(bool) {
 			t.Error("expected use-default to be true when no rate is explicit")
 		}
 	})
 
 	t.Run("new rascunho starts with one empty row", func(t *testing.T) {
-		view := detachedProfileFormView(nil, nil, nil, "nonce")
+		view := detachedProfileFormView(nil, nil, nil, cfop_view.CfopOptions{Default: "5101"}, "nonce")
 		rows := view["Rows"].([]detachedProfileFormRow)
 		if len(rows) != 1 || rows[0].CFOP != "" || rows[0].UnitPrice != "" {
 			t.Fatalf("expected one blank row, got %+v", rows)
@@ -243,7 +244,7 @@ func TestDetachedProfileFormView_Rates(t *testing.T) {
 					UnitPrice:     decimal.RequireFromString("150.25"),
 				},
 			},
-		}, nil, nil, "nonce")
+		}, nil, nil, cfop_view.CfopOptions{Default: "5101"}, "nonce")
 
 		rows := view["Rows"].([]detachedProfileFormRow)
 		if len(rows) != 1 {

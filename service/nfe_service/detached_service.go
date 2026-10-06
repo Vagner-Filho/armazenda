@@ -7,6 +7,7 @@ import (
 	"time"
 
 	entity_public "armazenda/entity/public"
+	"armazenda/model/cfop_model"
 	model_error "armazenda/model/error"
 	"armazenda/model/farm_config_model"
 	"armazenda/model/nfe_model"
@@ -320,6 +321,11 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (DetachedI
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateDetachedInvoice error: %v", createErr.Error()))
 		return DetachedInvoiceResult{}, entity_public.GetErrorToast("Falha ao salvar NF-e", "")
 	}
+
+	// One local ranking bump per distinct item CFOP of this emission action.
+	// The SVC supersede branch (attemptDetachedSVCContingency) and the worker
+	// retry paths never count, so a superseded attempt does not double-count.
+	countDistinctFarmCfopUse(cfop_model.GetCfopModel(), input.FarmID, detachedItemCFOPs(input.Items))
 
 	// Store signed XML
 	if xmlErr := nfeModel.UpdateDetachedInvoiceSignedXML(invoiceID, signedXML); xmlErr != nil {

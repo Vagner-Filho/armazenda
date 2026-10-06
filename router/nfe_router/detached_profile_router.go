@@ -12,6 +12,7 @@ import (
 	"armazenda/model/person_model"
 	"armazenda/service/nfe_service"
 	"armazenda/service/user_service"
+	cfop_view "armazenda/view/cfop"
 
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
@@ -83,11 +84,13 @@ func detachedProfileFormRows(profile *nfe_model.DetachedProfile) []detachedProfi
 // detachedProfileFormView builds the editor dialog view data. Explicit rates
 // (including zero) are displayed exactly; unset axes stay blank so they keep
 // inheriting the farm configuration.
-func detachedProfileFormView(profile *nfe_model.DetachedProfile, people []entity_public.PersonOption, farmProducts []entity_public.FarmProduct, nonce string) gin.H {
+func detachedProfileFormView(profile *nfe_model.DetachedProfile, people []entity_public.PersonOption, farmProducts []entity_public.FarmProduct, cfopOptions cfop_view.CfopOptions, nonce string) gin.H {
 	view := gin.H{
 		"Profile":            profile,
 		"People":             people,
 		"FarmProducts":       farmProducts,
+		"CfopOptions":        cfopOptions,
+		"DefaultCFOP":        cfopOptions.Default,
 		"CSPNonce":           nonce,
 		"RecipientSelected":  "",
 		"Rows":               detachedProfileFormRows(profile),
@@ -148,7 +151,7 @@ func getDetachedProfileForm(c *gin.Context) {
 	farmProducts, _ := farm_product_model.GetFarmProductModel().GetFarmProductsByFarm(farmID)
 
 	nonce, _ := c.Get("csp_nonce")
-	c.HTML(http.StatusOK, "nfe-rascunho-form", detachedProfileFormView(nil, people, farmProducts, nonce.(string)))
+	c.HTML(http.StatusOK, "nfe-rascunho-form", detachedProfileFormView(nil, people, farmProducts, loadCfopOptions(c, farmID), nonce.(string)))
 }
 
 // getFilledDetachedProfileForm renders the editor dialog for an existing
@@ -182,7 +185,7 @@ func getFilledDetachedProfileForm(c *gin.Context) {
 	farmProducts, _ := farm_product_model.GetFarmProductModel().GetFarmProductsByFarm(farmID)
 
 	nonce, _ := c.Get("csp_nonce")
-	c.HTML(http.StatusOK, "nfe-rascunho-form", detachedProfileFormView(profile, people, farmProducts, nonce.(string)))
+	c.HTML(http.StatusOK, "nfe-rascunho-form", detachedProfileFormView(profile, people, farmProducts, loadCfopOptions(c, farmID), nonce.(string)))
 }
 
 // parseDetachedProfileItems parses the editor item rows. Quantity and gross

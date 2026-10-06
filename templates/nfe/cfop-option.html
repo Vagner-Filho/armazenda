@@ -1,0 +1,3 @@
+{{ block "cfop-option" . }}
+<option value="{{ .Code }}" {{ if .IsFarm }}data-cfop-farm="true"{{ end }}>{{ .Code }} — {{ .Description }}</option>
+{{ end }}

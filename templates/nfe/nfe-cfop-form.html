@@ -1,0 +1,59 @@
+{{ block "nfe-cfop-form" . }}
+<dialog id="nfeCfopFormDialog" class="glass-panel rounded-xl w-72 sm:w-96">
+    <div class="p-4 relative">
+        {{ template "close-dialog-btn" (dict "selector" "nfeCfopFormDialog" "CSPNonce" .CSPNonce) }}
+        <header class="text-center mb-4">
+            <h1 class="text-xl lg:text-2xl font-bold text-white/95 font-[Noto_Sans]">
+                Cadastrar CFOP
+            </h1>
+            <p class="text-sm text-white/90 mt-2">
+                Preencha os campos abaixo para cadastrar um CFOP nesta fazenda.
+            </p>
+        </header>
+        <form class="flex flex-col gap-4" hx-post="/nfe/cfop" hx-swap="none" data-test-id="cfop-form">
+            <div class="flex flex-col-reverse">
+                <input type="text" name="code" id="cfop-code"
+                    class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required
+                    pattern="[0-9]{4}" maxlength="4" inputmode="numeric" autofocus
+                    data-test-id="cfop-form-code" placeholder="5101">
+                <label for="cfop-code" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    CFOP
+                </label>
+            </div>
+            <div class="flex flex-col-reverse">
+                <input type="text" name="description" id="cfop-description"
+                    class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required
+                    maxlength="200" data-test-id="cfop-form-description"
+                    placeholder="Descrição da operação">
+                <label for="cfop-description" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Descrição
+                </label>
+            </div>
+            <div class="flex flex-col">
+                <label for="cfop-origin" class="px-2 text-white/70 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Origem/Destino
+                </label>
+                <select name="originDestination" id="cfop-origin"
+                    class="bg-white/10 border border-white/20 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                    required data-test-id="cfop-form-origin">
+                    <option value="Mesmo estado">Mesmo estado</option>
+                    <option value="Outro estado">Outro estado</option>
+                    <option value="Exterior">Exterior</option>
+                </select>
+            </div>
+            <div class="flex items-center justify-around mt-4 w-52 mx-auto">
+                <button type="button" class="cancel-btn">
+                    Cancelar
+                </button>
+                <button class="primary-glass-btn" type="submit" data-test-id="cfop-form-submit">
+                    Adicionar
+                </button>
+            </div>
+        </form>
+    </div>
+    <script nonce="{{ .CSPNonce }}" type="module">
+        import { cfopDialogSetup } from "/public/assets/js/cfopDialog.js"
+        cfopDialogSetup()
+    </script>
+</dialog>
+{{ end }}

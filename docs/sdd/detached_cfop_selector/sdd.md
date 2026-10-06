@@ -1,7 +1,7 @@
 # sdd:detached_cfop_selector
 
 ## Status
-Backlog
+Done
 
 ## Goal
 Give the detached NF-e (NF-e avulsa) flow a system-wide CFOP catalog and a farm-scoped CFOP selector with search, replacing the free-text per-item CFOP input on the detached emission page and on the "Rascunho de NF-e" editor. The system cannot know in advance which nature of operation a user will build a detached NF-e around, so the selector must offer an extensive range of CFOPs, ordered per farm by the codes the farm actually uses most. Users can register farm-tied CFOPs (with the Contabilizei table's third column, **Origem/Destino**) through a small modal, exactly like the existing vehicle/crop/field add-on-selector pattern. Nothing in the departure-tied NF-e flow changes.
@@ -80,8 +80,34 @@ Reference for the catalog and the Origem/Destino column: https://www.contabilize
 
 ## Verification Results
 
-(To be recorded during implementation. Baseline commands to run before flipping Status to WIP:)
+Baseline (before implementation, 2026-10-05):
 
 ```bash
 go test ./router/nfe_router/... ./service/nfe_service/... ./model/nfe_model/...
+# ok armazenda/router/nfe_router  0.041s
+# ok armazenda/service/nfe_service 0.018s
+# ok armazenda/model/nfe_model    (cached)
 ```
+
+Implementation verification (2026-10-05):
+
+| Check | Command | Result |
+|---|---|---|
+| Build | `go build ./...` | PASS |
+| Focused Go tests | `go test ./model/cfop_model/... ./view/cfop/... ./service/nfe_service/... ./router/nfe_router/...` | PASS |
+| Full Go suite | `make test-go` | PASS (no failures) |
+| JS unit tests | `make test-js` | PASS — 19 tests |
+| Migration (AC1) | scratch DB + `/tmp/opencode/cfop_migration_check.sh` (baseline schema → migrations → assertions → direct SQL re-run) | PASS — 3 tables + CHECKs/PKs/FKs, 167 seeded codes, first-digit derivation, system extras, re-run no-op, same-farm duplicate rejected, counter upsert |
+| Focused E2E (AC2/3/4/6/7/8) | `cd test/e2e && bun run test --grep "CFOP"` | PASS — 10 passed, 2 skipped (the use-counter test is Chromium-only to avoid cross-project races on the shared farm counters) |
+| Full E2E | `make test-e2e` | 99 passed, 4 skipped, 8 failed — 7 are the pre-existing WebKit entry/departure flakes (same tests that fail on unmodified HEAD), and the 1 CFOP test failure was `page.goto: WebKit encountered an internal error` under full-suite parallel load; re-run in isolation (`bun run test --grep "cadastro de CFOP pela emissão" --project=webkit`) passed (1 passed) and the same test passes in the focused all-browser run |
+| gofmt | `gofmt -l` on changed Go files | PASS (no output) |
+
+### Acceptance criteria notes
+
+- **AC5 (use counting):** the deduped once-per-action semantics are covered by the service-layer test with the hand-written `farm_cfop_incrementer` mock (`["5101","5101","6102"]` → one call with `[5101 6102]`, errors only log) and by code-path review (single call site after `CreateDetachedInvoice`; `attemptDetachedSVCContingency` and the worker never call it). An E2E DB assertion of counters *produced by a real emission* is not possible under the SEFAZ isolation rules (it would require a farm certificate/config and a live SEFAZ send), so the E2E side asserts instead that `farm_cfop_use` counters drive the "Mais utilizados" ordering (test writes counters directly, SEFAZ-free).
+- **AC9 (scope isolation / no SEFAZ):** code-path review — no new code imports or calls `pkg/nfe/sefaz` or `pkg/nfe/service`; the only modified emission file adds a local-DB call (`cfop_model.IncrementFarmCfopUse`) after `CreateDetachedInvoice`, which writes only `farm_cfop_use`; the departure-tied files (`service/nfe_service/service.go`, `worker.go`, `templates/nfe/nfe-emit-modal.html`, `nfe_farm_config` code) are untouched. The focused E2E only renders pages/selectors and previews (never confirms emission).
+- **Fixture note (AC8/AC9):** the repository's e2e fixture currently seeds one `nfe_farm_config` row (added by commit 9291247, before this SDD) with `certificate_data = ''::bytea` and a placeholder password; existing detached-preview E2E tests depend on it, so it was left unchanged. With empty certificate data no SEFAZ request can complete, and the new E2E never confirms an emission. The fixture's configured default CFOP is `5101`, which the E2E asserts as present and selected; the view unit tests cover the prepend of a missing/non-catalog default.
+
+Status: Done — all acceptance criteria are met with the notes above.
+
+

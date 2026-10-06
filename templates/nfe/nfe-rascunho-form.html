@@ -53,7 +53,7 @@
                 <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
                     Itens
                 </legend>
-                <div id="rascunho-items-container" class="space-y-4" data-default-cfop="5101">
+                <div id="rascunho-items-container" class="space-y-4" data-default-cfop="{{ .DefaultCFOP }}">
                     {{ range $index, $item := .Rows }}
                     <div class="rascunho-item-row p-4 bg-white/5 rounded-lg border border-white/10" data-item-index="{{ $index }}">
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -85,14 +85,7 @@
                                     NCM
                                 </label>
                             </div>
-                            <div class="flex flex-col-reverse">
-                                <input type="text" inputmode="numeric" name="items[{{ $index }}].cfop" value="{{ $item.CFOP }}" required maxlength="4" pattern="[0-9]{4}"
-                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                                    data-test-id="rascunho-item-cfop" placeholder="5101">
-                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                                    CFOP
-                                </label>
-                            </div>
+                            {{ template "cfop-selector" (dict "Options" $.CfopOptions "Selected" (or $item.CFOP $.DefaultCFOP) "Name" (printf "items[%d].cfop" $index)) }}
                             <div class="flex flex-col-reverse">
                                 <input type="text" inputmode="decimal" name="items[{{ $index }}].unitPrice" value="{{ $item.UnitPrice }}" required
                                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
@@ -281,6 +274,8 @@
 
     <script nonce="{{ .CSPNonce }}" type="module">
         import {removeEmptyFields} from "/public/assets/js/form.js"
+        import {initCfopSelectors} from "/public/assets/js/cfopSelector.js"
+        initCfopSelectors()
         const dialogEl = document.querySelector("#addNfeRascunhoDialog")
         if (dialogEl) {
             dialogEl.showModal()
@@ -305,10 +300,13 @@
             }, { signal });
 
             // Close the dialog after a successful create/update; failures keep
-            // it open so the user can fix the highlighted values.
+            // it open so the user can fix the highlighted values. Only the
+            // editor form's own submissions may close it: child htmx requests
+            // (e.g. the CFOP register "+") also bubble afterRequest events.
             const rascunhoForm = dialogEl.querySelector('form');
             if (rascunhoForm) {
                 rascunhoForm.addEventListener('htmx:afterRequest', (evt) => {
+                    if (evt.target !== rascunhoForm) return;
                     if (evt.detail.successful) {
                         closeRascunhoFormDialog();
                     }
@@ -383,11 +381,20 @@
                 template.querySelectorAll('.farm-product-select').forEach(select => {
                     select.value = '';
                 });
-                const cfopInput = template.querySelector('input[name$=".cfop"]');
-                if (cfopInput) {
-                    cfopInput.value = defaultItemCFOP;
+                // Clear any search filter inherited from the clone source so
+                // the new row shows the full list, then start from the
+                // farm/default CFOP.
+                template.querySelectorAll('select[name$=".cfop"] option').forEach(option => {
+                    option.hidden = false;
+                });
+                const cfopSelect = template.querySelector('select[name$=".cfop"]');
+                if (cfopSelect) {
+                    cfopSelect.value = defaultItemCFOP;
                 }
                 itemsContainer.appendChild(template);
+                if (window.htmx) {
+                    window.htmx.process(template);
+                }
                 reindexItems();
             });
 

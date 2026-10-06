@@ -18,6 +18,7 @@ import (
 	nfe_xml "armazenda/pkg/nfe/xml"
 	"armazenda/service/nfe_service"
 	"armazenda/service/user_service"
+	cfop_view "armazenda/view/cfop"
 
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
@@ -45,6 +46,9 @@ type detachedPageView struct {
 	HasNFEFarmConfig bool
 	CSPNonce         string
 	TierKey          string
+
+	// Farm-ordered CFOP selector options ("Mais utilizados" / "Todos os CFOPs").
+	CfopOptions cfop_view.CfopOptions
 
 	// Initial item rows (at least one).
 	Items []detachedPageItem
@@ -139,6 +143,8 @@ func buildDetachedPageView(farmID uint32, profile *nfe_model.DetachedProfile) de
 			view.DefaultNaturezaOp = defaults.NaturezaOpForCFOP(defaultCFOP)
 		}
 	}
+
+	view.CfopOptions = buildPageCfopOptions(farmID, defaultCFOP)
 
 	if profile == nil {
 		view.Items = []detachedPageItem{{CFOP: defaultCFOP, Unit: farmDefaultUnit(farmNFeConfig)}}
@@ -291,6 +297,18 @@ func farmDefaultUnit(farmNFeConfig *entity_public.FarmConfig) string {
 		return farmNFeConfig.DefaultUnit
 	}
 	return "KG"
+}
+
+// buildPageCfopOptions loads the farm-ordered selector options for an emission
+// page render. A load failure degrades to the default-only list instead of
+// blocking the page.
+func buildPageCfopOptions(farmID uint32, defaultCFOP string) cfop_view.CfopOptions {
+	options, toast := cfop_view.GetCfopOptionsWithDefault(farmID, defaultCFOP)
+	if toast != nil {
+		model_error.GetLoggerModel().Log("buildDetachedPageView cfop options error: " + toast.Message)
+		return cfop_view.BuildCfopOptions(nil, defaultCFOP)
+	}
+	return options
 }
 
 // firstNonEmpty returns value when non-empty, otherwise fallback.

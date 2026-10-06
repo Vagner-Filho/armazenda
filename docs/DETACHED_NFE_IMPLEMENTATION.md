@@ -80,7 +80,7 @@ Farm users can also save named **"Rascunhos de NF-e"** (internally `DetachedProf
   - Recipient selection (existing or new, including optional e-mail)
   - Multi-item support with dynamic add/remove (rows are reindexed contiguously on removal)
   - Per-item farm product selector that auto-fills description and NCM
-  - **Per-item CFOP input** (required, exactly 4 digits); new rows start from the farm/default CFOP
+  - **Per-item CFOP selector** — searchable, farm-ordered select (catalog ∪ farm CFOPs, "Mais utilizados" + "Todos os CFOPs") with a "+" register modal; new rows start from the farm/default CFOP
   - All standard NF-e fields (nature operation, complementary info)
   - Transporte fieldset (modalidade do frete)
   - Tributação fieldset (CST/cClassTrib + "Usar taxa padrão" rate overrides)
@@ -102,7 +102,14 @@ Farm users can also save named **"Rascunhos de NF-e"** (internally `DetachedProf
   - Color-coded badges for visual distinction
   - `'draft'` status renders as **"Não enviada"** (display-only; internal status string and worker behavior unchanged)
 
-### 8. Tests
+### 8. CFOP Catalog & Selector (Migration 000025)
+- **Catalog** (`cfop`): system-wide, read-only reference table seeded by the migration with the complete Contabilizei CFOP list (167 codes) plus every CFOP assumed by `pkg/nfe/defaults`; each row carries `description` and the derived `origin_destination` (`Mesmo estado` / `Outro estado` / `Exterior`, from the first digit)
+- **Farm CFOPs** (`farm_cfop`): farm-scoped extra codes registered through the selector modal (`GET /nfe/cfop/form`, `POST /nfe/cfop`); catalog duplicates and same-farm duplicates are rejected with pt-br warning toasts; no per-farm description overrides, so catalog ∪ farm is disjoint
+- **Use ranking** (`farm_cfop_use`): per-farm counters bumped once per distinct item CFOP at the emission persist step (`BuildDetachedInvoice`), never by preview/rascunho saves or worker retries; failures only log
+- **Selector component** (`templates/nfe/cfop-selector.html`): per-row search input (code + accent-insensitive description, never hides the selected option) + `<select name="items[i].cfop">` + register "+"; `GET /nfe/cfop/options` refreshes the farm-ordered option list after a registration
+- **Model/view**: `model/cfop_model/` (merge + grouping + counters), `view/cfop/` (adds the resolved default and prepends it when missing)
+
+### 9. Tests
 - **Model Tests** (`model/nfe_model/detached_model_test.go`, `detached_profile_model_test.go`):
   - DetachedInvoiceItem serialization (per-item CFOP and exact prices)
   - DetachedProfile item JSON round trip with distinct CFOPs and prices
@@ -114,15 +121,25 @@ Farm users can also save named **"Rascunhos de NF-e"** (internally `DetachedProf
   - `Natureza da operação` resolution (form → farm → common CFOP; mixed CFOPs rejected)
   - Rascunho item validation (CFOP, price, explicit zero)
   - Tax rates/defaults and exact decimals
-- **Router Tests** (`router/nfe_router/detached_router_test.go`):
+- **Router Tests** (`router/nfe_router/detached_router_test.go`, `cfop_router_test.go`):
   - Form parsing of per-item CFOP fields, rascunho items/recipient parsing
   - Preview hidden-field round trip (CFOP + exact price strings)
   - Rascunho editor view data (explicit zero vs inherit)
+  - CFOP register-modal validation (malformed codes, description, Origem/Destino mismatch) with pt-br toasts
+  - CFOP fragment rendering (`cfop-options` groups/ordering, `cfop-option`, `cfop-selector` form contract, modal)
+- **CFOP Model/View/Service Tests** (`model/cfop_model/`, `view/cfop/`, `service/nfe_service/cfop_service_test.go`):
+  - Seed integrity over the migration file (167 codes, first-digit derivation, system-assumed extras)
+  - Merge grouping/ordering and default-CFOP prepend
+  - Selector validation/derivation helpers
+  - Deduped use counting with a hand-written incrementer mock (once per emission action, errors only log)
 - **Template Guards** (`router/nfe_router/nfe_templates_test.go`):
   - `'draft'` renders "Não enviada" in the list row and existing modal; no NF-e surface labels it "Rascunho"
   - Romaneio entry/departure rascunho wording stays unchanged
-- **E2E** (`test/e2e/tests/detached_nfe_rascunho.spec.js`):
+- **E2E** (`test/e2e/tests/detached_nfe_rascunho.spec.js`, `detached_cfop_selector.spec.js`):
   - Rascunho lifecycle, application via navigation, farm isolation, inline-contact save, preview write-freedom, invoice-number/invoice side-effect checks, and the "Não enviada" list label
+  - CFOP selector: per-row search (accent-insensitive, selected option survives, no cross-row influence), exact-code selection, preview round trip
+  - Farm CFOP registration from the emission page and the rascunho editor (auto-select, farm-ordered re-render, catalog/farm duplicate toasts)
+  - "Mais utilizados" ordering from the farm use counters
 
 ## Key Features
 
@@ -138,9 +155,19 @@ Farm users can also save named **"Rascunhos de NF-e"** (internally `DetachedProf
 
 ### Per-item CFOP vs Natureza da Operação
 - **CFOP is an item value**: every detached item carries its own required four-digit CFOP, mapped to that item's `<det><prod><CFOP>`; different items in one NF-e may use different codes
+- **CFOP selection** uses a searchable, farm-ordered selector (catalog ∪ farm CFOPs) rendered per item row; the free-text input was replaced without changing the `items[i].cfop` form contract
 - **Natureza da operação is invoice-level** and is resolved from the current form value, then a selected rascunho value, then the farm default; only when all items share one CFOP is it derived from that code. Mixed item CFOPs without an explicit/farm nature are rejected at preview with a pt-br warning
 - The two fields are separate: no CFOP data is relabeled as Natureza da operação
 - `detached_nfe_invoice.cfop` no longer exists; `nfe_invoice` and the departure-linked flow are unchanged
+
+### CFOP Selector & Farm Catalog
+- The system-wide catalog (`cfop`, migration 000025) is read-only and seeded with the complete Contabilizei table (167 codes, description + Origem/Destino); every code is classified by its first digit (1/5 same state, 2/6 other state, 3/7 exterior)
+- A farm can register extra CFOPs through the selector's "+" modal (`GET /nfe/cfop/form`, `POST /nfe/cfop`); catalog duplicates and same-farm duplicates are rejected with pt-br toasts, and farm CFOPs are visible only to that farm
+- Options are ordered per farm: "Mais utilizados" (use count > 0, count DESC then code ASC) and "Todos os CFOPs" (code ASC); the farm default (`nfe_farm_config.default_cfop`, else `5101`) is always present and preselected
+- Each row has its own search input filtering only that row's options by code and accent-insensitive description; the selected option is never hidden, and typing a full code selects it
+- Registration success returns the `cfop-option` fragment and triggers a farm-ordered refresh of every selector, auto-selecting the new code in the row that opened the modal
+- Use counters (`farm_cfop_use`) are bumped once per distinct item CFOP when an emission persists; preview, rascunho saves, and worker retries never count, and counter failures only log (no SEFAZ contact, no emission block)
+- There is no standalone CFOP management page — the selector modal is the only UI, mirroring the vehicle/crop/field add-on pattern
 
 ### Rascunhos de NF-e
 - Named, farm-scoped reusable starting points (internally `DetachedProfile`; the word "draft" is reserved for `detached_nfe_invoice.status='draft'`)
@@ -251,6 +278,13 @@ Tests cover:
 - `model/armazenda_database/migrations/000022_detached_nfe_item_cfop.sql`
 - `model/armazenda_database/migrations/000023_detached_nfe_operation_profiles.sql`
 - `model/armazenda_database/migrations/000024_person_ie_unique_partial.sql`
+- `model/armazenda_database/migrations/000025_cfop_catalog.sql`
+- `entity/public/cfop.go`
+- `model/cfop_model/model.go`
+- `model/cfop_model/model_test.go`
+- `model/cfop_model/cfop_seed_test.go`
+- `view/cfop/view.go`
+- `view/cfop/view_test.go`
 - `model/nfe_model/detached_model.go`
 - `model/nfe_model/detached_model_test.go`
 - `model/nfe_model/detached_profile_model.go`
@@ -264,14 +298,25 @@ Tests cover:
 - `router/nfe_router/detached_profile_router.go`
 - `router/nfe_router/detached_router_test.go`
 - `router/nfe_router/nfe_templates_test.go`
+- `router/nfe_router/cfop_router.go`
+- `router/nfe_router/cfop_router_test.go`
+- `service/nfe_service/cfop_service.go`
+- `service/nfe_service/cfop_service_test.go`
+- `assets/js/cfopSelector.js`
+- `assets/js/cfopDialog.js`
 - `templates/pages/nfe-emit.html`
 - `templates/pages/nfe-rascunhos.html`
+- `templates/nfe/cfop-selector.html`
+- `templates/nfe/cfop-options.html`
+- `templates/nfe/cfop-option.html`
+- `templates/nfe/nfe-cfop-form.html`
 - `templates/nfe/nfe-detached-preview.html`
 - `templates/nfe/nfe-detached-result.html`
 - `templates/nfe/nfe-rascunho-table.html`
 - `templates/nfe/nfe-rascunho-list-item.html`
 - `templates/nfe/nfe-rascunho-form.html`
 - `test/e2e/tests/detached_nfe_rascunho.spec.js`
+- `test/e2e/tests/detached_cfop_selector.spec.js`
 
 ### Modified Files
 - `model/person_model/model.go` - Added CreatePersonForDetachedNFe
@@ -282,13 +327,13 @@ Tests cover:
 - `templates/nfe/nfe-list-item.html` - Updated to accept Invoice/Type dict; draft label "Não enviada"
 - `templates/nfe/nfe-existing-modal.html` - draft label "Não enviada"
 - `test/e2e/fixtures/test-user.sql` - Added NF-e farm config and farm address
-- `main.go` - Registered the `ptrString` template helper
+- `main.go` - Registered the `ptrString` template helper; initialized `cfop_model`
 
 ## Usage Flow
 
 1. User navigates to NF-e → Emitir (or NF-e → Rascunhos and clicks "Gerar NF-e a partir do rascunho")
 2. Selects existing recipient or fills new recipient form
-3. Adds one or more items with product details; each item has its own required four-digit CFOP
+3. Adds one or more items with product details; each item has its own required CFOP, chosen in a searchable selector (farm-ordered; "+" registers a farm-tied CFOP when needed)
 4. Configures nature operation (invoice-level) and optional complementary info
 5. Optionally overrides tax rates
 6. Clicks "Gerar Pré-visualização"

@@ -394,6 +394,9 @@ func UseNFeRoutes(router gin.IRoutes) {
 
 	// Detached NF-e routes
 	UseDetachedNFeRoutes(router)
+
+	// CFOP selector routes (detached emission page + rascunho editor)
+	UseCfopRoutes(router)
 }
 
 func getNFePage(c *gin.Context) {
@@ -414,7 +417,7 @@ func getNFeList(c *gin.Context) {
 	}
 
 	nfeModel := nfe_model.GetNFeModel()
-	
+
 	// Get departure-based invoices
 	departureInvoices, departureTotal, err := nfeModel.GetInvoicesByFarm(farmID, page)
 	if err != nil {

@@ -1,0 +1,23 @@
+{{ block "cfop-options" . }}
+{{- $options := .Options -}}
+{{- $selected := .Selected -}}
+{{- $selectedFound := false -}}
+{{- $selectedInMostUsed := false -}}
+{{- range $options.MostUsed }}{{ if eq .Code $selected }}{{ $selectedFound = true }}{{ $selectedInMostUsed = true }}{{ end }}{{ end -}}
+{{- range $options.All }}{{ if eq .Code $selected }}{{ $selectedFound = true }}{{ end }}{{ end -}}
+{{- if $options.MostUsed }}
+<optgroup label="Mais utilizados">
+    {{- range $options.MostUsed }}
+    <option value="{{ .Code }}"{{ if .IsFarm }} data-cfop-farm="true"{{ end }}{{ if eq .Code $selected }} selected{{ end }}>{{ .Code }} — {{ .Description }}</option>
+    {{- end }}
+</optgroup>
+{{- end }}
+<optgroup label="Todos os CFOPs">
+    {{- range $options.All }}
+    <option value="{{ .Code }}"{{ if .IsFarm }} data-cfop-farm="true"{{ end }}{{ if and (eq .Code $selected) (not $selectedInMostUsed) }} selected{{ end }}>{{ .Code }} — {{ .Description }}</option>
+    {{- end }}
+</optgroup>
+{{- if and (ne $selected "") (not $selectedFound) }}
+<option value="{{ $selected }}" selected>{{ $selected }}</option>
+{{- end }}
+{{- end }}

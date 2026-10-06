@@ -67,7 +67,7 @@ async function fillRascunhoItem(row, { descricao, cfop, preco, cest }) {
   if (descricao !== undefined) {
     await row.locator('[data-test-id="rascunho-item-descricao"]').fill(descricao);
   }
-  await row.locator('[data-test-id="rascunho-item-cfop"]').fill(cfop);
+  await row.locator('select[name$=".cfop"]').selectOption(cfop);
   if (preco !== undefined) {
     await row.locator('[data-test-id="rascunho-item-preco"]').fill(preco);
   }
@@ -144,8 +144,8 @@ test.describe('Rascunho de NF-e', () => {
 
     const itemRows = page.locator('#items-container .item-row');
     await expect(itemRows).toHaveCount(2);
-    await expect(itemRows.nth(0).locator('input[name$=".cfop"]')).toHaveValue('5101');
-    await expect(itemRows.nth(1).locator('input[name$=".cfop"]')).toHaveValue('5102');
+    await expect(itemRows.nth(0).locator('select[name$=".cfop"]')).toHaveValue('5101');
+    await expect(itemRows.nth(1).locator('select[name$=".cfop"]')).toHaveValue('5102');
     await expect(itemRows.nth(0).locator('input[name$=".unitPrice"]')).toHaveValue('150.25');
     await expect(itemRows.nth(1).locator('input[name$=".unitPrice"]')).toHaveValue('120.75');
     await expect(itemRows.nth(0).locator('input[name$=".productName"]')).toHaveValue('Soja E2E');
@@ -168,7 +168,7 @@ test.describe('Rascunho de NF-e', () => {
     const editDialog = page.locator('dialog#addNfeRascunhoDialog');
     await expect(editDialog).toBeVisible();
     await expect(editDialog.locator('[data-test-id="rascunho-form-nome"]')).toHaveValue(name);
-    await expect(editDialog.locator('[data-test-id="rascunho-item-cfop"]').nth(1)).toHaveValue('5102');
+    await expect(editDialog.locator('select[name$=".cfop"]').nth(1)).toHaveValue('5102');
 
     const editRows = editDialog.locator('.rascunho-item-row');
     await editRows.nth(0).locator('[data-test-id="rascunho-item-preco"]').fill('151.00');
@@ -223,7 +223,7 @@ test.describe('Rascunho de NF-e', () => {
     await page.fill('#recipientCEP', '78000000');
 
     await page.fill('input[name="items[0].productName"]', 'Soja Formulário');
-    await page.fill('input[name="items[0].cfop"]', '5101');
+    await page.selectOption('select[name="items[0].cfop"]', '5101');
     await page.fill('input[name="items[0].quantity"]', '10');
     await page.fill('input[name="items[0].unitPrice"]', '99.50');
     await page.fill('#naturezaOp', 'Venda de teste');
@@ -274,7 +274,7 @@ test.describe('Rascunho de NF-e', () => {
     await page.fill('#recipientState', 'MT');
     await page.fill('#recipientCEP', '78000000');
     await page.fill('input[name="items[0].productName"]', 'Soja Preview');
-    await page.fill('input[name="items[0].cfop"]', '5101');
+    await page.selectOption('select[name="items[0].cfop"]', '5101');
     await page.fill('input[name="items[0].quantity"]', '5');
     await page.fill('input[name="items[0].unitPrice"]', '88.00');
 
