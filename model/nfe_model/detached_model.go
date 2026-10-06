@@ -35,7 +35,6 @@ type DetachedInvoice struct {
 	Serie               int
 	Number              int
 	Status              string
-	CFOP                string
 	NaturezaOp          *string
 	ModFrete            *int
 	TotalValue          decimal.Decimal
@@ -78,7 +77,6 @@ func (m *NFeModel) CreateDetachedInvoice(
 	recipientID uint32,
 	accessKey string,
 	serie, number int,
-	cfop string,
 	naturezaOp *string,
 	modFrete *int,
 	totalValue, ibsValue, cbsValue decimal.Decimal,
@@ -96,7 +94,7 @@ func (m *NFeModel) CreateDetachedInvoice(
 	query := `
 		INSERT INTO detached_nfe_invoice (
 			farm_id, recipient_id, access_key, serie, number, status,
-			cfop, natureza_op, mod_frete,
+			natureza_op, mod_frete,
 			total_value, ibs_value, cbs_value,
 			items_json,
 			tp_emis,
@@ -105,20 +103,20 @@ func (m *NFeModel) CreateDetachedInvoice(
 			inf_cpl
 		)
 		VALUES ($1, $2, $3, $4, $5, 'draft',
-			$6, $7, $8,
-			$9, $10, $11,
+			$6, $7,
+			$8, $9, $10,
+			$11,
 			$12,
-			$13,
-			$14, $15, $16,
-			$17, $18, $19,
-			$20
+			$13, $14, $15,
+			$16, $17, $18,
+			$19
 		)
 		RETURNING id
 	`
 	var id int
 	err = m.pool.QueryRow(context.Background(), query,
 		farmID, recipientID, accessKey, serie, number,
-		cfop, naturezaOp, modFrete,
+		naturezaOp, modFrete,
 		totalValue, ibsValue, cbsValue,
 		itemsJSON,
 		tpEmis,
@@ -183,7 +181,7 @@ func (m *NFeModel) GetDetachedInvoicesByFarm(farmID uint32, page int) ([]Detache
 
 	query := `
 		SELECT d.id, d.farm_id, d.recipient_id, d.access_key, d.serie, d.number, d.status,
-			d.cfop, d.natureza_op, d.mod_frete,
+			d.natureza_op, d.mod_frete,
 			d.total_value, d.ibs_value, d.cbs_value,
 			d.items_json,
 			d.xml_signed, d.xml_authorized, d.xml_cancel_event,
@@ -221,7 +219,7 @@ func (m *NFeModel) GetDetachedInvoicesByFarm(farmID uint32, page int) ([]Detache
 func (m *NFeModel) GetDetachedInvoiceByAccessKey(accessKey string) (*DetachedInvoice, error) {
 	query := `
 		SELECT d.id, d.farm_id, d.recipient_id, d.access_key, d.serie, d.number, d.status,
-			d.cfop, d.natureza_op, d.mod_frete,
+			d.natureza_op, d.mod_frete,
 			d.total_value, d.ibs_value, d.cbs_value,
 			d.items_json,
 			d.xml_signed, d.xml_authorized, d.xml_cancel_event,
@@ -319,7 +317,7 @@ func scanDetachedInvoice(row detachedInvoiceScanner) (*DetachedInvoice, error) {
 
 	err := row.Scan(
 		&inv.ID, &inv.FarmID, &inv.RecipientID, &inv.AccessKey, &inv.Serie, &inv.Number, &inv.Status,
-		&inv.CFOP, &naturezaOp, &modFrete,
+		&naturezaOp, &modFrete,
 		&inv.TotalValue, &inv.IBSValue, &inv.CBSValue,
 		&itemsJSON,
 		&xmlSigned, &xmlAuthorized, &xmlCancelEvent,
@@ -420,7 +418,7 @@ func (m *NFeModel) IncrementDetachedRetryCount(id int) error {
 func (m *NFeModel) GetPendingDetachedInvoicesForRetry() ([]DetachedInvoice, error) {
 	query := `
 		SELECT d.id, d.farm_id, d.recipient_id, d.access_key, d.serie, d.number, d.status,
-			d.cfop, d.natureza_op, d.mod_frete,
+			d.natureza_op, d.mod_frete,
 			d.total_value, d.ibs_value, d.cbs_value,
 			d.items_json,
 			d.xml_signed, d.xml_authorized, d.xml_cancel_event,
@@ -463,7 +461,7 @@ func (m *NFeModel) GetPendingDetachedInvoicesForRetry() ([]DetachedInvoice, erro
 func (m *NFeModel) GetDraftDetachedInvoicesForRetry() ([]DetachedInvoice, error) {
 	query := `
 		SELECT d.id, d.farm_id, d.recipient_id, d.access_key, d.serie, d.number, d.status,
-			d.cfop, d.natureza_op, d.mod_frete,
+			d.natureza_op, d.mod_frete,
 			d.total_value, d.ibs_value, d.cbs_value,
 			d.items_json,
 			d.xml_signed, d.xml_authorized, d.xml_cancel_event,

@@ -119,11 +119,11 @@ func TestDetachedInvoiceInput_SingleItem(t *testing.T) {
 			PersonID: &personID,
 		},
 		VehicleID: &vehicleID,
-		CFOP:      "5101",
 		Items: []nfe_service.DetachedItemInput{
 			{
 				ProductName: "Soja",
 				NCM:         "12019000",
+				CFOP:        "5101",
 				Quantity:    decimal.NewFromFloat(10000.0),
 				GrossWeight: decimal.NewFromFloat(10200.0),
 				UnitPrice:   decimal.NewFromFloat(150.0),
@@ -153,11 +153,11 @@ func TestDetachedInvoiceInput_MultipleItems(t *testing.T) {
 			Name:     "Cliente Teste",
 			Document: "12345678901",
 		},
-		CFOP: "5101",
 		Items: []nfe_service.DetachedItemInput{
 			{
 				ProductName: "Soja",
 				NCM:         "12019000",
+				CFOP:        "5101",
 				Quantity:    decimal.NewFromFloat(10000.0),
 				GrossWeight: decimal.NewFromFloat(10200.0),
 				UnitPrice:   decimal.NewFromFloat(150.0),
@@ -166,6 +166,7 @@ func TestDetachedInvoiceInput_MultipleItems(t *testing.T) {
 			{
 				ProductName: "Milho",
 				NCM:         "10059000",
+				CFOP:        "5102",
 				Quantity:    decimal.NewFromFloat(5000.0),
 				GrossWeight: decimal.NewFromFloat(5100.0),
 				UnitPrice:   decimal.NewFromFloat(120.0),
@@ -198,7 +199,6 @@ func TestDetachedInvoiceInput_WithTaxRates(t *testing.T) {
 			Name:     "Cliente Teste",
 			Document: "12345678901",
 		},
-		CFOP: "5101",
 		TaxRates: entity.TaxRates{
 			ICMSRate:   &icmsRate,
 			PISRate:    &pisRate,
@@ -210,6 +210,7 @@ func TestDetachedInvoiceInput_WithTaxRates(t *testing.T) {
 			{
 				ProductName: "Soja",
 				NCM:         "12019000",
+				CFOP:        "5101",
 				Quantity:    decimal.NewFromFloat(10000.0),
 				GrossWeight: decimal.NewFromFloat(10200.0),
 				UnitPrice:   decimal.NewFromFloat(150.0),

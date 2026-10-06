@@ -204,6 +204,7 @@ func TestBuildDetachedItems_DefaultsAndTaxTotals(t *testing.T) {
 		{
 			ProductName: "",
 			NCM:         "",
+			CFOP:        "5101",
 			Quantity:    decimal.RequireFromString("10"),
 			GrossWeight: decimal.RequireFromString("11"),
 			UnitPrice:   decimal.RequireFromString("100"),
@@ -212,6 +213,7 @@ func TestBuildDetachedItems_DefaultsAndTaxTotals(t *testing.T) {
 		{
 			ProductName: "Milho",
 			NCM:         "10059000",
+			CFOP:        "5102",
 			Quantity:    decimal.RequireFromString("2"),
 			GrossWeight: decimal.RequireFromString("2.2"),
 			UnitPrice:   decimal.RequireFromString("120"),
@@ -219,7 +221,7 @@ func TestBuildDetachedItems_DefaultsAndTaxTotals(t *testing.T) {
 		},
 	}
 
-	items, itemsForDB, totalValue, totalIBS, totalCBS := svc.buildDetachedItems(inputs, "5101", cfg, entity.TaxRates{}, nil)
+	items, itemsForDB, totalValue, totalIBS, totalCBS := svc.buildDetachedItems(inputs, cfg, entity.TaxRates{}, nil)
 
 	if len(items) != 2 || len(itemsForDB) != 2 {
 		t.Fatalf("expected 2 items, got %d/%d", len(items), len(itemsForDB))
@@ -286,6 +288,7 @@ func TestBuildDetachedItems_UserRatesAndOverrides(t *testing.T) {
 		{
 			ProductName: "Soja",
 			NCM:         defaults.NCMSoja,
+			CFOP:        "5101",
 			Quantity:    decimal.RequireFromString("10"),
 			UnitPrice:   decimal.RequireFromString("100"),
 			Unit:        "KG",
@@ -293,7 +296,7 @@ func TestBuildDetachedItems_UserRatesAndOverrides(t *testing.T) {
 	}
 
 	items, _, _, _, _ := svc.buildDetachedItems(
-		inputs, "5101", cfg,
+		inputs, cfg,
 		entity.TaxRates{ICMSRate: &icmsRate},
 		&entity.InvoiceOverrides{ICMSCST: &icmsCST},
 	)

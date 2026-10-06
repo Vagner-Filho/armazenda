@@ -48,6 +48,7 @@ type DetachedItemInput struct {
 	ProductName string
 	NCM         string
 	CEST        *string
+	CFOP        string // required: exactly four ASCII digits, per item
 	Quantity    decimal.Decimal
 	GrossWeight decimal.Decimal
 	UnitPrice   decimal.Decimal
@@ -59,7 +60,6 @@ type DetachedInvoiceInput struct {
 	FarmID    uint32
 	Recipient DetachedRecipient
 	VehicleID *uint16 // optional
-	CFOP      string
 	TaxRates  entity.TaxRates
 	Overrides *entity.InvoiceOverrides
 	Items     []DetachedItemInput
@@ -144,26 +144,32 @@ func (s *NFeService) prepareDetachedBuildData(input DetachedInvoiceInput, dryRun
 		)
 	}
 
-	// Resolve CFOP
-	effectiveCFOP := input.CFOP
-	if effectiveCFOP == "" {
-		effectiveCFOP = farmNFeConfig.DefaultCFOP
-	}
-
-	// Build items
-	items, itemsForDB, totalValue, totalIBS, totalCBS := s.buildDetachedItems(input.Items, effectiveCFOP, farmNFeConfig, input.TaxRates, input.Overrides)
+	// Build items. Each item carries its own CFOP; the service validates the
+	// four-digit format before XML construction.
+	items, itemsForDB, totalValue, totalIBS, totalCBS := s.buildDetachedItems(input.Items, farmNFeConfig, input.TaxRates, input.Overrides)
 	if len(items) == 0 {
 		return empty, entity_public.GetWarningToast("Nenhum item informado", "Adicione pelo menos um item à NF-e")
 	}
+	for i, item := range items {
+		if !IsFourDigitCFOP(item.Produto.CFOP) {
+			return empty, entity_public.GetWarningToast(
+				"CFOP inválido",
+				fmt.Sprintf("Item %d: informe um CFOP com exatamente 4 dígitos", i+1))
+		}
+	}
 
-	// Resolve NaturezaOp
-	naturezaOp := ""
-	if input.Overrides != nil && input.Overrides.NaturezaOp != nil && *input.Overrides.NaturezaOp != "" {
-		naturezaOp = *input.Overrides.NaturezaOp
-	} else if farmNFeConfig.DefaultNaturezaOp != nil && *farmNFeConfig.DefaultNaturezaOp != "" {
-		naturezaOp = *farmNFeConfig.DefaultNaturezaOp
-	} else {
-		naturezaOp = defaults.NaturezaOpForCFOP(effectiveCFOP)
+	// Resolve NaturezaOp: current form value, then farm default, then the
+	// derivation from the item CFOPs. The derivation is only unambiguous when
+	// every item shares the same CFOP.
+	cfops := make([]string, 0, len(items))
+	for _, item := range items {
+		cfops = append(cfops, item.Produto.CFOP)
+	}
+	naturezaOp, naturezaOK := resolveDetachedNaturezaOp(input.Overrides, farmNFeConfig.DefaultNaturezaOp, cfops)
+	if !naturezaOK {
+		return empty, entity_public.GetWarningToast(
+			"Natureza da operação obrigatória",
+			"Os itens possuem CFOPs diferentes; informe a Natureza da Operação")
 	}
 
 	// Resolve ModFrete
@@ -251,7 +257,6 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (DetachedI
 	invoiceInput := build.InvoiceInput
 
 	// Values resolved during preparation, kept local for persistence below.
-	effectiveCFOP := invoiceInput.Items[0].Produto.CFOP
 	naturezaOp := invoiceInput.NaturezaOp
 	effectiveModFrete := invoiceInput.Transport.ModFrete
 	infCpl := invoiceInput.InformacoesAdicionais
@@ -307,7 +312,7 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (DetachedI
 
 	invoiceID, createErr := nfeModel.CreateDetachedInvoice(
 		input.FarmID, build.RecipientID, accessKey, farmNFeConfig.Serie, number,
-		effectiveCFOP, &naturezaOp, &effectiveModFrete,
+		&naturezaOp, &effectiveModFrete,
 		invoiceInput.TotalValue, build.TotalIBS, build.TotalCBS,
 		1, ratesToPersist, input.Overrides, build.ItemsForDB,
 	)
@@ -475,6 +480,54 @@ func detachedDocumentType(document string) int {
 	return 1
 }
 
+// IsFourDigitCFOP reports whether cfop is exactly four ASCII digits. CFOP is
+// an item-level value in detached NF-e; malformed values are rejected before
+// XML construction.
+func IsFourDigitCFOP(cfop string) bool {
+	if len(cfop) != 4 {
+		return false
+	}
+	for _, r := range cfop {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// resolveDetachedNaturezaOp resolves the invoice-level Natureza da Operação in
+// the detached flow: explicit current-form value, then the farm default, then
+// the derivation from the item CFOPs. The derivation is only unambiguous when
+// every item shares the same CFOP; mixed item codes with no explicit/farm
+// value are rejected (ok == false) instead of deriving from an arbitrary item.
+func resolveDetachedNaturezaOp(overrides *entity.InvoiceOverrides, farmDefault *string, cfops []string) (string, bool) {
+	if overrides != nil && overrides.NaturezaOp != nil && *overrides.NaturezaOp != "" {
+		return *overrides.NaturezaOp, true
+	}
+	if farmDefault != nil && *farmDefault != "" {
+		return *farmDefault, true
+	}
+	common, ok := commonCFOP(cfops)
+	if !ok {
+		return "", false
+	}
+	return defaults.NaturezaOpForCFOP(common), true
+}
+
+// commonCFOP returns the shared CFOP when every item uses the same code.
+func commonCFOP(cfops []string) (string, bool) {
+	if len(cfops) == 0 || cfops[0] == "" {
+		return "", false
+	}
+	first := cfops[0]
+	for _, cfop := range cfops[1:] {
+		if cfop != first {
+			return "", false
+		}
+	}
+	return first, true
+}
+
 // mapFarmToEmitterForDetached maps farm config and farm address data to
 // emitter data for detached invoices. It delegates to the departure-flow
 // mapper so both emissions produce identical emitter groups.
@@ -482,8 +535,10 @@ func (s *NFeService) mapFarmToEmitterForDetached(cfg *entity_public.FarmConfig, 
 	return s.mapFarmToEmitter(cfg, farm, nfeModel)
 }
 
-// buildDetachedItems builds item data for detached invoices
-func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, defaultCFOP string, farmConfig *entity_public.FarmConfig, userRates entity.TaxRates, overrides *entity.InvoiceOverrides) ([]entity.ItemData, []nfe_model.DetachedInvoiceItem, decimal.Decimal, decimal.Decimal, decimal.Decimal) {
+// buildDetachedItems builds item data for detached invoices. Each input item
+// carries its own CFOP so a single NF-e can mix operation codes; the CFOP is
+// validated by the caller before this mapping runs.
+func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, farmConfig *entity_public.FarmConfig, userRates entity.TaxRates, overrides *entity.InvoiceOverrides) ([]entity.ItemData, []nfe_model.DetachedInvoiceItem, decimal.Decimal, decimal.Decimal, decimal.Decimal) {
 	var items []entity.ItemData
 	var itemsForDB []nfe_model.DetachedInvoiceItem
 	var totalValue, totalIBS, totalCBS decimal.Decimal
@@ -496,6 +551,7 @@ func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, defaultCFOP 
 		ncm := input.NCM
 		cest := input.CEST
 		unit := input.Unit
+		cfop := input.CFOP
 
 		if unit == "" {
 			unit = farmConfig.DefaultUnit
@@ -607,7 +663,7 @@ func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, defaultCFOP 
 				XProd:    productName,
 				NCM:      ncm,
 				CEST:     safeStringPtr(cest),
-				CFOP:     defaultCFOP,
+				CFOP:     cfop,
 				UCom:     unit,
 				QCom:     input.Quantity,
 				VUnCom:   input.UnitPrice,
@@ -661,7 +717,7 @@ func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, defaultCFOP 
 			ProductName:   productName,
 			NCM:           ncm,
 			CEST:          cest,
-			CFOP:          defaultCFOP,
+			CFOP:          cfop,
 			Unit:          unit,
 			Quantity:      input.Quantity,
 			GrossWeight:   input.GrossWeight,
@@ -837,14 +893,30 @@ func safeStringPtr(p *string) string {
 	return *p
 }
 
+// detachedResponseModel is the slice of the NFe model that
+// handleDetachedSefazResponse needs; narrow so tests can stub it.
+type detachedResponseModel interface {
+	UpdateDetachedInvoiceStatus(id int, status, protocol, sefazCode, sefazMotive string) error
+	UpdateDetachedInvoiceAuthorizedXML(id int, xmlAuthorized string) error
+}
+
 // handleDetachedSefazResponse processes the SEFAZ response for detached invoices
-func (s *NFeService) handleDetachedSefazResponse(sefazResp *sefaz.AutorizacaoResponse, invoiceID int, signedXML, accessKey string, nfeModel *nfe_model.NFeModel) (DetachedInvoiceResult, entity_public.Toast) {
+func (s *NFeService) handleDetachedSefazResponse(sefazResp *sefaz.AutorizacaoResponse, invoiceID int, signedXML, accessKey string, nfeModel detachedResponseModel) (DetachedInvoiceResult, entity_public.Toast) {
 	result := DetachedInvoiceResult{XML: signedXML, AccessKey: accessKey}
 
 	if sefazResp.IsAuthorized() {
 		errUpd := nfeModel.UpdateDetachedInvoiceStatus(invoiceID, "authorized", sefazResp.Protocol, sefazResp.StatusCode, sefazResp.StatusMotive)
 		if errUpd != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateDetachedInvoiceStatus error: %v", errUpd.Error()))
+		}
+		// Build and store the <nfeProc> wrapper (signed NFe + protocol) so
+		// consumers can read nProt/dhRecbto from the stored XML.
+		if authXML, buildErr := nfe_xml.BuildAuthorizedXML(signedXML, accessKey, sefazResp.Protocol, sefazResp.DhRecbto, sefazResp.StatusCode, sefazResp.StatusMotive); buildErr == nil {
+			if xmlErr := nfeModel.UpdateDetachedInvoiceAuthorizedXML(invoiceID, authXML); xmlErr != nil {
+				model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateDetachedInvoiceAuthorizedXML error: %v", xmlErr.Error()))
+			}
+		} else {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("BuildAuthorizedXML error: %v", buildErr.Error()))
 		}
 		return result, entity_public.GetSuccessToast("NF-e autorizada pela SEFAZ", fmt.Sprintf("Protocolo: %s", sefazResp.Protocol))
 	}
@@ -913,7 +985,7 @@ func (s *NFeService) attemptDetachedSVCContingency(input entity.InvoiceInput, de
 	newInvoiceID, createErr := nfeModel.CreateDetachedInvoice(
 		detachedInput.FarmID, recipientID,
 		newAccessKey, farmNFeConfig.Serie, newNumber,
-		input.Items[0].Produto.CFOP, &input.NaturezaOp, nil,
+		&input.NaturezaOp, nil,
 		totalValue, totalIBS, totalCBS,
 		int(tpEmis), taxRates, detachedInput.Overrides, itemsForDB,
 	)

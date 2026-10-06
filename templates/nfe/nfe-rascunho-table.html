@@ -1,0 +1,17 @@
+{{ block "nfe-rascunho-table" . }}
+<table class="w-full">
+    <thead class="border-b border-white/10 text-xs text-gray-400 uppercase tracking-wider *:font-medium">
+        <tr>
+            <th class="py-3 px-4 text-left">Nome</th>
+            <th class="py-3 px-4 text-left">Destinatário</th>
+            <th class="py-3 px-4 text-left">Itens</th>
+            <th class="py-3 px-4 text-left">Ações</th>
+        </tr>
+    </thead>
+    <tbody id="nfe-rascunho-table-body" class="text-white/80">
+        {{ range .Profiles }}
+        {{ template "nfe-rascunho-list-item" . }}
+        {{ end }}
+    </tbody>
+</table>
+{{ end }}

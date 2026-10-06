@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,8 +23,20 @@
             </h1>
             <p class="text-sm text-white/90 mt-2">
                 Emita uma NF-e independente de romaneio.
+                {{ if .HasRascunho }}
+                <span class="block mt-1 text-white/70" data-test-id="rascunho-aplicado">
+                    Rascunho: <strong>{{ .RascunhoName }}</strong>
+                </span>
+                {{ end }}
             </p>
         </header>
+
+        {{ if .Warning }}
+        <div class="bg-orange-200 rounded-lg p-4 border-2 border-orange-600 text-orange-700 shadow shadow-orange-600 mx-auto text-lg flex gap-2 mb-4" data-test-id="rascunho-warning">
+            {{ template "info-icon" "size-7 shrink-0" }}
+            <p>{{ .Warning }}</p>
+        </div>
+        {{ end }}
 
         {{ if not .HasNFEFarmConfig }}
         <div class="bg-orange-200 rounded-lg p-4 border-2 border-orange-600 text-orange-700 shadow shadow-orange-600 mx-auto text-lg flex gap-2">
@@ -35,31 +47,35 @@
         </div>
         {{ else }}
         <form id="detached-nfe-form" class="glass-panel rounded-xl p-6 space-y-6" hx-post="/nfe/emitir/preview" hx-target="#nfe-detached-preview" hx-swap="innerHTML">
+            <!-- Informational only: the applied rascunho is never reapplied at
+                 preview/confirm time; the submitted form values are authoritative. -->
+            <input type="hidden" name="rascunhoId" value="{{ .RascunhoID }}">
+
             <!-- Recipient Section -->
             <fieldset class="flex flex-col gap-4 p-4 glass-panel rounded-xl">
                 <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
                     Destinatário
                 </legend>
-                
+
                 <div class="flex gap-4 mb-4">
                     <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="recipientType" value="existing" checked class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white">
+                        <input type="radio" name="recipientType" value="existing" class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white" {{ if ne .RecipientType "new" }}checked{{ end }}>
                         <span class="text-white/80 text-sm">Selecionar existente</span>
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="recipientType" value="new" class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white">
+                        <input type="radio" name="recipientType" value="new" class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white" {{ if eq .RecipientType "new" }}checked{{ end }}>
                         <span class="text-white/80 text-sm">Novo destinatário</span>
                     </label>
                 </div>
 
                 <!-- Existing recipient selection -->
-                <div id="existing-recipient-section">
+                <div id="existing-recipient-section" {{ if eq .RecipientType "new" }}class="hidden"{{ end }}>
                     <div class="flex flex-col-reverse">
                         <select name="recipientPersonId" id="recipientPersonId" class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 w-full">
                             <option value="">Selecione um destinatário</option>
                             {{ range .People }}
                             {{ if .Id }}
-                            <option value="{{ .Id }}">{{ .Name }}</option>
+                            <option value="{{ .Id }}" {{ if eq (printf "%v" .Id) $.SelectedPersonID }}selected{{ end }}>{{ .Name }}</option>
                             {{ end }}
                             {{ end }}
                         </select>
@@ -70,10 +86,10 @@
                 </div>
 
                 <!-- New recipient form -->
-                <div id="new-recipient-section" class="hidden space-y-4">
+                <div id="new-recipient-section" class="{{ if ne .RecipientType "new" }}hidden {{ end }}space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientName" id="recipientName" required
+                            <input type="text" name="recipientName" id="recipientName" value="{{ .RecipientName }}"
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="Nome / Razão Social">
                             <label for="recipientName" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -81,7 +97,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientDocument" id="recipientDocument" required
+                            <input type="text" name="recipientDocument" id="recipientDocument" value="{{ .RecipientDocument }}"
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="CPF / CNPJ">
                             <label for="recipientDocument" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -89,7 +105,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientIE" id="recipientIE"
+                            <input type="text" name="recipientIE" id="recipientIE" value="{{ .RecipientIE }}"
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="Inscrição Estadual">
                             <label for="recipientIE" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -97,7 +113,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientPhone" id="recipientPhone"
+                            <input type="text" name="recipientPhone" id="recipientPhone" value="{{ .RecipientPhone }}"
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="Telefone">
                             <label for="recipientPhone" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -105,7 +121,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="email" name="recipientEmail" id="recipientEmail"
+                            <input type="email" name="recipientEmail" id="recipientEmail" value="{{ .RecipientEmail }}"
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="E-mail">
                             <label for="recipientEmail" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -116,7 +132,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="flex flex-col-reverse md:col-span-2">
-                            <input type="text" name="recipientStreet" id="recipientStreet"
+                            <input type="text" name="recipientStreet" id="recipientStreet" value="{{ .RecipientStreet }}"
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="Logradouro">
                             <label for="recipientStreet" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -124,7 +140,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientNumber" id="recipientNumber"
+                            <input type="text" name="recipientNumber" id="recipientNumber" value="{{ .RecipientNumber }}"
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="Número">
                             <label for="recipientNumber" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -132,7 +148,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientNeighborhood" id="recipientNeighborhood"
+                            <input type="text" name="recipientNeighborhood" id="recipientNeighborhood" value="{{ .RecipientNeighborhood }}"
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="Bairro">
                             <label for="recipientNeighborhood" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -140,7 +156,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientCity" id="recipientCity"
+                            <input type="text" name="recipientCity" id="recipientCity" value="{{ .RecipientCity }}"
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="Cidade">
                             <label for="recipientCity" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -148,7 +164,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientState" id="recipientState"
+                            <input type="text" name="recipientState" id="recipientState" value="{{ .RecipientState }}"
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="UF">
                             <label for="recipientState" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -156,7 +172,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientCEP" id="recipientCEP"
+                            <input type="text" name="recipientCEP" id="recipientCEP" value="{{ .RecipientCEP }}"
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="CEP">
                             <label for="recipientCEP" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -172,16 +188,16 @@
                 <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
                     Itens
                 </legend>
-                
-                <div id="items-container" class="space-y-4">
-                    <!-- Item 0 (template) -->
-                    <div class="item-row p-4 bg-white/5 rounded-lg border border-white/10" data-item-index="0">
+
+                <div id="items-container" class="space-y-4" data-default-cfop="{{ with index .Items 0 }}{{ .CFOP }}{{ end }}">
+                    {{ range $index, $item := .Items }}
+                    <div class="item-row p-4 bg-white/5 rounded-lg border border-white/10" data-item-index="{{ $index }}">
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div class="flex flex-col-reverse md:col-span-2">
-                                <select name="items[0].farmProductId" class="farm-product-select peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 truncate">
+                                <select name="items[{{ $index }}].farmProductId" class="farm-product-select peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 truncate">
                                     <option value="">Produto cadastrado (opcional)</option>
-                                    {{ range .FarmProducts }}
-                                    <option value="{{ .Id }}" data-name="{{ .Name }}" data-ncm="{{ .NCM }}">{{ .Name }}</option>
+                                    {{ range $.FarmProducts }}
+                                    <option value="{{ .Id }}" data-name="{{ .Name }}" data-ncm="{{ .NCM }}" {{ if eq (printf "%v" .Id) $item.FarmProductID }}selected{{ end }}>{{ .Name }}</option>
                                     {{ end }}
                                 </select>
                                 <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -189,7 +205,7 @@
                                 </label>
                             </div>
                             <div class="flex flex-col-reverse">
-                                <input type="text" name="items[0].productName" required
+                                <input type="text" name="items[{{ $index }}].productName" required value="{{ $item.ProductName }}"
                                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                     placeholder="Descrição do produto">
                                 <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -197,7 +213,7 @@
                                 </label>
                             </div>
                             <div class="flex flex-col-reverse">
-                                <input type="text" name="items[0].ncm"
+                                <input type="text" name="items[{{ $index }}].ncm" value="{{ $item.NCM }}"
                                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                     placeholder="NCM">
                                 <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -205,7 +221,15 @@
                                 </label>
                             </div>
                             <div class="flex flex-col-reverse">
-                                <input type="text" name="items[0].quantity" inputmode="decimal" required
+                                <input type="text" inputmode="numeric" name="items[{{ $index }}].cfop" value="{{ $item.CFOP }}" required maxlength="4" pattern="[0-9]{4}"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="5101">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    CFOP
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" inputmode="decimal" name="items[{{ $index }}].quantity" required
                                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                     placeholder="0,000">
                                 <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -213,7 +237,7 @@
                                 </label>
                             </div>
                             <div class="flex flex-col-reverse">
-                                <input type="text" name="items[0].unitPrice" inputmode="decimal" required
+                                <input type="text" inputmode="decimal" name="items[{{ $index }}].unitPrice" required value="{{ $item.UnitPrice }}"
                                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                     placeholder="0,00">
                                 <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -221,7 +245,7 @@
                                 </label>
                             </div>
                             <div class="flex flex-col-reverse">
-                                <input type="text" name="items[0].grossWeight" inputmode="decimal"
+                                <input type="text" inputmode="decimal" name="items[{{ $index }}].grossWeight"
                                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                     placeholder="0,000">
                                 <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -229,19 +253,19 @@
                                 </label>
                             </div>
                             <div class="flex flex-col-reverse">
-                                <select name="items[0].unit" class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
-                                    <option value="KG" selected>KG - Quilograma</option>
-                                    <option value="T">T - Tonelada</option>
-                                    <option value="SC">SC - Saca</option>
-                                    <option value="L">L - Litro</option>
-                                    <option value="UN">UN - Unidade</option>
+                                <select name="items[{{ $index }}].unit" class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                                    <option value="KG" {{ if eq $item.Unit "KG" }}selected{{ end }}>KG - Quilograma</option>
+                                    <option value="T" {{ if eq $item.Unit "T" }}selected{{ end }}>T - Tonelada</option>
+                                    <option value="SC" {{ if eq $item.Unit "SC" }}selected{{ end }}>SC - Saca</option>
+                                    <option value="L" {{ if eq $item.Unit "L" }}selected{{ end }}>L - Litro</option>
+                                    <option value="UN" {{ if eq $item.Unit "UN" }}selected{{ end }}>UN - Unidade</option>
                                 </select>
                                 <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                                     Unidade
                                 </label>
                             </div>
                             <div class="flex flex-col-reverse">
-                                <input type="text" name="items[0].cest"
+                                <input type="text" name="items[{{ $index }}].cest" value="{{ ptrString $item.CEST }}"
                                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                     placeholder="CEST (opcional)">
                                 <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -249,10 +273,11 @@
                                 </label>
                             </div>
                         </div>
-                        <button type="button" class="remove-item-btn mt-2 text-red-400 hover:text-red-300 text-sm hidden">
+                        <button type="button" class="remove-item-btn mt-2 text-red-400 hover:text-red-300 text-sm {{ if eq (len $.Items) 1 }}hidden{{ end }}">
                             Remover item
                         </button>
                     </div>
+                    {{ end }}
                 </div>
 
                 <button type="button" id="add-item-btn" class="primary-glass-btn flex items-center gap-2 p-3 mt-4">
@@ -269,16 +294,6 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="flex flex-col-reverse">
-                        <select name="cfop" id="cfop" required class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 w-full">
-                            <option value="5101" selected>5101 - Venda de produção do estabelecimento</option>
-                            <option value="5102">5102 - Venda de mercadoria adquirida ou recebida de terceiros</option>
-                            <option value="5901">5901 - Remessa para industrialização</option>
-                        </select>
-                        <label for="cfop" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                            CFOP
-                        </label>
-                    </div>
-                    <div class="flex flex-col-reverse">
                         <input type="text" name="naturezaOp" id="naturezaOp"
                             value="{{ .DefaultNaturezaOp }}"
                             class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
@@ -292,7 +307,7 @@
                 <div class="flex flex-col-reverse">
                     <textarea name="infCpl" id="infCpl" rows="3"
                         class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 resize-none"
-                        placeholder="Informações Complementares"></textarea>
+                        placeholder="Informações Complementares">{{ .DefaultInfCpl }}</textarea>
                     <label for="infCpl" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                         Informações Complementares
                     </label>
@@ -385,7 +400,7 @@
                 </div>
 
                 <label class="flex items-center gap-2 cursor-pointer text-white/80 select-none mt-2">
-                    <input type="checkbox" name="useDefaultTaxRates" id="useDefaultTaxRates" checked
+                    <input type="checkbox" name="useDefaultTaxRates" id="useDefaultTaxRates" {{ if .UseDefaultTaxRates }}checked{{ end }}
                         class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white">
                     <span class="text-xs lg:text-sm uppercase tracking-wider font-medium">Usar taxa padrão</span>
                 </label>
@@ -393,7 +408,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-l border-white/10 pl-2">
                     <div class="flex flex-col-reverse">
                         <input type="text" inputmode="decimal" name="icmsRate" id="icmsRate"
-                            value="{{ .DefaultICMSRate }}" disabled
+                            value="{{ .DefaultICMSRate }}"
                             class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
                             placeholder="17,00">
                         <label for="icmsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -402,7 +417,7 @@
                     </div>
                     <div class="flex flex-col-reverse">
                         <input type="text" inputmode="decimal" name="pisRate" id="pisRate"
-                            value="{{ .DefaultPISRate }}" disabled
+                            value="{{ .DefaultPISRate }}"
                             class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
                             placeholder="1,65">
                         <label for="pisRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -411,7 +426,7 @@
                     </div>
                     <div class="flex flex-col-reverse">
                         <input type="text" inputmode="decimal" name="cofinsRate" id="cofinsRate"
-                            value="{{ .DefaultCOFINSRate }}" disabled
+                            value="{{ .DefaultCOFINSRate }}"
                             class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
                             placeholder="7,60">
                         <label for="cofinsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -420,7 +435,7 @@
                     </div>
                     <div class="flex flex-col-reverse">
                         <input type="text" inputmode="decimal" name="ibsRate" id="ibsRate"
-                            value="{{ .DefaultIBSRate }}" disabled
+                            value="{{ .DefaultIBSRate }}"
                             class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
                             placeholder="0,10">
                         <label for="ibsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -429,7 +444,7 @@
                     </div>
                     <div class="flex flex-col-reverse">
                         <input type="text" inputmode="decimal" name="cbsRate" id="cbsRate"
-                            value="{{ .DefaultCBSRate }}" disabled
+                            value="{{ .DefaultCBSRate }}"
                             class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
                             placeholder="0,90">
                         <label for="cbsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -440,19 +455,54 @@
             </fieldset>
 
             <!-- Submit -->
-            <div class="flex items-center justify-center gap-4">
-                <button type="submit" class="primary-glass-btn flex items-center gap-2 p-4 text-lg">
+            <div class="flex flex-wrap items-center justify-center gap-4">
+                <button type="submit" class="primary-glass-btn flex items-center gap-2 p-4 text-lg" data-test-id="preview-detached-nfe">
                     <iconify-icon icon="mdi:eye" width="24" height="24"></iconify-icon>
                     Gerar Pré-visualização
                 </button>
+                <button type="button" id="open-save-rascunho-dialog" class="glass-btn flex items-center gap-2 p-4 text-lg" data-test-id="open-save-rascunho">
+                    <iconify-icon icon="mdi:content-save-outline" width="24" height="24"></iconify-icon>
+                    Salvar como rascunho
+                </button>
             </div>
 
-            <input type="hidden" name="itemCount" id="itemCount" value="1">
+            <input type="hidden" name="itemCount" id="itemCount" value="{{ len .Items }}">
         </form>
 
         <!-- Preview region: filled by POST /nfe/emitir/preview and replaced by
              the result fragment after confirmation -->
         <div id="nfe-detached-preview"></div>
+
+        <!-- Save-as-rascunho dialog. The dialog form includes the populated
+             emission form, so the rascunho stores the exact visible values. -->
+        <dialog id="save-rascunho-dialog" class="glass-panel rounded-xl w-full max-w-md">
+            <form id="save-rascunho-form" class="p-6 flex flex-col gap-4" hx-post="/nfe/rascunho/salvar" hx-include="#detached-nfe-form" hx-swap="none">
+                <h2 class="text-lg font-bold text-white">Salvar como Rascunho de NF-e</h2>
+                <p class="text-sm text-white/70">
+                    O rascunho guarda destinatário, itens com CFOP e preço, e os dados de operação e tributação. Quantidade e peso não são salvos.
+                </p>
+                <input type="hidden" name="rascunhoAtualId" value="{{ .RascunhoID }}">
+                <div class="flex flex-col-reverse">
+                    <input type="text" name="rascunhoNome" id="rascunhoNome" required value="{{ .RascunhoName }}"
+                        class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                        placeholder="Nome do rascunho">
+                    <label for="rascunhoNome" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                        Nome do Rascunho
+                    </label>
+                </div>
+                {{ if .HasRascunho }}
+                <label class="flex items-center gap-2 cursor-pointer text-white/80 select-none">
+                    <input type="checkbox" name="atualizarRascunho" id="atualizarRascunho"
+                        class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white">
+                    <span class="text-xs lg:text-sm uppercase tracking-wider font-medium">Atualizar o rascunho "{{ .RascunhoName }}"</span>
+                </label>
+                {{ end }}
+                <div class="flex items-center justify-end gap-2">
+                    <button type="button" id="cancel-save-rascunho" class="glass-btn p-3">Cancelar</button>
+                    <button type="submit" class="primary-glass-btn p-3" data-test-id="confirm-save-rascunho">Salvar</button>
+                </div>
+            </form>
+        </dialog>
 
         <script nonce="{{ .CSPNonce }}">
             // Toggle between existing and new recipient
@@ -460,7 +510,7 @@
                 radio.addEventListener('change', (e) => {
                     const existingSection = document.getElementById('existing-recipient-section');
                     const newSection = document.getElementById('new-recipient-section');
-                    
+
                     const isExisting = e.target.value === 'existing';
 
                     existingSection.classList.toggle('hidden', !isExisting);
@@ -514,6 +564,7 @@
             const itemsContainer = document.getElementById('items-container');
             const addItemBtn = document.getElementById('add-item-btn');
             const itemCountInput = document.getElementById('itemCount');
+            const defaultItemCFOP = itemsContainer ? (itemsContainer.dataset.defaultCfop || '5101') : '5101';
 
             // Selecting a farm product fills the row's description and NCM;
             // clearing the selection restores manual entry.
@@ -585,6 +636,13 @@
                     select.value = '';
                 });
 
+                // Every row starts from the farm/default CFOP and remains
+                // editable per item.
+                const cfopInput = template.querySelector('input[name$=".cfop"]');
+                if (cfopInput) {
+                    cfopInput.value = defaultItemCFOP;
+                }
+
                 itemsContainer.appendChild(template);
                 reindexItems();
             });
@@ -598,6 +656,45 @@
                     } else {
                         removeBtn.classList.remove('hidden');
                     }
+                });
+            }
+
+            // Save-as-rascunho dialog: opens, submits the populated form, and
+            // closes on success (204, no swap). Failure toasts keep it open.
+            const saveRascunhoDialog = document.getElementById('save-rascunho-dialog');
+            const openSaveRascunho = document.getElementById('open-save-rascunho-dialog');
+            const cancelSaveRascunho = document.getElementById('cancel-save-rascunho');
+            const saveRascunhoForm = document.getElementById('save-rascunho-form');
+
+            if (openSaveRascunho && saveRascunhoDialog) {
+                openSaveRascunho.addEventListener('click', () => {
+                    saveRascunhoDialog.showModal();
+                });
+            }
+            if (cancelSaveRascunho && saveRascunhoDialog) {
+                cancelSaveRascunho.addEventListener('click', () => {
+                    saveRascunhoDialog.close();
+                });
+            }
+            if (saveRascunhoForm && saveRascunhoDialog) {
+                saveRascunhoForm.addEventListener('htmx:afterRequest', (evt) => {
+                    if (evt.detail.successful && evt.detail.xhr && evt.detail.xhr.status === 204) {
+                        saveRascunhoDialog.close();
+                    }
+                });
+            }
+
+            // Dirty-form guard: applying another rascunho (or navigating away)
+            // must not silently discard edits made on this form.
+            const detachedFormEl = document.getElementById('detached-nfe-form');
+            let detachedFormDirty = false;
+            if (detachedFormEl) {
+                detachedFormEl.addEventListener('input', () => { detachedFormDirty = true; });
+                detachedFormEl.addEventListener('change', () => { detachedFormDirty = true; });
+                window.addEventListener('beforeunload', (event) => {
+                    if (!detachedFormDirty) return;
+                    event.preventDefault();
+                    event.returnValue = '';
                 });
             }
         </script>

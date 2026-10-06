@@ -40,13 +40,16 @@
         <input type="hidden" name="items[{{ .Index }}].productName" value="{{ .ProductName }}">
         <input type="hidden" name="items[{{ .Index }}].ncm" value="{{ .NCM }}">
         <input type="hidden" name="items[{{ .Index }}].cest" value="{{ .CEST }}">
+        <input type="hidden" name="items[{{ .Index }}].cfop" value="{{ .CFOP }}">
         <input type="hidden" name="items[{{ .Index }}].quantity" value="{{ .Quantity }}">
         <input type="hidden" name="items[{{ .Index }}].grossWeight" value="{{ .GrossWeight }}">
         <input type="hidden" name="items[{{ .Index }}].unitPrice" value="{{ .UnitPrice }}">
         <input type="hidden" name="items[{{ .Index }}].unit" value="{{ .Unit }}">
         {{ end }}
 
-        <input type="hidden" name="cfop" value="{{ .CFOP }}">
+        <!-- Informational only: the rascunho is never reloaded/reapplied at
+             confirmation; the submitted preview values are authoritative. -->
+        <input type="hidden" name="rascunhoId" value="{{ .ProfileID }}">
         <input type="hidden" name="naturezaOp" value="{{ .NaturezaOp }}">
         <input type="hidden" name="infCpl" value="{{ .InfCpl }}">
         <input type="hidden" name="modFrete" value="{{ .ModFrete }}">

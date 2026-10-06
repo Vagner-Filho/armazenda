@@ -167,7 +167,7 @@ bun run db:seed     # Seed test data
 bun run db:stop     # Stop test database
 ```
 
-**E2E auto-setup:** Playwright's `global-setup.js` starts the Docker test DB (localhost:5433), starts the Go app (http://localhost:8100), and seeds fixtures automatically — manual `db:start`/`db:seed` is only needed for debugging.
+**E2E auto-setup:** Playwright's `global-setup.js` starts the Docker test DB (localhost:5433), starts the Go app (http://localhost:8100), and seeds fixtures automatically — manual `db:start`/`db:seed` is only needed for debugging. The started app auto-runs the NF-e retry worker — read **SEFAZ Network Isolation** (Additional Notes) before seeding NF-e config or manually smoke-testing NF-e endpoints.
 
 **App requires DB env vars to run:** `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME`, `DB_PORT` (set with no defaults in code).
 
@@ -374,6 +374,24 @@ The project uses a lightweight, custom migration system with raw SQL files.
 - **WASM**: Calculator package compiled to WebAssembly for client-side use
 - **Offline Support**: Offline-first architecture (see OFFLINE.md)
 - **Air**: Auto-rebuilds Go app and WASM; excludes `_test.go` files
+
+### SEFAZ Network Isolation (prohibited unless explicitly instructed by the human)
+
+Tests, smoke runs, and local development must **never** cause real network calls to SEFAZ/SVC endpoints (production or homologação) unless the human explicitly asks for it. The hazard is easy to miss because the calls do not come from test code — they come from the running app's background worker or from SEFAZ-backed endpoints:
+
+- **The retry worker auto-starts with the app** (`nfe_service.StartRetryWorker()` in `main.go`). It runs an immediate pass on startup and then every 5 minutes:
+  - `pending` invoices (both `nfe_invoice` and `detached_nfe_invoice`) → SEFAZ status query
+  - `draft` detached invoices ≤ 24h old → SVC status check, and **auto-rebuild + send** when the SVC is active
+- **SEFAZ-backed endpoints** call SEFAZ when the farm has an `nfe_farm_config` row with certificate data: emission (`POST /nfe/build/:departureId`, `POST /nfe/emitir/build`) and cancellation (`POST /nfe/cancel/:accessKey`, `POST /nfe/avulsa/cancel/:accessKey`). SEFAZ-free paths (pages/lists, config form, XML/DANFE download, emission *preview*) are always safe.
+
+**What keeps test environments safe today:** the e2e fixture (`test/e2e/fixtures/test-user.sql`) creates no `nfe_farm_config`. Without a farm NF-e config (certificate data), the worker and the emission/cancellation paths exit early ("farm has no NFe config") before any network call.
+
+**Rules:**
+1. Never insert or seed `nfe_farm_config` rows (or certificate bytes/passwords) into a test/smoke database that a running app connects to, unless the human explicitly instructed a SEFAZ-reaching check.
+2. Keep all unit tests offline — no test may dial SEFAZ endpoints directly or indirectly.
+3. When manually smoke-testing a running app, restrict to SEFAZ-free paths, or first confirm the target database has no `nfe_farm_config` for any farm with NF-e rows.
+4. Stop the app process when a smoke run finishes — a left-running app keeps the worker ticking (and retrying) every 5 minutes.
+5. If a verification seems to require touching SEFAZ, stop and ask the human before proceeding.
 
 ### NF-e Contingency Architecture
 

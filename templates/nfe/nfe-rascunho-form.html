@@ -1,0 +1,430 @@
+{{ block "nfe-rascunho-form" . }}
+<dialog id="addNfeRascunhoDialog" class="glass-panel rounded-xl w-full max-w-4xl">
+    <div class="p-4 relative max-h-[90vh] overflow-y-auto">
+        {{ template "close-dialog-btn" (dict "selector" "dialog#addNfeRascunhoDialog" "CSPNonce" .CSPNonce) }}
+        <header class="text-center mb-4">
+            <h1 class="text-xl lg:text-3xl font-bold text-white/95 font-[Noto_Sans]">
+                {{ if .Profile }}
+                Editando Rascunho de NF-e
+                {{ else }}
+                Novo Rascunho de NF-e
+                {{ end }}
+            </h1>
+            <p class="text-sm text-white/90 mt-2">
+                {{ if .Profile }}
+                Atualize os dados deste rascunho de NF-e.
+                {{ else }}
+                Preencha os campos abaixo para criar um novo rascunho de NF-e.
+                {{ end }}
+            </p>
+        </header>
+        <form class="flex flex-col gap-4" {{ if .Profile }} hx-put="/nfe/rascunho/{{ .Profile.ID }}"
+            hx-target="#nfe-rascunho-{{ .Profile.ID }}" hx-swap="outerHTML" {{ else }} hx-post="/nfe/rascunho"
+            hx-target="#nfe-rascunho-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#rascunho-btns-container">
+            <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl">
+                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+                    Identificação
+                </legend>
+                <div class="flex flex-col-reverse">
+                    <input type="text" name="name" id="rascunhoName" required value="{{ if .Profile }}{{ .Profile.Name }}{{ end }}"
+                        class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                        data-test-id="rascunho-form-nome">
+                    <label for="rascunhoName" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                        Nome
+                    </label>
+                </div>
+                <div class="flex flex-col-reverse">
+                    <select name="recipientPersonId" id="rascunhoRecipientPersonId"
+                        class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40" data-test-id="rascunho-form-destinatario">
+                        <option value="">Sem destinatário</option>
+                        {{ range .People }}
+                        {{ if .Id }}
+                        <option value="{{ .Id }}" {{ if eq (printf "%v" .Id) $.RecipientSelected }}selected{{ end }}>{{ .Name }}</option>
+                        {{ end }}
+                        {{ end }}
+                    </select>
+                    <label for="rascunhoRecipientPersonId" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                        Destinatário (opcional)
+                    </label>
+                </div>
+            </fieldset>
+
+            <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl">
+                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+                    Itens
+                </legend>
+                <div id="rascunho-items-container" class="space-y-4" data-default-cfop="5101">
+                    {{ range $index, $item := .Rows }}
+                    <div class="rascunho-item-row p-4 bg-white/5 rounded-lg border border-white/10" data-item-index="{{ $index }}">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="flex flex-col-reverse md:col-span-2">
+                                <select name="items[{{ $index }}].farmProductId" class="farm-product-select peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 truncate">
+                                    <option value="">Produto cadastrado (opcional)</option>
+                                    {{ range $.FarmProducts }}
+                                    <option value="{{ .Id }}" data-name="{{ .Name }}" data-ncm="{{ .NCM }}" {{ if eq (printf "%v" .Id) $item.FarmProductID }}selected{{ end }}>{{ .Name }}</option>
+                                    {{ end }}
+                                </select>
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    Produto cadastrado
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="items[{{ $index }}].productName" value="{{ $item.ProductName }}"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    data-test-id="rascunho-item-descricao"
+                                    placeholder="Descrição do produto">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    Descrição
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="items[{{ $index }}].ncm" value="{{ $item.NCM }}"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="NCM">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    NCM
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" inputmode="numeric" name="items[{{ $index }}].cfop" value="{{ $item.CFOP }}" required maxlength="4" pattern="[0-9]{4}"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    data-test-id="rascunho-item-cfop" placeholder="5101">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    CFOP
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" inputmode="decimal" name="items[{{ $index }}].unitPrice" value="{{ $item.UnitPrice }}" required
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    data-test-id="rascunho-item-preco" placeholder="0,00">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    Preço Unitário (R$)
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <select name="items[{{ $index }}].unit" class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                                    <option value="KG" {{ if or (eq $item.Unit "KG") (eq $item.Unit "") }}selected{{ end }}>KG - Quilograma</option>
+                                    <option value="T" {{ if eq $item.Unit "T" }}selected{{ end }}>T - Tonelada</option>
+                                    <option value="SC" {{ if eq $item.Unit "SC" }}selected{{ end }}>SC - Saca</option>
+                                    <option value="L" {{ if eq $item.Unit "L" }}selected{{ end }}>L - Litro</option>
+                                    <option value="UN" {{ if eq $item.Unit "UN" }}selected{{ end }}>UN - Unidade</option>
+                                </select>
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    Unidade
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="items[{{ $index }}].cest" value="{{ $item.CEST }}"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="CEST (opcional)">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    CEST
+                                </label>
+                            </div>
+                        </div>
+                        <button type="button" class="remove-item-btn mt-2 text-red-400 hover:text-red-300 text-sm {{ if eq (len $.Rows) 1 }}hidden{{ end }}">
+                            Remover item
+                        </button>
+                    </div>
+                    {{ end }}
+                </div>
+                <button type="button" id="add-rascunho-item-btn" class="primary-glass-btn flex items-center gap-2 p-3 mt-2">
+                    <iconify-icon icon="mdi:plus" width="20" height="20"></iconify-icon>
+                    Adicionar Item
+                </button>
+                <input type="hidden" name="itemCount" id="rascunhoItemCount" value="{{ len .Rows }}">
+            </fieldset>
+
+            <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl">
+                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+                    Operação
+                </legend>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="naturezaOp" id="rascunhoNaturezaOp"
+                            value="{{ if .Profile }}{{ ptrString .Profile.NaturezaOp }}{{ end }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            data-test-id="rascunho-form-natureza"
+                            placeholder="Natureza da Operação">
+                        <label for="rascunhoNaturezaOp" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Natureza da Operação
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <select name="modFrete" id="rascunhoModFrete"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                            <option value="0" {{ if eq .ModFreteSelected 0 }}selected{{ end }}>0 - Por conta do emitente (CIF)</option>
+                            <option value="1" {{ if eq .ModFreteSelected 1 }}selected{{ end }}>1 - Por conta do destinatário (FOB)</option>
+                            <option value="2" {{ if eq .ModFreteSelected 2 }}selected{{ end }}>2 - Por conta de terceiros</option>
+                            <option value="3" {{ if eq .ModFreteSelected 3 }}selected{{ end }}>3 - Próprio por conta do remetente</option>
+                            <option value="4" {{ if eq .ModFreteSelected 4 }}selected{{ end }}>4 - Próprio por conta do destinatário</option>
+                            <option value="9" {{ if eq .ModFreteSelected 9 }}selected{{ end }}>9 - Sem frete</option>
+                        </select>
+                        <label for="rascunhoModFrete" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Modalidade do Frete
+                        </label>
+                    </div>
+                </div>
+                <div class="flex flex-col-reverse">
+                    <textarea name="infCpl" id="rascunhoInfCpl" rows="2"
+                        class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 resize-none"
+                        placeholder="Informações Complementares">{{ if .Profile }}{{ ptrString .Profile.InfCpl }}{{ end }}</textarea>
+                    <label for="rascunhoInfCpl" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                        Informações Complementares
+                    </label>
+                </div>
+            </fieldset>
+
+            <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl">
+                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+                    Tributação
+                </legend>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="icmsCST" id="rascunhoIcmsCST" value="{{ if .Profile }}{{ ptrString .Profile.ICMSCST }}{{ end }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40" placeholder="00">
+                        <label for="rascunhoIcmsCST" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            CST ICMS
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="pisCST" id="rascunhoPisCST" value="{{ if .Profile }}{{ ptrString .Profile.PISCST }}{{ end }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40" placeholder="01">
+                        <label for="rascunhoPisCST" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            CST PIS
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="cofinsCST" id="rascunhoCofinsCST" value="{{ if .Profile }}{{ ptrString .Profile.COFINSCST }}{{ end }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40" placeholder="01">
+                        <label for="rascunhoCofinsCST" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            CST COFINS
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="ibsCST" id="rascunhoIbsCST" value="{{ if .Profile }}{{ ptrString .Profile.IBSCST }}{{ end }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40" placeholder="000" maxlength="3">
+                        <label for="rascunhoIbsCST" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            CST IBS
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="cbsCST" id="rascunhoCbsCST" value="{{ if .Profile }}{{ ptrString .Profile.CBSCST }}{{ end }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40" placeholder="000" maxlength="3">
+                        <label for="rascunhoCbsCST" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            CST CBS
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="cClassTrib" id="rascunhoCClassTrib" value="{{ if .Profile }}{{ ptrString .Profile.CClassTrib }}{{ end }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40" placeholder="000001" maxlength="10">
+                        <label for="rascunhoCClassTrib" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            cClassTrib
+                        </label>
+                    </div>
+                </div>
+
+                <label class="flex items-center gap-2 cursor-pointer text-white/80 select-none mt-2">
+                    <input type="checkbox" name="useDefaultTaxRates" id="rascunhoUseDefaultTaxRates" {{ if .UseDefaultTaxRates }}checked{{ end }}
+                        class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white">
+                    <span class="text-xs lg:text-sm uppercase tracking-wider font-medium">Usar taxa padrão da fazenda</span>
+                </label>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-l border-white/10 pl-2">
+                    <div class="flex flex-col-reverse">
+                        <input type="text" inputmode="decimal" name="icmsRate" id="rascunhoIcmsRate" value="{{ .ICMSRate }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed" placeholder="17,00">
+                        <label for="rascunhoIcmsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Alíquota ICMS (%)
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" inputmode="decimal" name="pisRate" id="rascunhoPisRate" value="{{ .PISRate }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed" placeholder="1,65">
+                        <label for="rascunhoPisRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Alíquota PIS (%)
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" inputmode="decimal" name="cofinsRate" id="rascunhoCofinsRate" value="{{ .COFINSRate }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed" placeholder="7,60">
+                        <label for="rascunhoCofinsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Alíquota COFINS (%)
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" inputmode="decimal" name="ibsRate" id="rascunhoIbsRate" value="{{ .IBSRate }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed" placeholder="0,10">
+                        <label for="rascunhoIbsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Alíquota IBS (%)
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" inputmode="decimal" name="cbsRate" id="rascunhoCbsRate" value="{{ .CBSRate }}"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed" placeholder="0,90">
+                        <label for="rascunhoCbsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Alíquota CBS (%)
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+
+            <div class="flex items-center justify-around mt-4 w-52 mx-auto" id="rascunho-btns-container">
+                <button class="cancel-btn" type="button">Cancelar</button>
+                <button class="primary-glass-btn" type="submit" data-test-id="salvar-rascunho">
+                    {{ if .Profile }} Salvar {{ else }} Adicionar {{ end }}
+                </button>
+                <img class="htmx-indicator" src="/public/assets/static/spinner.svg" alt="...">
+            </div>
+        </form>
+    </div>
+
+    <script nonce="{{ .CSPNonce }}" type="module">
+        import {removeEmptyFields} from "/public/assets/js/form.js"
+        const dialogEl = document.querySelector("#addNfeRascunhoDialog")
+        if (dialogEl) {
+            dialogEl.showModal()
+
+            const controller = new AbortController()
+            const signal = controller.signal
+
+            function closeRascunhoFormDialog() {
+                controller.abort()
+                dialogEl.close()
+                dialogEl.remove()
+                window.closeNfeRascunhoFormDialog = undefined
+            }
+            dialogEl.addEventListener('close', closeRascunhoFormDialog, { signal })
+            window.closeNfeRascunhoFormDialog = closeRascunhoFormDialog
+            const cancelButton = dialogEl.querySelector('.cancel-btn');
+            if (cancelButton) {
+                cancelButton.addEventListener('click', closeRascunhoFormDialog, { signal });
+            }
+            document.body.addEventListener('htmx:configRequest', function (evt) {
+                evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
+            }, { signal });
+
+            // Close the dialog after a successful create/update; failures keep
+            // it open so the user can fix the highlighted values.
+            const rascunhoForm = dialogEl.querySelector('form');
+            if (rascunhoForm) {
+                rascunhoForm.addEventListener('htmx:afterRequest', (evt) => {
+                    if (evt.detail.successful) {
+                        closeRascunhoFormDialog();
+                    }
+                }, { signal });
+            }
+
+            // Item rows: add / remove / reindex.
+            const itemsContainer = dialogEl.querySelector('#rascunho-items-container');
+            const itemCountInput = dialogEl.querySelector('#rascunhoItemCount');
+            const addItemBtn = dialogEl.querySelector('#add-rascunho-item-btn');
+            const defaultItemCFOP = itemsContainer.dataset.defaultCfop || '5101';
+
+            itemsContainer.addEventListener('change', (e) => {
+                const select = e.target;
+                if (!select.classList || !select.classList.contains('farm-product-select')) return;
+                const row = select.closest('.rascunho-item-row');
+                if (!row) return;
+                const option = select.selectedOptions[0];
+                const productNameInput = row.querySelector('input[name$=".productName"]');
+                const ncmInput = row.querySelector('input[name$=".ncm"]');
+                const useFarmProduct = option && option.value !== '';
+                if (productNameInput) {
+                    productNameInput.value = useFarmProduct ? (option.dataset.name || '') : '';
+                }
+                if (ncmInput) {
+                    ncmInput.value = useFarmProduct ? (option.dataset.ncm || '') : '';
+                }
+            });
+
+            function updateRemoveButtons() {
+                const rows = itemsContainer.querySelectorAll('.rascunho-item-row');
+                rows.forEach((row) => {
+                    const removeBtn = row.querySelector('.remove-item-btn');
+                    if (rows.length === 1) {
+                        removeBtn.classList.add('hidden');
+                    } else {
+                        removeBtn.classList.remove('hidden');
+                    }
+                });
+            }
+
+            function reindexItems() {
+                const rows = itemsContainer.querySelectorAll('.rascunho-item-row');
+                rows.forEach((row, index) => {
+                    row.setAttribute('data-item-index', index);
+                    row.querySelectorAll('input, select').forEach(input => {
+                        const name = input.getAttribute('name');
+                        if (name) {
+                            input.setAttribute('name', name.replace(/\[\d+\]/, `[${index}]`));
+                        }
+                    });
+                });
+                itemCountInput.value = rows.length;
+                updateRemoveButtons();
+            }
+
+            itemsContainer.addEventListener('click', (e) => {
+                if (!(e.target instanceof Element)) return;
+                const removeBtn = e.target.closest('.remove-item-btn');
+                if (!removeBtn) return;
+                removeBtn.closest('.rascunho-item-row')?.remove();
+                reindexItems();
+            });
+
+            addItemBtn.addEventListener('click', () => {
+                const template = itemsContainer.querySelector('.rascunho-item-row').cloneNode(true);
+                template.querySelectorAll('input, select').forEach(input => {
+                    if (input.type !== 'select-one') {
+                        input.value = '';
+                    }
+                });
+                template.querySelectorAll('.farm-product-select').forEach(select => {
+                    select.value = '';
+                });
+                const cfopInput = template.querySelector('input[name$=".cfop"]');
+                if (cfopInput) {
+                    cfopInput.value = defaultItemCFOP;
+                }
+                itemsContainer.appendChild(template);
+                reindexItems();
+            });
+
+            // "Usar taxa padrão" keeps rate inputs disabled so blank stays
+            // "inherit the farm configuration".
+            const useDefault = dialogEl.querySelector('#rascunhoUseDefaultTaxRates');
+            const rateInputs = ['rascunhoIcmsRate', 'rascunhoPisRate', 'rascunhoCofinsRate', 'rascunhoIbsRate', 'rascunhoCbsRate']
+                .map(id => dialogEl.querySelector('#' + id))
+                .filter(Boolean);
+            function applyTaxState() {
+                if (!useDefault) return;
+                rateInputs.forEach(input => {
+                    if (useDefault.checked) {
+                        input.setAttribute('disabled', '');
+                    } else {
+                        input.removeAttribute('disabled');
+                    }
+                });
+            }
+            if (useDefault) {
+                useDefault.addEventListener('change', applyTaxState);
+                applyTaxState();
+            }
+        }
+    </script>
+    <style>
+        .htmx-indicator {
+            display: none;
+        }
+
+        .htmx-request button {
+            display: none;
+        }
+
+        .htmx-request .htmx-indicator {
+            display: block
+        }
+    </style>
+</dialog>
+{{ end }}

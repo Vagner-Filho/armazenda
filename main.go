@@ -274,6 +274,12 @@ func main() {
 			}
 			return *p
 		},
+		"ptrString": func(p *string) string {
+			if p == nil {
+				return ""
+			}
+			return *p
+		},
 		"dict": dict,
 		"decIsZero": func(v interface{}) bool {
 			switch d := v.(type) {

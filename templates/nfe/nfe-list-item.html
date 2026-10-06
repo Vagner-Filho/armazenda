@@ -31,7 +31,7 @@
         </span>
         {{ else if eq .Invoice.Status "draft" }}
         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-500/20 text-gray-400 border border-gray-500/30">
-            Rascunho
+            Não enviada
         </span>
         {{ else if eq .Invoice.Status "superseded" }}
         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-500/20 text-gray-400 border border-gray-500/30 line-through">
@@ -54,12 +54,12 @@
     <td class="py-3 px-4 text-left" data-label="Ações">
         <div class="flex items-center justify-end lg:justify-start gap-2 *:size-5">
             {{ if or .Invoice.XMLSigned .Invoice.XMLAuthorized }}
-            <a href="/nfe/download/xml/{{ .Invoice.AccessKey }}" download="nfe_{{ .Invoice.AccessKey }}.xml" title="Baixar XML" class="icon-btn size-5">
+            <a href="/nfe/{{ if eq .Type "Avulsa" }}avulsa/{{ end }}download/xml/{{ .Invoice.AccessKey }}" download="nfe_{{ .Invoice.AccessKey }}.xml" title="Baixar XML" class="icon-btn size-5">
                 <iconify-icon icon="mdi:download" class="text-xl"></iconify-icon>
             </a>
             {{ end }}
             {{ if or (eq .Invoice.Status "authorized") (eq .Invoice.Status "cancelled") }}
-            <a href="/nfe/download/danfe/{{ .Invoice.AccessKey }}" target="_blank" title="Baixar DANFE" class="icon-btn size-5">
+            <a href="/nfe/{{ if eq .Type "Avulsa" }}avulsa/{{ end }}download/danfe/{{ .Invoice.AccessKey }}" target="_blank" title="Baixar DANFE" class="icon-btn size-5">
                 <iconify-icon icon="mdi:file-pdf-box" class="text-xl"></iconify-icon>
             </a>
             {{ end }}

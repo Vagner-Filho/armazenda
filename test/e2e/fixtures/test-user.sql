@@ -76,3 +76,28 @@ INSERT INTO vehicle (plate, name, farm)
     '',
     id
   FROM farm WHERE inscricao_estadual = '123456789';
+
+-- NF-e configuration for the detached (avulsa) emission form. Without this
+-- row the Emitir page renders only the "NF-e não configurada" banner.
+INSERT INTO nfe_farm_config (
+  farm_id, certificate_path, certificate_password_encrypted, certificate_data,
+  environment, serie, next_number, tax_regime, default_mod_frete,
+  default_cfop, default_cest, default_unit, default_natureza_op,
+  default_icms_cst, default_pis_cst, default_cofins_cst,
+  icms_rate, pis_rate, cofins_rate
+)
+SELECT
+  id, 'test-cert.pfx', 'test-encrypted-password', ''::bytea,
+  2, 929, 1, 3, 9,
+  '5101', NULL, 'KG', 'Venda de produção do estabelecimento',
+  '00', '01', '01',
+  0.12, 0.0165, 0.076
+FROM farm WHERE inscricao_estadual = '123456789'
+ON CONFLICT (farm_id) DO NOTHING;
+
+-- Complete farm address so the detached NF-e preview passes emitter
+-- validation without a real certificate. The state lives on farm.uf.
+INSERT INTO farm_address (street, cep, number, neighborhood, city, farm_id)
+SELECT 'Rua Teste', '78000000', 100, 'Centro', 'Cuiabá', id
+FROM farm WHERE inscricao_estadual = '123456789'
+ON CONFLICT (farm_id) DO NOTHING;
