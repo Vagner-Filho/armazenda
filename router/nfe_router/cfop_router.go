@@ -7,6 +7,7 @@ import (
 
 	entity_public "armazenda/entity/public"
 	"armazenda/model/cfop_model"
+	model_error "armazenda/model/error"
 	"armazenda/service/nfe_service"
 	"armazenda/service/user_service"
 	cfop_view "armazenda/view/cfop"
@@ -17,6 +18,13 @@ import (
 // cfopDescriptionMaxLength mirrors the catalog practice of accepting long
 // official descriptions while keeping the modal input tight.
 const cfopDescriptionMaxLength = 200
+
+type cfopRegistrar interface {
+	CatalogHasCfop(code string) (bool, *model_error.ModelError)
+	AddFarmCfop(farmID uint32, code, description, originDestination string) (entity_public.CfopOption, *model_error.ModelError)
+}
+
+type cfopRegistrarProvider func() (cfopRegistrar, uint32)
 
 // getCfopForm renders the "Cadastrar CFOP" modal opened from any item row's
 // "+" button. It needs no data beyond the request nonce.
@@ -52,9 +60,19 @@ func getCfopOptions(c *gin.Context) {
 // duplicates inside the same farm. All failures are pt-br warning/error
 // toasts.
 func addCfop(c *gin.Context) {
+	addCfopWithProvider(c, func() (cfopRegistrar, uint32) {
+		sid, _ := c.Cookie("session_id")
+		farmID := user_service.GetFarmFromToken(sid)
+		return cfop_model.GetCfopModel(), farmID
+	})
+}
+
+// addCfopWithProvider validates form values before resolving the farm/model.
+// The provider seam keeps request validation and server-derived classification
+// testable without a database or authenticated integration fixture.
+func addCfopWithProvider(c *gin.Context, provider cfopRegistrarProvider) {
 	code := strings.TrimSpace(c.PostForm("code"))
 	description := strings.TrimSpace(c.PostForm("description"))
-	originDestination := strings.TrimSpace(c.PostForm("originDestination"))
 
 	// Format validation runs before any DB access so it is unit-testable
 	// without a database.
@@ -76,16 +94,11 @@ func addCfop(c *gin.Context) {
 			fmt.Sprintf("A descrição deve ter no máximo %d caracteres", cfopDescriptionMaxLength)))
 		return
 	}
-	if expected := nfe_service.OriginDestinationForCFOP(code); originDestination != expected {
-		hint := fmt.Sprintf("Para o CFOP %s, a Origem/Destino correta é %s", code, expected)
-		cfopToast(c, http.StatusBadRequest, entity_public.GetWarningToast("Origem/Destino inválido", hint))
-		return
-	}
+	// Origem/Destino is canonical data derived from the CFOP, never a
+	// user-supplied form value.
+	originDestination := nfe_service.OriginDestinationForCFOP(code)
+	cfopModel, farmID := provider()
 
-	sid, _ := c.Cookie("session_id")
-	farmID := user_service.GetFarmFromToken(sid)
-
-	cfopModel := cfop_model.GetCfopModel()
 	catalogHasCode, catalogErr := cfopModel.CatalogHasCfop(code)
 	if catalogErr != nil {
 		cfopToast(c, http.StatusInternalServerError, entity_public.GetErrorToast("Falhamos ao verificar o CFOP", ""))

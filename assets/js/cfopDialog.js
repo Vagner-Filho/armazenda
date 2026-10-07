@@ -6,10 +6,10 @@ import {
 } from "./cfopSelector.js"
 
 /**
- * Wires the "Cadastrar CFOP" dialog: modal lifecycle, client-side
- * Origem/Destino derivation (still user-editable), and the post-create
- * farm-ordered options refresh. Failures keep the dialog open; their pt-br
- * toast comes from the HX-Trigger response header.
+ * Wires the "Cadastrar CFOP" dialog: modal lifecycle, read-only
+ * Origem/Destino derivation, and the post-create farm-ordered options refresh.
+ * Failures keep the dialog open; their pt-br toast comes from the HX-Trigger
+ * response header.
  */
 function cfopDialogSetup() {
     initCfopSelectors()
@@ -35,14 +35,15 @@ function cfopDialogSetup() {
         }
 
         const codeInput = dialogEl.querySelector('input[name="code"]')
-        const originSelect = dialogEl.querySelector('select[name="originDestination"]')
-        if (codeInput && originSelect) {
-            codeInput.addEventListener('input', () => {
+        const originOutput = dialogEl.querySelector('[data-test-id="cfop-form-origin"]')
+        if (codeInput && originOutput) {
+            const updateOriginDestination = () => {
                 const derived = deriveOriginDestination(codeInput.value)
-                if (derived) {
-                    originSelect.value = derived
-                }
-            }, { signal })
+                originOutput.textContent = derived || 'Informe um CFOP válido.'
+                originOutput.dataset.valid = String(Boolean(derived))
+            }
+            codeInput.addEventListener('input', updateOriginDestination, { signal })
+            updateOriginDestination()
         }
 
         const form = dialogEl.querySelector('form')

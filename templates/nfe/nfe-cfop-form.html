@@ -33,13 +33,10 @@
                 <label for="cfop-origin" class="px-2 text-white/70 text-xs lg:text-sm font-medium uppercase tracking-wider">
                     Origem/Destino
                 </label>
-                <select name="originDestination" id="cfop-origin"
-                    class="bg-white/10 border border-white/20 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                    required data-test-id="cfop-form-origin">
-                    <option value="Mesmo estado">Mesmo estado</option>
-                    <option value="Outro estado">Outro estado</option>
-                    <option value="Exterior">Exterior</option>
-                </select>
+                <output id="cfop-origin" class="cfop-origin-output" aria-live="polite" data-test-id="cfop-form-origin">
+                    Informe um CFOP válido.
+                </output>
+                <p class="text-xs text-white/60 px-2 mt-1">Calculado automaticamente pelo CFOP.</p>
             </div>
             <div class="flex items-center justify-around mt-4 w-52 mx-auto">
                 <button type="button" class="cancel-btn">

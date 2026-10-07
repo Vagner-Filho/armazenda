@@ -272,7 +272,16 @@ Internal-only strings (log messages, comments, variable names) may remain in Eng
 ### Database Patterns
 
 - Use `pgx` driver with connection pooling
-- Use `pgx.NamedArgs` for parameterized queries: `pgx.NamedArgs{"field_id": id}`
+- **Named arguments only (required):** when passing values to SQL query strings, always use `pgx.NamedArgs` with named placeholders (`@name`). **Never use positional/indexed arguments** (`$1`, `$2`, ...) — they are very hard for a human to read and review, and reordering parameters silently changes meaning.
+  ```go
+  // ✅ Correct — named placeholders + pgx.NamedArgs
+  query := `SELECT * FROM field WHERE farm_id = @farm_id AND field_id = @field_id`
+  args := pgx.NamedArgs{"farm_id": farmID, "field_id": fieldID}
+
+  // ❌ Forbidden — positional arguments
+  query := `SELECT * FROM field WHERE farm_id = $1 AND field_id = $2`
+  args := []any{farmID, fieldID}
+  ```
 - Use `pgx.CollectRows` for scanning multiple rows into structs
 - Each model is a singleton: `Init<X>Model(pool)` at startup, then `Get<X>Model()` from services; services depend on model interfaces (see `service/entry_service/interfaces.go`) so tests can inject hand-written mocks (see `service/entry_service/test/mocks.go`)
 

@@ -81,18 +81,50 @@ func detachedProfileFormRows(profile *nfe_model.DetachedProfile) []detachedProfi
 	return rows
 }
 
+// personOptionDisplay is the editor's display representation of one contact
+// option. Selected precomputes the recipient match so the template needs no
+// pointer/printf coercions (a raw *uint32 never matches a string id: %s
+// renders it as "%!s(*uint32=0x…)", the pointer address).
+type personOptionDisplay struct {
+	Id       uint32
+	Name     string
+	Selected bool
+}
+
+// personOptionDisplays maps the farm's contacts to the recipient select.
+// Options without an id are skipped — the previous template guarded them
+// with {{ if .Id }}.
+func personOptionDisplays(people []entity_public.PersonOption, selected *uint32) []personOptionDisplay {
+	out := make([]personOptionDisplay, 0, len(people))
+	for _, person := range people {
+		if person.Id == nil {
+			continue
+		}
+		out = append(out, personOptionDisplay{
+			Id:       *person.Id,
+			Name:     person.Name,
+			Selected: selected != nil && *selected == *person.Id,
+		})
+	}
+	return out
+}
+
 // detachedProfileFormView builds the editor dialog view data. Explicit rates
 // (including zero) are displayed exactly; unset axes stay blank so they keep
 // inheriting the farm configuration.
 func detachedProfileFormView(profile *nfe_model.DetachedProfile, people []entity_public.PersonOption, farmProducts []entity_public.FarmProduct, cfopOptions cfop_view.CfopOptions, nonce string) gin.H {
+	var recipientID *uint32
+	if profile != nil {
+		recipientID = profile.RecipientID
+	}
+
 	view := gin.H{
 		"Profile":            profile,
-		"People":             people,
+		"People":             personOptionDisplays(people, recipientID),
 		"FarmProducts":       farmProducts,
 		"CfopOptions":        cfopOptions,
 		"DefaultCFOP":        cfopOptions.Default,
 		"CSPNonce":           nonce,
-		"RecipientSelected":  "",
 		"Rows":               detachedProfileFormRows(profile),
 		"ICMSRate":           "",
 		"PISRate":            "",
@@ -104,9 +136,6 @@ func detachedProfileFormView(profile *nfe_model.DetachedProfile, people []entity
 	}
 	if profile == nil {
 		return view
-	}
-	if profile.RecipientID != nil {
-		view["RecipientSelected"] = strconv.FormatUint(uint64(*profile.RecipientID), 10)
 	}
 	if profile.ModFrete != nil {
 		view["ModFreteSelected"] = *profile.ModFrete

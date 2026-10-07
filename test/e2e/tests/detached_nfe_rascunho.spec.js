@@ -63,11 +63,20 @@ async function openNewRascunhoDialog(page) {
   return dialog;
 }
 
+async function selectCfop(row, code) {
+  await row.locator('[data-cfop-trigger]').click();
+  const search = row.locator('.cfop-search');
+  await expect(search).toBeVisible();
+  await search.fill(code);
+  await search.press('Enter');
+  await expect(row.locator('select[name$=".cfop"]')).toHaveValue(code);
+}
+
 async function fillRascunhoItem(row, { descricao, cfop, preco, cest }) {
   if (descricao !== undefined) {
     await row.locator('[data-test-id="rascunho-item-descricao"]').fill(descricao);
   }
-  await row.locator('select[name$=".cfop"]').selectOption(cfop);
+  await selectCfop(row, cfop);
   if (preco !== undefined) {
     await row.locator('[data-test-id="rascunho-item-preco"]').fill(preco);
   }
@@ -223,7 +232,7 @@ test.describe('Rascunho de NF-e', () => {
     await page.fill('#recipientCEP', '78000000');
 
     await page.fill('input[name="items[0].productName"]', 'Soja Formulário');
-    await page.selectOption('select[name="items[0].cfop"]', '5101');
+    await selectCfop(page.locator('#items-container .item-row').first(), '5101');
     await page.fill('input[name="items[0].quantity"]', '10');
     await page.fill('input[name="items[0].unitPrice"]', '99.50');
     await page.fill('#naturezaOp', 'Venda de teste');
@@ -247,9 +256,9 @@ test.describe('Rascunho de NF-e', () => {
     await expect(saveDialog).toBeHidden();
 
     const profileInfo = db(
-      `SELECT COALESCE(recipient_id::text, '') || '|' || (items_json->0->>'cfop') || '|' || (items_json->0->>'unit_price') || '|' || (items_json->0->>'product_name') FROM detached_nfe_profile WHERE farm_id = 1 AND name = '${name}'`
+      `SELECT id || '|' || COALESCE(recipient_id::text, '') || '|' || (items_json->0->>'cfop') || '|' || (items_json->0->>'unit_price') || '|' || (items_json->0->>'product_name') FROM detached_nfe_profile WHERE farm_id = 1 AND name = '${name}'`
     );
-    const [recipientID, cfop, price, productName] = profileInfo.split('|');
+    const [profileID, recipientID, cfop, price, productName] = profileInfo.split('|');
     expect(recipientID).not.toBe('');
     expect(cfop).toBe('5101');
     expect(price).toBe('99.5');
@@ -260,6 +269,16 @@ test.describe('Rascunho de NF-e', () => {
     // Saving a rascunho does not allocate numbers or create invoices.
     expect(detachedInvoiceCount()).toBe(invoicesBefore);
     expect(db('SELECT COALESCE(MAX(last_number), 0) FROM nfe_numbering WHERE farm_id = 1')).toBe(numberingBefore);
+
+    // Applying the rascunho must preselect the saved recipient in the
+    // existing-contact <select> (regression: a printf coercion on the
+    // *uint32 person id rendered a pointer address and never matched).
+    await gotoApp(page, `/nfe/emitir/rascunho/${profileID}`);
+    await expect(page.locator('[data-test-id="rascunho-aplicado"]')).toContainText(name);
+    await expect(page.locator('#recipientPersonId')).toHaveValue(recipientID);
+    await expect(
+      page.locator('input[name="recipientType"][value="existing"]')
+    ).toBeChecked();
 
     // A plain preview of an inline recipient creates no person and persists nothing.
     const dryDocument = faker.string.numeric(14);
@@ -274,7 +293,7 @@ test.describe('Rascunho de NF-e', () => {
     await page.fill('#recipientState', 'MT');
     await page.fill('#recipientCEP', '78000000');
     await page.fill('input[name="items[0].productName"]', 'Soja Preview');
-    await page.selectOption('select[name="items[0].cfop"]', '5101');
+    await selectCfop(page.locator('#items-container .item-row').first(), '5101');
     await page.fill('input[name="items[0].quantity"]', '5');
     await page.fill('input[name="items[0].unitPrice"]', '88.00');
 

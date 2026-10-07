@@ -2,8 +2,9 @@
  * Detached NF-e CFOP selector E2E tests.
  *
  * Covers:
- * - Per-row search filtering (code + accent-insensitive description) with no
- *   cross-row influence and selected-option survival.
+ * - Per-row search filtering (code, accent-insensitive description, and
+ *   Origem/Destino) with no cross-row influence and selected-option survival.
+ * - The search stays visible while the custom option list scrolls.
  * - Exact-code typing selecting the matching option.
  * - Farm CFOP registration from the emission page and from the rascunho
  *   editor: modal round trip, auto-selection in the originating row, option
@@ -11,9 +12,11 @@
  * - "Mais utilizados" ordering from the farm use counters.
  * - items[i].cfop submission through the preview hidden-field round trip.
  *
- * SEFAZ isolation: only SEFAZ-free paths (page render, selector, preview) are
- * exercised; emission is never confirmed and no nfe_farm_config row is
- * created or modified here.
+ * SEFAZ isolation: only SEFAZ-free paths (page render, selector, registration,
+ * preview) are exercised; emission/cancellation is never confirmed and this
+ * test file does not modify NF-e configuration or certificate data. The
+ * shared global fixture currently supplies a config row with empty certificate
+ * bytes; do not add certificate data or call emission/cancellation paths.
  */
 
 import { test, expect } from '@playwright/test';
@@ -56,8 +59,22 @@ function cleanupCfop(code) {
   db(`DELETE FROM farm_cfop WHERE farm_id = 1 AND code = '${code}'`);
 }
 
-function optionHidden(row, code) {
-  return row.locator(`option[value="${code}"]`).evaluate((el) => el.hidden);
+function cfopOption(row, code) {
+  return row.locator(`[data-cfop-option][data-cfop-value="${code}"]`).first();
+}
+
+async function openCfopPicker(row) {
+  await row.locator('[data-cfop-trigger]').click();
+  const search = row.locator('.cfop-search');
+  await expect(search).toBeVisible();
+  return search;
+}
+
+async function selectCfop(row, code) {
+  const search = await openCfopPicker(row);
+  await search.fill(code);
+  await expect(row.locator('select[name$=".cfop"]')).toHaveValue(code);
+  await search.press('Enter');
 }
 
 async function fillInlineRecipient(page) {
@@ -86,30 +103,56 @@ test.describe('CFOP avulso', () => {
     await expect(row0Select).toHaveValue('5101');
     await expect(row0Select.locator('option[value="5101"]').first()).toHaveAttribute('selected', '');
 
-    // Add a second item: it starts from the farm/default CFOP as well.
+    // Clones start at the farm/default CFOP and the visible trigger resyncs
+    // even when the source row currently has another selection.
+    await selectCfop(rows.nth(0), '5102');
     await page.locator('#add-item-btn').evaluate((el) => el.click());
     await expect(rows).toHaveCount(2);
     const row1Select = rows.nth(1).locator('select[name$=".cfop"]');
     await expect(row1Select).toHaveValue('5101');
+    await expect(rows.nth(1).locator('[data-cfop-selected-label]')).toContainText('5101');
+    await selectCfop(rows.nth(0), '5101');
 
-    // Row 0 search: accent-insensitive description match. 1202 ("Devolução…")
-    // stays; 1102 ("Compra…") is filtered out; the selected option survives.
-    const row0Search = rows.nth(0).locator('.cfop-search');
+    // Search by accent-insensitive description. The selected option survives
+    // even when its description does not match.
+    const row0Search = await openCfopPicker(rows.nth(0));
     await row0Search.fill('devolucao');
-    expect(await optionHidden(rows.nth(0), '1202')).toBe(false);
-    expect(await optionHidden(rows.nth(0), '1102')).toBe(true);
-    expect(await optionHidden(rows.nth(0), '5101')).toBe(false);
+    await expect(cfopOption(rows.nth(0), '1202')).toBeVisible();
+    await expect(cfopOption(rows.nth(0), '1102')).toBeHidden();
+    await expect(cfopOption(rows.nth(0), '5101')).toBeVisible();
 
-    // Rows do not influence each other.
-    expect(await optionHidden(rows.nth(1), '1102')).toBe(false);
+    // Search also matches the Origem/Destino metadata.
+    await row0Search.fill('outro estado');
+    await expect(cfopOption(rows.nth(0), '6102')).toBeVisible();
+    await expect(cfopOption(rows.nth(0), '1102')).toBeHidden();
+    await row0Search.fill('exterior');
+    await expect(cfopOption(rows.nth(0), '7101')).toBeVisible();
 
-    // Clearing the search restores the full list.
+    // Clearing restores the full list, and the search remains fixed while
+    // scrolling the results region.
     await row0Search.fill('');
-    expect(await optionHidden(rows.nth(0), '1102')).toBe(false);
+    await expect(cfopOption(rows.nth(0), '1102')).toBeVisible();
+    const searchPositionBefore = await row0Search.boundingBox();
+    const optionsList = rows.nth(0).locator('[data-cfop-options-list]');
+    await optionsList.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+    const searchPositionAfter = await row0Search.boundingBox();
+    expect(Math.abs(searchPositionBefore.y - searchPositionAfter.y)).toBeLessThan(1);
+    expect(await optionsList.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
 
-    // Typing the exact code selects the matching option (keyboard selection).
-    await rows.nth(1).locator('.cfop-search').fill('6102');
+    // A matching option can also be selected directly from the visible list.
+    await row0Search.fill('devolucao');
+    await cfopOption(rows.nth(0), '1202').click();
+    await expect(row0Select).toHaveValue('1202');
+    await selectCfop(rows.nth(0), '5101');
+
+    // Rows do not influence each other; the second row opens with no inherited
+    // query. Typing the exact code selects it for keyboard submission.
+    const row1Search = await openCfopPicker(rows.nth(1));
+    await expect(row1Search).toHaveValue('');
+    await expect(cfopOption(rows.nth(1), '1102')).toBeVisible();
+    await row1Search.fill('6102');
     await expect(row1Select).toHaveValue('6102');
+    await row1Search.press('Enter');
 
     // Fill the emission form and preview: per-item CFOPs must round-trip.
     await rows.nth(0).locator('input[name$=".productName"]').fill('Soja CFOP E2E');
@@ -146,23 +189,33 @@ test.describe('CFOP avulso', () => {
 
       const rows = page.locator('#items-container .item-row');
       await expect(rows).toHaveCount(2);
-      await rows.nth(0).locator('select[name$=".cfop"]').selectOption('5102');
+      await selectCfop(rows.nth(0), '5102');
 
       // "+" on the second row opens the register modal.
       await rows.nth(1).locator('[data-test-id="cfop-add"]').evaluate((el) => el.click());
       const dialog = page.locator('dialog#nfeCfopFormDialog');
       await expect(dialog).toBeVisible();
 
-      await dialog.locator('[data-test-id="cfop-form-code"]').fill(code);
-      // Client-side convenience: Origem/Destino is auto-derived and editable.
-      await expect(dialog.locator('[data-test-id="cfop-form-origin"]')).toHaveValue('Exterior');
+      const codeInput = dialog.locator('[data-test-id="cfop-form-code"]');
+      await codeInput.fill(code.slice(0, 1));
+      await expect(dialog.locator('[data-test-id="cfop-form-origin"]')).toHaveText('Informe um CFOP válido.');
+      await codeInput.fill(code);
+      await expect(dialog.locator('[data-test-id="cfop-form-origin"]')).toHaveText('Exterior');
+      await expect(dialog.locator('[name="originDestination"]')).toHaveCount(0);
       await dialog.locator('[data-test-id="cfop-form-description"]').fill('Operação E2E');
 
+      let registrationBody = '';
+      page.on('request', (request) => {
+        if (request.url().includes('/nfe/cfop') && request.method() === 'POST') {
+          registrationBody = request.postData() || '';
+        }
+      });
       const createResponse = page.waitForResponse(
         (r) => r.url().includes('/nfe/cfop') && r.request().method() === 'POST'
       );
       await dialog.locator('[data-test-id="cfop-form-submit"]').evaluate((el) => el.click());
       expect((await createResponse).status()).toBe(201);
+      expect(registrationBody).not.toContain('originDestination');
       await expect(dialog).toBeHidden();
 
       // Originating row auto-selects the new code; the other row keeps its own.
@@ -188,7 +241,7 @@ test.describe('CFOP avulso', () => {
       const catalogDialog = page.locator('dialog#nfeCfopFormDialog');
       await expect(catalogDialog).toBeVisible();
       await catalogDialog.locator('[data-test-id="cfop-form-code"]').fill('5101');
-      await expect(catalogDialog.locator('[data-test-id="cfop-form-origin"]')).toHaveValue('Mesmo estado');
+      await expect(catalogDialog.locator('[data-test-id="cfop-form-origin"]')).toHaveText('Mesmo estado');
       await catalogDialog.locator('[data-test-id="cfop-form-description"]').fill('Duplicado do catálogo');
       const catalogResponse = page.waitForResponse(
         (r) => r.url().includes('/nfe/cfop') && r.request().method() === 'POST'
@@ -233,6 +286,10 @@ test.describe('CFOP avulso', () => {
 
       const row = editor.locator('.rascunho-item-row').first();
       await expect(row.locator('select[name$=".cfop"]')).toHaveValue('5101');
+      const rascunhoSearch = await openCfopPicker(row);
+      await rascunhoSearch.fill('devolucao');
+      await expect(cfopOption(row, '1202')).toBeVisible();
+      await rascunhoSearch.press('Escape');
 
       await row.locator('[data-test-id="cfop-add"]').evaluate((el) => el.click());
       const dialog = page.locator('dialog#nfeCfopFormDialog');

@@ -9,6 +9,10 @@ import (
 	"testing"
 
 	"github.com/shopspring/decimal"
+
+	entity_public "armazenda/entity/public"
+	"armazenda/model/nfe_model"
+	cfop_view "armazenda/view/cfop"
 )
 
 // nfeTemplateFuncs mirrors the application template helpers used by the NF-e
@@ -82,6 +86,79 @@ func executeBlock(t *testing.T, parsed *template.Template, block string, data in
 		t.Fatalf("execute %s: %v", block, err)
 	}
 	return buf.String()
+}
+
+// TestNFeRascunhoFormSelectsSavedRecipient guards the editor's recipient
+// <select>: the saved profile recipient must render as selected. Regression
+// for the template-side coercion `eq (printf "%s" .Id) $.RecipientSelected`,
+// where PersonOption.Id (*uint32) rendered as "%!s(*uint32=0x…)" under %s and
+// never matched the string id, so no option was ever selected.
+func TestNFeRascunhoFormSelectsSavedRecipient(t *testing.T) {
+	parsed := parseAllTemplates(t)
+
+	recipientID := uint32(7)
+	otherID := uint32(8)
+	profile := &nfe_model.DetachedProfile{
+		Name:        "Rascunho de teste",
+		RecipientID: &recipientID,
+	}
+	people := []entity_public.PersonOption{
+		{Id: &otherID, Name: "Outra pessoa"},
+		{Id: &recipientID, Name: "Itiquira"},
+		{Name: "Sem id"},
+	}
+
+	view := detachedProfileFormView(profile, people, nil, cfop_view.CfopOptions{Default: "5101"}, "test-nonce")
+	out := executeBlock(t, parsed, "nfe-rascunho-form", view)
+
+	if !strings.Contains(out, `<option value="7" selected>Itiquira</option>`) {
+		t.Errorf("saved recipient (id 7) must render selected; got:\n%s", out)
+	}
+	if strings.Contains(out, `<option value="8" selected`) {
+		t.Error("option of a non-recipient person (id 8) must not render selected")
+	}
+	if strings.Contains(out, "Sem id") {
+		t.Error("contact option without an id must be skipped")
+	}
+}
+
+// TestNFeEmitPageSelectsSavedRecipient guards the emission page's recipient
+// <select>: a rascunho's saved recipient must render as selected. Regression
+// for the template-side coercion `eq (printf "%v" .Id) $.SelectedPersonID`,
+// where PersonOption.Id (*uint32) rendered as a pointer address under %v and
+// never matched the string id, so no option was ever selected.
+func TestNFeEmitPageSelectsSavedRecipient(t *testing.T) {
+	parsed := parseAllTemplates(t)
+
+	recipientID := uint32(7)
+	otherID := uint32(8)
+	people := []entity_public.PersonOption{
+		{Id: &otherID, Name: "Outra pessoa"},
+		{Id: &recipientID, Name: "Itiquira"},
+		{Name: "Sem id"},
+	}
+
+	view := detachedPageView{
+		HasNFEFarmConfig:   true,
+		People:             personOptionDisplays(people, &recipientID),
+		RecipientType:      "existing",
+		Items:              []detachedPageItem{{CFOP: "5101", Unit: "KG"}},
+		CfopOptions:        cfop_view.CfopOptions{Default: "5101"},
+		UseDefaultTaxRates: true,
+		CSPNonce:           "test-nonce",
+		TierKey:            "fiscal",
+	}
+	out := executeBlock(t, parsed, "nfe-emit.html", view)
+
+	if !strings.Contains(out, `<option value="7" selected>Itiquira</option>`) {
+		t.Errorf("saved recipient (id 7) must render selected; got:\n%s", out)
+	}
+	if strings.Contains(out, `<option value="8" selected`) {
+		t.Error("option of a non-recipient person (id 8) must not render selected")
+	}
+	if strings.Contains(out, "Sem id") {
+		t.Error("contact option without an id must be skipped")
+	}
 }
 
 // TestNFEDraftStatusLabelRendersNaoEnviada is the template sweep guard: every

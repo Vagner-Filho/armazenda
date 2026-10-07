@@ -41,7 +41,7 @@ type detachedPageItem struct {
 // either blank (farm defaults) or prefilled from a Rascunho de NF-e.
 type detachedPageView struct {
 	FarmID           uint32
-	People           []entity_public.PersonOption
+	People           []personOptionDisplay
 	FarmProducts     []entity_public.FarmProduct
 	HasNFEFarmConfig bool
 	CSPNonce         string
@@ -53,9 +53,9 @@ type detachedPageView struct {
 	// Initial item rows (at least one).
 	Items []detachedPageItem
 
-	// Recipient prefill. RecipientType is "existing" or "new".
+	// Recipient prefill. RecipientType is "existing" or "new". The recipient
+	// option list carries Selected precomputed; there is no separate id.
 	RecipientType         string
-	SelectedPersonID      string
 	RecipientName         string
 	RecipientDocument     string
 	RecipientIE           string
@@ -110,7 +110,7 @@ func buildDetachedPageView(farmID uint32, profile *nfe_model.DetachedProfile) de
 
 	view := detachedPageView{
 		FarmID:             farmID,
-		People:             people,
+		People:             personOptionDisplays(people, nil),
 		FarmProducts:       farmProducts,
 		HasNFEFarmConfig:   farmNFeConfig != nil,
 		RecipientType:      "existing",
@@ -182,7 +182,7 @@ func buildDetachedPageView(farmID uint32, profile *nfe_model.DetachedProfile) de
 
 	if profile.RecipientID != nil {
 		view.RecipientType = "existing"
-		view.SelectedPersonID = strconv.FormatUint(uint64(*profile.RecipientID), 10)
+		view.People = personOptionDisplays(people, profile.RecipientID)
 	} else {
 		view.RecipientType = "new"
 	}
