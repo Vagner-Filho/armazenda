@@ -46,7 +46,9 @@ func NewClient(cfg config.SefazConfig, cert *sign.Certificate) (*Client, error) 
 	return &Client{
 		cfg: cfg,
 		httpClient: &http.Client{
-			Transport: transport,
+			// guardTransport is always installed; activation is decided per
+			// request based on NFE_SEFAZ_GUARD (see guard.go).
+			Transport: &guardTransport{base: transport},
 			Timeout:   cfg.Timeout,
 		},
 	}, nil

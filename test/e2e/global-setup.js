@@ -118,6 +118,10 @@ async function globalSetup() {
   }
 
   console.log('\n🚀 Starting Go application...');
+  // SEFAZ network guard: the spawned app must never reach real SEFAZ/SVC
+  // endpoints (worker, emission, cancellation). Hardcoded so it wins over
+  // any inherited process.env — see pkg/nfe/sefaz/guard.go.
+  console.log('🛡️  SEFAZ network guard enabled (NFE_SEFAZ_GUARD=block, loopback only)');
 
   const goApp = spawn(binaryPath, [], {
     cwd: projectRoot,
@@ -128,6 +132,7 @@ async function globalSetup() {
       DB_USER: DB_CONFIG.user,
       DB_PASS: DB_CONFIG.password,
       DB_NAME: DB_CONFIG.database,
+      NFE_SEFAZ_GUARD: 'block',
     },
     stdio: ['ignore', 'inherit', 'inherit'],
     detached: true,

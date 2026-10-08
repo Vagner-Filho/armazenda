@@ -801,40 +801,6 @@ func parseDetachedItems(c *gin.Context) ([]nfe_service.DetachedItemInput, entity
 	return items, entity_public.Toast{}
 }
 
-// getDetachedNFeList returns the list of detached invoices
-func getDetachedNFeList(c *gin.Context) {
-	sid, _ := c.Cookie("session_id")
-	farmID := user_service.GetFarmFromToken(sid)
-
-	page, _ := strconv.Atoi(c.Query("page"))
-	if page < 1 {
-		page = 1
-	}
-
-	nfeModel := nfe_model.GetNFeModel()
-	invoices, total, err := nfeModel.GetDetachedInvoicesByFarm(farmID, page)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "Falha ao buscar NF-e avulsas")
-		return
-	}
-
-	pageSize := 10
-	totalPages := 0
-	if total > 0 {
-		totalPages = (total + pageSize - 1) / pageSize
-	}
-
-	c.HTML(http.StatusOK, "nfe-detached-list", gin.H{
-		"Invoices":    invoices,
-		"CurrentPage": page,
-		"TotalPages":  totalPages,
-		"HasPrev":     page > 1,
-		"PrevPage":    page - 1,
-		"HasNext":     page < totalPages,
-		"NextPage":    page + 1,
-	})
-}
-
 // downloadDetachedNFeXML downloads the XML of a detached invoice
 func downloadDetachedNFeXML(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
@@ -984,7 +950,6 @@ func UseDetachedNFeRoutes(router gin.IRoutes) {
 	router.GET("/emitir/rascunho/:rascunhoId", getDetachedNFePageFromProfile)
 	router.POST("/emitir/preview", previewDetachedNFe)
 	router.POST("/emitir/build", buildDetachedNFe)
-	router.GET("/avulsa/list", getDetachedNFeList)
 	router.GET("/avulsa/download/xml/:accessKey", downloadDetachedNFeXML)
 	router.GET("/avulsa/download/danfe/:accessKey", downloadDetachedNFeDANFE)
 	router.POST("/avulsa/cancel/:accessKey", cancelDetachedNFe)

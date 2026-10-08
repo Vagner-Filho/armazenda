@@ -386,21 +386,30 @@ The project uses a lightweight, custom migration system with raw SQL files.
 
 ### SEFAZ Network Isolation (prohibited unless explicitly instructed by the human)
 
-Tests, smoke runs, and local development must **never** cause real network calls to SEFAZ/SVC endpoints (production or homologação) unless the human explicitly asks for it. The hazard is easy to miss because the calls do not come from test code — they come from the running app's background worker or from SEFAZ-backed endpoints:
+Tests, smoke runs, and local development must **never** cause real network calls to SEFAZ/SVC endpoints (production or homologação) unless the human explicitly asks for it.
+
+**The mechanism: the SEFAZ network guard (`pkg/nfe/sefaz/guard.go`).** All outbound SEFAZ traffic funnels through `sefaz.Client`, whose transport is always wrapped in a guard `RoundTripper`. When `NFE_SEFAZ_GUARD` is set to any non-empty value other than `off`/`false`/`0` (e.g. `block`), the guard refuses every request to a non-loopback host **before any network I/O** (no DNS, no TCP, no TLS). It is an allowlist, not a blocklist: `localhost` / `127.0.0.1` / `[::1]` pass through (so a future local mock SEFAZ works), and every other host — all SEFAZ/SVC domains, production and homologação — is refused, including domains added later. An unrecognized value (e.g. a typo like `blok`) still activates the guard: it fails closed. Blocked attempts return an error naming the target and the env var; the app logs one `SEFAZ network guard: ACTIVE (only loopback allowed)` line on first activation.
+
+- The **e2e setup always sets `NFE_SEFAZ_GUARD=block`** for the spawned app (`test/e2e/global-setup.js`) — even if a fixture accidentally seeded `nfe_farm_config`, the worker's startup pass and the SEFAZ-backed endpoints would be refused at the transport layer instead of reaching SEFAZ.
+- **Opt in locally** the same way when smoke-testing a running app: `NFE_SEFAZ_GUARD=block air`.
+- A human-approved SEFAZ-reaching check must run with **`NFE_SEFAZ_GUARD=off` explicitly set** — the explicit opt-out is the auditable record that SEFAZ access was intentional.
+
+**Background hazards (still worth knowing):** the calls do not come from test code — they come from the running app's background worker or from SEFAZ-backed endpoints:
 
 - **The retry worker auto-starts with the app** (`nfe_service.StartRetryWorker()` in `main.go`). It runs an immediate pass on startup and then every 5 minutes:
   - `pending` invoices (both `nfe_invoice` and `detached_nfe_invoice`) → SEFAZ status query
   - `draft` detached invoices ≤ 24h old → SVC status check, and **auto-rebuild + send** when the SVC is active
 - **SEFAZ-backed endpoints** call SEFAZ when the farm has an `nfe_farm_config` row with certificate data: emission (`POST /nfe/build/:departureId`, `POST /nfe/emitir/build`) and cancellation (`POST /nfe/cancel/:accessKey`, `POST /nfe/avulsa/cancel/:accessKey`). SEFAZ-free paths (pages/lists, config form, XML/DANFE download, emission *preview*) are always safe.
+- **Under the guard**, those SEFAZ calls fail instantly with a logged error and no invoice status mutation — the accident becomes a loud local failure, not a network call.
 
-**What keeps test environments safe today:** the e2e fixture (`test/e2e/fixtures/test-user.sql`) creates no `nfe_farm_config`. Without a farm NF-e config (certificate data), the worker and the emission/cancellation paths exit early ("farm has no NFe config") before any network call.
+**What keeps test environments safe today:** the guard above is the mechanism; the e2e fixture (`test/e2e/fixtures/test-user.sql`) creating no `nfe_farm_config` remains as a second layer.
 
 **Rules:**
-1. Never insert or seed `nfe_farm_config` rows (or certificate bytes/passwords) into a test/smoke database that a running app connects to, unless the human explicitly instructed a SEFAZ-reaching check.
-2. Keep all unit tests offline — no test may dial SEFAZ endpoints directly or indirectly.
-3. When manually smoke-testing a running app, restrict to SEFAZ-free paths, or first confirm the target database has no `nfe_farm_config` for any farm with NF-e rows.
+1. Never insert or seed `nfe_farm_config` rows (or certificate bytes/passwords) into a test/smoke database that a running app connects to, unless the human explicitly instructed a SEFAZ-reaching check. (Second layer — with `NFE_SEFAZ_GUARD=block` the traffic is refused anyway.)
+2. Keep all unit tests offline — no test may dial SEFAZ endpoints directly or indirectly. Guard unit tests use loopback servers/stub transports only (see `pkg/nfe/sefaz/guard_test.go`).
+3. When manually smoke-testing a running app, set `NFE_SEFAZ_GUARD=block`, restrict to SEFAZ-free paths, or first confirm the target database has no `nfe_farm_config` for any farm with NF-e rows.
 4. Stop the app process when a smoke run finishes — a left-running app keeps the worker ticking (and retrying) every 5 minutes.
-5. If a verification seems to require touching SEFAZ, stop and ask the human before proceeding.
+5. If a verification seems to require touching SEFAZ, stop and ask the human before proceeding — and only then run the app with `NFE_SEFAZ_GUARD=off` set deliberately.
 
 ### NF-e Contingency Architecture
 

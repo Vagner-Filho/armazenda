@@ -63,7 +63,6 @@ Farm users can also save named **"Rascunhos de NF-e"** (internally `DetachedProf
 - `GET /nfe/rascunho/form` / `GET /nfe/rascunho/form/:id` - New/edit rascunho editor
 - `POST /nfe/rascunho` / `PUT /nfe/rascunho/:id` / `DELETE /nfe/rascunho/:id` - Rascunho CRUD (delete asks for confirmation like romaneio rascunhos)
 - `POST /nfe/rascunho/salvar` - "Salvar como rascunho" from the populated emission form (204, no emission side effects)
-- `GET /nfe/avulsa/list` - List detached invoices (pre-existing broken template reference, out of scope)
 - `GET /nfe/avulsa/download/xml/:accessKey` - Download XML
 - `GET /nfe/avulsa/download/danfe/:accessKey` - Download DANFE (fiscal PDF from the stored XML; "NF-e CANCELADA" banner for cancelled invoices)
 - `POST /nfe/avulsa/cancel/:accessKey` - Cancel invoice
