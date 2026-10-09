@@ -194,8 +194,8 @@ func minimalInvoiceInput() entity.InvoiceInput {
 						CClassTrib: "000001",
 						VBC:        decimal.NewFromInt(1000),
 						VIBSUF:     decimal.NewFromFloat(1.00), // state share (UF)
-						VIBSMun:    decimal.Zero,                  // municipal share (zero in 2026 phase)
-						VIBS:       decimal.NewFromFloat(1.00),   // per-item total = UF + VIBSMun
+						VIBSMun:    decimal.Zero,               // municipal share (zero in 2026 phase)
+						VIBS:       decimal.NewFromFloat(1.00), // per-item total = UF + VIBSMun
 						PCBS:       decimal.NewFromFloat(0.90),
 						VCBS:       decimal.NewFromFloat(9.00),
 					},
@@ -587,5 +587,49 @@ func TestBuilder_IBSCBS_ElementOrder(t *testing.T) {
 	// IBSCBSTot root
 	if got, want := strings.Join(childNames(ibscbsTot), ","), defaults.IBSCBSTotRootOrder; got != want {
 		t.Errorf("IBSCBSTot child order = %q, want %q", got, want)
+	}
+}
+
+func TestBuilder_TransportVehicleAndVolumes(t *testing.T) {
+	builder := xml.NewBuilder()
+	input := minimalInvoiceInput()
+
+	input.Transport.Transportadora = &entity.TransportadoraData{
+		Type:      2,
+		CPF:       "52998224725",
+		XNome:     "Carreteiro Fulano",
+		Endereco:  "Rodovia BR-163, Km 12",
+		Municipio: "Sorriso",
+		UF:        "MT",
+	}
+	input.Transport.Veiculo = &entity.VeiculoData{
+		Placa: "ABC1D23",
+		UF:    "MT",
+		RNTC:  "12345678901234567890",
+	}
+	input.Transport.Volumes = []entity.VolumeData{
+		{QVol: 20, Esp: "Big Bag", Marca: "BigFarm", PesoL: decimal.RequireFromString("15000.500"), PesoB: decimal.RequireFromString("15020.250")},
+	}
+
+	doc, err := builder.Build(input)
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	xmlStr, _ := doc.WriteToString()
+
+	// Transportadora (CPF branch must emit <CPF>, not <CNPJ>)
+	if !strings.Contains(xmlStr, "<CPF>52998224725</CPF>") {
+		t.Error("transporta/CPF missing for a Type-2 transportadora")
+	}
+	if !strings.Contains(xmlStr, "<xNome>Carreteiro Fulano</xNome>") {
+		t.Error("transporta/xNome missing")
+	}
+	// Vehicle group, including RNTC (ANTT)
+	if !strings.Contains(xmlStr, "<veicTransp><placa>ABC1D23</placa><UF>MT</UF><RNTC>12345678901234567890</RNTC></veicTransp>") {
+		t.Error("veicTransp group (placa/UF/RNTC) missing or out of order")
+	}
+	// Volume block with marca and v3 weights
+	if !strings.Contains(xmlStr, "<vol><qVol>20</qVol><esp>Big Bag</esp><marca>BigFarm</marca><pesoL>15000.500</pesoL><pesoB>15020.250</pesoB></vol>") {
+		t.Error("vol block (qVol/esp/marca/pesoL/pesoB) missing or out of order")
 	}
 }

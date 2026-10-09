@@ -88,6 +88,7 @@ type DANFEData struct {
 	PesoB         decimal.Decimal
 	VeicPlate     string
 	VeicUF        string
+	VeicRNTC      string // ANTT (RNTC, tag X21)
 
 	// ISSQN (conditional)
 	VBCISSQN      decimal.Decimal
@@ -124,21 +125,21 @@ type DANFEProduct struct {
 	VUnTrib   decimal.Decimal
 	InfAdProd string
 	// Taxes
-	VBC      decimal.Decimal
-	PICMS    decimal.Decimal
-	VICMS    decimal.Decimal
-	PIPI     decimal.Decimal
-	VIPI     decimal.Decimal
-	PPIS     decimal.Decimal
-	VPIS     decimal.Decimal
-	PCOFINS  decimal.Decimal
-	VCOFINS  decimal.Decimal
-	PIBS     decimal.Decimal
-	VIBS     decimal.Decimal
-	PCBS     decimal.Decimal
-	VCBS     decimal.Decimal
-	VFrete   decimal.Decimal
-	VSeg     decimal.Decimal
-	VDesc    decimal.Decimal
-	VOutro   decimal.Decimal
+	VBC     decimal.Decimal
+	PICMS   decimal.Decimal
+	VICMS   decimal.Decimal
+	PIPI    decimal.Decimal
+	VIPI    decimal.Decimal
+	PPIS    decimal.Decimal
+	VPIS    decimal.Decimal
+	PCOFINS decimal.Decimal
+	VCOFINS decimal.Decimal
+	PIBS    decimal.Decimal
+	VIBS    decimal.Decimal
+	PCBS    decimal.Decimal
+	VCBS    decimal.Decimal
+	VFrete  decimal.Decimal
+	VSeg    decimal.Decimal
+	VDesc   decimal.Decimal
+	VOutro  decimal.Decimal
 }

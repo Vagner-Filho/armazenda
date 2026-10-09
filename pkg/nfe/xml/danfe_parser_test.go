@@ -143,6 +143,11 @@ const sampleSignedNFe = `
         <pesoL>50000.000</pesoL>
         <pesoB>50020.000</pesoB>
       </vol>
+      <veicTransp>
+        <placa>ABC1D23</placa>
+        <UF>MT</UF>
+        <RNTC>12345678901234567890</RNTC>
+      </veicTransp>
     </transp>
     <infAdic>
       <infCpl>Entrega conforme contrato nº 12345. Peso aferido na balança.</infCpl>
@@ -445,6 +450,16 @@ func TestParseDANFEData_Signed(t *testing.T) {
 	}
 	if !data.PesoB.Equal(decimal.NewFromFloat(50020.0)) {
 		t.Errorf("PesoB = %s, want 50020.000", data.PesoB.String())
+	}
+
+	if data.VeicPlate != "ABC1D23" {
+		t.Errorf("VeicPlate = %s, want 'ABC1D23'", data.VeicPlate)
+	}
+	if data.VeicUF != "MT" {
+		t.Errorf("VeicUF = %s, want 'MT'", data.VeicUF)
+	}
+	if data.VeicRNTC != "12345678901234567890" {
+		t.Errorf("VeicRNTC = %s, want '12345678901234567890'", data.VeicRNTC)
 	}
 
 	if data.InfCpl != "Entrega conforme contrato nº 12345. Peso aferido na balança." {

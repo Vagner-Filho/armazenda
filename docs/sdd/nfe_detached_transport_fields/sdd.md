@@ -1,7 +1,7 @@
 # sdd:nfe_detached_transport_fields
 
 ## Status
-Backlog
+Done
 
 ## Goal
 
@@ -139,7 +139,7 @@ already correct once parsed).
 | # | Criterion | Verification |
 |---|---|---|
 | AC1 | Migration `000026` creates `detached_invoice_transportation` idempotently with the UNIQUE FK and the `transport JSONB` column of F5; runner applies it on startup | `go build ./...` + e2e global setup (Docker DB) applies migrations without error; column list asserted in `model/nfe_model/detached_transport_model_test.go` (DB-backed) |
-| AC2 | Transport round-trip: `CreateDetachedInvoiceTransport` + `GetDetachedInvoiceTransport` persist and return every field through the JSONB document (transportadora CNPJ and CPF branches, vehicle, volumes) | `go test ./model/nfe_model/ -run TestDetachedInvoiceTransport` (needs DB env, same as e2e DB; recorded in Verification Results) |
+| AC2 | Transport round-trip: `CreateDetachedInvoiceTransport` + `GetDetachedInvoiceTransport` persist and return every field through the JSONB document (transportadora CNPJ and CPF branches, vehicle, volumes) | `RUN_DB_TESTS=1 DB_*… go test ./model/nfe_model -run TestDetachedInvoiceTransport -v` (explicit opt-in against the e2e test DB; recorded in Verification Results — PASS) |
 | AC3 | Validation: invalid CPF/CNPJ check digit, malformed placa, IE without UF, RNTC > 20, `xEnder` > 60 each produce a pt-br warning toast and no XML | `go test ./service/nfe_service -run TestDetachedTransportValidation` (offline, pure-function tests) |
 | AC4 | Transport data maps into `entity.TransportData`: transportadora (Type 1/2), vehicle (placa uppercased, UF, RNTC) and the volume block with per-field fallback; blanks keep today's auto-derivation | `go test ./service/nfe_service -run TestDetachedTransportMapping` (offline) |
 | AC5 | Interstate guard: placa informed + destination UF ≠ emitter UF → warning toast, no emission; destination UF resolved for both existing-person and inline recipient paths | `go test ./service/nfe_service -run TestDetachedTransportInterstateGuard` (offline, pure-function) |
@@ -151,4 +151,50 @@ already correct once parsed).
 
 ## Verification Results
 
-Not run yet (Status: Backlog).
+- **Baseline (pre-implementation)**: `go test ./pkg/nfe/xml ./pkg/nfe/service
+  ./service/nfe_service ./router/nfe_router ./model/nfe_model` — PASS (all
+  ok, no pre-existing failures).
+- **`make test-go` (`go test ./...`)** — PASS (14 packages ok, 0 FAIL;
+  final run after all fixes). The DB-backed model test **skips** by default
+  (see gating below).
+- **`go test -count=1 ./service/nfe_service ./pkg/nfe/service ./pkg/nfe/xml
+  ./router/nfe_router ./model/nfe_model`** — PASS (all new/changed packages).
+- **`make test-js` (`bun test unit/`)** — PASS (33 pass / 0 fail).
+- **Focused e2e (Playwright), `--project=chromium --workers=1`**:
+  - `tests/detached_nfe_transport.spec.js` — PASS 4/4. Re-run per browser:
+    PASS 4/4 on firefox and PASS 4/4 on webkit as well.
+  - `tests/login.spec.js` (isolated) — PASS 6/6.
+- **Full serial e2e, `--project=chromium --workers=1 --reporter=line` (all
+  spec files)** — PASS **41/41** (departure, entry, entry_discount, login,
+  detached_cfop_selector, detached_nfe_rascunho, detached_nfe_transport);
+  2.6m, exercising the pre-existing detached specs against the modified form
+  and preview templates.
+- **Baseline note (environment, not this change)**: the e2e suite with the
+  default parallel workers repeatedly stalls at login on this machine (page
+  snapshots show tests stuck on the login page across all browsers, before
+  any detached-NF-e page is reached); the log also shows a pre-existing
+  duplicate-key retry inside `detached_nfe_rascunho` (uniqueSuffix re-insert).
+  Serial (`--workers=1`) execution passes everything; record as a known
+  environment limitation.
+- **DB-level round trip** — env-gated
+  `TestDetachedInvoiceTransport_DBRoundTrip` is **double-gated**: the full
+  `DB_*` set plus an explicit `RUN_DB_TESTS=1` opt-in (an inherited
+  dev-shell `DB_*` environment alone must never cause an implicit DB write).
+  With the gate: PASS against the e2e Docker DB (JSON groups, FK,
+  absent-row nil). Default `make test-go` runs: SKIP (asserted).
+- **Migration application** — `RunMigrations()` applied `000026` on every
+  e2e boot; the DB round-trip test read/wrote the created table.
+- **SEFAZ isolation** — no SEFAZ contact: e2e runs with
+  `NFE_SEFAZ_GUARD=block` (global-setup), all unit tests offline, and the
+  one-time app spawn used for bootstrapping the schema ran with
+  `NFE_SEFAZ_GUARD=block` and was stopped before the DB round-trip test.
+- **Incident note (transparent)**: one early run of the DB round-trip test,
+  before the double gate existed, connected to the *development* database
+  (inherited `DB_*` env pointing at localhost:5432). The test's self-cleanup
+  removed all created rows; residue was re-verified afterwards as zero
+  (transport rows 0, `dbroundtrip%` invoices 0, IE-less persons 0). The gate
+  now prevents this; no SEFAZ endpoints were involved.
+- **`gofmt`** — clean on all changed files.
+- **CSS build** — `tailwind -i assets/static/css/input.css -o
+  assets/static/css/output.css --minify` regenerated; new utilities present
+  (`md:grid-cols-5`, `disabled:opacity-40`).

@@ -16,10 +16,10 @@ Router. **No XML builder changes are required.**
   tested without DB). Commands: `go test ./service/nfe_service -run
   TestDetachedTransport`.
 - **Go unit, model** — `model/nfe_model/detached_transport_model_test.go`:
-  struct shape + JSON marshal/unmarshal round-trip of `TransportRecord`
-  (DB-free, like `detached_model_test.go`) plus DB-backed
-  insert/read-of-JSONB round-trip with pgx; DB-backed tests need the test
-  database env (`DB_*`), otherwise keep serialization checks DB-free.
+  JSON marshal/unmarshal round-trip of `TransportRecord` (DB-free, runs in
+  every `make test-go`) plus `TestDetachedInvoiceTransport_DBRoundTrip`,
+  double-gated on the full `DB_*` set **and** `RUN_DB_TESTS=1` so an
+  inherited dev-shell `DB_*` environment never causes an implicit write.
   Command: `go test ./model/nfe_model -run TestDetachedInvoiceTransport`.
 - **Go unit, XML builder** — extend the existing transport case in
   `pkg/nfe/xml/builder_test.go` (line ~206) to assert `RNTC`, volume

@@ -248,6 +248,7 @@ func ParseDANFEData(xmlContent string) (*entity.DANFEData, error) {
 		if veic := transp.SelectElement("veicTransp"); veic != nil {
 			data.VeicPlate = textOrEmpty(veic.SelectElement("placa"))
 			data.VeicUF = textOrEmpty(veic.SelectElement("UF"))
+			data.VeicRNTC = textOrEmpty(veic.SelectElement("RNTC"))
 		}
 	}
 

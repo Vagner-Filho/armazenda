@@ -602,7 +602,14 @@ func (g *DANFEGenerator) drawTaxCalc(pdf *gopdf.GoPdf, data entity.DANFEData, x,
 }
 
 func (g *DANFEGenerator) drawTransport(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
+	// Vehicle row (PLACA / UF / RNTRC) is only drawn when the NF-e carries
+	// vehicle data, so DANFEs without it keep the classic layout height.
+	row4H := 16.0
+	hasVehicle := data.VeicPlate != "" || data.VeicUF != "" || data.VeicRNTC != ""
 	h := 72.0
+	if hasVehicle {
+		h += row4H
+	}
 	//g.box(pdf, x, y, w, h)
 	pdf.SetFont("serif", "", 6)
 	pdf.SetXY(x+4, y+3)
@@ -645,6 +652,18 @@ func (g *DANFEGenerator) drawTransport(pdf *gopdf.GoPdf, data entity.DANFEData, 
 	g.cell(pdf, x+v1+v2+v3, y+10+row1H+row2H, v4, row3H, "NUMERAÇÃO", data.NVol)
 	g.cell(pdf, x+v1+v2+v3+v4, y+10+row1H+row2H, v5, row3H, "PESO LÍQ. (KG)", fmtDec3(data.PesoL))
 	g.cell(pdf, x+v1+v2+v3+v4+v5, y+10+row1H+row2H, v6, row3H, "PESO BRUTO (KG)", fmtDec3(data.PesoB))
+
+	// Row 4 (vehicle), only when the NF-e carries vehicle data (per
+	// DANFE_RULES §4.10: placa X19, UF do veículo, RNTRC/ANTT).
+	if hasVehicle {
+		p1 := w * 0.25
+		p2 := w * 0.15
+		p3 := w - p1 - p2
+		row4Y := y + 10 + row1H + row2H + row3H
+		g.cell(pdf, x, row4Y, p1, row4H, "PLACA", data.VeicPlate)
+		g.cell(pdf, x+p1, row4Y, p2, row4H, "UF", data.VeicUF)
+		g.cell(pdf, x+p1+p2, row4Y, p3, row4H, "RNTRC/ANTT", data.VeicRNTC)
+	}
 
 	return y + h
 }

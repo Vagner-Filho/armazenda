@@ -306,8 +306,10 @@
                 </div>
             </fieldset>
 
-            <!-- Transporte -->
-            <fieldset class="flex flex-col gap-4 p-4 glass-panel rounded-xl">
+            <!-- Transporte (MOC Grupo X): three sub-groups — transportadora
+                 identity, vehicle and volumes. All fields are optional; blank
+                 volume fields fall back to the item-weight auto-derivation. -->
+            <fieldset class="flex flex-col gap-4 p-4 glass-panel rounded-xl" id="transporte-fieldset" data-emitter-uf="{{ .EmitterUF }}">
                 <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
                     Transporte
                 </legend>
@@ -327,6 +329,144 @@
                         </label>
                     </div>
                 </div>
+
+                <h3 class="text-xs text-white/70 uppercase tracking-wider mt-2">Transportadora</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="flex flex-col-reverse md:col-span-2">
+                        <input type="text" name="transportNome" id="transportNome"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="Nome / Razão Social">
+                        <label for="transportNome" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Nome / Razão Social
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="transportDocumento" id="transportDocumento"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="CPF / CNPJ">
+                        <label for="transportDocumento" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            CPF / CNPJ
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="transportIE" id="transportIE"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="Inscrição Estadual">
+                        <label for="transportIE" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Inscrição Estadual
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="transportLogradouro" id="transportLogradouro"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="Logradouro">
+                        <label for="transportLogradouro" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Logradouro
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="transportNumero" id="transportNumero"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="Número">
+                        <label for="transportNumero" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Número
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="transportMunicipio" id="transportMunicipio"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="Município">
+                        <label for="transportMunicipio" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Município
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="transportUF" id="transportUF" maxlength="2"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 uppercase"
+                            placeholder="UF">
+                        <label for="transportUF" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            UF
+                        </label>
+                    </div>
+                </div>
+
+                <h3 class="text-xs text-white/70 uppercase tracking-wider mt-2">Veículo</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="transportPlaca" id="transportPlaca" data-test-id="transport-placa"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 uppercase"
+                            placeholder="ABC1D23">
+                        <label for="transportPlaca" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Placa do Veículo
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="transportPlacaUF" id="transportPlacaUF" maxlength="2"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 uppercase disabled:opacity-40 disabled:cursor-not-allowed"
+                            placeholder="UF">
+                        <label for="transportPlacaUF" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            UF da Placa
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="transportRNTC" id="transportRNTC" maxlength="20"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 disabled:opacity-40 disabled:cursor-not-allowed"
+                            placeholder="ANTT (RNTRC)">
+                        <label for="transportRNTC" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            ANTT (RNTRC)
+                        </label>
+                    </div>
+                </div>
+                <p class="text-xs text-white/50 -mt-2">
+                    Em operações interestaduais os dados do veículo não podem ser informados.
+                </p>
+
+                <h3 class="text-xs text-white/70 uppercase tracking-wider mt-2">Volumes</h3>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div class="flex flex-col-reverse">
+                        <input type="text" inputmode="numeric" name="volQtd" id="volQtd" data-test-id="transport-vol-qtd"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="1">
+                        <label for="volQtd" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Quantidade
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="volEsp" id="volEsp"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="Granel">
+                        <label for="volEsp" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Espécie
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="volMarca" id="volMarca"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="Marca">
+                        <label for="volMarca" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Marca
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" inputmode="decimal" name="volPesoL" id="volPesoL" data-test-id="transport-vol-pesol"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="0,000">
+                        <label for="volPesoL" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Peso Líquido (kg)
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" inputmode="decimal" name="volPesoB" id="volPesoB" data-test-id="transport-vol-pesob"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="0,000">
+                        <label for="volPesoB" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Peso Bruto (kg)
+                        </label>
+                    </div>
+                </div>
+                <p class="text-xs text-white/50 -mt-2">
+                    Volume e pesos são calculados a partir dos itens; edite para sobrescrever.
+                </p>
             </fieldset>
 
             <!-- Tributação -->
@@ -598,6 +738,7 @@
 
                 itemCountInput.value = rows.length;
                 updateRemoveButtons();
+                updateVolumePrefill();
             }
 
             // Removal is delegated so every row (including the initial one)
@@ -660,6 +801,108 @@
                     }
                 });
             }
+
+            // Transporte section behaviors:
+            // 1) Vehicle fields (plate UF / RNTC) are disabled and cleared
+            //    while no plate is informed — a UI affordance only; the
+            //    service ignores vehicle data without a plate and enforces
+            //    the interstate rule (Rejeição 868).
+            // 2) Volume fields are prefilled from the item rows (current
+            //    auto-derivation) and never overwritten once the user edits
+            //    them ("dirty" per field).
+            const transporteFieldset = document.getElementById('transporte-fieldset');
+            const transportPlaca = document.getElementById('transportPlaca');
+            const transportPlacaUF = document.getElementById('transportPlacaUF');
+            const transportRNTC = document.getElementById('transportRNTC');
+            const volFields = {
+                volQtd: document.getElementById('volQtd'),
+                volEsp: document.getElementById('volEsp'),
+                volMarca: document.getElementById('volMarca'),
+                volPesoL: document.getElementById('volPesoL'),
+                volPesoB: document.getElementById('volPesoB'),
+            };
+            const volDirty = new Set();
+
+            function applyVehicleState() {
+                if (!transportPlaca || !transportPlacaUF || !transportRNTC) return;
+                const hasPlate = transportPlaca.value.trim() !== '';
+                [transportPlacaUF, transportRNTC].forEach(input => {
+                    if (hasPlate) {
+                        input.removeAttribute('disabled');
+                    } else {
+                        input.setAttribute('disabled', '');
+                        input.value = '';
+                    }
+                });
+                if (hasPlate && !transportPlacaUF.value.trim()) {
+                    const emitterUF = transporteFieldset ? (transporteFieldset.dataset.emitterUf || '') : '';
+                    if (emitterUF) {
+                        transportPlacaUF.value = emitterUF;
+                    }
+                }
+            }
+
+            if (transportPlaca) {
+                transportPlaca.addEventListener('input', applyVehicleState);
+                applyVehicleState();
+            }
+
+            // Item-row decimal values may use the pt-br comma separator.
+            function parseDecimalInput(value) {
+                if (!value) return 0;
+                const normalized = String(value).trim().replace(',', '.');
+                const parsed = parseFloat(normalized);
+                return isNaN(parsed) ? 0 : parsed;
+            }
+
+            function formatPrefillNumber(value) {
+                // Trimmed to 3 decimals (schema v3 scale) without trailing zeros.
+                return String(Number(value.toFixed(3)));
+            }
+
+            function updateVolumePrefill() {
+                if (!itemsContainer) return;
+
+                let totalQuantity = 0;
+                let totalGross = 0;
+                itemsContainer.querySelectorAll('.item-row').forEach(row => {
+                    const quantityInput = row.querySelector('input[name$=".quantity"]');
+                    const grossInput = row.querySelector('input[name$=".grossWeight"]');
+                    totalQuantity += parseDecimalInput(quantityInput ? quantityInput.value : '');
+                    totalGross += parseDecimalInput(grossInput ? grossInput.value : '');
+                });
+
+                if (!volDirty.has('volQtd') && volFields.volQtd) {
+                    volFields.volQtd.value = '1';
+                }
+                if (!volDirty.has('volEsp') && volFields.volEsp) {
+                    volFields.volEsp.value = 'Granel';
+                }
+                if (!volDirty.has('volPesoL') && volFields.volPesoL) {
+                    volFields.volPesoL.value = totalQuantity > 0 ? formatPrefillNumber(totalQuantity) : '';
+                }
+                if (!volDirty.has('volPesoB') && volFields.volPesoB) {
+                    volFields.volPesoB.value = totalGross > 0 ? formatPrefillNumber(totalGross) : '';
+                }
+            }
+
+            Object.values(volFields).forEach(input => {
+                if (!input) return;
+                input.addEventListener('input', () => volDirty.add(input.id));
+            });
+
+            // Changing item quantities/weights refreshes the volume prefill
+            // (delegated, so every row — including cloned ones — is covered).
+            if (itemsContainer) {
+                itemsContainer.addEventListener('input', (e) => {
+                    if (!(e.target instanceof Element)) return;
+                    const name = e.target.getAttribute('name');
+                    if (name && (name.endsWith('.quantity') || name.endsWith('.grossWeight'))) {
+                        updateVolumePrefill();
+                    }
+                });
+            }
+            updateVolumePrefill();
 
             // Save-as-rascunho dialog: opens, submits the populated form, and
             // closes on success (204, no swap). Failure toasts keep it open.

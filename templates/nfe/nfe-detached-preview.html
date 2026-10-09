@@ -54,6 +54,24 @@
         <input type="hidden" name="infCpl" value="{{ .InfCpl }}">
         <input type="hidden" name="modFrete" value="{{ .ModFrete }}">
 
+        <!-- Transport (MOC Grupo X): round-tripped so the confirm step emits
+             exactly the previewed transport data. -->
+        <input type="hidden" name="transportNome" value="{{ .Transport.Nome }}">
+        <input type="hidden" name="transportDocumento" value="{{ .Transport.Document }}">
+        <input type="hidden" name="transportIE" value="{{ .Transport.IE }}">
+        <input type="hidden" name="transportLogradouro" value="{{ .Transport.Logradouro }}">
+        <input type="hidden" name="transportNumero" value="{{ .Transport.Numero }}">
+        <input type="hidden" name="transportMunicipio" value="{{ .Transport.Municipio }}">
+        <input type="hidden" name="transportUF" value="{{ .Transport.UF }}">
+        <input type="hidden" name="transportPlaca" value="{{ .Transport.Placa }}">
+        <input type="hidden" name="transportPlacaUF" value="{{ .Transport.PlacaUF }}">
+        <input type="hidden" name="transportRNTC" value="{{ .Transport.RNTC }}">
+        <input type="hidden" name="volQtd" value="{{ .Transport.VolQtd }}">
+        <input type="hidden" name="volEsp" value="{{ .Transport.VolEsp }}">
+        <input type="hidden" name="volMarca" value="{{ .Transport.VolMarca }}">
+        <input type="hidden" name="volPesoL" value="{{ .Transport.VolPesoL }}">
+        <input type="hidden" name="volPesoB" value="{{ .Transport.VolPesoB }}">
+
         <input type="hidden" name="icmsRate" value="{{ .ICMSRate }}">
         <input type="hidden" name="pisRate" value="{{ .PISRate }}">
         <input type="hidden" name="cofinsRate" value="{{ .COFINSRate }}">

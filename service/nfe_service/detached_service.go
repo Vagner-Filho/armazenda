@@ -61,6 +61,7 @@ type DetachedInvoiceInput struct {
 	FarmID    uint32
 	Recipient DetachedRecipient
 	VehicleID *uint16 // optional
+	Transport DetachedTransportInput
 	TaxRates  entity.TaxRates
 	Overrides *entity.InvoiceOverrides
 	Items     []DetachedItemInput
@@ -173,35 +174,30 @@ func (s *NFeService) prepareDetachedBuildData(input DetachedInvoiceInput, dryRun
 			"Os itens possuem CFOPs diferentes; informe a Natureza da Operação")
 	}
 
+	// Total weights from items (also the volume-field per-item fallback base).
+	var totalNetWeight, totalGrossWeight decimal.Decimal
+	for _, item := range itemsForDB {
+		totalNetWeight = totalNetWeight.Add(item.Quantity)
+		totalGrossWeight = totalGrossWeight.Add(item.GrossWeight)
+	}
+
 	// Resolve ModFrete
 	effectiveModFrete := farmNFeConfig.DefaultModFrete
 	if input.Overrides != nil && input.Overrides.ModFrete != nil {
 		effectiveModFrete = *input.Overrides.ModFrete
 	}
 
-	// Build transport data
-	transport := entity.TransportData{
-		ModFrete: effectiveModFrete,
+	// Validate and map the transport section (MOC Grupo X). The destination UF
+	// comes from the resolved recipient (existing person or inline fields);
+	// the interstate vehicle guard follows MOC rule X02-20 (Rej. 868).
+	transportErrors := validateDetachedTransport(input.Transport, recipient.UF, farmNFeConfig.EmitterUF)
+	if len(transportErrors) > 0 {
+		return empty, entity_public.GetWarningToast(
+			"Dados de transporte inválidos",
+			strings.Join(transportErrors, "; "))
 	}
-	if input.VehicleID != nil && *input.VehicleID > 0 {
-		// TODO: fetch vehicle plate
-		// For now, skip vehicle data
-	}
-
-	// Calculate total weights from items
-	var totalNetWeight, totalGrossWeight decimal.Decimal
-	for _, item := range itemsForDB {
-		totalNetWeight = totalNetWeight.Add(item.Quantity)
-		totalGrossWeight = totalGrossWeight.Add(item.GrossWeight)
-	}
-	if !totalNetWeight.IsZero() || !totalGrossWeight.IsZero() {
-		transport.Volumes = []entity.VolumeData{{
-			QVol:  1,
-			Esp:   "Granel",
-			PesoL: totalNetWeight,
-			PesoB: totalGrossWeight,
-		}}
-	}
+	transport := mapDetachedTransport(
+		input.Transport, effectiveModFrete, farmNFeConfig.EmitterUF, totalNetWeight, totalGrossWeight)
 
 	// Build infCpl (manual entry for detached)
 	infCpl := ""
@@ -320,6 +316,14 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (DetachedI
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateDetachedInvoice error: %v", createErr.Error()))
 		return DetachedInvoiceResult{}, entity_public.GetErrorToast("Falha ao salvar NF-e", "")
+	}
+
+	// Persist the transport document (audit + future detached SVC rebuild).
+	// A persistence failure is logged and tolerated: the emission proceeds.
+	if transportRecord, transportOK := detachedTransportRecordFromEntity(invoiceInput.Transport); transportOK {
+		if transportErr := nfeModel.CreateDetachedInvoiceTransport(invoiceID, transportRecord); transportErr != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("CreateDetachedInvoiceTransport error: %v", transportErr.Error()))
+		}
 	}
 
 	// One local ranking bump per distinct item CFOP of this emission action.
@@ -886,6 +890,7 @@ func (s *NFeService) buildDetachedDANFEData(input entity.InvoiceInput) entity.DA
 	if transport.Veiculo != nil {
 		data.VeicPlate = transport.Veiculo.Placa
 		data.VeicUF = transport.Veiculo.UF
+		data.VeicRNTC = transport.Veiculo.RNTC
 	}
 
 	return data
@@ -998,6 +1003,14 @@ func (s *NFeService) attemptDetachedSVCContingency(input entity.InvoiceInput, de
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateDetachedInvoice (SVC) error: %v", createErr.Error()))
 		return DetachedInvoiceResult{}, entity_public.GetErrorToast("Falha ao salvar NF-e de contingência", "")
+	}
+
+	// The contingency invoice carries the same transport data as the
+	// superseded one. Persistence failure is logged and tolerated.
+	if transportRecord, transportOK := detachedTransportRecordFromEntity(input.Transport); transportOK {
+		if transportErr := nfeModel.CreateDetachedInvoiceTransport(newInvoiceID, transportRecord); transportErr != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("CreateDetachedInvoiceTransport (SVC) error: %v", transportErr.Error()))
+		}
 	}
 
 	xmlErr := nfeModel.UpdateDetachedInvoiceSignedXML(newInvoiceID, newSignedXML)

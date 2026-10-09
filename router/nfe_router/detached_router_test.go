@@ -378,3 +378,114 @@ func TestDetachedDANFEXML(t *testing.T) {
 		}
 	})
 }
+
+func TestParseDetachedTransport_FullSection(t *testing.T) {
+	values := url.Values{
+		"transportNome":       {"Carreteiro Fulano"},
+		"transportDocumento":  {"529.982.247-25"},
+		"transportIE":         {"ISENTO"},
+		"transportLogradouro": {"Rodovia BR-163"},
+		"transportNumero":     {"Km 12"},
+		"transportMunicipio":  {"Sorriso"},
+		"transportUF":         {"MT"},
+		"transportPlaca":      {"ABC-1234"},
+		"transportPlacaUF":    {"MT"},
+		"transportRNTC":       {"12345"},
+		"volQtd":              {"20"},
+		"volEsp":              {"Big Bag"},
+		"volMarca":            {"BigFarm"},
+		"volPesoL":            {"15000.5"},
+		"volPesoB":            {"15020.25"},
+	}
+
+	transport, toast := parseDetachedTransport(newFormContext(t, values))
+	if toast.Type != 0 {
+		t.Fatalf("expected no toast, got %+v", toast)
+	}
+	if transport.Nome == nil || *transport.Nome != "Carreteiro Fulano" {
+		t.Errorf("expected transportadora name, got %v", transport.Nome)
+	}
+	if transport.Placa == nil || *transport.Placa != "ABC-1234" {
+		t.Errorf("expected plate to parse as informed, got %v", transport.Placa)
+	}
+	if transport.VolQtd == nil || *transport.VolQtd != 20 {
+		t.Errorf("expected volQtd 20, got %v", transport.VolQtd)
+	}
+	if transport.VolPesoL == nil || !transport.VolPesoL.Equal(decimal.RequireFromString("15000.5")) {
+		t.Errorf("expected volPesoL to parse, got %v", transport.VolPesoL)
+	}
+	if transport.VolPesoB == nil || !transport.VolPesoB.Equal(decimal.RequireFromString("15020.25")) {
+		t.Errorf("expected volPesoB to parse, got %v", transport.VolPesoB)
+	}
+}
+
+func TestParseDetachedTransport_BlankSection(t *testing.T) {
+	transport, toast := parseDetachedTransport(newFormContext(t, url.Values{}))
+	if toast.Type != 0 {
+		t.Fatalf("expected no toast, got %+v", toast)
+	}
+	if transport.Nome != nil || transport.Document != nil || transport.Placa != nil ||
+		transport.VolQtd != nil || transport.VolPesoL != nil {
+		t.Error("blank transport section must produce nil fields")
+	}
+}
+
+func TestParseDetachedTransport_RejectsMalformedNumber(t *testing.T) {
+	values := url.Values{
+		"volPesoL": {"10,5"},
+	}
+	if _, toast := parseDetachedTransport(newFormContext(t, values)); toast.Type == 0 {
+		t.Fatal("expected a warning for a malformed weight (comma not accepted)")
+	}
+
+	values = url.Values{
+		"volQtd": {"abc"},
+	}
+	if _, toast := parseDetachedTransport(newFormContext(t, values)); toast.Type == 0 {
+		t.Fatal("expected a warning for a malformed volume quantity")
+	}
+
+	values = url.Values{
+		"volQtd": {"0"},
+	}
+	if _, toast := parseDetachedTransport(newFormContext(t, values)); toast.Type == 0 {
+		t.Fatal("expected a warning for a non-positive volume quantity")
+	}
+}
+
+func TestDetachedTransportView_RoundTrip(t *testing.T) {
+	pesoL := decimal.RequireFromString("15000.500")
+	pesoB := decimal.RequireFromString("15020.250")
+	qtd := 20
+	nome := "Carreteiro Fulano"
+	doc := "529.982.247-25"
+	placa := "ABC-1234"
+	transport := nfe_service.DetachedTransportInput{
+		Nome:     &nome,
+		Document: &doc,
+		Placa:    &placa,
+		VolQtd:   &qtd,
+		VolPesoL: &pesoL,
+		VolPesoB: &pesoB,
+	}
+
+	view := detachedTransportView(transport)
+
+	if view.Nome != nome || view.Document != doc {
+		t.Errorf("transportadora identity lost in round trip: %q/%q", view.Nome, view.Document)
+	}
+	if view.Placa != placa {
+		t.Errorf("plate lost in round trip: %q", view.Placa)
+	}
+	if view.VolQtd != "20" {
+		t.Errorf("expected volQtd '20', got %q", view.VolQtd)
+	}
+	// decimal.Decimal.String() trims trailing zeros; the raw value survives.
+	if view.VolPesoL != "15000.5" || view.VolPesoB != "15020.25" {
+		t.Errorf("weights lost in round trip: %q/%q", view.VolPesoL, view.VolPesoB)
+	}
+	// Not-informed fields stay empty strings (hidden inputs render blank).
+	if view.IE != "" || view.VolEsp != "" || view.RNTC != "" {
+		t.Error("uninformed transport fields must round-trip as empty")
+	}
+}

@@ -92,6 +92,10 @@ type detachedPageView struct {
 	DefaultIBSCST      string
 	DefaultCBSCST      string
 	DefaultCClassTrib  string
+
+	// Emitter UF: default value for the vehicle plate UF in the transport
+	// section (the farm's own vehicle registration state).
+	EmitterUF string
 }
 
 // buildDetachedPageView assembles the emission page data. When profile is nil
@@ -137,6 +141,9 @@ func buildDetachedPageView(farmID uint32, profile *nfe_model.DetachedProfile) de
 		view.DefaultIBSCST = safePtrString(farmNFeConfig.DefaultIBSCST)
 		view.DefaultCBSCST = safePtrString(farmNFeConfig.DefaultCBSCST)
 		view.DefaultCClassTrib = safePtrString(farmNFeConfig.DefaultCClassTrib)
+		if farmNFeConfig.EmitterUF != "" {
+			view.EmitterUF = farmNFeConfig.EmitterUF
+		}
 
 		// Derive the natureza da operação from the configured CFOP when unset.
 		if view.DefaultNaturezaOp == "" {
@@ -346,6 +353,7 @@ func commonProfileItemCFOP(items []nfe_model.DetachedProfileItem) (string, bool)
 type detachedFormData struct {
 	Recipient nfe_service.DetachedRecipient
 	Items     []nfe_service.DetachedItemInput
+	Transport nfe_service.DetachedTransportInput
 	TaxRates  entity.TaxRates
 	Overrides *entity.InvoiceOverrides
 	VehicleID *uint16
@@ -386,14 +394,95 @@ func parseDetachedForm(c *gin.Context) (detachedFormData, entity_public.Toast) {
 		}
 	}
 
+	// Parse the optional transport section (MOC Grupo X). Malformed numeric
+	// volume fields produce a warning toast and abort the request.
+	transport, transportToast := parseDetachedTransport(c)
+	if isFailureToast(transportToast) {
+		return detachedFormData{}, transportToast
+	}
+
 	return detachedFormData{
 		Recipient: recipient,
 		Items:     items,
+		Transport: transport,
 		TaxRates:  userRates,
 		Overrides: parseInvoiceOverrides(c),
 		VehicleID: vehicleID,
 		ProfileID: c.PostForm("rascunhoId"),
 	}, entity_public.Toast{}
+}
+
+// formStringRef reads an optional trimmed form string, nil when blank.
+func formStringRef(c *gin.Context, name string) *string {
+	if str := strings.TrimSpace(c.PostForm(name)); str != "" {
+		return &str
+	}
+	return nil
+}
+
+// formDecimalRef reads an optional decimal form value. A malformed value
+// produces a warning toast; blank stays nil (service fallbacks apply).
+func formDecimalRef(c *gin.Context, name, label string) (*decimal.Decimal, *entity_public.Toast) {
+	str := strings.TrimSpace(c.PostForm(name))
+	if str == "" {
+		return nil, nil
+	}
+	value, err := decimal.NewFromString(str)
+	if err != nil {
+		toast := entity_public.GetWarningToast(
+			"Valor inválido",
+			fmt.Sprintf("Informe um valor válido para %s", label))
+		return nil, &toast
+	}
+	return &value, nil
+}
+
+// parseDetachedTransport parses the optional transport section (MOC Grupo X)
+// from the detached form: transportadora, vehicle (placa/UF/RNTC) and the
+// volume block. Blank fields stay nil so the service fallbacks apply.
+func parseDetachedTransport(c *gin.Context) (nfe_service.DetachedTransportInput, entity_public.Toast) {
+	var in nfe_service.DetachedTransportInput
+
+	// Transportadora
+	in.Nome = formStringRef(c, "transportNome")
+	in.Document = formStringRef(c, "transportDocumento")
+	in.IE = formStringRef(c, "transportIE")
+	in.Logradouro = formStringRef(c, "transportLogradouro")
+	in.Numero = formStringRef(c, "transportNumero")
+	in.Municipio = formStringRef(c, "transportMunicipio")
+	in.UF = formStringRef(c, "transportUF")
+
+	// Veículo
+	in.Placa = formStringRef(c, "transportPlaca")
+	in.PlacaUF = formStringRef(c, "transportPlacaUF")
+	in.RNTC = formStringRef(c, "transportRNTC")
+
+	// Volumes
+	if str := strings.TrimSpace(c.PostForm("volQtd")); str != "" {
+		qtd, err := strconv.Atoi(str)
+		if err != nil || qtd < 1 {
+			return in, entity_public.GetWarningToast(
+				"Quantidade de volumes inválida",
+				"Informe um número inteiro maior que zero para a quantidade de volumes")
+		}
+		in.VolQtd = &qtd
+	}
+	in.VolEsp = formStringRef(c, "volEsp")
+	in.VolMarca = formStringRef(c, "volMarca")
+
+	pesoL, toastRef := formDecimalRef(c, "volPesoL", "Peso líquido dos volumes")
+	if toastRef != nil {
+		return in, *toastRef
+	}
+	in.VolPesoL = pesoL
+
+	pesoB, toastRef := formDecimalRef(c, "volPesoB", "Peso bruto dos volumes")
+	if toastRef != nil {
+		return in, *toastRef
+	}
+	in.VolPesoB = pesoB
+
+	return in, entity_public.Toast{}
 }
 
 // detachedInputFromForm maps the parsed form into the service input.
@@ -402,6 +491,7 @@ func detachedInputFromForm(farmID uint32, form detachedFormData) nfe_service.Det
 		FarmID:    farmID,
 		Recipient: form.Recipient,
 		VehicleID: form.VehicleID,
+		Transport: form.Transport,
 		TaxRates:  form.TaxRates,
 		Overrides: form.Overrides,
 		Items:     form.Items,
@@ -491,6 +581,11 @@ type detachedPreviewView struct {
 	InfCpl     string
 	ModFrete   string
 
+	// Transport (MOC Grupo X) round-trip, built by the pure
+	// detachedTransportView function; empty strings mean "not informed" and
+	// reproduce the service fallbacks.
+	Transport detachedTransportFields
+
 	// Rates (percentage strings; empty means "use the farm config default")
 	ICMSRate   string
 	PISRate    string
@@ -527,6 +622,54 @@ func detachedPreviewItems(parsed []nfe_service.DetachedItemInput) []detachedPrev
 		})
 	}
 	return items
+}
+
+// detachedTransportFields is the hidden-field representation of the transport
+// (MOC Grupo X) section of the detached form.
+type detachedTransportFields struct {
+	// Transportadora (transporta)
+	Nome       string
+	Document   string
+	IE         string
+	Logradouro string
+	Numero     string
+	Municipio  string
+	UF         string
+
+	// Veículo (veicTransp)
+	Placa   string
+	PlacaUF string
+	RNTC    string
+
+	// Volumes (vol)
+	VolQtd   string
+	VolEsp   string
+	VolMarca string
+	VolPesoL string
+	VolPesoB string
+}
+
+// detachedTransportView maps the parsed transport input to its hidden-field
+// representation. It is a pure function so the preview-to-confirm round trip
+// of the transport section is unit-testable without the NFe model singleton.
+func detachedTransportView(transport nfe_service.DetachedTransportInput) detachedTransportFields {
+	return detachedTransportFields{
+		Nome:       safePtrString(transport.Nome),
+		Document:   safePtrString(transport.Document),
+		IE:         safePtrString(transport.IE),
+		Logradouro: safePtrString(transport.Logradouro),
+		Numero:     safePtrString(transport.Numero),
+		Municipio:  safePtrString(transport.Municipio),
+		UF:         safePtrString(transport.UF),
+		Placa:      safePtrString(transport.Placa),
+		PlacaUF:    safePtrString(transport.PlacaUF),
+		RNTC:       safePtrString(transport.RNTC),
+		VolQtd:     intPtrString(transport.VolQtd),
+		VolEsp:     safePtrString(transport.VolEsp),
+		VolMarca:   safePtrString(transport.VolMarca),
+		VolPesoL:   decimalPtrString(transport.VolPesoL),
+		VolPesoB:   decimalPtrString(transport.VolPesoB),
+	}
 }
 
 // buildDetachedPreviewViewData assembles the view model for the
@@ -601,6 +744,8 @@ func buildDetachedPreviewViewData(farmID uint32, form detachedFormData, pdfBytes
 		view.CClassTrib = safePtrString(o.CClassTrib)
 	}
 
+	view.Transport = detachedTransportView(form.Transport)
+
 	return view
 }
 
@@ -648,6 +793,23 @@ func uint32PtrString(p *uint32) string {
 		return ""
 	}
 	return strconv.FormatUint(uint64(*p), 10)
+}
+
+// intPtrString formats an optional integer for a hidden input.
+func intPtrString(p *int) string {
+	if p == nil {
+		return ""
+	}
+	return strconv.Itoa(*p)
+}
+
+// decimalPtrString formats an optional decimal for a hidden input, keeping
+// the raw decimal string so the confirm step re-submits the exact value.
+func decimalPtrString(p *decimal.Decimal) string {
+	if p == nil {
+		return ""
+	}
+	return p.String()
 }
 
 // parseDetachedRecipient parses the recipient from the form

@@ -283,3 +283,19 @@ func TestDANFEGenerator_GenerateLongText(t *testing.T) {
 	pdfBytes, err := g.Generate(data)
 	assertValidPDF(t, pdfBytes, err, "long text wrapping")
 }
+
+func TestDANFEGenerator_VehicleDataRow(t *testing.T) {
+	data := fullDANFEData()
+	data.VeicPlate = "ABC1D23"
+	data.VeicUF = "MT"
+	data.VeicRNTC = "12345678901234567890"
+
+	generator := service.NewDANFEGenerator()
+	pdfBytes, err := generator.Generate(data)
+	assertValidPDF(t, pdfBytes, err, "Generate with vehicle data")
+
+	// Without vehicle data the transport block keeps the classic height.
+	dataNoVehicle := fullDANFEData()
+	pdfBytes, err = generator.Generate(dataNoVehicle)
+	assertValidPDF(t, pdfBytes, err, "Generate without vehicle data")
+}
