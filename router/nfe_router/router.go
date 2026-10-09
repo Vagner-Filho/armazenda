@@ -379,6 +379,43 @@ func derefDecimal(d *decimal.Decimal) decimal.Decimal {
 	return *d
 }
 
+func getDetachedNFeCancelModal(c *gin.Context) {
+	sid, _ := c.Cookie("session_id")
+	farmID := user_service.GetFarmFromToken(sid)
+
+	accessKey := c.Param("accessKey")
+	nfeModel := nfe_model.GetNFeModel()
+	invoice, err := nfeModel.GetDetachedInvoiceByAccessKey(accessKey)
+
+	if err != nil || invoice == nil {
+		c.String(http.StatusNotFound, "NF-e não encontrada")
+		return
+	}
+
+	if invoice.FarmID != farmID {
+		c.String(http.StatusForbidden, "Access denied")
+		return
+	}
+
+	if invoice.Status != "authorized" {
+		c.String(http.StatusBadRequest, "Somente NF-e autorizadas podem ser canceladas")
+		return
+	}
+
+	pastDeadline := false
+	if t, ok := invoice.AuthorizedAt.(time.Time); ok && time.Since(t) > 24*time.Hour {
+		pastDeadline = true
+	}
+
+	nonce, _ := c.Get("csp_nonce")
+	c.HTML(http.StatusOK, "nfe-cancel-modal", gin.H{
+		"Invoice":      invoice,
+		"PastDeadline": pastDeadline,
+		"CSPNonce":     nonce.(string),
+		"Type":         "Avulsa",
+	})
+}
+
 func UseNFeRoutes(router gin.IRoutes) {
 	router.GET("/", getNFePage)
 	router.POST("/preview/:departureId", previewNFe)
@@ -714,6 +751,7 @@ func getNFeCancelModal(c *gin.Context) {
 		"Invoice":      invoice,
 		"PastDeadline": pastDeadline,
 		"CSPNonce":     nonce.(string),
+		"Type":         "Romaneio",
 	})
 }
 

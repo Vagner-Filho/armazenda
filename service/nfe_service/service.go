@@ -340,6 +340,12 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceSignedXML error: %v", xmlErr.Error()))
 	}
 
+	// Record the first transmission attempt before the XML goes in flight.
+	// Failures are logged and tolerated so they never block the emission.
+	if sentErr := nfeModel.UpdateInvoiceSent(invoiceID); sentErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceSent error: %v", sentErr.Error()))
+	}
+
 	// Attempt synchronous normal SEFAZ submission
 	sefazResp, sendErr := invService.SendToSefaz(signedXML, farmNFeConfig.CertificateData, certPassword)
 	if sendErr == nil && sefazResp != nil {
@@ -461,6 +467,12 @@ func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure 
 	if xmlErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceSignedXML (SVC) error: %v", xmlErr.Error()))
 		return "", entity_public.GetErrorToast("Failed to save contingency signed XML", "")
+	}
+
+	// Record the first transmission attempt before the XML goes in flight.
+	// Failures are logged and tolerated so they never block the emission.
+	if sentErr := nfeModel.UpdateInvoiceSent(newInvoiceID); sentErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateInvoiceSent (SVC) error: %v", sentErr.Error()))
 	}
 
 	// Send to SVC

@@ -213,7 +213,6 @@ type Invoice struct {
 	QuantityKG  decimal.Decimal
 	UnitPrice   decimal.Decimal
 	TotalValue  decimal.Decimal
-	ICMSValue   *decimal.Decimal
 	// Tax reform totals (Reforma Tributária, NT 2025.002-RTC). Persisted
 	// from the per-item IBS/CBS sums so future reports can show tax burden
 	// per invoice without re-parsing the signed XML.
@@ -231,7 +230,6 @@ type Invoice struct {
 	DhCont              interface{}
 	XJust               *string
 	ContingencyParentID *int
-	SVCEndpointUsed     *string
 	CreatedAt           interface{}
 	SignedAt            interface{}
 	SentAt              interface{}
@@ -251,14 +249,6 @@ type Invoice struct {
 	CBSCST     *string
 	CClassTrib *string
 	InfCpl     *string
-}
-
-// CreateInvoice creates a new invoice record with default tpEmis=1 (normal).
-// Legacy path that doesn't track IBS/CBS totals — the totals columns stay at
-// their DEFAULT (0.00). Use CreateInvoiceWithEmission for the full picture.
-// Deprecated.
-func (m *NFeModel) CreateInvoiceDeprecated(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal, taxRates *entity.TaxRates) (int, error) {
-	return m.CreateInvoiceWithEmission(departureID, accessKey, serie, number, cfop, ncm, quantityKG, unitPrice, totalValue, decimal.Zero, decimal.Zero, 1, nil, "", taxRates, nil)
 }
 
 // CreateInvoiceWithEmission creates a new invoice record with a specific emission type.
@@ -359,26 +349,6 @@ func (m *NFeModel) insertInvoiceTaxRates(invoiceID int, taxRates *entity.TaxRate
 	return nil
 }
 
-// GetInvoiceTaxRates returns the user-provided tax rate overrides for an
-// invoice. Returns (nil, nil) when no row exists (legacy invoice or emission
-// where the user did not provide any rate).
-func (m *NFeModel) GetInvoiceTaxRates(invoiceID int) (*entity.TaxRates, error) {
-	var tr entity.TaxRates
-	err := m.pool.QueryRow(context.Background(),
-		`SELECT icms_rate, pis_rate, cofins_rate, cbs_rate, ibs_rate
-		 FROM nfe_invoice_tax_rates
-		 WHERE invoice_id = $1`,
-		invoiceID,
-	).Scan(&tr.ICMSRate, &tr.PISRate, &tr.COFINSRate, &tr.CBSRate, &tr.IBSRate)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("failed to get invoice tax rates: %w", err)
-	}
-	return &tr, nil
-}
-
 // DeleteInvoiceTaxRates removes the tax rate row for an invoice.
 func (m *NFeModel) DeleteInvoiceTaxRates(invoiceID int) error {
 	_, err := m.pool.Exec(context.Background(),
@@ -441,10 +411,10 @@ func (m *NFeModel) UpdateInvoiceCancelled(id int, reason, eventXML, sefazCode, s
 func (m *NFeModel) GetInvoiceByDeparture(departureID uint32) (*Invoice, error) {
 	query := `
 		SELECT i.id, i.departure_id, i.access_key, i.serie, i.number, i.status, i.cfop, i.ncm,
-		       i.quantity_kg, i.unit_price, i.total_value, i.icms_value, i.ibs_value, i.cbs_value,
+		       i.quantity_kg, i.unit_price, i.total_value, i.ibs_value, i.cbs_value,
 		       i.xml_signed, i.xml_authorized,
 		       i.protocol, i.sefaz_status_code, i.sefaz_motive, i.rejection_reason, i.cancellation_reason,
-		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id, i.svc_endpoint_used,
+		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id,
 		       i.created_at, i.signed_at, i.sent_at, i.authorized_at,
 		       t.icms_rate, t.pis_rate, t.cofins_rate, t.cbs_rate, t.ibs_rate,
        i.natureza_op, i.product_description, i.cest, i.unit, i.mod_frete,
@@ -602,12 +572,14 @@ func (m *NFeModel) IncrementRetryCount(id int) error {
 	return err
 }
 
-// UpdateInvoiceSent marks an invoice as sent and records the timestamp.
+// UpdateInvoiceSent records the timestamp of the first transmission attempt for
+// an invoice. The sent_at IS NULL guard makes the stamp idempotent: retries or
+// re-entered send paths cannot overwrite the original attempt time.
 func (m *NFeModel) UpdateInvoiceSent(id int) error {
 	query := `
 		UPDATE nfe_invoice
 		SET sent_at = CURRENT_TIMESTAMP
-		WHERE id = $1
+		WHERE id = $1 AND sent_at IS NULL
 	`
 	_, err := m.pool.Exec(context.Background(), query, id)
 	return err
@@ -648,10 +620,10 @@ func (m *NFeModel) GetInvoicesByFarm(farmID uint32, page int) ([]Invoice, int, e
 
 	query := `
 		SELECT i.id, i.departure_id, i.access_key, i.serie, i.number, i.status, i.cfop, i.ncm,
-		       i.quantity_kg, i.unit_price, i.total_value, i.icms_value, i.ibs_value, i.cbs_value,
+		       i.quantity_kg, i.unit_price, i.total_value, i.ibs_value, i.cbs_value,
 		       i.xml_signed, i.xml_authorized,
 		       i.protocol, i.sefaz_status_code, i.sefaz_motive, i.rejection_reason, i.cancellation_reason,
-		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id, i.svc_endpoint_used,
+		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id,
 		       i.created_at, i.signed_at, i.sent_at, i.authorized_at,
 		       t.icms_rate, t.pis_rate, t.cofins_rate, t.cbs_rate, t.ibs_rate,
                i.natureza_op, i.product_description, i.cest, i.unit, i.mod_frete,
@@ -685,10 +657,10 @@ func (m *NFeModel) GetInvoicesByFarm(farmID uint32, page int) ([]Invoice, int, e
 func (m *NFeModel) GetInvoiceByAccessKey(accessKey string) (*Invoice, error) {
 	query := `
 		SELECT i.id, i.departure_id, i.access_key, i.serie, i.number, i.status, i.cfop, i.ncm,
-		       i.quantity_kg, i.unit_price, i.total_value, i.icms_value, i.ibs_value, i.cbs_value,
+		       i.quantity_kg, i.unit_price, i.total_value, i.ibs_value, i.cbs_value,
 		       i.xml_signed, i.xml_authorized,
 		       i.protocol, i.sefaz_status_code, i.sefaz_motive, i.rejection_reason, i.cancellation_reason,
-		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id, i.svc_endpoint_used,
+		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id,
 		       i.created_at, i.signed_at, i.sent_at, i.authorized_at,
 		       t.icms_rate, t.pis_rate, t.cofins_rate, t.cbs_rate, t.ibs_rate,
                i.natureza_op, i.product_description, i.cest, i.unit, i.mod_frete,
@@ -721,17 +693,16 @@ type invoiceScanner interface {
 // the Invoice.TaxRates field.
 func scanInvoice(row invoiceScanner) (*Invoice, error) {
 	var inv Invoice
-	var icmsValue *decimal.Decimal
-	var xmlSigned, xmlAuthorized, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason, xJust, svcEndpoint *string
+	var xmlSigned, xmlAuthorized, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason, xJust *string
 	var contingencyParentID *int
 	var icmsRate, pisRate, cofinsRate, cbsRate, ibsRate *decimal.Decimal
 	var ibsCST, cbsCST, cClassTrib *string
 	err := row.Scan(
 		&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Serie, &inv.Number, &inv.Status,
-		&inv.CFOP, &inv.NCM, &inv.QuantityKG, &inv.UnitPrice, &inv.TotalValue, &icmsValue,
+		&inv.CFOP, &inv.NCM, &inv.QuantityKG, &inv.UnitPrice, &inv.TotalValue,
 		&inv.IBSValue, &inv.CBSValue,
 		&xmlSigned, &xmlAuthorized, &protocol, &sefazCode, &sefazMotive, &rejectionReason,
-		&cancellationReason, &inv.RetryCount, &inv.TpEmis, &inv.DhCont, &xJust, &contingencyParentID, &svcEndpoint,
+		&cancellationReason, &inv.RetryCount, &inv.TpEmis, &inv.DhCont, &xJust, &contingencyParentID,
 		&inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt,
 		&icmsRate, &pisRate, &cofinsRate, &cbsRate, &ibsRate,
 		&inv.NaturezaOp, &inv.ProductDescription, &inv.CEST, &inv.Unit, &inv.ModFrete,
@@ -741,7 +712,6 @@ func scanInvoice(row invoiceScanner) (*Invoice, error) {
 		return nil, err
 	}
 
-	inv.ICMSValue = icmsValue
 	inv.XMLSigned = xmlSigned
 	inv.XMLAuthorized = xmlAuthorized
 	inv.Protocol = protocol
@@ -751,7 +721,6 @@ func scanInvoice(row invoiceScanner) (*Invoice, error) {
 	inv.CancellationReason = cancellationReason
 	inv.XJust = xJust
 	inv.ContingencyParentID = contingencyParentID
-	inv.SVCEndpointUsed = svcEndpoint
 	inv.CBSCST = cbsCST
 	inv.IBSCST = ibsCST
 	inv.CClassTrib = cClassTrib

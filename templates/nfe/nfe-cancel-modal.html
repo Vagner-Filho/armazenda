@@ -26,8 +26,8 @@
                 Após o cancelamento, a NF-e perde sua validade fiscal.
             </p>
         </div>
-        <form class="flex flex-col gap-4" hx-post="/nfe/cancel/{{ .Invoice.AccessKey }}"
-            hx-target="#nfe-{{ .Invoice.ID }}" hx-swap="outerHTML" hx-indicator="#nfe-cancel-spinner">
+        <form class="flex flex-col gap-4" hx-post="/nfe/{{ if eq .Type "Avulsa" }}avulsa/{{ end }}cancel/{{ .Invoice.AccessKey }}"
+            hx-target="#nfe-{{ .Invoice.AccessKey }}" hx-swap="outerHTML" hx-indicator="#nfe-cancel-spinner">
             <div class="flex flex-col-reverse">
                 <textarea name="justification" id="justification" required minlength="15" maxlength="256" rows="3"
                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 resize-none"

@@ -53,7 +53,6 @@ type DetachedInvoice struct {
 	DhCont              interface{}
 	XJust               *string
 	ContingencyParentID *int
-	SVCEndpointUsed     *string
 	ICMSCST             *string
 	PISCST              *string
 	COFINSCST           *string
@@ -71,7 +70,12 @@ type DetachedInvoice struct {
 	TaxRates            *entity.TaxRates
 }
 
-// CreateDetachedInvoice creates a new detached invoice record
+// CreateDetachedInvoice creates a new detached invoice record.
+//
+// dhCont and xJust mirror the departure flow's CreateInvoiceWithEmission
+// parameters: they are written only for SVC contingency emissions (tpEmis 6|7)
+// and stay nil/empty for normal emissions, so the persisted row matches the
+// signed XML's <dhCont>/<xJust> elements.
 func (m *NFeModel) CreateDetachedInvoice(
 	farmID uint32,
 	recipientID uint32,
@@ -81,6 +85,8 @@ func (m *NFeModel) CreateDetachedInvoice(
 	modFrete *int,
 	totalValue, ibsValue, cbsValue decimal.Decimal,
 	tpEmis int,
+	dhCont interface{},
+	xJust string,
 	taxRates *entity.TaxRates,
 	overrides *entity.InvoiceOverrides,
 	items []DetachedInvoiceItem,
@@ -97,7 +103,7 @@ func (m *NFeModel) CreateDetachedInvoice(
 			natureza_op, mod_frete,
 			total_value, ibs_value, cbs_value,
 			items_json,
-			tp_emis,
+			tp_emis, dh_cont, x_just,
 			icms_cst, pis_cst, cofins_cst,
 			ibs_cst, cbs_cst, c_class_trib,
 			inf_cpl
@@ -106,10 +112,10 @@ func (m *NFeModel) CreateDetachedInvoice(
 			$6, $7,
 			$8, $9, $10,
 			$11,
-			$12,
-			$13, $14, $15,
-			$16, $17, $18,
-			$19
+			$12, $13, $14,
+			$15, $16, $17,
+			$18, $19, $20,
+			$21
 		)
 		RETURNING id
 	`
@@ -119,7 +125,7 @@ func (m *NFeModel) CreateDetachedInvoice(
 		naturezaOp, modFrete,
 		totalValue, ibsValue, cbsValue,
 		itemsJSON,
-		tpEmis,
+		tpEmis, dhCont, xJust,
 		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.ICMSCST }),
 		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.PISCST }),
 		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.COFINSCST }),
@@ -186,7 +192,7 @@ func (m *NFeModel) GetDetachedInvoicesByFarm(farmID uint32, page int) ([]Detache
 			d.items_json,
 			d.xml_signed, d.xml_authorized, d.xml_cancel_event,
 			d.protocol, d.sefaz_status_code, d.sefaz_motive, d.rejection_reason, d.cancellation_reason,
-			d.tp_emis, d.dh_cont, d.x_just, d.contingency_parent_id, d.svc_endpoint_used,
+			d.tp_emis, d.dh_cont, d.x_just, d.contingency_parent_id,
 			d.icms_cst, d.pis_cst, d.cofins_cst, d.ibs_cst, d.cbs_cst, d.c_class_trib, d.inf_cpl,
 			d.retry_count, d.last_retry_at,
 			d.created_at, d.signed_at, d.sent_at, d.authorized_at, d.cancelled_at,
@@ -224,7 +230,7 @@ func (m *NFeModel) GetDetachedInvoiceByAccessKey(accessKey string) (*DetachedInv
 			d.items_json,
 			d.xml_signed, d.xml_authorized, d.xml_cancel_event,
 			d.protocol, d.sefaz_status_code, d.sefaz_motive, d.rejection_reason, d.cancellation_reason,
-			d.tp_emis, d.dh_cont, d.x_just, d.contingency_parent_id, d.svc_endpoint_used,
+			d.tp_emis, d.dh_cont, d.x_just, d.contingency_parent_id,
 			d.icms_cst, d.pis_cst, d.cofins_cst, d.ibs_cst, d.cbs_cst, d.c_class_trib, d.inf_cpl,
 			d.retry_count, d.last_retry_at,
 			d.created_at, d.signed_at, d.sent_at, d.authorized_at, d.cancelled_at,
@@ -255,6 +261,20 @@ func (m *NFeModel) UpdateDetachedInvoiceStatus(id int, status, protocol, sefazCo
 		WHERE id = $1
 	`
 	_, err := m.pool.Exec(context.Background(), query, id, status, protocol, sefazCode, sefazMotive)
+	return err
+}
+
+// UpdateDetachedInvoiceSent records the timestamp of the first transmission
+// attempt for a detached invoice. The sent_at IS NULL guard makes the stamp
+// idempotent: retries or re-entered send paths cannot overwrite the original
+// attempt time.
+func (m *NFeModel) UpdateDetachedInvoiceSent(id int) error {
+	query := `
+		UPDATE detached_nfe_invoice
+		SET sent_at = CURRENT_TIMESTAMP
+		WHERE id = $1 AND sent_at IS NULL
+	`
+	_, err := m.pool.Exec(context.Background(), query, id)
 	return err
 }
 
@@ -307,7 +327,7 @@ type detachedInvoiceScanner interface {
 // scanDetachedInvoice scans a row into a DetachedInvoice
 func scanDetachedInvoice(row detachedInvoiceScanner) (*DetachedInvoice, error) {
 	var inv DetachedInvoice
-	var xmlSigned, xmlAuthorized, xmlCancelEvent, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason, xJust, svcEndpoint *string
+	var xmlSigned, xmlAuthorized, xmlCancelEvent, protocol, sefazCode, sefazMotive, rejectionReason, cancellationReason, xJust *string
 	var contingencyParentID *int
 	var naturezaOp *string
 	var modFrete *int
@@ -322,7 +342,7 @@ func scanDetachedInvoice(row detachedInvoiceScanner) (*DetachedInvoice, error) {
 		&itemsJSON,
 		&xmlSigned, &xmlAuthorized, &xmlCancelEvent,
 		&protocol, &sefazCode, &sefazMotive, &rejectionReason, &cancellationReason,
-		&inv.TpEmis, &inv.DhCont, &xJust, &contingencyParentID, &svcEndpoint,
+		&inv.TpEmis, &inv.DhCont, &xJust, &contingencyParentID,
 		&icmsCST, &pisCST, &cofinsCST, &ibsCST, &cbsCST, &cClassTrib, &infCpl,
 		&inv.RetryCount, &inv.LastRetryAt,
 		&inv.CreatedAt, &inv.SignedAt, &inv.SentAt, &inv.AuthorizedAt, &inv.CancelledAt,
@@ -344,7 +364,6 @@ func scanDetachedInvoice(row detachedInvoiceScanner) (*DetachedInvoice, error) {
 	inv.CancellationReason = cancellationReason
 	inv.XJust = xJust
 	inv.ContingencyParentID = contingencyParentID
-	inv.SVCEndpointUsed = svcEndpoint
 	inv.ICMSCST = icmsCST
 	inv.PISCST = pisCST
 	inv.COFINSCST = cofinsCST
@@ -385,24 +404,6 @@ func (m *NFeModel) AllocateDetachedNumber(farmID uint32, serie int) (int, error)
 	return number, nil
 }
 
-// GetDetachedInvoiceTaxRates returns the tax rate overrides for a detached invoice
-func (m *NFeModel) GetDetachedInvoiceTaxRates(invoiceID int) (*entity.TaxRates, error) {
-	var tr entity.TaxRates
-	err := m.pool.QueryRow(context.Background(),
-		`SELECT icms_rate, pis_rate, cofins_rate, ibs_rate, cbs_rate
-		 FROM detached_nfe_tax_rates
-		 WHERE invoice_id = $1`,
-		invoiceID,
-	).Scan(&tr.ICMSRate, &tr.PISRate, &tr.COFINSRate, &tr.IBSRate, &tr.CBSRate)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("failed to get detached invoice tax rates: %w", err)
-	}
-	return &tr, nil
-}
-
 // IncrementDetachedRetryCount increments the retry count for a detached invoice
 func (m *NFeModel) IncrementDetachedRetryCount(id int) error {
 	query := `
@@ -423,7 +424,7 @@ func (m *NFeModel) GetPendingDetachedInvoicesForRetry() ([]DetachedInvoice, erro
 			d.items_json,
 			d.xml_signed, d.xml_authorized, d.xml_cancel_event,
 			d.protocol, d.sefaz_status_code, d.sefaz_motive, d.rejection_reason, d.cancellation_reason,
-			d.tp_emis, d.dh_cont, d.x_just, d.contingency_parent_id, d.svc_endpoint_used,
+			d.tp_emis, d.dh_cont, d.x_just, d.contingency_parent_id,
 			d.icms_cst, d.pis_cst, d.cofins_cst, d.ibs_cst, d.cbs_cst, d.c_class_trib, d.inf_cpl,
 			d.retry_count, d.last_retry_at,
 			d.created_at, d.signed_at, d.sent_at, d.authorized_at, d.cancelled_at,
@@ -466,7 +467,7 @@ func (m *NFeModel) GetDraftDetachedInvoicesForRetry() ([]DetachedInvoice, error)
 			d.items_json,
 			d.xml_signed, d.xml_authorized, d.xml_cancel_event,
 			d.protocol, d.sefaz_status_code, d.sefaz_motive, d.rejection_reason, d.cancellation_reason,
-			d.tp_emis, d.dh_cont, d.x_just, d.contingency_parent_id, d.svc_endpoint_used,
+			d.tp_emis, d.dh_cont, d.x_just, d.contingency_parent_id,
 			d.icms_cst, d.pis_cst, d.cofins_cst, d.ibs_cst, d.cbs_cst, d.c_class_trib, d.inf_cpl,
 			d.retry_count, d.last_retry_at,
 			d.created_at, d.signed_at, d.sent_at, d.authorized_at, d.cancelled_at,

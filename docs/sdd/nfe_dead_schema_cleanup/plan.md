@@ -205,3 +205,30 @@ psql … -c "SELECT status, sent_at, dh_cont, x_just FROM detached_nfe_invoice
   - persisting computed ICMS/PIS/COFINS totals (the IBS/CBS precedent pattern);
   - any UI/report consuming `sent_at`;
   - making `NFeService`'s model dependency injectable to unit-test the stamping.
+
+## Implementation notes (2026-10-09)
+
+Deviations from the plan as written, and why:
+
+1. **Manual UI smoke for AC6 is not executable offline.** The plan assumed the
+   e2e fixture user could emit a detached NF-e, but the fixture intentionally
+   carries empty `certificate_data` (`test/e2e/tests/detached_cfop_selector.spec.js:17-19`)
+   and AGENTS.md prohibits seeding certificate bytes — signing fails before
+   `CreateDetachedInvoice`, so no row would ever be created. The behavior was
+   instead confirmed by a new DB-gated model test plus the AC5 call-site
+   checklist; details in `sdd.md` → Verification Results.
+2. **Added `model/nfe_model/invoice_lifecycle_model_test.go`** (double-gated by
+   full DB_* + `RUN_DB_TESTS=1`, same pattern as
+   `detached_transport_model_test.go`). It covers: `sent_at` stamping and the
+   `sent_at IS NULL` guard on both tables; contingency vs normal
+   `dh_cont`/`x_just` persistence; and runtime scan parity for every edited
+   SELECT (`Get*ByAccessKey`, `Get*ByDeparture`, `Get*ByFarm`,
+   `GetDraft/Pending*ForRetry`). Run each DB test in its own `go test -run`
+   invocation: `InitNFeModel` is a singleton, so two DB tests sharing one
+   package process would reuse the first test's (closed) pool.
+3. **Smoke used a HEAD-binary-first sequence** to make AC2 meaningful: start
+   the e2e DB fresh, boot a binary built at HEAD (migrations 1..26, columns
+   exist), run the NULL-count queries, then boot the new binary and verify
+   000027 applied and the columns are gone.
+4. One pre-existing `gofmt` violation in `service/nfe_service/worker.go`
+   (leading space on a line) was fixed while touching the file.

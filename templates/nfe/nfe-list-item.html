@@ -64,7 +64,7 @@
             </a>
             {{ end }}
             {{ if eq .Invoice.Status "authorized" }}
-            <button type="button" hx-get="/nfe/cancel/modal/{{ .Invoice.AccessKey }}" hx-target="body" hx-swap="beforeend" title="Cancelar NF-e" class="icon-btn size-5">
+            <button type="button" hx-get="/nfe/{{ if eq .Type "Avulsa" }}avulsa/{{ end }}cancel/modal/{{ .Invoice.AccessKey }}" hx-target="body" hx-swap="beforeend" title="Cancelar NF-e" class="icon-btn size-5">
                 <iconify-icon icon="mdi:file-cancel-outline" class="text-xl"></iconify-icon>
             </button>
             {{ end }}

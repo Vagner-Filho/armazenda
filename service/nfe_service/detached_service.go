@@ -311,7 +311,7 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (DetachedI
 		input.FarmID, build.RecipientID, accessKey, farmNFeConfig.Serie, number,
 		&naturezaOp, &effectiveModFrete,
 		invoiceInput.TotalValue, build.TotalIBS, build.TotalCBS,
-		1, ratesToPersist, input.Overrides, build.ItemsForDB,
+		1, nil, "", ratesToPersist, input.Overrides, build.ItemsForDB,
 	)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateDetachedInvoice error: %v", createErr.Error()))
@@ -334,6 +334,12 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (DetachedI
 	// Store signed XML
 	if xmlErr := nfeModel.UpdateDetachedInvoiceSignedXML(invoiceID, signedXML); xmlErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateDetachedInvoiceSignedXML error: %v", xmlErr.Error()))
+	}
+
+	// Record the first transmission attempt before the XML goes in flight.
+	// Failures are logged and tolerated so they never block the emission.
+	if sentErr := nfeModel.UpdateDetachedInvoiceSent(invoiceID); sentErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateDetachedInvoiceSent error: %v", sentErr.Error()))
 	}
 
 	// Send to SEFAZ
@@ -998,7 +1004,7 @@ func (s *NFeService) attemptDetachedSVCContingency(input entity.InvoiceInput, de
 		newAccessKey, farmNFeConfig.Serie, newNumber,
 		&input.NaturezaOp, nil,
 		totalValue, totalIBS, totalCBS,
-		int(tpEmis), taxRates, detachedInput.Overrides, itemsForDB,
+		int(tpEmis), time.Now(), reason, taxRates, detachedInput.Overrides, itemsForDB,
 	)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateDetachedInvoice (SVC) error: %v", createErr.Error()))
@@ -1017,6 +1023,12 @@ func (s *NFeService) attemptDetachedSVCContingency(input entity.InvoiceInput, de
 	if xmlErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateDetachedInvoiceSignedXML (SVC) error: %v", xmlErr.Error()))
 		return DetachedInvoiceResult{}, entity_public.GetErrorToast("Falha ao salvar XML assinado de contingência", "")
+	}
+
+	// Record the first transmission attempt before the XML goes in flight.
+	// Failures are logged and tolerated so they never block the emission.
+	if sentErr := nfeModel.UpdateDetachedInvoiceSent(newInvoiceID); sentErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("UpdateDetachedInvoiceSent (SVC) error: %v", sentErr.Error()))
 	}
 
 	// Send to SVC

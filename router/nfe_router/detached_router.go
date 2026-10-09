@@ -1115,6 +1115,7 @@ func UseDetachedNFeRoutes(router gin.IRoutes) {
 	router.GET("/avulsa/download/xml/:accessKey", downloadDetachedNFeXML)
 	router.GET("/avulsa/download/danfe/:accessKey", downloadDetachedNFeDANFE)
 	router.POST("/avulsa/cancel/:accessKey", cancelDetachedNFe)
+	router.GET("/avulsa/cancel/modal/:accessKey", getDetachedNFeCancelModal)
 
 	// Rascunhos de NF-e management + save-from-form
 	UseDetachedProfileRoutes(router)

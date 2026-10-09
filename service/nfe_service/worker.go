@@ -212,7 +212,7 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 	// Get the original user-typed tax rates from the persisted row.
 	// For legacy invoices (no row) or partially-set rows, individual rates will
 	// be nil and MergeRates will fall back to the farm config.
-	 taxRateOverrides := invoiceRecord.TaxRates
+	taxRateOverrides := invoiceRecord.TaxRates
 	if taxRateOverrides == nil {
 		taxRateOverrides = &entity.TaxRates{}
 	}
@@ -265,6 +265,12 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 
 	if err := nfeModel.UpdateInvoiceSignedXML(newInvoiceID, newSignedXML); err != nil {
 		return fmt.Errorf("failed to save contingency XML: %w", err)
+	}
+
+	// Record the first transmission attempt before the XML goes in flight.
+	// Failures are logged and tolerated so they never block the retry.
+	if err := nfeModel.UpdateInvoiceSent(newInvoiceID); err != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: failed to stamp sent_at for contingency invoice %d: %v", newInvoiceID, err))
 	}
 
 	// Send to SVC
