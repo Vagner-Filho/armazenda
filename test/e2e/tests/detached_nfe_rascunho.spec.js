@@ -54,6 +54,21 @@ async function gotoApp(page, path) {
   return page.goto(`${origin}${path}`);
 }
 
+// Sections of the emission form are hidden until their tab in #tabs is
+// clicked. The Transporte tab reveals fieldset#transporte-fieldset; the
+// other tabs share the id of their fieldset.
+const EMIT_TAB_FIELDSETS = {
+  dest: 'fieldset#dest',
+  transac: 'fieldset#transac',
+  transp: 'fieldset#transporte-fieldset',
+  trib: 'fieldset#trib',
+};
+
+async function goToTab(page, tabId) {
+  await page.locator(`#tabs button#${tabId}`).click();
+  await expect(page.locator(EMIT_TAB_FIELDSETS[tabId])).toBeVisible();
+}
+
 async function openNewRascunhoDialog(page) {
   // evaluate-click keeps WebKit happy with htmx/backdrop stacking; the target
   // is a plain toolbar button, not a form control.
@@ -151,6 +166,8 @@ test.describe('Rascunho de NF-e', () => {
     await page.waitForURL(/\/nfe\/emitir\/rascunho\/\d+/);
     await expect(page.locator('[data-test-id="rascunho-aplicado"]')).toContainText(name);
 
+    // Items are hidden until the Transação tab is active.
+    await goToTab(page, 'transac');
     const itemRows = page.locator('#items-container .item-row');
     await expect(itemRows).toHaveCount(2);
     await expect(itemRows.nth(0).locator('select[name$=".cfop"]')).toHaveValue('5101');
@@ -231,6 +248,8 @@ test.describe('Rascunho de NF-e', () => {
     await page.fill('#recipientState', 'MT');
     await page.fill('#recipientCEP', '78000000');
 
+    // Items and operation data are hidden until the Transação tab is active.
+    await goToTab(page, 'transac');
     await page.fill('input[name="items[0].productName"]', 'Soja Formulário');
     await selectCfop(page.locator('#items-container .item-row').first(), '5101');
     await page.fill('input[name="items[0].quantity"]', '10');
@@ -292,10 +311,17 @@ test.describe('Rascunho de NF-e', () => {
     await page.fill('#recipientCity', 'Cuiabá');
     await page.fill('#recipientState', 'MT');
     await page.fill('#recipientCEP', '78000000');
+
+    // Items are hidden until the Transação tab is active; the submit button
+    // is only enabled on the Tributação tab.
+    await goToTab(page, 'transac');
     await page.fill('input[name="items[0].productName"]', 'Soja Preview');
     await selectCfop(page.locator('#items-container .item-row').first(), '5101');
     await page.fill('input[name="items[0].quantity"]', '5');
     await page.fill('input[name="items[0].unitPrice"]', '88.00');
+
+    await goToTab(page, 'trib');
+    await expect(page.locator('[data-test-id="preview-detached-nfe"]')).toBeEnabled();
 
     const previewResponse = page.waitForResponse(
       r => r.url().includes('/nfe/emitir/preview') && r.request().method() === 'POST'
@@ -378,6 +404,9 @@ test.describe('Rascunho de NF-e', () => {
     await login(page, browserName);
     await gotoApp(page, '/nfe/emitir');
     await expect(page.locator('#detached-nfe-form')).toBeVisible();
+
+    // Items are hidden until the Transação tab is active.
+    await goToTab(page, 'transac');
     await page.fill('input[name="items[0].productName"]', 'Edição não salva');
 
     let dialogShown = false;

@@ -62,7 +62,7 @@ func (fcm *farmConfigModel) UpsertFarmConfig(config *entity_public.Farm) error {
 
 func (fcm *farmConfigModel) GetFarmConfig(farmID uint32) (*entity_public.Farm, error) {
 	query := `
-		SELECT f.id, f.inscricao_estadual, o.owner_document, o.owner_document_type, fc.name, fc.humidity_progression_id, fa.id, fa.street, fa.cep, fa.number, fac.complement, fa.neighborhood, fa.city, f.uf, fco.email, fco.phone_number, fc.storage_name, fc.farm_used_humidity_progression_id, f.uf
+		SELECT f.id, f.inscricao_estadual, o.owner_document, o.owner_document_type, fc.name, fc.humidity_progression_id, fa.id, fa.street, fa.cep, fa.number, fac.complement, fa.neighborhood, fa.city, f.uf, fco.email, fco.phone_number, fc.storage_name, fc.farm_used_humidity_progression_id, f.uf, f.farmer_name
 		FROM farm f
 		JOIN farm_owner_subscription fos ON fos.farm_id = f.id
 		JOIN owner o ON o.id = fos.owner_id

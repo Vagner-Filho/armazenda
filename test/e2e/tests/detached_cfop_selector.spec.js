@@ -48,6 +48,21 @@ async function gotoApp(page, path) {
   return page.goto(`${origin}${path}`);
 }
 
+// Sections of the emission form are hidden until their tab in #tabs is
+// clicked. The Transporte tab reveals fieldset#transporte-fieldset; the
+// other tabs share the id of their fieldset.
+const EMIT_TAB_FIELDSETS = {
+  dest: 'fieldset#dest',
+  transac: 'fieldset#transac',
+  transp: 'fieldset#transporte-fieldset',
+  trib: 'fieldset#trib',
+};
+
+async function goToTab(page, tabId) {
+  await page.locator(`#tabs button#${tabId}`).click();
+  await expect(page.locator(EMIT_TAB_FIELDSETS[tabId])).toBeVisible();
+}
+
 /** Random valid farm CFOP in the exterior family (7xxx), unused elsewhere. */
 function randomCfop() {
   const tail = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
@@ -78,6 +93,9 @@ async function selectCfop(row, code) {
 }
 
 async function fillInlineRecipient(page) {
+  // Recipient fields are revealed by the Destinatário tab; callers may be
+  // on the Transação tab after filling item rows.
+  await goToTab(page, 'dest');
   await page.locator('input[name="recipientType"][value="new"]').check({ force: true });
   await page.fill('#recipientName', 'Cliente CFOP E2E');
   await page.fill('#recipientDocument', faker.string.numeric(14));
@@ -94,6 +112,9 @@ test.describe('CFOP avulso', () => {
     await login(page, browserName);
     await gotoApp(page, '/nfe/emitir');
     await expect(page.locator('#detached-nfe-form')).toBeVisible();
+
+    // Items live in the hidden Transação section; switch before interacting.
+    await goToTab(page, 'transac');
 
     const rows = page.locator('#items-container .item-row');
     await expect(rows).toHaveCount(1);
@@ -165,6 +186,10 @@ test.describe('CFOP avulso', () => {
     await rows.nth(1).locator('input[name$=".unitPrice"]').fill('50.00');
     await fillInlineRecipient(page);
 
+    // The submit button is only enabled on the Tributação tab.
+    await goToTab(page, 'trib');
+    await expect(page.locator('[data-test-id="preview-detached-nfe"]')).toBeEnabled();
+
     const previewResponse = page.waitForResponse(
       (r) => r.url().includes('/nfe/emitir/preview') && r.request().method() === 'POST'
     );
@@ -185,6 +210,9 @@ test.describe('CFOP avulso', () => {
 
     try {
       await gotoApp(page, '/nfe/emitir');
+
+      // Items live in the hidden Transação section; switch before interacting.
+      await goToTab(page, 'transac');
       await page.locator('#add-item-btn').evaluate((el) => el.click());
 
       const rows = page.locator('#items-container .item-row');

@@ -17,6 +17,7 @@ type PendingRegistration struct {
 	AdditionalIEs           []string
 	StripePriceID           *string
 	UF                      string
+	FarmerName              string
 }
 
 type CreateUserResult struct {

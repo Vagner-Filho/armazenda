@@ -86,6 +86,11 @@ type detachedBuildData struct {
 	RecipientID  uint32
 	TotalIBS     decimal.Decimal
 	TotalCBS     decimal.Decimal
+	// RatesSnapshot / CodesSnapshot carry the emission's effective tax
+	// configuration (merged rates + resolved codes) — what the item XML used,
+	// and what the emission path persists so rebuilds reproduce it exactly.
+	RatesSnapshot entity.TaxRates
+	CodesSnapshot entity.InvoiceOverrides
 }
 
 // prepareDetachedBuildData fetches the farm config, resolves the recipient,
@@ -109,6 +114,20 @@ func (s *NFeService) prepareDetachedBuildData(input DetachedInvoiceInput, dryRun
 	if farmNFeConfig == nil {
 		return empty, entity_public.GetWarningToast("NF-e não configurada", "acesse NF-e em Configurações")
 	}
+
+	// Resolve and validate the effective tax configuration before any writes:
+	// the emission path creates the inline recipient person row further below,
+	// so a validation failure must happen first — and before buildDetachedItems
+	// dereferences the rate pointers.
+	regime := defaults.TaxRegime(farmNFeConfig.TaxRegime)
+	ratesSnapshot := MergeRates(input.TaxRates, farmNFeConfig)
+	if ratesErrs := validateResolvedRates(ratesSnapshot, regime); len(ratesErrs) > 0 {
+		return empty, entity_public.GetWarningToast(
+			"Configuração de taxas incompleta",
+			strings.Join(ratesErrs, "; "),
+		)
+	}
+	codesSnapshot := MergeEffectiveOverrides(input.Overrides, farmNFeConfig, regime)
 
 	// Get full farm data for the emitter address (same source as the
 	// departure flow)
@@ -147,8 +166,9 @@ func (s *NFeService) prepareDetachedBuildData(input DetachedInvoiceInput, dryRun
 	}
 
 	// Build items. Each item carries its own CFOP; the service validates the
-	// four-digit format before XML construction.
-	items, itemsForDB, totalValue, totalIBS, totalCBS := s.buildDetachedItems(input.Items, farmNFeConfig, input.TaxRates, input.Overrides)
+	// four-digit format before XML construction. The tax configuration comes
+	// pre-resolved from the snapshot above.
+	items, itemsForDB, totalValue, totalIBS, totalCBS := s.buildDetachedItems(input.Items, farmNFeConfig, emissionTaxSnapshot{Rates: ratesSnapshot, Codes: codesSnapshot}, input.Overrides)
 	if len(items) == 0 {
 		return empty, entity_public.GetWarningToast("Nenhum item informado", "Adicione pelo menos um item à NF-e")
 	}
@@ -232,12 +252,14 @@ func (s *NFeService) prepareDetachedBuildData(input DetachedInvoiceInput, dryRun
 	}
 
 	return detachedBuildData{
-		InvoiceInput: invoiceInput,
-		ItemsForDB:   itemsForDB,
-		FarmConfig:   farmNFeConfig,
-		RecipientID:  recipientID,
-		TotalIBS:     totalIBS,
-		TotalCBS:     totalCBS,
+		InvoiceInput:  invoiceInput,
+		ItemsForDB:    itemsForDB,
+		FarmConfig:    farmNFeConfig,
+		RecipientID:   recipientID,
+		TotalIBS:      totalIBS,
+		TotalCBS:      totalCBS,
+		RatesSnapshot: ratesSnapshot,
+		CodesSnapshot: codesSnapshot,
 	}, entity_public.Toast{}
 }
 
@@ -295,23 +317,22 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (DetachedI
 		return DetachedInvoiceResult{}, entity_public.GetErrorToast("Falha ao construir e assinar NF-e", signErr.Error())
 	}
 
-	// Persist invoice
-	var ratesToPersist *entity.TaxRates
-	if hasAnyUserRate(input.TaxRates) {
-		ratesToPersist = &input.TaxRates
+	// Persist invoice — the emission's effective tax configuration (merged
+	// rates + resolved codes), so the worker and SVC rebuilds reproduce the
+	// exact XML even if the farm config changes later.
+	// Ensure the effective infCpl is part of the snapshot so retries/SVC
+	// rebuilds use the exact same text (Option B).
+	if build.CodesSnapshot.InfCpl == nil {
+		build.CodesSnapshot.InfCpl = &infCpl
 	}
-	if input.Overrides == nil {
-		input.Overrides = &entity.InvoiceOverrides{}
-	}
-	if input.Overrides.InfCpl == nil {
-		input.Overrides.InfCpl = &infCpl
-	}
+	ratesToPersist := &build.RatesSnapshot
+	codesToPersist := &build.CodesSnapshot
 
 	invoiceID, createErr := nfeModel.CreateDetachedInvoice(
 		input.FarmID, build.RecipientID, accessKey, farmNFeConfig.Serie, number,
 		&naturezaOp, &effectiveModFrete,
 		invoiceInput.TotalValue, build.TotalIBS, build.TotalCBS,
-		1, nil, "", ratesToPersist, input.Overrides, build.ItemsForDB,
+		1, nil, "", ratesToPersist, codesToPersist, build.ItemsForDB,
 	)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateDetachedInvoice error: %v", createErr.Error()))
@@ -351,7 +372,7 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (DetachedI
 	// SEFAZ failed - check SVC
 	svcResp, svcErr := invService.CheckSVCStatus(farmNFeConfig.CertificateData, certPassword)
 	if svcErr == nil && svcResp != nil && svcResp.IsSVCOperational() {
-		return s.attemptDetachedSVCContingency(invoiceInput, input, farmNFeConfig, signedXML, invoiceID, accessKey, nfeModel, invService, certPassword, ratesToPersist, build.ItemsForDB)
+		return s.attemptDetachedSVCContingency(invoiceInput, input, farmNFeConfig, signedXML, invoiceID, accessKey, nfeModel, invService, certPassword, ratesToPersist, codesToPersist, build.ItemsForDB)
 	}
 
 	// Both SEFAZ and SVC unavailable
@@ -553,13 +574,16 @@ func (s *NFeService) mapFarmToEmitterForDetached(cfg *entity_public.FarmConfig, 
 
 // buildDetachedItems builds item data for detached invoices. Each input item
 // carries its own CFOP so a single NF-e can mix operation codes; the CFOP is
-// validated by the caller before this mapping runs.
-func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, farmConfig *entity_public.FarmConfig, userRates entity.TaxRates, overrides *entity.InvoiceOverrides) ([]entity.ItemData, []nfe_model.DetachedInvoiceItem, decimal.Decimal, decimal.Decimal, decimal.Decimal) {
+// validated by the caller before this mapping runs. The tax configuration
+// comes pre-resolved in the snapshot (MergeRates + MergeEffectiveOverrides ran
+// in prepareDetachedBuildData, which also validated it).
+func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, farmConfig *entity_public.FarmConfig, snapshot emissionTaxSnapshot, overrides *entity.InvoiceOverrides) ([]entity.ItemData, []nfe_model.DetachedInvoiceItem, decimal.Decimal, decimal.Decimal, decimal.Decimal) {
 	var items []entity.ItemData
 	var itemsForDB []nfe_model.DetachedInvoiceItem
 	var totalValue, totalIBS, totalCBS decimal.Decimal
 
-	rates := MergeRates(userRates, farmConfig)
+	rates := snapshot.Rates
+	codes := snapshot.Codes
 
 	for _, input := range inputs {
 		// Determine product details
@@ -602,63 +626,32 @@ func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, farmConfig *
 		itemTotal := input.Quantity.Mul(input.UnitPrice)
 		totalValue = totalValue.Add(itemTotal)
 
-		// Determine tax CSTs
+		// Determine tax CSTs — pre-resolved; the regime only selects which
+		// ICMS XML group the code belongs to (CST vs CSOSN).
 		regime := defaults.TaxRegime(farmConfig.TaxRegime)
 		var icmsCST, icmsCSOSN string
 		var vBC, vICMS decimal.Decimal
 		var picms decimal.Decimal
 
 		if regime == defaults.TaxRegimeSimplesNacional {
-			if overrides != nil && overrides.ICMSCST != nil && *overrides.ICMSCST != "" {
-				icmsCSOSN = *overrides.ICMSCST
-			} else if farmConfig.DefaultICMSCST != nil && *farmConfig.DefaultICMSCST != "" {
-				icmsCSOSN = *farmConfig.DefaultICMSCST
-			} else {
-				icmsCSOSN = defaults.CSOSNSemPermissaoCredito
-			}
+			icmsCSOSN = codeOr(codes.ICMSCST, defaults.CSOSNSemPermissaoCredito)
 			vBC = decimal.Zero
 			vICMS = decimal.Zero
 			picms = decimal.Zero
 		} else {
-			if overrides != nil && overrides.ICMSCST != nil && *overrides.ICMSCST != "" {
-				icmsCST = *overrides.ICMSCST
-			} else if farmConfig.DefaultICMSCST != nil && *farmConfig.DefaultICMSCST != "" {
-				icmsCST = *farmConfig.DefaultICMSCST
-			} else {
-				icmsCST = defaults.CSTTributadaIntegral
-			}
+			icmsCST = codeOr(codes.ICMSCST, defaults.CSTTributadaIntegral)
 			vBC = itemTotal
 			vICMS = itemTotal.Mul(*rates.ICMSRate)
 			picms = rates.ICMSRate.Mul(decimal.NewFromInt(100))
 		}
 
-		// PIS CST
-		pisCST := "01"
-		if overrides != nil && overrides.PISCST != nil && *overrides.PISCST != "" {
-			pisCST = *overrides.PISCST
-		} else if farmConfig.DefaultPISCST != nil && *farmConfig.DefaultPISCST != "" {
-			pisCST = *farmConfig.DefaultPISCST
-		}
+		// PIS / COFINS CST
+		pisCST := codeOr(codes.PISCST, "01")
+		cofinsCST := codeOr(codes.COFINSCST, "01")
 
-		// COFINS CST
-		cofinsCST := "01"
-		if overrides != nil && overrides.COFINSCST != nil && *overrides.COFINSCST != "" {
-			cofinsCST = *overrides.COFINSCST
-		} else if farmConfig.DefaultCOFINSCST != nil && *farmConfig.DefaultCOFINSCST != "" {
-			cofinsCST = *farmConfig.DefaultCOFINSCST
-		}
-
-		// IBS/CBS
-		ibsCbsCST := defaults.IBSCBSCSTTributadaIntegral
-		if overrides != nil && overrides.CBSCST != nil && *overrides.CBSCST != "" {
-			ibsCbsCST = *overrides.CBSCST
-		} else if overrides != nil && overrides.IBSCST != nil && *overrides.IBSCST != "" {
-			ibsCbsCST = *overrides.IBSCST
-		}
-		cClassTrib := defaults.CClassTribDefault
-		if overrides != nil && overrides.CClassTrib != nil && *overrides.CClassTrib != "" {
-			cClassTrib = *overrides.CClassTrib
-		}
+		// IBS/CBS (shared per-item CST + cClassTrib, pre-resolved)
+		ibsCbsCST := codeOr(codes.CBSCST, defaults.IBSCBSCSTTributadaIntegral)
+		cClassTrib := codeOr(codes.CClassTrib, defaults.CClassTribDefault)
 
 		var ibsVBC, ibsVIBSUF, ibsVIBSMun, ibsVIBS, ibsVCBS decimal.Decimal
 		if defaults.IsTaxReformActive(time.Now()) {
@@ -964,8 +957,10 @@ func (s *NFeService) handleDetachedSefazResponse(sefazResp *sefaz.AutorizacaoRes
 	return result, entity_public.GetSuccessToast("NF-e enviada à SEFAZ e em processamento", fmt.Sprintf("Status: %s", sefazResp.StatusMotive))
 }
 
-// attemptDetachedSVCContingency tries to send the detached NF-e via SVC
-func (s *NFeService) attemptDetachedSVCContingency(input entity.InvoiceInput, detachedInput DetachedInvoiceInput, farmNFeConfig *entity_public.FarmConfig, oldSignedXML string, oldInvoiceID int, oldAccessKey string, nfeModel *nfe_model.NFeModel, invService *service.InvoiceService, certPassword string, taxRates *entity.TaxRates, itemsForDB []nfe_model.DetachedInvoiceItem) (DetachedInvoiceResult, entity_public.Toast) {
+// attemptDetachedSVCContingency tries to send the detached NF-e via SVC.
+// taxRates / taxCodes carry the emission's effective-rate/code snapshot so the
+// contingency row reproduces the same tax configuration as the original attempt.
+func (s *NFeService) attemptDetachedSVCContingency(input entity.InvoiceInput, detachedInput DetachedInvoiceInput, farmNFeConfig *entity_public.FarmConfig, oldSignedXML string, oldInvoiceID int, oldAccessKey string, nfeModel *nfe_model.NFeModel, invService *service.InvoiceService, certPassword string, taxRates *entity.TaxRates, taxCodes *entity.InvoiceOverrides, itemsForDB []nfe_model.DetachedInvoiceItem) (DetachedInvoiceResult, entity_public.Toast) {
 	// Allocate new number
 	newNumber, allocErr := nfeModel.AllocateDetachedNumber(detachedInput.FarmID, farmNFeConfig.Serie)
 	if allocErr != nil {
@@ -1004,7 +999,7 @@ func (s *NFeService) attemptDetachedSVCContingency(input entity.InvoiceInput, de
 		newAccessKey, farmNFeConfig.Serie, newNumber,
 		&input.NaturezaOp, nil,
 		totalValue, totalIBS, totalCBS,
-		int(tpEmis), time.Now(), reason, taxRates, detachedInput.Overrides, itemsForDB,
+		int(tpEmis), time.Now(), reason, taxRates, taxCodes, itemsForDB,
 	)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateDetachedInvoice (SVC) error: %v", createErr.Error()))

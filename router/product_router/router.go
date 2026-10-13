@@ -111,7 +111,7 @@ func addProduct(c *gin.Context) {
 
 	farmProduct, toast := product_service.AddFarmProduct(entity_public.FarmProduct{
 		Product: newProduct,
-		FarmId:  farm,
+		FarmId:  &farm,
 	})
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
@@ -155,7 +155,7 @@ func updateProduct(c *gin.Context) {
 			Name: updatedProduct.Name,
 			NCM:  updatedProduct.NCM,
 		},
-		FarmId: farm,
+		FarmId: &farm,
 	})
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))

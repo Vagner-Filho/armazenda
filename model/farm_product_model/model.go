@@ -60,7 +60,7 @@ func (fm *FarmProductModel) GetFarmProductsByFarm(farmId uint32) ([]entity_publi
 		}
 		return entity_public.FarmProduct{
 			Product: product,
-			FarmId:  farmId,
+			FarmId:  &farmId,
 		}, nil
 	})
 	if collectErr != nil {
@@ -90,7 +90,7 @@ func (fm *FarmProductModel) GetFarmProductById(id uint8, farmId uint32) (entity_
 		}
 		return entity_public.FarmProduct{
 			Product: product,
-			FarmId:  farmId,
+			FarmId:  &farmId,
 		}, nil
 	})
 	if collectErr != nil {
@@ -138,7 +138,7 @@ func (fm *FarmProductModel) AddFarmProduct(fp entity_public.FarmProduct) (entity
 
 	return entity_public.FarmProduct{
 		Product: entity_public.Product{Id: id, Name: name, NCM: ncm},
-		FarmId:  farmId,
+		FarmId:  &farmId,
 	}, nil
 }
 
@@ -178,6 +178,6 @@ func (fm *FarmProductModel) UpdateFarmProduct(fp entity_public.FarmProduct) (ent
 
 	return entity_public.FarmProduct{
 		Product: entity_public.Product{Id: id, Name: name, NCM: ncm},
-		FarmId:  farmId,
+		FarmId:  &farmId,
 	}, nil
 }

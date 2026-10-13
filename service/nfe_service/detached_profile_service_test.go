@@ -78,7 +78,17 @@ func TestResolveDetachedNaturezaOp(t *testing.T) {
 
 func TestBuildDetachedItems_PerItemCFOPAndExactPrices(t *testing.T) {
 	svc := NewNFeService()
-	cfg := &entity_public.FarmConfig{TaxRegime: 3, DefaultUnit: "KG"}
+	cfg := &entity_public.FarmConfig{
+		TaxRegime:   3,
+		DefaultUnit: "KG",
+		// Rates configured so the emission snapshot (merged + validated) is
+		// resolvable; this test asserts prices/CFOPs, not tax amounts.
+		ICMSRate:   decimal.RequireFromString("0.12"),
+		PISRate:    decimal.RequireFromString("0.0165"),
+		COFINSRate: decimal.RequireFromString("0.076"),
+		IBSRate:    decimal.RequireFromString("0.001"),
+		CBSRate:    decimal.RequireFromString("0.009"),
+	}
 
 	inputs := []DetachedItemInput{
 		{
@@ -99,7 +109,7 @@ func TestBuildDetachedItems_PerItemCFOPAndExactPrices(t *testing.T) {
 		},
 	}
 
-	items, itemsForDB, _, _, _ := svc.buildDetachedItems(inputs, cfg, entity.TaxRates{}, nil)
+	items, itemsForDB, _, _, _ := svc.buildDetachedItems(inputs, cfg, resolvedSnapshot(t, entity.TaxRates{}, nil, cfg), nil)
 
 	if len(items) != 2 || len(itemsForDB) != 2 {
 		t.Fatalf("expected 2 items, got %d/%d", len(items), len(itemsForDB))

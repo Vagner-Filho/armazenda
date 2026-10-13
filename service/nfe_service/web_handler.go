@@ -5,9 +5,9 @@ import (
 	"armazenda/model/nfe_model"
 )
 
-func UpsertFarmConfig(config entity_public.FarmConfig) (entity_public.FarmConfig, entity_public.Toast) {
+func UpsertFarmConfig(config entity_public.FarmConfig, farmerName *string) (entity_public.FarmConfig, entity_public.Toast) {
 	nfeModel := nfe_model.GetNFeModel()
-	modelErr := nfeModel.UpsertFarmConfig(config)
+	modelErr := nfeModel.UpsertFarmConfig(config, farmerName)
 	if modelErr == nil {
 		return config, entity_public.GetSuccessToast("Configuração Salva", "")
 	}

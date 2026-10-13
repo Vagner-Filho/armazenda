@@ -19,6 +19,7 @@ type NewUser struct {
 	OwnerDocumentType int      `form:"ownerDocumentType" binding:"required"`
 	AdditionalIEs     []string `form:"additionalIEs"`
 	UF                string   `form:"state" binding:"required"`
+	FarmerName        string   `form:"farmerName binding:required` // nome/razão social
 }
 
 type SignInUser struct {

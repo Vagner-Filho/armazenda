@@ -12,6 +12,7 @@ import (
 	"armazenda/model/farm_product_model"
 	"armazenda/model/nfe_model"
 	"armazenda/model/person_model"
+	"armazenda/model/product_model"
 	"armazenda/pkg/nfe/defaults"
 	"armazenda/pkg/nfe/entity"
 	nfe_pdf "armazenda/pkg/nfe/service"
@@ -111,11 +112,21 @@ func buildDetachedPageView(farmID uint32, profile *nfe_model.DetachedProfile) de
 	people, _ := pModel.GetPeopleByFarm(farmID)
 
 	farmProducts, _ := farm_product_model.GetFarmProductModel().GetFarmProductsByFarm(farmID)
+	systemProducts, _ := product_model.GetProductModel().GetProducts()
+	var productOptions []entity_public.FarmProduct
+	for i := range farmProducts {
+		productOptions = append(productOptions, farmProducts[i])
+	}
+	for i := range systemProducts {
+		productOptions = append(productOptions, entity_public.FarmProduct{
+			Product: systemProducts[i],
+		})
+	}
 
 	view := detachedPageView{
 		FarmID:             farmID,
 		People:             personOptionDisplays(people, nil),
-		FarmProducts:       farmProducts,
+		FarmProducts:       productOptions,
 		HasNFEFarmConfig:   farmNFeConfig != nil,
 		RecipientType:      "existing",
 		UseDefaultTaxRates: true,

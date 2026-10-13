@@ -43,7 +43,7 @@ func NewNFeService() *NFeService {
 // without allocating a number, signing, or persisting anything.
 // The overrides struct carries per-emission user inputs that take precedence over
 // the farm config defaults. Nil fields in overrides mean "use the default".
-func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates, overrides *entity.InvoiceOverrides) (entity.InvoiceInput, entity_public.Departure, *entity_public.FarmConfig, entity_public.Product, entity_public.Toast) {
+func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates, overrides *entity.InvoiceOverrides) (entity.InvoiceInput, entity_public.Departure, *entity_public.FarmConfig, entity_public.Product, emissionTaxSnapshot, entity_public.Toast) {
 	var emptyInput entity.InvoiceInput
 
 	// Get departure
@@ -51,19 +51,19 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	departure, err := dModel.GetDeparture(departureID)
 	if err != nil {
 		if err.IsServerErr {
-			return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetErrorToast("Internal error fetching departure", "")
+			return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetErrorToast("Internal error fetching departure", "")
 		}
-		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetWarningToast(err.Message, "")
+		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast(err.Message, "")
 	}
 
 	// Validate departure type for NF-e: only "Self -> Third Party" qualifies
 	if departure.Origin != nil {
-		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetWarningToast(
+		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast(
 			"Esta saída não pode emitir NF-e",
 			"NF-e só pode ser emitida para saídas do tipo Próprio -> Terceiro (sem origem externa)")
 	}
 	if departure.Recipient == nil {
-		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetWarningToast(
+		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast(
 			"Esta saída não pode emitir NF-e",
 			"Selecione um destinatário para emitir a NF-e")
 	}
@@ -73,10 +73,10 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	farmNFeConfig, dbErr := nfeModel.GetFarmConfig(farmID)
 	if dbErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("GetFarmConfig error: %v", dbErr.Error()))
-		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetErrorToast("Failed to get NFe configuration", "")
+		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetErrorToast("Failed to get NFe configuration", "")
 	}
 	if farmNFeConfig == nil {
-		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetWarningToast("NF-e não configurada", "acesse NF-e em Configurações")
+		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast("NF-e não configurada", "acesse NF-e em Configurações")
 	}
 
 	// Get full farm data for emitter address
@@ -84,10 +84,10 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	farmData, farmErr := farmConfigModel.GetFarmConfig(farmID)
 	if farmErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("GetFarmConfig error: %v", farmErr.Error()))
-		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetErrorToast("Failed to get farm data", "")
+		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetErrorToast("Failed to get farm data", "")
 	}
 	if farmData == nil {
-		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetWarningToast("Farm not found", "")
+		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast("Farm not found", "")
 	}
 
 	// Get recipient
@@ -99,7 +99,7 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 		person, personErr = pModel.GetFullPersonById(*departure.Recipient)
 		if personErr != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("GetFullPersonById error: %v", personErr.Error()))
-			return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetErrorToast("Failed to get recipient info", "")
+			return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetErrorToast("Failed to get recipient info", "")
 		}
 		recipient = s.mapFullPersonToRecipient(person, nfeModel)
 	}
@@ -160,7 +160,7 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	// Validate required emitter fields
 	validationErrors := s.validateEmitter(emitter, farmNFeConfig.Serie)
 	if len(validationErrors) > 0 {
-		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetWarningToast(
+		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast(
 			"Configuração de NF-e incompleta",
 			strings.Join(validationErrors, "; "),
 		)
@@ -169,17 +169,27 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	// Validate required recipient fields
 	recipientErrors := validateRecipient(recipient)
 	if len(recipientErrors) > 0 {
-		return emptyInput, departure, nil, entity_public.Product{}, entity_public.GetWarningToast(
+		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast(
 			"Dados do destinatário incompletos",
 			strings.Join(recipientErrors, "; "),
 		)
 	}
 
-	// Merge user-typed rates with the farm config defaults. The result feeds
-	// buildItems directly; the raw user input is returned separately so the
-	// caller can persist a partial-override row in nfe_invoice_tax_rates.
+	// Merge the user-typed rates with the farm config and resolve the
+	// effective tax codes. Validation fires here — before buildItems
+	// dereferences the rates and before any allocation/persistence happens
+	// downstream — and the whole resolved configuration is returned so the
+	// caller persists exactly what the XML used.
+	regime := defaults.TaxRegime(farmNFeConfig.TaxRegime)
 	rates := MergeRates(userRates, farmNFeConfig)
-	items := s.buildItems(departure, unitPrice, effectiveNCM, effectiveCEST, effectiveUnit, effectiveDescription, farmNFeConfig, effectiveCFOP, rates, overrides)
+	if ratesErrs := validateResolvedRates(rates, regime); len(ratesErrs) > 0 {
+		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast(
+			"Configuração de taxas incompleta",
+			strings.Join(ratesErrs, "; "),
+		)
+	}
+	codes := MergeEffectiveOverrides(overrides, farmNFeConfig, regime)
+	items := s.buildItems(departure, unitPrice, effectiveNCM, effectiveCEST, effectiveUnit, effectiveDescription, regime, effectiveCFOP, rates, codes)
 
 	// Determine NaturezaOp from overrides, config, or derive from CFOP
 	naturezaOp := ""
@@ -252,14 +262,14 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 		InformacoesAdicionais: infCpl,
 	}
 
-	return input, departure, farmNFeConfig, product, entity_public.Toast{}
+	return input, departure, farmNFeConfig, product, emissionTaxSnapshot{Rates: rates, Codes: codes}, entity_public.Toast{}
 }
 
 // BuildInvoiceFromDeparture builds, signs, and attempts to send an NF-e for a departure.
 // If the normal SEFAZ is unavailable, it automatically tries SVC. If both are down,
 // the invoice is saved as 'draft' and an error is returned — no DANFE is issued.
 func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates, overrides *entity.InvoiceOverrides) (string, entity_public.Toast) {
-	input, departure, farmNFeConfig, product, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop, userRates, overrides)
+	input, departure, farmNFeConfig, product, snap, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop, userRates, overrides)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		return "", toast
 	}
@@ -301,19 +311,13 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	}
 
 	// Save initial record as draft (will be updated based on SEFAZ response)
-	// Persist the raw user-typed rates (not the merged ones) so the row reflects
-	// the user's exact intent and the worker reuses it on retry.
-	var ratesToPersist *entity.TaxRates
-	if hasAnyUserRate(userRates) {
-		ratesToPersist = &userRates
-	}
-	// Ensure the effective infCpl is persisted so retries/SVC rebuilds use the
-	// exact same text (Option B).
-	if overrides == nil {
-		overrides = &entity.InvoiceOverrides{}
-	}
-	if overrides.InfCpl == nil {
-		overrides.InfCpl = &input.InformacoesAdicionais
+	// Persist the effective tax configuration of this emission — the merged
+	// rates and the resolved codes are what the XML used — so the worker and
+	// SVC rebuilds reproduce it exactly even if the farm config changes later.
+	// Ensure the effective infCpl is part of the snapshot so retries/SVC
+	// rebuilds use the exact same text (Option B).
+	if snap.Codes.InfCpl == nil {
+		snap.Codes.InfCpl = &input.InformacoesAdicionais
 	}
 	// Sum the per-item IBS/CBS totals to persist in the nfe_invoice row.
 	// Mirrors the aggregation in buildTotal; safe to call here because every
@@ -326,7 +330,7 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	invoiceID, createErr := nfeModel.CreateInvoiceWithEmission(departureID, accessKey, farmNFeConfig.Serie, number,
 		farmNFeConfig.DefaultCFOP, product.NCM, departure.NetWeight, unitPrice, input.TotalValue,
 		totalIBSValue, totalCBSValue,
-		1, nil, "", ratesToPersist, overrides)
+		1, nil, "", &snap.Rates, &snap.Codes)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateInvoice error: %v", createErr.Error()))
 		return "", entity_public.GetErrorToast("Failed to save invoice", "")
@@ -358,7 +362,7 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	svcResp, svcErr := invService.CheckSVCStatus(farmNFeConfig.CertificateData, certPassword)
 	if svcErr == nil && svcResp != nil && svcResp.IsSVCOperational() {
 		// SVC is active — rebuild with new number and contingency settings
-		return s.attemptSVCContingency(input, departure, farmNFeConfig, product, signedXML, invoiceID, accessKey, nfeModel, invService, certPassword, unitPrice, ratesToPersist, overrides)
+		return s.attemptSVCContingency(input, departure, farmNFeConfig, product, signedXML, invoiceID, accessKey, nfeModel, invService, certPassword, unitPrice, &snap.Rates, &snap.Codes)
 	}
 
 	// --- Step 3: Both SEFAZ and SVC are unavailable ---
@@ -427,7 +431,9 @@ func (s *NFeService) handleSefazResponse(sefazResp *sefaz.AutorizacaoResponse, i
 }
 
 // attemptSVCContingency tries to send the NF-e via SVC with a new number and contingency fields.
-func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure entity_public.Departure, farmNFeConfig *entity_public.FarmConfig, product entity_public.Product, oldSignedXML string, oldInvoiceID int, oldAccessKey string, nfeModel *nfe_model.NFeModel, invService *service.InvoiceService, certPassword string, unitPrice decimal.Decimal, taxRates *entity.TaxRates, overrides *entity.InvoiceOverrides) (string, entity_public.Toast) {
+// The tax parameters carry the emission's effective-rate/code snapshot so the
+// contingency row reproduces the same tax configuration as the original attempt.
+func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure entity_public.Departure, farmNFeConfig *entity_public.FarmConfig, product entity_public.Product, oldSignedXML string, oldInvoiceID int, oldAccessKey string, nfeModel *nfe_model.NFeModel, invService *service.InvoiceService, certPassword string, unitPrice decimal.Decimal, taxRates *entity.TaxRates, taxCodes *entity.InvoiceOverrides) (string, entity_public.Toast) {
 	// Allocate new number for the contingency invoice (required by MOC to avoid duplicate Chave Natural)
 	newNumber, allocErr := nfeModel.AllocateNumber(uint32(departure.Farm), farmNFeConfig.Serie)
 	if allocErr != nil {
@@ -445,7 +451,8 @@ func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure 
 		return "", entity_public.GetErrorToast("Failed to rebuild NF-e for SVC contingency", rebuildErr.Error())
 	}
 
-	// Save the new contingency invoice (same tax rates and overrides as the original attempt)
+	// Save the new contingency invoice (the same effective-rate/code snapshot
+	// as the original attempt).
 	// Sum the per-item IBS/CBS totals from the rebuilt input for the totals columns.
 	var totalIBSValue, totalCBSValue decimal.Decimal
 	for _, item := range input.Items {
@@ -456,7 +463,7 @@ func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure 
 		departure.Id, newAccessKey, farmNFeConfig.Serie, newNumber,
 		farmNFeConfig.DefaultCFOP, product.NCM, departure.NetWeight, unitPrice, input.TotalValue,
 		totalIBSValue, totalCBSValue,
-		int(tpEmis), now, reason, taxRates, overrides,
+		int(tpEmis), now, reason, taxRates, taxCodes,
 	)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateInvoice (SVC) error: %v", createErr.Error()))
@@ -635,7 +642,7 @@ func (s *NFeService) CancelInvoice(accessKey, justification string, farmID uint3
 // GeneratePreviewDANFE builds a preview DANFE PDF without allocating an invoice number,
 // signing, or persisting anything. It returns the PDF bytes and any validation toast.
 func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates, overrides *entity.InvoiceOverrides) ([]byte, entity_public.Toast) {
-	input, _, _, _, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop, userRates, overrides)
+	input, _, _, _, _, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop, userRates, overrides)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		return nil, toast
 	}
@@ -786,63 +793,42 @@ func padLeftZeros(s string, length int) string {
 }
 
 // buildItems creates the NF-e item data from departure and configs.
-// The overrides struct carries per-emission user inputs for CSTs and CEST.
-func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice decimal.Decimal, ncm string, cest string, unit string, description string, farmConfig *entity_public.FarmConfig, cfop string, rates entity.TaxRates, overrides *entity.InvoiceOverrides) []entity.ItemData {
+// The tax rates are pre-validated (validateResolvedRates) and the tax codes
+// are pre-resolved (MergeEffectiveOverrides) — resolution lives in one place
+// and the same snapshot is what the callers persist.
+func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice decimal.Decimal, ncm string, cest string, unit string, description string, regime defaults.TaxRegime, cfop string, rates entity.TaxRates, codes entity.InvoiceOverrides) []entity.ItemData {
 	totalValue := departure.NetWeight.Mul(unitPrice)
-	regime := defaults.TaxRegime(farmConfig.TaxRegime)
 
-	// Resolved rates are authoritative (mergeRates already applied user > farm > last-resort).
+	// Resolved rates are authoritative (MergeRates already applied user >
+	// farm, and validateResolvedRates guaranteed the consumed axes).
 	icmsRate := *rates.ICMSRate
 	pisRate := *rates.PISRate
 	cofinsRate := *rates.COFINSRate
 	ibsRate := *rates.IBSRate
 	cbsRate := *rates.CBSRate
 
-	// Determine ICMS CST/CSOSN from overrides, farm config, or defaults
+	// Tax codes are pre-resolved by MergeEffectiveOverrides; the regime only
+	// selects which ICMS XML group the code belongs to (CST vs CSOSN).
 	var icmsCST, icmsCSOSN string
 	var vBC, vICMS decimal.Decimal
 	var picms decimal.Decimal
 
 	if regime == defaults.TaxRegimeSimplesNacional {
-		if overrides != nil && overrides.ICMSCST != nil && *overrides.ICMSCST != "" {
-			icmsCSOSN = *overrides.ICMSCST
-		} else if farmConfig.DefaultICMSCST != nil && *farmConfig.DefaultICMSCST != "" {
-			icmsCSOSN = *farmConfig.DefaultICMSCST
-		} else {
-			icmsCSOSN = defaults.CSOSNSemPermissaoCredito // 102
-		}
+		icmsCSOSN = codeOr(codes.ICMSCST, defaults.CSOSNSemPermissaoCredito)
 		// For SN, ICMS totals are zero; pICMS is not sent in CSOSN groups
 		vBC = decimal.Zero
 		vICMS = decimal.Zero
 		picms = decimal.Zero
 	} else {
-		if overrides != nil && overrides.ICMSCST != nil && *overrides.ICMSCST != "" {
-			icmsCST = *overrides.ICMSCST
-		} else if farmConfig.DefaultICMSCST != nil && *farmConfig.DefaultICMSCST != "" {
-			icmsCST = *farmConfig.DefaultICMSCST
-		} else {
-			icmsCST = defaults.CSTTributadaIntegral // 00
-		}
+		icmsCST = codeOr(codes.ICMSCST, defaults.CSTTributadaIntegral)
 		vBC = totalValue
 		vICMS = totalValue.Mul(icmsRate)
 		picms = icmsRate.Mul(decimal.NewFromInt(100)) // rate as percentage
 	}
 
-	// Determine PIS CST from overrides, farm config, or default
-	pisCST := "01"
-	if overrides != nil && overrides.PISCST != nil && *overrides.PISCST != "" {
-		pisCST = *overrides.PISCST
-	} else if farmConfig.DefaultPISCST != nil && *farmConfig.DefaultPISCST != "" {
-		pisCST = *farmConfig.DefaultPISCST
-	}
+	pisCST := codeOr(codes.PISCST, "01")
 
-	// Determine COFINS CST from overrides, farm config, or default
-	cofinsCST := "01"
-	if overrides != nil && overrides.COFINSCST != nil && *overrides.COFINSCST != "" {
-		cofinsCST = *overrides.COFINSCST
-	} else if farmConfig.DefaultCOFINSCST != nil && *farmConfig.DefaultCOFINSCST != "" {
-		cofinsCST = *farmConfig.DefaultCOFINSCST
-	}
+	cofinsCST := codeOr(codes.COFINSCST, "01")
 
 	// Description fallback: if empty, try the product defaults; finally "Produto Agricola"
 	if description == "" {
@@ -854,26 +840,18 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 		}
 	}
 
-	// Tax reform (IBS/CBS) — CSTs, cClassTrib and computed values per item.
+	// Tax reform (IBS/CBS) — the CST and cClassTrib come pre-resolved from
+	// the emission snapshot; only the per-item values are computed here.
 	// vBC for IBS/CBS equals the item total. Rates are stored as decimal
 	// rates; the XML builder multiplies by 100 to render pIBSUF / pCBS as
 	// percentage strings. For pre-reform emissions (year < 2026) the values
 	// are still emitted but stay zero so the schema stays stable.
 	//
 	// NT 2025.002-RTC defines a single IBSCBS CST (3 digits) shared by IBS
-	// and CBS in the per-item <IBSCBS> group. Per-emission overrides let the
-	// user supply either CBS or IBS CST — the override applies to the shared
-	// <CST> element, with CBSCST taking precedence.
-	ibsCbsCST := defaults.IBSCBSCSTTributadaIntegral
-	if overrides != nil && overrides.CBSCST != nil && *overrides.CBSCST != "" {
-		ibsCbsCST = *overrides.CBSCST
-	} else if overrides != nil && overrides.IBSCST != nil && *overrides.IBSCST != "" {
-		ibsCbsCST = *overrides.IBSCST
-	}
-	cClassTrib := defaults.CClassTribDefault
-	if overrides != nil && overrides.CClassTrib != nil && *overrides.CClassTrib != "" {
-		cClassTrib = *overrides.CClassTrib
-	}
+	// and CBS in the per-item <IBSCBS> group; MergeEffectiveOverrides folds
+	// a typed IBSCST into the CBSCST carrier (CBSCST takes precedence).
+	ibsCbsCST := codeOr(codes.CBSCST, defaults.IBSCBSCSTTributadaIntegral)
+	cClassTrib := codeOr(codes.CClassTrib, defaults.CClassTribDefault)
 
 	// Compute per-item IBS/CBS values. Even when IsTaxReformActive is false
 	// the group is emitted with zero values to keep the schema stable.
@@ -947,14 +925,46 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 	}
 }
 
-// MergeRates resolves the effective TaxRates for an emission.
-// User-provided rates are authoritative when non-nil (even if zero). For nil
-// values, fall back to the farm config; if the farm config is also zero for
-// that rate, use the last-resort default (the historical pre-migration values
-// for grain sales, plus the 2026 symbolic IBS/CBS rates from the tax reform).
+// emissionTaxSnapshot carries the effective tax configuration of one
+// emission: the merged rates the item XML used and the resolved tax codes.
+// It is what gets persisted (nfe_invoice_tax_rates / detached_nfe_tax_rates
+// plus the invoice row's code columns) so rebuilds and SVC attempts
+// reproduce the emission exactly, even if the farm config changes later.
+type emissionTaxSnapshot struct {
+	Rates entity.TaxRates
+	// Codes is a full InvoiceOverrides: the user's fields copied through and
+	// only the six tax fields (ICMS C(S)ST, PIS, COFINS, IBS/CBS, cClassTrib)
+	// resolved. The builders consume it directly instead of resolving inline.
+	Codes entity.InvoiceOverrides
+}
+
+// resolveRate picks the effective rate for one axis. The user-typed rate is
+// authoritative when present — a typed zero is an explicit exemption (see the
+// entity.TaxRates contract). The farm config rate is used when configured
+// (non-zero). Anything else is unresolvable (nil): validateResolvedRates must
+// refuse the emission for the axes the regime uses. There is intentionally no
+// hardcoded fallback — the historical (0.17 / 0.0165 / 0.076) values were an
+// emission-test convenience and guessing a tax rate produces a fiscally
+// wrong but schema-valid XML.
+func resolveRate(override *decimal.Decimal, farm decimal.Decimal) *decimal.Decimal {
+	if override != nil {
+		return override
+	}
+	if !farm.IsZero() {
+		return &farm
+	}
+	return nil
+}
+
+// MergeRates resolves the effective TaxRates for an emission with the
+// precedence user > farm config. A returned nil pointer means the axis could
+// not be resolved; run validateResolvedRates right after and block the
+// emission for the axes the regime uses.
 //
-// All five returned pointers are non-nil by construction, so callers (e.g.
-// buildItems) can safely dereference without nil checks.
+// MergeRates is idempotent on a complete snapshot: calling it again with a
+// previously resolved snapshot as overrides returns that snapshot unchanged
+// (every non-nil field wins over the farm arm). That property is what lets
+// worker rebuilds and SVC attempts reproduce the original emission exactly.
 func MergeRates(overrides entity.TaxRates, farmConfig *entity_public.FarmConfig) entity.TaxRates {
 	var pICMS, pPIS, pCOFINS decimal.Decimal
 	var pIBS, pCBS decimal.Decimal
@@ -963,29 +973,128 @@ func MergeRates(overrides entity.TaxRates, farmConfig *entity_public.FarmConfig)
 		pIBS, pCBS = farmConfig.IBSRate, farmConfig.CBSRate
 	}
 	return entity.TaxRates{
-		ICMSRate:   pickRate(overrides.ICMSRate, pICMS, decimal.NewFromFloat(0.17)),
-		PISRate:    pickRate(overrides.PISRate, pPIS, decimal.NewFromFloat(0.0165)),
-		COFINSRate: pickRate(overrides.COFINSRate, pCOFINS, decimal.NewFromFloat(0.076)),
-		IBSRate:    pickRate(overrides.IBSRate, pIBS, defaults.IBSRate2026),
-		CBSRate:    pickRate(overrides.CBSRate, pCBS, defaults.CBSRate2026),
+		ICMSRate:   resolveRate(overrides.ICMSRate, pICMS),
+		PISRate:    resolveRate(overrides.PISRate, pPIS),
+		COFINSRate: resolveRate(overrides.COFINSRate, pCOFINS),
+		IBSRate:    resolveRate(overrides.IBSRate, pIBS),
+		CBSRate:    resolveRate(overrides.CBSRate, pCBS),
 	}
 }
 
-func pickRate(override *decimal.Decimal, product, fallback decimal.Decimal) *decimal.Decimal {
-	if override != nil {
-		return override
+// validateResolvedRates reports the tax rates that could not be resolved
+// (nil pointers) among the axes the regime actually uses. Messages are in
+// pt-br and name where each rate can be fixed (the emission form or the farm
+// config). An empty result means the emission may proceed and callers own the
+// non-nil guarantees for the consumed axes.
+//
+// ICMS is only required for Regime Normal: Simples Nacional zeroes the ICMS
+// amounts (vBC / pICMS / vICMS) and the ICMS rate is never consumed by the
+// XML. PIS, COFINS, IBS and CBS are computed in both regimes.
+func validateResolvedRates(rates entity.TaxRates, regime defaults.TaxRegime) []string {
+	var errs []string
+	if regime != defaults.TaxRegimeSimplesNacional && rates.ICMSRate == nil {
+		errs = append(errs, "Alíquota ICMS não configurada: informe-a na emissão ou defina-a como valor padrão da fazenda")
 	}
-	if !product.IsZero() {
-		return &product
+	if rates.PISRate == nil {
+		errs = append(errs, "Alíquota PIS não configurada: informe-a na emissão ou defina-a como valor padrão da fazenda")
 	}
-	return &fallback
+	if rates.COFINSRate == nil {
+		errs = append(errs, "Alíquota COFINS não configurada: informe-a na emissão ou defina-a como valor padrão da fazenda")
+	}
+	if rates.IBSRate == nil {
+		errs = append(errs, "Alíquota IBS não configurada: informe-a na emissão ou defina-a como valor padrão da fazenda")
+	}
+	if rates.CBSRate == nil {
+		errs = append(errs, "Alíquota CBS não configurada: informe-a na emissão ou defina-a como valor padrão da fazenda")
+	}
+	return errs
 }
 
-// hasAnyUserRate reports whether the user typed at least one rate in the form.
-// Used to decide whether to persist a row in nfe_invoice_tax_rates.
-func hasAnyUserRate(rates entity.TaxRates) bool {
-	return rates.ICMSRate != nil || rates.PISRate != nil || rates.COFINSRate != nil ||
-		rates.IBSRate != nil || rates.CBSRate != nil
+// codeOr dereferences a resolved code pointer, falling back only when the
+// pointer is nil or empty. The tax-code resolution itself lives in
+// MergeEffectiveOverrides; builders use this helper so a defensive default
+// stays local.
+func codeOr(code *string, fallback string) string {
+	if code != nil && *code != "" {
+		return *code
+	}
+	return fallback
+}
+
+// MergeEffectiveOverrides resolves the effective tax codes of an emission.
+// The user's override fields are copied through untouched; the six tax
+// fields are resolved with exactly the precedence the item builders applied
+// before this helper existed (override > farm config default > builder
+// default). Both builders consume the pre-resolved struct so tax-code
+// resolution lives in one place, and the same struct is persisted so
+// rebuilds reproduce the emission. It is pure and idempotent on the
+// ICMSCST / PISCST / COFINSCST / CBSCST / CClassTrib fields (already-resolved
+// non-empty values win).
+//
+// The shared per-item IBS/CBS <CST> uses CBSCST as its carrier: when only
+// IBSCST is typed, the resolved CBSCST carries it (this mirrors the builder
+// precedence CBSCST > IBSCST that existed inline).
+func MergeEffectiveOverrides(user *entity.InvoiceOverrides, farmConfig *entity_public.FarmConfig, regime defaults.TaxRegime) entity.InvoiceOverrides {
+	codes := entity.InvoiceOverrides{}
+	if user != nil {
+		codes = *user
+	}
+	if farmConfig == nil {
+		farmConfig = &entity_public.FarmConfig{}
+	}
+
+	// ICMS: the same field carries the CST (Regime Normal) or the CSOSN
+	// (Simples Nacional) the XML group will use.
+	if codes.ICMSCST == nil || *codes.ICMSCST == "" {
+		if farmConfig.DefaultICMSCST != nil && *farmConfig.DefaultICMSCST != "" {
+			v := *farmConfig.DefaultICMSCST
+			codes.ICMSCST = &v
+		} else if regime == defaults.TaxRegimeSimplesNacional {
+			v := defaults.CSOSNSemPermissaoCredito
+			codes.ICMSCST = &v
+		} else {
+			v := defaults.CSTTributadaIntegral
+			codes.ICMSCST = &v
+		}
+	}
+
+	if codes.PISCST == nil || *codes.PISCST == "" {
+		if farmConfig.DefaultPISCST != nil && *farmConfig.DefaultPISCST != "" {
+			v := *farmConfig.DefaultPISCST
+			codes.PISCST = &v
+		} else {
+			v := "01"
+			codes.PISCST = &v
+		}
+	}
+
+	if codes.COFINSCST == nil || *codes.COFINSCST == "" {
+		if farmConfig.DefaultCOFINSCST != nil && *farmConfig.DefaultCOFINSCST != "" {
+			v := *farmConfig.DefaultCOFINSCST
+			codes.COFINSCST = &v
+		} else {
+			v := "01"
+			codes.COFINSCST = &v
+		}
+	}
+
+	// Shared IBS/CBS CST: CBSCST takes precedence over a typed IBSCST.
+	if codes.CBSCST == nil || *codes.CBSCST == "" {
+		if codes.IBSCST != nil && *codes.IBSCST != "" {
+			v := *codes.IBSCST
+			codes.CBSCST = &v
+		} else {
+			v := defaults.IBSCBSCSTTributadaIntegral
+			codes.CBSCST = &v
+		}
+	}
+
+	if codes.CClassTrib == nil || *codes.CClassTrib == "" {
+		v := defaults.CClassTribDefault
+		codes.CClassTrib = &v
+	}
+
+	return codes
 }
 
 // mapFarmToEmitter maps farm config and farm data to NF-e emitter data.
@@ -993,7 +1102,7 @@ func (s *NFeService) mapFarmToEmitter(cfg *entity_public.FarmConfig, farm *entit
 	emitter := entity.EmitterData{
 		Type:       cfg.EmitterType,
 		IE:         cfg.IEEmitter,
-		XNome:      "",
+		XNome:      farm.FarmerName,
 		Logradouro: "",
 		Numero:     "",
 		Bairro:     "",
@@ -1014,7 +1123,7 @@ func (s *NFeService) mapFarmToEmitter(cfg *entity_public.FarmConfig, farm *entit
 
 	// Populate emitter name and address from farm data
 	if farm.Name != nil {
-		emitter.XNome = *farm.Name
+		emitter.XNome = farm.FarmerName
 	}
 	if farm.StorageName != nil {
 		emitter.XFant = *farm.StorageName

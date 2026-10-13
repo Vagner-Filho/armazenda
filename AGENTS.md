@@ -524,7 +524,7 @@ Optional fields skipped for the 2026 grain-sale phase (0-1 in schema): `pDif`, `
 **Gate:**
 - `defaults.IsTaxReformActive(t)` returns true from 2026-01-01 onwards
 - Pre-reform: the XML group is still emitted but with zero rates/values so consumers see a stable schema
-- 2026+: rates come from `MergeRates(userRates, farmNFeConfig)` (`service/nfe_service/service.go`) which resolves `user > farm > 2026 fallback`
+- 2026+: rates come from `MergeRates(userRates, farmNFeConfig)` (`service/nfe_service/service.go`) which resolves `user > farm` only — there is no hardcoded fallback (the historical 0.17/0.0165/0.076 values and the 2026 symbolic constants are no longer resolution defaults); an unresolvable rate is refused by `validateResolvedRates` with a pt-br error before anything is persisted. `MergeEffectiveOverrides` resolves the tax codes the same way (override > farm default > builder constant), and the resolved rates + codes are persisted per emission (`emissionTaxSnapshot`) so rebuilds reproduce the XML even if the farm config changes later.
 
 **Persistence:**
 - `nfe_farm_config`: `cbs_rate`, `ibs_rate`, `cbs_cst`, `ibs_cst`, `c_class_trib` (per-farm defaults)

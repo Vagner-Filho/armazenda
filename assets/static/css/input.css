@@ -70,8 +70,12 @@
     @apply btn-shape shadow-lg bg-sky-50/15 text-white/80 hover:text-white hover:bg-sky-50/30 focus:text-white focus:bg-sky-50/30 transition-all duration-300 ease-in-out backdrop-blur-xs
 }
 
+@utility colorless-glass-btn {
+    @apply btn-shape shadow-lg transition-all duration-300 ease-in-out backdrop-blur-xs
+}
+
 @utility primary-glass-btn {
-    @apply btn-shape shadow border bg-emerald-600 border-emerald-600/40 text-white hover:scale-105 hover:shadow-lg hover:text-emerald-800 hover:bg-emerald-100 transition-all duration-300 ease-in-out backdrop-blur-xs
+    @apply btn-shape not-disabled:shadow border bg-emerald-600 border-emerald-600/40 text-white not-disabled:hover:scale-105 not-disabled:hover:shadow-lg not-disabled:hover:text-emerald-800 not-disabled:hover:bg-emerald-100 transition-all duration-300 ease-in-out backdrop-blur-xs disabled:bg-zinc-500/70 disabled:border-zinc-500/90 disabled:cursor-default disabled:text-white/60
 }
 
 @utility icon-btn {

@@ -65,15 +65,19 @@
             </div>
           </div>
           <div class="flex flex-col-reverse gap-2">
-            <input type="text" id="ownerDocument" required class="peer" name="ownerDocument" aria-placeholder="CPF ou CNPJ do proprietário" placeholder="CPF ou CNPJ do proprietário">
-            <label for="ownerDocument" class="label-peer">CPF/CNPJ do Proprietário</label>
+            <input type="text" id="farmerName" required class="peer" name="farmerName" aria-placeholder="Nome/Razão Social do Produtor" placeholder="Brasil Grãos S.A">
+            <label for="farmerName" class="label-peer">Nome/Razão Social do Produtor</label>
+          </div>
+          <div class="flex flex-col-reverse gap-2">
+            <input type="text" id="ownerDocument" required class="peer" name="ownerDocument" aria-placeholder="CPF ou CNPJ do produtor" placeholder="CPF ou CNPJ do produtor">
+            <label for="ownerDocument" class="label-peer">CPF/CNPJ do Produtor</label>
           </div>
           <div class="flex flex-col-reverse gap-2">
             <select id="ownerDocumentType" required class="peer" name="ownerDocumentType">
               <option value="2" selected>CPF</option>
               <option value="1">CNPJ</option>
             </select>
-            <label for="ownerDocumentType" class="label-peer">Tipo de Documento do Proprietário</label>
+            <label for="ownerDocumentType" class="label-peer">Tipo de Documento do Produtor</label>
           </div>
           {{ template "cpf-field" . }}
           <div class="flex flex-col-reverse gap-2">

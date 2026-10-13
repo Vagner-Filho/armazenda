@@ -188,6 +188,9 @@ func getNFeConfigForm(c *gin.Context) {
 		}
 	}
 
+	fcm := farm_config_model.GetFarmConfigModel()
+	farm, err := fcm.GetFarmConfig(farmID)
+
 	c.HTML(http.StatusOK, "nfe-config-form", gin.H{
 		"FarmID":        farmID,
 		"Config":        config,
@@ -199,6 +202,7 @@ func getNFeConfigForm(c *gin.Context) {
 		"CBSCST":        safePtrString(config.DefaultCBSCST),
 		"IBSCST":        safePtrString(config.DefaultIBSCST),
 		"CClassTrib":    safePtrString(config.DefaultCClassTrib),
+		"FarmerName":    farm.FarmerName,
 	})
 }
 
@@ -207,6 +211,7 @@ func saveNFeConfig(c *gin.Context) {
 
 	var fConfig entity_public.FarmConfig
 	c.Bind(&fConfig)
+	farmerName := c.PostForm("farmerName")
 
 	farmID := user_service.GetFarmFromToken(sid)
 
@@ -361,7 +366,7 @@ func saveNFeConfig(c *gin.Context) {
 		config.FarmCND.Meta = &meta
 	}
 
-	_, toast := nfe_service.UpsertFarmConfig(config)
+	_, toast := nfe_service.UpsertFarmConfig(config, &farmerName)
 	if toast.Type == entity_public.ErrorToast {
 		c.Header("HX-Trigger", toast.ToJsonStr())
 		c.Status(http.StatusInternalServerError)

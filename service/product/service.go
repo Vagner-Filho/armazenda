@@ -64,7 +64,7 @@ func AddFarmProduct(fp entity_public.FarmProduct) (entity_public.FarmProduct, *e
 		t = entity_public.GetWarningToast("NCM inválido", "informe os 8 dígitos do NCM")
 		return entity_public.FarmProduct{}, &t
 	}
-	if fp.FarmId == 0 {
+	if fp.FarmId == nil || *fp.FarmId == 0 {
 		t = entity_public.GetErrorToast("Fazenda não identificada", "")
 		return entity_public.FarmProduct{}, &t
 	}
@@ -95,7 +95,7 @@ func UpdateFarmProduct(fp entity_public.FarmProduct) (entity_public.FarmProduct,
 		t = entity_public.GetWarningToast("NCM inválido", "informe os 8 dígitos do NCM")
 		return entity_public.FarmProduct{}, &t
 	}
-	if fp.FarmId == 0 {
+	if fp.FarmId == nil || *fp.FarmId == 0 {
 		t = entity_public.GetErrorToast("Fazenda não identificada", "")
 		return entity_public.FarmProduct{}, &t
 	}

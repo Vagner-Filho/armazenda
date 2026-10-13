@@ -40,6 +40,21 @@ async function gotoApp(page, path) {
   return page.goto(`${origin}${path}`);
 }
 
+// Sections of the emission form are hidden until their tab in #tabs is
+// clicked. The Transporte tab reveals fieldset#transporte-fieldset; the
+// other tabs share the id of their fieldset.
+const EMIT_TAB_FIELDSETS = {
+  dest: 'fieldset#dest',
+  transac: 'fieldset#transac',
+  transp: 'fieldset#transporte-fieldset',
+  trib: 'fieldset#trib',
+};
+
+async function goToTab(page, tabId) {
+  await page.locator(`#tabs button#${tabId}`).click();
+  await expect(page.locator(EMIT_TAB_FIELDSETS[tabId])).toBeVisible();
+}
+
 // Selects a CFOP through the search-driven selector used by the item rows.
 async function selectCfop(row, code) {
   await row.locator('[data-cfop-trigger]').click();
@@ -51,6 +66,7 @@ async function selectCfop(row, code) {
 }
 
 async function fillBasicForm(page) {
+  // Destinatário tab (visible on load): recipient fields.
   await page.locator('input[name="recipientType"][value="new"]').check({ force: true });
   await page.fill('#recipientName', 'Destinatário Transporte E2E');
   await page.fill('#recipientDocument', faker.string.numeric(14));
@@ -60,6 +76,9 @@ async function fillBasicForm(page) {
   await page.fill('#recipientCity', 'Cuiabá');
   await page.fill('#recipientState', 'MT');
   await page.fill('#recipientCEP', '78000000');
+
+  // Transação tab: the item fields are hidden until their tab is active.
+  await goToTab(page, 'transac');
   await page.fill('input[name="items[0].productName"]', 'Soja Transporte');
   await selectCfop(page.locator('#items-container .item-row').first(), '5101');
   await page.fill('input[name="items[0].quantity"]', '10');
@@ -71,7 +90,9 @@ test.describe('Transporte section of the detached NF-e form', () => {
   test('renders the three sub-groups and disables the vehicle fields without a plate', async ({ page, browserName }) => {
     await login(page, browserName);
     await gotoApp(page, '/nfe/emitir');
-    await expect(page.locator('#transporte-fieldset')).toBeVisible();
+
+    // Sections start hidden; the Transporte tab reveals this fieldset.
+    await goToTab(page, 'transp');
 
     // Transportadora sub-group
     await expect(page.locator('#transportNome')).toBeVisible();
@@ -110,11 +131,11 @@ test.describe('Transporte section of the detached NF-e form', () => {
   test('volume prefill mirrors the item sums and respects user edits', async ({ page, browserName }) => {
     await login(page, browserName);
     await gotoApp(page, '/nfe/emitir');
-    await expect(page.locator('#transporte-fieldset')).toBeVisible();
 
     await fillBasicForm(page);
 
-    // Prefill stays live while fields are untouched.
+    // Volume fields live on the Transporte tab; the prefill mirrors the items.
+    await goToTab(page, 'transp');
     await expect(page.locator('#volQtd')).toHaveValue('1');
     await expect(page.locator('#volEsp')).toHaveValue('Granel');
     await expect(page.locator('#volPesoL')).toHaveValue('10');
@@ -123,13 +144,16 @@ test.describe('Transporte section of the detached NF-e form', () => {
     // A user edit stops that field's auto-update; others keep mirroring.
     await page.fill('#volPesoL', '999');
 
-    // Add a second item: quantity sum changes from 10 to 30.
+    // Add a second item (on the Transação tab): quantity sum changes from 10 to 30.
+    await goToTab(page, 'transac');
     await page.locator('#add-item-btn').click();
     await page.fill('input[name="items[1].productName"]', 'Milho Transporte');
     await selectCfop(page.locator('#items-container .item-row').nth(1), '5102');
     await page.fill('input[name="items[1].quantity"]', '20');
     await page.fill('input[name="items[1].unitPrice"]', '30.00');
 
+    // Back to the Transporte tab to check the prefill outcome.
+    await goToTab(page, 'transp');
     await expect(page.locator('#volPesoL')).toHaveValue('999'); // user-edited
     await expect(page.locator('#volPesoB')).toHaveValue('10.2'); // still mirrored (unchanged sums)
     await expect(page.locator('#volQtd')).toHaveValue('1');
@@ -138,10 +162,11 @@ test.describe('Transporte section of the detached NF-e form', () => {
   test('preview round-trips the transport values and the DB stores nothing', async ({ page, browserName }) => {
     await login(page, browserName);
     await gotoApp(page, '/nfe/emitir');
-    await expect(page.locator('#transporte-fieldset')).toBeVisible();
 
     await fillBasicForm(page);
 
+    // Transport fields are on the Transporte tab.
+    await goToTab(page, 'transp');
     const plate = `${faker.string.alpha({ length: 3 }).toUpperCase()}${faker.string.numeric(4)}`;
     await page.fill('#transportNome', 'Carreteiro Transporte E2E');
     await page.fill('#transportDocumento', '529.982.247-25');
@@ -154,10 +179,15 @@ test.describe('Transporte section of the detached NF-e form', () => {
     await page.fill('#transportRNTC', '12345678901234567890');
     await page.fill('#volMarca', 'BigFarm');
 
+    // The submit button is only enabled on the Tributação tab.
+    await goToTab(page, 'trib');
+    const previewButton = page.locator('[data-test-id="preview-detached-nfe"]');
+    await expect(previewButton).toBeEnabled();
+
     const previewResponse = page.waitForResponse(
       r => r.url().includes('/nfe/emitir/preview') && r.request().method() === 'POST'
     );
-    await page.locator('[data-test-id="preview-detached-nfe"]').evaluate(el => el.click());
+    await previewButton.evaluate(el => el.click());
     const preview = await previewResponse;
     expect(preview.status()).toBe(200);
     await expect(page.locator('#nfe-detached-preview-panel')).toBeVisible();
@@ -185,14 +215,22 @@ test.describe('Transporte section of the detached NF-e form', () => {
   test('interstate destination rejects vehicle data with a warning toast', async ({ page, browserName }) => {
     await login(page, browserName);
     await gotoApp(page, '/nfe/emitir');
-    await expect(page.locator('#transporte-fieldset')).toBeVisible();
 
     await fillBasicForm(page);
-    await page.fill('#recipientState', 'SP'); // interstate: SP destination, MT emitter
 
+    // Interstate: SP destination, MT emitter (edited on the Destinatário tab).
+    await goToTab(page, 'dest');
+    await page.fill('#recipientState', 'SP');
+
+    await goToTab(page, 'transp');
     await page.fill('#transportPlaca', `${faker.string.alpha({ length: 3 }).toUpperCase()}${faker.string.numeric(4)}`);
     await page.fill('#volPesoL', '999'); // user edit, keeps prefill permission off
-    await page.locator('[data-test-id="preview-detached-nfe"]').evaluate(el => el.click());
+
+    // The submit button is only enabled on the Tributação tab.
+    await goToTab(page, 'trib');
+    const previewButton = page.locator('[data-test-id="preview-detached-nfe"]');
+    await expect(previewButton).toBeEnabled();
+    await previewButton.evaluate(el => el.click());
 
     // Rejected before any transmission: no preview panel, warning toast.
     await expect(page.locator('#nfe-detached-preview-panel')).toHaveCount(0);

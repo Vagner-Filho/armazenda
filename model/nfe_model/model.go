@@ -92,7 +92,7 @@ func (m *NFeModel) GetFarmConfig(farmID uint32) (*entity_public.FarmConfig, erro
 }
 
 // UpsertFarmConfig inserts or updates the NFe configuration for a farm.
-func (m *NFeModel) UpsertFarmConfig(cfg entity_public.FarmConfig) *model_error.ModelError {
+func (m *NFeModel) UpsertFarmConfig(cfg entity_public.FarmConfig, farmerName *string) *model_error.ModelError {
 	query := `
 		INSERT INTO nfe_farm_config (
 			farm_id, certificate_path, certificate_data, certificate_password_encrypted, environment,
@@ -187,6 +187,23 @@ func (m *NFeModel) UpsertFarmConfig(cfg entity_public.FarmConfig) *model_error.M
 			return &model_error.ModelError{IsServerErr: true, Message: "Erro interno ao salvar dados do CND"}
 		}
 	}
+
+	if farmerName != nil {
+		_, farmerNameUpdateErr := m.pool.Exec(
+			context.Background(),
+			`UPDATE farm SET farmer_name = @farmer_name WHERE id = @farm_id`,
+			pgx.NamedArgs{
+				"farm_id":     cfg.FarmID,
+				"farmer_name": *farmerName,
+			},
+		)
+
+		if farmerNameUpdateErr != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("Update farmer_name err: %s", farmerNameUpdateErr.Error()))
+			return &model_error.ModelError{IsServerErr: true, Message: "Erro interno ao alterar nome/razão social de produtor"}
+		}
+	}
+
 	return nil
 }
 
@@ -252,14 +269,16 @@ type Invoice struct {
 }
 
 // CreateInvoiceWithEmission creates a new invoice record with a specific emission type.
-// If taxRates is non-nil and contains at least one non-nil rate, a row is also
-// inserted into nfe_invoice_tax_rates recording the user-provided rates.
-// If overrides is non-nil, the per-emission override fields are persisted so
-// draft retries and SVC contingency rebuilds reconstruct the exact same NF-e.
-// totalIBSValue and totalCBSValue are the per-NF-e totals (sum of per-item VIBS
-// and VCBS values) and are persisted in the ibs_value and cbs_value columns so
-// reports and the NF-e list can show tax burden without re-parsing the signed
-// XML.
+// taxRates carries the emission's effective-rate snapshot (the merged rates the
+// XML used) and overrides its resolved tax codes; both are persisted as-is so
+// draft retries and SVC contingency rebuilds reconstruct the exact same NF-e
+// even if the farm config changes later. Callers resolve them via
+// emissionTaxSnapshot (MergeRates + MergeEffectiveOverrides) — never raw form
+// input. If overrides is non-nil, the per-emission override fields are
+// persisted. totalIBSValue and totalCBSValue are the per-NF-e totals (sum of
+// per-item VIBS and VCBS values) and are persisted in the ibs_value and
+// cbs_value columns so reports and the NF-e list can show tax burden without
+// re-parsing the signed XML.
 func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal, totalIBSValue decimal.Decimal, totalCBSValue decimal.Decimal, tpEmis int, dhCont interface{}, xJust string, taxRates *entity.TaxRates, overrides *entity.InvoiceOverrides) (int, error) {
 	query := `
 		INSERT INTO nfe_invoice (

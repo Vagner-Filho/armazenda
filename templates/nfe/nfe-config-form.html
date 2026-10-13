@@ -101,6 +101,14 @@
                 </label>
                 <p class="text-xs text-white/50 mt-1 px-2">Série padrão: CNPJ = 1, CPF = 920. Confirme com seu contador se necessário.</p>
             </div>
+            <div class="flex flex-col-reverse">
+                <input type="string" name="farmerName" id="farmerName" value="{{ .FarmerName }}"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                    title="Nome/Razão Social usado como emitente de nota fiscal">
+                <label for="farmerName" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Nome/Razão Social do Produtor
+                </label>
+            </div>
         </div>
     </fieldset>
 

@@ -221,7 +221,7 @@ func TestBuildDetachedItems_DefaultsAndTaxTotals(t *testing.T) {
 		},
 	}
 
-	items, itemsForDB, totalValue, totalIBS, totalCBS := svc.buildDetachedItems(inputs, cfg, entity.TaxRates{}, nil)
+	items, itemsForDB, totalValue, totalIBS, totalCBS := svc.buildDetachedItems(inputs, cfg, resolvedSnapshot(t, entity.TaxRates{}, nil, cfg), nil)
 
 	if len(items) != 2 || len(itemsForDB) != 2 {
 		t.Fatalf("expected 2 items, got %d/%d", len(items), len(itemsForDB))
@@ -276,10 +276,12 @@ func TestBuildDetachedItems_UserRatesAndOverrides(t *testing.T) {
 	svc := NewNFeService()
 
 	cfg := &entity_public.FarmConfig{
-		TaxRegime: 3,
-		ICMSRate:  decimal.RequireFromString("0.12"),
-		CBSRate:   decimal.RequireFromString("0.009"),
-		IBSRate:   decimal.RequireFromString("0.001"),
+		TaxRegime:  3,
+		ICMSRate:   decimal.RequireFromString("0.12"),
+		PISRate:    decimal.RequireFromString("0.0165"),
+		COFINSRate: decimal.RequireFromString("0.076"),
+		CBSRate:    decimal.RequireFromString("0.009"),
+		IBSRate:    decimal.RequireFromString("0.001"),
 	}
 
 	icmsRate := decimal.RequireFromString("0.05")
@@ -295,9 +297,11 @@ func TestBuildDetachedItems_UserRatesAndOverrides(t *testing.T) {
 		},
 	}
 
+	// Tax codes come from the emission snapshot (user ICMSCST wins); the user
+	// ICMS rate wins over the farm ICMS rate while the farm fills the rest.
 	items, _, _, _, _ := svc.buildDetachedItems(
 		inputs, cfg,
-		entity.TaxRates{ICMSRate: &icmsRate},
+		resolvedSnapshot(t, entity.TaxRates{ICMSRate: &icmsRate}, &entity.InvoiceOverrides{ICMSCST: &icmsCST}, cfg),
 		&entity.InvoiceOverrides{ICMSCST: &icmsCST},
 	)
 

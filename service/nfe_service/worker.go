@@ -209,9 +209,12 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 	now := time.Now()
 	reason := "Indisponibilidade do ambiente de autorizacao da SEFAZ de origem"
 
-	// Get the original user-typed tax rates from the persisted row.
-	// For legacy invoices (no row) or partially-set rows, individual rates will
-	// be nil and MergeRates will fall back to the farm config.
+	// Get the original tax rates from the persisted row. For complete snapshot
+	// rows (the norm since the rate-snapshot change) this equals exactly what
+	// the original XML used. For legacy invoices (no row) or partially-set
+	// rows, individual rates will be nil and the merge falls back to the farm
+	// config; anything still unresolvable is refused by the prepare-step
+	// validation instead of being guessed.
 	taxRateOverrides := invoiceRecord.TaxRates
 	if taxRateOverrides == nil {
 		taxRateOverrides = &entity.TaxRates{}
@@ -224,8 +227,14 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 
 	// Get the original full invoice input data
 	nfeSvc := NewNFeService()
-	input, _, _, _, toast := nfeSvc.prepareInvoiceBuildData(departure.Id, invoiceRecord.UnitPrice, uint32(departure.Farm), "", rates, invoiceOverrides)
+	input, _, _, _, snap, toast := nfeSvc.prepareInvoiceBuildData(departure.Id, invoiceRecord.UnitPrice, uint32(departure.Farm), "", rates, invoiceOverrides)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
+		// Unresolvable rates on a legacy row (validation) and other
+		// preparation failures must not spin without backoff; increment the
+		// retry counter so the log stays bounded and visible.
+		if err := nfeModel.IncrementRetryCount(inv.ID); err != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: failed to increment retry count for draft invoice %d: %v", inv.ID, err))
+		}
 		return fmt.Errorf("failed to prepare rebuild data: %s", toast.Message)
 	}
 
@@ -240,12 +249,13 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 		return fmt.Errorf("failed to rebuild for SVC: %w", rebuildErr)
 	}
 
-	// Persist the new contingency invoice. Carry the same user-typed rates and
-	// overrides so the worker's next retry uses the same values.
-	var ratesToPersist *entity.TaxRates
-	if hasAnyUserRate(*taxRateOverrides) {
-		ratesToPersist = taxRateOverrides
-	}
+	// Persist the new contingency invoice with the effective tax
+	// configuration the rebuilt XML used. For complete snapshot rows this
+	// equals the original row's snapshot (idempotent); for legacy partial
+	// rows the prepared values are exactly what this rebuild used, so the
+	// worker's next retry reproduces it word for word.
+	ratesToPersist := &snap.Rates
+	codesToPersist := &snap.Codes
 	// Sum the per-item IBS/CBS totals from the rebuilt input for the totals
 	// columns. input.Items was populated by prepareInvoiceBuildData above.
 	var totalIBSValue, totalCBSValue decimal.Decimal
@@ -257,7 +267,7 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 		departure.Id, newAccessKey, farmConfig.Serie, newNumber,
 		invoiceRecord.CFOP, invoiceRecord.NCM, invoiceRecord.QuantityKG, invoiceRecord.UnitPrice, invoiceRecord.TotalValue,
 		totalIBSValue, totalCBSValue,
-		int(tpEmis), now, reason, ratesToPersist, invoiceOverrides,
+		int(tpEmis), now, reason, ratesToPersist, codesToPersist,
 	)
 	if createErr != nil {
 		return fmt.Errorf("failed to create contingency invoice: %w", createErr)

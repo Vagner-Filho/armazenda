@@ -45,8 +45,8 @@ func (sm *subscriptionModel) CreatePendingRegistration(user entity_public.NewUse
 
 	var id uint32
 	err := sm.pool.QueryRow(context.Background(),
-		`INSERT INTO pending_registration (email, name, passwd, cpf, inscricao_estadual, role, stripe_checkout_session_id, created_at, owner_document, owner_document_type, additional_ies, uf)
-		 VALUES (@email, @name, @passwd, @cpf, @inscricao_estadual, @role, @stripe_checkout_session_id, @created_at, @owner_document, @owner_document_type, @additional_ies, @uf)
+		`INSERT INTO pending_registration (email, name, passwd, cpf, inscricao_estadual, role, stripe_checkout_session_id, created_at, owner_document, owner_document_type, additional_ies, uf, farmer_name)
+		 VALUES (@email, @name, @passwd, @cpf, @inscricao_estadual, @role, @stripe_checkout_session_id, @created_at, @owner_document, @owner_document_type, @additional_ies, @uf, @farmer_name)
 		 RETURNING id`,
 		pgx.NamedArgs{
 			"email":                      user.Email,
@@ -62,6 +62,7 @@ func (sm *subscriptionModel) CreatePendingRegistration(user entity_public.NewUse
 			"additional_ies":             user.AdditionalIEs,
 			"stripe_price_id":            user.PriceID,
 			"uf":                         user.UF,
+			"farmer_name":                user.FarmerName,
 		}).Scan(&id)
 
 	if err != nil {
@@ -179,11 +180,12 @@ func (sm *subscriptionModel) CreateFarmAndUserFromPending(pending entity_public.
 	for _, ie := range allIEs {
 		var fid uint32
 		createFarmErr := tx.QueryRow(ctx,
-			`INSERT INTO farm (inscricao_estadual)
-			 VALUES (@inscricao_estadual)
+			`INSERT INTO farm (inscricao_estadual, farmer_name)
+			 VALUES (@inscricao_estadual, @farmer_name)
 			 RETURNING id`,
 			pgx.NamedArgs{
 				"inscricao_estadual": ie,
+				"farmer_name":        pending.FarmerName,
 			}).Scan(&fid)
 		if createFarmErr != nil {
 			return 0, nil, createFarmErr
@@ -263,6 +265,7 @@ func (sm *subscriptionModel) CompletePendingRegistrationFromLogin(pending entity
 			 ON CONFLICT (inscricao_estadual) DO NOTHING`,
 			pgx.NamedArgs{
 				"inscricao_estadual": ie,
+				"farmer_name":        pending.FarmerName,
 			},
 		)
 		var farmId int
