@@ -161,6 +161,66 @@ func TestNFeEmitPageSelectsSavedRecipient(t *testing.T) {
 	}
 }
 
+// TestNFeEmitPageRendersPerItemInfAdProd guards the per-item additional
+// information input on the emission page: every item row renders it with the
+// row-indexed name and test id, and a rascunho prefill value reaches the
+// input.
+func TestNFeEmitPageRendersPerItemInfAdProd(t *testing.T) {
+	parsed := parseAllTemplates(t)
+
+	view := detachedPageView{
+		HasNFEFarmConfig: true,
+		RecipientType:    "existing",
+		Items: []detachedPageItem{
+			{CFOP: "5101", Unit: "KG", InfAdProd: "SERIE ABC123"},
+			{CFOP: "5102", Unit: "KG"},
+		},
+		CfopOptions:        cfop_view.CfopOptions{Default: "5101"},
+		UseDefaultTaxRates: true,
+		CSPNonce:           "test-nonce",
+		TierKey:            "fiscal",
+	}
+	out := executeBlock(t, parsed, "nfe-emit.html", view)
+
+	for _, want := range []string{
+		`name="items[0].infAdProd"`,
+		`data-test-id="item-inf-ad-prod-0"`,
+		`value="SERIE ABC123"`,
+		`name="items[1].infAdProd"`,
+		`data-test-id="item-inf-ad-prod-1"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("emission page must render %s", want)
+		}
+	}
+}
+
+// TestNFeDetachedPreviewRendersInfAdProd guards the preview round-trip on the
+// fragment side: the parsed per-item note must render into the hidden
+// items[i].infAdProd input so the confirm step re-submits exactly the
+// previewed text.
+func TestNFeDetachedPreviewRendersInfAdProd(t *testing.T) {
+	parsed := parseAllTemplates(t)
+
+	view := detachedPreviewView{
+		ItemCount: 2,
+		Items: []detachedPreviewItem{
+			{Index: 0, ProductName: "Soja", CFOP: "5101", Quantity: "10", GrossWeight: "10", UnitPrice: "50", Unit: "KG", InfAdProd: "SERIE ABC123"},
+			{Index: 1, ProductName: "Milho", CFOP: "5102", Quantity: "5", GrossWeight: "5", UnitPrice: "30", Unit: "KG"},
+		},
+		TPag:     "90",
+		CSPNonce: "test-nonce",
+	}
+	out := executeBlock(t, parsed, "nfe-detached-preview", view)
+
+	if !strings.Contains(out, `name="items[0].infAdProd" value="SERIE ABC123"`) {
+		t.Errorf("preview must round-trip the item note; got:\n%s", out)
+	}
+	if !strings.Contains(out, `name="items[1].infAdProd" value=""`) {
+		t.Errorf("preview must round-trip a blank item note as empty; got:\n%s", out)
+	}
+}
+
 // TestNFEDraftStatusLabelRendersNaoEnviada is the template sweep guard: every
 // NF-e status rendering must show "Não enviada" for the internal 'draft'
 // status and no NF-e surface may label that status "Rascunho".

@@ -119,6 +119,7 @@ func TestDetachedInvoice_ContingencyFieldsAndSentStamp_DBRoundTrip(t *testing.T)
 		nil, nil,
 		decimal.NewFromInt(100), decimal.Zero, decimal.Zero,
 		6, time.Now(), reason, nil, overrides, []nfe_model.DetachedInvoiceItem{},
+		"1", nil, nil,
 	)
 	if createErr != nil {
 		t.Fatalf("CreateDetachedInvoice (contingency) failed: %v", createErr)
@@ -209,6 +210,7 @@ func TestDetachedInvoice_ContingencyFieldsAndSentStamp_DBRoundTrip(t *testing.T)
 		nil, nil,
 		decimal.NewFromInt(100), decimal.Zero, decimal.Zero,
 		1, nil, "", nil, overrides, []nfe_model.DetachedInvoiceItem{},
+		"1", nil, nil,
 	)
 	if createErr != nil {
 		t.Fatalf("CreateDetachedInvoice (normal) failed: %v", createErr)
@@ -309,7 +311,7 @@ func TestInvoice_SentStamp_DBRoundTrip(t *testing.T) {
 		uint32(departureID), accessKey, 929, 1, "5101", "12019000",
 		decimal.NewFromInt(90), decimal.NewFromInt(10), decimal.NewFromInt(900),
 		decimal.Zero, decimal.Zero,
-		1, nil, "", nil, overrides,
+		1, nil, "", nil, overrides, nil,
 	)
 	if createErr != nil {
 		t.Fatalf("CreateInvoiceWithEmission failed: %v", createErr)

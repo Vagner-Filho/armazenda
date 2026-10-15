@@ -69,16 +69,22 @@ function waitForTable(dbConfig, timeout) {
       }
 
       try {
-        execSync(
+        const result = execSync(
           `PGPASSWORD=${dbConfig.password} psql ` +
           `-h ${dbConfig.host} ` +
           `-p ${dbConfig.port} ` +
           `-U ${dbConfig.user} ` +
           `-d ${dbConfig.database} ` +
-          `-c "${checkQuery}"`,
-          { stdio: 'pipe' }
-        );
-        resolve();
+          `-tA -c "${checkQuery}"`,
+          { encoding: 'utf8', stdio: 'pipe' }
+        ).trim();
+        // psql exits successfully when the query returns zero rows too; do not
+        // mistake that for an initialized schema and seed against an empty DB.
+        if (result === '1') {
+          resolve();
+        } else {
+          setTimeout(check, 500);
+        }
       } catch {
         setTimeout(check, 500);
       }

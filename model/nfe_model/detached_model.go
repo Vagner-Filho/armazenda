@@ -23,7 +23,15 @@ type DetachedInvoiceItem struct {
 	Quantity      decimal.Decimal `json:"quantity"`
 	GrossWeight   decimal.Decimal `json:"gross_weight"`
 	UnitPrice     decimal.Decimal `json:"unit_price"`
-	TotalValue    decimal.Decimal `json:"total_value"`
+	// Discount is the optional per-item discount (prod/vDesc, BRL).
+	// omitempty keeps the JSONB of pre-existing rows (no discount key)
+	// valid; zero is the default for items emitted without discounts.
+	Discount decimal.Decimal `json:"discount,omitempty"`
+	// InfAdProd is the optional per-item additional information
+	// (det/infAdProd). omitempty keeps the JSONB of pre-existing rows
+	// (no key) valid; empty is the default for items emitted without it.
+	InfAdProd  string          `json:"inf_ad_prod,omitempty"`
+	TotalValue decimal.Decimal `json:"total_value"` // net: gross − discount
 }
 
 // DetachedInvoice represents a detached NF-e (not tied to any departure)
@@ -76,6 +84,11 @@ type DetachedInvoice struct {
 // parameters: they are written only for SVC contingency emissions (tpEmis 6|7)
 // and stay nil/empty for normal emissions, so the persisted row matches the
 // signed XML's <dhCont>/<xJust> elements.
+//
+// finNFe / nfRefs / entrega round-trip the emission input so the stored row
+// stays coherent with the emitted XML (docs/sdd/detached_nfe_input_wiring):
+// no reader consumes them yet — they are the future inputs of the
+// detached-draft rebuild (worker TODO).
 func (m *NFeModel) CreateDetachedInvoice(
 	farmID uint32,
 	recipientID uint32,
@@ -90,11 +103,25 @@ func (m *NFeModel) CreateDetachedInvoice(
 	taxRates *entity.TaxRates,
 	overrides *entity.InvoiceOverrides,
 	items []DetachedInvoiceItem,
+	finNFe string,
+	nfRefs []string,
+	entrega *entity.EntregaData,
 ) (int, error) {
 	// Serialize items to JSON
 	itemsJSON, err := json.Marshal(items)
 	if err != nil {
 		return 0, fmt.Errorf("failed to marshal items: %w", err)
+	}
+
+	// Persist referenced NF-e keys as a JSONB array; nil slice → null.
+	var nfRefsJSON interface{}
+	if len(nfRefs) > 0 {
+		nfRefsJSON = nfRefs
+	}
+	// entrega JSONB mirrors the flat <entrega> group (nil → null).
+	var entregaJSON interface{}
+	if entrega != nil {
+		entregaJSON = entrega
 	}
 
 	query := `
@@ -106,34 +133,49 @@ func (m *NFeModel) CreateDetachedInvoice(
 			tp_emis, dh_cont, x_just,
 			icms_cst, pis_cst, cofins_cst,
 			ibs_cst, cbs_cst, c_class_trib,
-			inf_cpl
+			inf_cpl,
+			finnfe, nf_refs, entrega
 		)
-		VALUES ($1, $2, $3, $4, $5, 'draft',
-			$6, $7,
-			$8, $9, $10,
-			$11,
-			$12, $13, $14,
-			$15, $16, $17,
-			$18, $19, $20,
-			$21
+		VALUES (
+			@farm_id, @recipient_id, @access_key, @serie, @number, 'draft',
+			@natureza_op, @mod_frete,
+			@total_value, @ibs_value, @cbs_value,
+			@items_json,
+			@tp_emis, @dh_cont, @x_just,
+			@icms_cst, @pis_cst, @cofins_cst,
+			@ibs_cst, @cbs_cst, @c_class_trib,
+			@inf_cpl,
+			@finnfe, @nf_refs, @entrega
 		)
 		RETURNING id
 	`
 	var id int
-	err = m.pool.QueryRow(context.Background(), query,
-		farmID, recipientID, accessKey, serie, number,
-		naturezaOp, modFrete,
-		totalValue, ibsValue, cbsValue,
-		itemsJSON,
-		tpEmis, dhCont, xJust,
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.ICMSCST }),
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.PISCST }),
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.COFINSCST }),
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.IBSCST }),
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.CBSCST }),
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.CClassTrib }),
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.InfCpl }),
-	).Scan(&id)
+	err = m.pool.QueryRow(context.Background(), query, pgx.NamedArgs{
+		"farm_id":      farmID,
+		"recipient_id": recipientID,
+		"access_key":   accessKey,
+		"serie":        serie,
+		"number":       number,
+		"natureza_op":  naturezaOp,
+		"mod_frete":    modFrete,
+		"total_value":  totalValue,
+		"ibs_value":    ibsValue,
+		"cbs_value":    cbsValue,
+		"items_json":   itemsJSON,
+		"tp_emis":      tpEmis,
+		"dh_cont":      dhCont,
+		"x_just":       xJust,
+		"icms_cst":     safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.ICMSCST }),
+		"pis_cst":      safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.PISCST }),
+		"cofins_cst":   safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.COFINSCST }),
+		"ibs_cst":      safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.IBSCST }),
+		"cbs_cst":      safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.CBSCST }),
+		"c_class_trib": safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.CClassTrib }),
+		"inf_cpl":      safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.InfCpl }),
+		"finnfe":       finNFe,
+		"nf_refs":      nfRefsJSON,
+		"entrega":      entregaJSON,
+	}).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create detached invoice: %w", err)
 	}

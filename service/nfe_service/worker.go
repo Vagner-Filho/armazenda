@@ -227,7 +227,7 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 
 	// Get the original full invoice input data
 	nfeSvc := NewNFeService()
-	input, _, _, _, snap, toast := nfeSvc.prepareInvoiceBuildData(departure.Id, invoiceRecord.UnitPrice, uint32(departure.Farm), "", rates, invoiceOverrides)
+	input, _, _, _, snap, toast := nfeSvc.prepareInvoiceBuildData(departure.Id, invoiceRecord.UnitPrice, uint32(departure.Farm), "", rates, invoiceOverrides, invoiceRecord.EmissionInputs)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		// Unresolvable rates on a legacy row (validation) and other
 		// preparation failures must not spin without backoff; increment the
@@ -267,7 +267,7 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 		departure.Id, newAccessKey, farmConfig.Serie, newNumber,
 		invoiceRecord.CFOP, invoiceRecord.NCM, invoiceRecord.QuantityKG, invoiceRecord.UnitPrice, invoiceRecord.TotalValue,
 		totalIBSValue, totalCBSValue,
-		int(tpEmis), now, reason, ratesToPersist, codesToPersist,
+		int(tpEmis), now, reason, ratesToPersist, codesToPersist, emissionInputsFromInvoiceInput(input),
 	)
 	if createErr != nil {
 		return fmt.Errorf("failed to create contingency invoice: %w", createErr)

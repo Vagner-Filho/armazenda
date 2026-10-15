@@ -56,6 +56,15 @@
                                 Natureza da Operação
                             </label>
                         </div>
+                        <div class="flex flex-col-reverse">
+                            <select name="tpag" id="tpag" data-test-id="departure-tpag"
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                                <option value="90" {{ if eq .DefaultTPag "90" }}selected{{ end }}>90 - Sem pagamento</option>
+                                <option value="01" {{ if eq .DefaultTPag "01" }}selected{{ end }}>01 - Dinheiro</option>
+                                <option value="99" {{ if eq .DefaultTPag "99" }}selected{{ end }}>99 - Outros</option>
+                            </select>
+                            <label for="tpag" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Forma de pagamento</label>
+                        </div>
                     </fieldset>
                     <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2">
                         <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
@@ -134,7 +143,122 @@
                             <label for="modFrete"
                                 class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                                 Modalidade do Frete
-                            </label>
+                                </label>
+                        </div>
+                        <input type="hidden" name="transportFieldsSpecified" value="1">
+                        <h3 class="text-xs text-white/70 uppercase tracking-wider mt-2">Transportadora</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="transportNome" id="transportNome"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="Nome / Razão Social">
+                                <label for="transportNome" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Nome / Razão Social</label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="transportDocumento" id="transportDocumento"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="CPF / CNPJ">
+                                <label for="transportDocumento" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">CPF / CNPJ</label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="transportIE" id="transportIE" maxlength="14"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="Inscrição Estadual">
+                                <label for="transportIE" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Inscrição Estadual</label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="transportUF" id="transportUF" maxlength="2"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 uppercase"
+                                    placeholder="UF">
+                                <label for="transportUF" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">UF do transportador</label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="transportLogradouro" id="transportLogradouro"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="Logradouro">
+                                <label for="transportLogradouro" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Logradouro</label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="transportNumero" id="transportNumero"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="Número">
+                                <label for="transportNumero" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Número</label>
+                            </div>
+                            <div class="flex flex-col-reverse md:col-span-2">
+                                <input type="text" name="transportMunicipio" id="transportMunicipio"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="Município">
+                                <label for="transportMunicipio" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Município</label>
+                            </div>
+                        </div>
+
+                        <h3 class="text-xs text-white/70 uppercase tracking-wider mt-2">Veículo</h3>
+                        <input type="hidden" name="includeVehicleSpecified" value="1">
+                        <label class="flex items-center gap-2 cursor-pointer text-white/80 select-none">
+                            <input type="checkbox" name="includeVehicle" id="includeVehicle" value="1" {{ if .DefaultUseVehicle }}checked{{ end }}
+                                class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white">
+                            <span class="text-xs lg:text-sm">Informar veículo (padrão do romaneio quando disponível)</span>
+                        </label>
+                        <div id="departure-vehicle-fields" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="transportPlaca" id="transportPlaca" value="{{ .DefaultTransportPlate }}" maxlength="7"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 uppercase"
+                                    placeholder="ABC1D23">
+                                <label for="transportPlaca" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Placa</label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="transportPlacaUF" id="transportPlacaUF" value="{{ .DefaultTransportPlateUF }}" maxlength="2"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 uppercase"
+                                    placeholder="UF">
+                                <label for="transportPlacaUF" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">UF da placa</label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="transportRNTC" id="transportRNTC" maxlength="20"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="ANTT (RNTRC)">
+                                <label for="transportRNTC" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">ANTT (RNTRC)</label>
+                            </div>
+                        </div>
+                        <p class="text-xs text-white/50">Em operações interestaduais os dados do veículo não podem ser informados.</p>
+
+                        <h3 class="text-xs text-white/70 uppercase tracking-wider mt-2">Volumes</h3>
+                        <input type="hidden" name="includeVolumesSpecified" value="1">
+                        <label class="flex items-center gap-2 cursor-pointer text-white/80 select-none">
+                            <input type="checkbox" name="includeVolumes" id="includeVolumes" value="1" {{ if .DefaultUseVolumes }}checked{{ end }}
+                                class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white">
+                            <span class="text-xs lg:text-sm">Informar volumes</span>
+                        </label>
+                        <div id="departure-volume-fields" class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                            <div class="flex flex-col-reverse">
+                                <input type="text" inputmode="numeric" name="volQtd" id="volQtd" value="{{ .DefaultVolQtd }}"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="1">
+                                <label for="volQtd" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Quantidade</label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="volEsp" id="volEsp" value="{{ .DefaultVolEsp }}"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="Granel">
+                                <label for="volEsp" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Espécie</label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" name="volMarca" id="volMarca"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="Marca">
+                                <label for="volMarca" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Marca</label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" inputmode="decimal" name="volPesoL" id="volPesoL" value="{{ .DefaultVolPesoL }}"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="0,000">
+                                <label for="volPesoL" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Peso líquido</label>
+                            </div>
+                            <div class="flex flex-col-reverse">
+                                <input type="text" inputmode="decimal" name="volPesoB" id="volPesoB" value="{{ .DefaultVolPesoB }}"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="0,000">
+                                <label for="volPesoB" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">Peso bruto</label>
+                            </div>
                         </div>
                     </fieldset>
                     <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2">
@@ -143,30 +267,39 @@
                         </legend>
                         <div class="grid grid-cols-3 gap-3">
                             <div class="flex flex-col-reverse">
-                                <input type="text" name="icmsCST" id="icmsCST"
-                                    value="{{ .DefaultICMSCST }}"
-                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                                    placeholder="00">
+                                <select name="icmsCST" id="icmsCST" data-test-id="departure-icms-code"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                                    <option value="" {{ if eq .DefaultICMSCST "" }}selected{{ end }}>Padrão da fazenda</option>
+                                    {{ range .ICMSCodeOptions }}
+                                    <option value="{{ .Value }}" {{ if eq .Value $.DefaultICMSCST }}selected{{ end }}>{{ .Label }}</option>
+                                    {{ end }}
+                                </select>
                                 <label for="icmsCST"
                                     class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                                    CST ICMS
+                                    {{ if .IsSimpleNational }}CSOSN ICMS{{ else }}CST ICMS{{ end }}
                                 </label>
                             </div>
                             <div class="flex flex-col-reverse">
-                                <input type="text" name="pisCST" id="pisCST"
-                                    value="{{ .DefaultPISCST }}"
-                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                                    placeholder="01">
+                                <select name="pisCST" id="pisCST" data-test-id="departure-pis-cst"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                                    <option value="" {{ if eq .DefaultPISCST "" }}selected{{ end }}>Padrão da fazenda</option>
+                                    {{ range .PISCOFINSOptions }}
+                                    <option value="{{ .Value }}" {{ if eq .Value $.DefaultPISCST }}selected{{ end }}>{{ .Label }}</option>
+                                    {{ end }}
+                                </select>
                                 <label for="pisCST"
                                     class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                                     CST PIS
                                 </label>
                             </div>
                             <div class="flex flex-col-reverse">
-                                <input type="text" name="cofinsCST" id="cofinsCST"
-                                    value="{{ .DefaultCOFINSCST }}"
-                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                                    placeholder="01">
+                                <select name="cofinsCST" id="cofinsCST" data-test-id="departure-cofins-cst"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                                    <option value="" {{ if eq .DefaultCOFINSCST "" }}selected{{ end }}>Padrão da fazenda</option>
+                                    {{ range .PISCOFINSOptions }}
+                                    <option value="{{ .Value }}" {{ if eq .Value $.DefaultCOFINSCST }}selected{{ end }}>{{ .Label }}</option>
+                                    {{ end }}
+                                </select>
                                 <label for="cofinsCST"
                                     class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                                     CST COFINS
@@ -323,6 +456,25 @@
                 checkbox.addEventListener('change', applyState);
                 applyState();
             }
+
+            const transportToggles = [
+                [dialog?.querySelector('#includeVehicle'), dialog?.querySelector('#departure-vehicle-fields')],
+                [dialog?.querySelector('#includeVolumes'), dialog?.querySelector('#departure-volume-fields')],
+            ];
+            transportToggles.forEach(([toggle, fields]) => {
+                if (!toggle || !fields) return;
+                const applyTransportState = () => {
+                    fields.querySelectorAll('input').forEach((input) => {
+                        if (toggle.checked) {
+                            input.removeAttribute('disabled');
+                        } else {
+                            input.setAttribute('disabled', '');
+                        }
+                    });
+                };
+                toggle.addEventListener('change', applyTransportState);
+                applyTransportState();
+            });
         })();
 
         setupNFeForm();

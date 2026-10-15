@@ -7,6 +7,35 @@ Farm users can also save named **"Rascunhos de NF-e"** (internally `DetachedProf
 
 ## What Was Implemented
 
+### 0. Emission Wiring (`docs/sdd/detached_nfe_input_wiring/`)
+- Builder-level defaults first: `dhSaiEnt` defaults to the `dhEmi` instant
+  (SEFAZ ordering rule never violated), and `xPag = "Outros"` when
+  `tPag == 99` and no explicit label was given
+- Form + service wiring for the detached flow: recipient email (person and
+  inline branches), `tpag` select (01/90/99, default 90), per-item discount
+  (`VDesc`; taxes stay on the gross amount, `TotalValue = Σ net`),
+  devolução mode (finNFe derived from the CFOP set; 44-digit `nfRefs`
+  textarea), optional `<entrega>` delivery-address section, and CST
+  selects with service-level whitelists (pt-br rejections)
+- Migration 000029: `finnfe` / `nf_refs JSONB` / `entrega JSONB` columns on
+  `detached_nfe_invoice` (write-only today — future detached-draft rebuild
+  inputs); item discounts ride `items_json` (`discount` key, old rows valid)
+- Departure-linked emission is intentionally out of scope (see the SDD)
+
+### 0.1 Per-Item Additional Information (`docs/sdd/detached_infadprod_wiring/`)
+- Every item row carries an optional "Informações adicionais do item"
+  (`items[i].infAdProd`, ≤ 500 characters; longer values are rejected with a
+  pt-br toast naming the item; blank/whitespace-only is treated as absent)
+- The value round-trips through the preview fragment's hidden
+  `items[i].infAdProd` inputs and flows into the builder as
+  `<infAdProd>` (last `<det>` child before `<vItem>`, sanitized by
+  `setSchemaText`) and into `items_json` (`inf_ad_prod` key, omitted when
+  empty — old rows stay valid)
+- The preview and the fiscal DANFE already print the note under the item
+  description (the DANFE mapping carried it before this wiring)
+- Rascunhos still do not persist per-item info; applying one renders the
+  note blank (follow-up: add it to `detached_nfe_profile.items_json`)
+
 ### 1. Database Layer
 - **Migration 000021**: Created `detached_nfe_invoice` and `detached_nfe_tax_rates` tables
 - **Migration 000022**: Moved CFOP from `detached_nfe_invoice.cfop` to each item in `items_json` (backfills missing item values from the legacy column, then drops only the detached header column; `nfe_invoice` is untouched)
@@ -134,11 +163,13 @@ Farm users can also save named **"Rascunhos de NF-e"** (internally `DetachedProf
 - **Template Guards** (`router/nfe_router/nfe_templates_test.go`):
   - `'draft'` renders "Não enviada" in the list row and existing modal; no NF-e surface labels it "Rascunho"
   - Romaneio entry/departure rascunho wording stays unchanged
-- **E2E** (`test/e2e/tests/detached_nfe_rascunho.spec.js`, `detached_cfop_selector.spec.js`):
+  - Per-item `infAdProd` input on the emission page and in the preview fragment round-trip
+- **E2E** (`test/e2e/tests/detached_nfe_rascunho.spec.js`, `detached_cfop_selector.spec.js`, `detached_inf_ad_prod.spec.js`):
   - Rascunho lifecycle, application via navigation, farm isolation, inline-contact save, preview write-freedom, invoice-number/invoice side-effect checks, and the "Não enviada" list label
   - CFOP selector: per-row search (accent-insensitive, selected option survives, no cross-row influence), exact-code selection, preview round trip
   - Farm CFOP registration from the emission page and the rascunho editor (auto-select, farm-ordered re-render, catalog/farm duplicate toasts)
   - "Mais utilizados" ordering from the farm use counters
+  - Per-item additional information: typed note reaches the preview hidden inputs (a cloned row stays blank)
 
 ## Key Features
 
@@ -286,11 +317,13 @@ Tests cover:
 - `view/cfop/view_test.go`
 - `model/nfe_model/detached_model.go`
 - `model/nfe_model/detached_model_test.go`
+- `model/nfe_model/detached_items_infadprod_model_test.go`
 - `model/nfe_model/detached_profile_model.go`
 - `model/nfe_model/detached_profile_model_test.go`
 - `service/nfe_service/detached_service.go`
 - `service/nfe_service/detached_service_test.go`
 - `service/nfe_service/detached_preview_test.go`
+- `service/nfe_service/detached_items_infadprod_test.go`
 - `service/nfe_service/detached_profile_service.go`
 - `service/nfe_service/detached_profile_service_test.go`
 - `router/nfe_router/detached_router.go`
@@ -316,6 +349,7 @@ Tests cover:
 - `templates/nfe/nfe-rascunho-form.html`
 - `test/e2e/tests/detached_nfe_rascunho.spec.js`
 - `test/e2e/tests/detached_cfop_selector.spec.js`
+- `test/e2e/tests/detached_inf_ad_prod.spec.js`
 
 ### Modified Files
 - `model/person_model/model.go` - Added CreatePersonForDetachedNFe
@@ -364,3 +398,11 @@ Tests cover:
 1. Store full InvoiceInput for complete SVC rebuild capability
 2. Add filtering/search in unified list
 3. Add export/reporting features for detached invoices
+4. Consume the `finnfe` / `nf_refs` / `entrega` columns (migration 000029) in
+   the detached-draft rebuild — they persist the emission wiring since
+   `nfe_builder_replay_gaps` + `detached_nfe_input_wiring` and have no reader
+   yet
+5. Rascunho-scoped support for the newer wiring inputs (`tpag`, `nfRefs`,
+   `<entrega>`, per-item discount) — they currently ride the emission form
+   and its hidden-field round-trip on each emission
+

@@ -2,6 +2,7 @@ package nfe_model
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -262,10 +263,11 @@ type Invoice struct {
 	COFINSCST           *string
 	// Tax reform (IBS/CBS) CST + cClassTrib persisted per invoice so draft
 	// retries and SVC contingency rebuilds reproduce the same XML.
-	IBSCST     *string
-	CBSCST     *string
-	CClassTrib *string
-	InfCpl     *string
+	IBSCST         *string
+	CBSCST         *string
+	CClassTrib     *string
+	InfCpl         *string
+	EmissionInputs *entity.InvoiceEmissionInputs
 }
 
 // CreateInvoiceWithEmission creates a new invoice record with a specific emission type.
@@ -279,7 +281,15 @@ type Invoice struct {
 // per-item VIBS and VCBS values) and are persisted in the ibs_value and
 // cbs_value columns so reports and the NF-e list can show tax burden without
 // re-parsing the signed XML.
-func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal, totalIBSValue decimal.Decimal, totalCBSValue decimal.Decimal, tpEmis int, dhCont interface{}, xJust string, taxRates *entity.TaxRates, overrides *entity.InvoiceOverrides) (int, error) {
+func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey string, serie, number int, cfop, ncm string, quantityKG, unitPrice, totalValue decimal.Decimal, totalIBSValue decimal.Decimal, totalCBSValue decimal.Decimal, tpEmis int, dhCont interface{}, xJust string, taxRates *entity.TaxRates, overrides *entity.InvoiceOverrides, emissionInputs *entity.InvoiceEmissionInputs) (int, error) {
+	emissionInputsJSON := "{}"
+	if emissionInputs != nil {
+		encoded, marshalErr := json.Marshal(emissionInputs)
+		if marshalErr != nil {
+			return 0, fmt.Errorf("failed to encode invoice emission inputs: %w", marshalErr)
+		}
+		emissionInputsJSON = string(encoded)
+	}
 	query := `
 		INSERT INTO nfe_invoice (
 			departure_id, access_key, serie, number, status,
@@ -289,34 +299,50 @@ func (m *NFeModel) CreateInvoiceWithEmission(departureID uint32, accessKey strin
 			icms_cst, pis_cst, cofins_cst,
 			cbs_cst, ibs_cst, c_class_trib,
 			inf_cpl,
-			ibs_value, cbs_value
+			ibs_value, cbs_value, emission_inputs
 		)
-		VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9, $10, $11, $12,
-			$13, $14, $15, $16, $17, $18, $19, $20,
-			$21, $22, $23,
-			$24,
-			$25, $26)
+		VALUES (
+			@departure_id, @access_key, @serie, @number, 'draft',
+			@cfop, @ncm, @quantity_kg, @unit_price, @total_value,
+			@tp_emis, @dh_cont, @x_just,
+			@natureza_op, @product_description, @cest, @unit, @mod_frete,
+			@icms_cst, @pis_cst, @cofins_cst,
+			@cbs_cst, @ibs_cst, @c_class_trib,
+			@inf_cpl,
+			@ibs_value, @cbs_value, @emission_inputs
+		)
 		RETURNING id
 	`
 	var id int
-	err := m.pool.QueryRow(context.Background(), query,
-		departureID, accessKey, serie, number, cfop, ncm, quantityKG, unitPrice, totalValue,
-		tpEmis, dhCont, xJust,
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.NaturezaOp }),
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.ProductDesc }),
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.CEST }),
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.Unit }),
-		safeInt(overrides, func(o *entity.InvoiceOverrides) *int { return o.ModFrete }),
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.ICMSCST }),
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.PISCST }),
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.COFINSCST }),
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.CBSCST }),
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.IBSCST }),
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.CClassTrib }),
-		safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.InfCpl }),
-		totalIBSValue,
-		totalCBSValue,
-	).Scan(&id)
+	err := m.pool.QueryRow(context.Background(), query, pgx.NamedArgs{
+		"departure_id":        departureID,
+		"access_key":          accessKey,
+		"serie":               serie,
+		"number":              number,
+		"cfop":                cfop,
+		"ncm":                 ncm,
+		"quantity_kg":         quantityKG,
+		"unit_price":          unitPrice,
+		"total_value":         totalValue,
+		"tp_emis":             tpEmis,
+		"dh_cont":             dhCont,
+		"x_just":              xJust,
+		"natureza_op":         safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.NaturezaOp }),
+		"product_description": safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.ProductDesc }),
+		"cest":                safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.CEST }),
+		"unit":                safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.Unit }),
+		"mod_frete":           safeInt(overrides, func(o *entity.InvoiceOverrides) *int { return o.ModFrete }),
+		"icms_cst":            safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.ICMSCST }),
+		"pis_cst":             safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.PISCST }),
+		"cofins_cst":          safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.COFINSCST }),
+		"cbs_cst":             safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.CBSCST }),
+		"ibs_cst":             safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.IBSCST }),
+		"c_class_trib":        safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.CClassTrib }),
+		"inf_cpl":             safeString(overrides, func(o *entity.InvoiceOverrides) *string { return o.InfCpl }),
+		"ibs_value":           totalIBSValue,
+		"cbs_value":           totalCBSValue,
+		"emission_inputs":     emissionInputsJSON,
+	}).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create invoice: %w", err)
 	}
@@ -436,15 +462,16 @@ func (m *NFeModel) GetInvoiceByDeparture(departureID uint32) (*Invoice, error) {
 		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id,
 		       i.created_at, i.signed_at, i.sent_at, i.authorized_at,
 		       t.icms_rate, t.pis_rate, t.cofins_rate, t.cbs_rate, t.ibs_rate,
-       i.natureza_op, i.product_description, i.cest, i.unit, i.mod_frete,
-               i.icms_cst, i.pis_cst, i.cofins_cst, i.cbs_cst, i.ibs_cst, i.c_class_trib, i.inf_cpl
+	       i.natureza_op, i.product_description, i.cest, i.unit, i.mod_frete,
+	                i.icms_cst, i.pis_cst, i.cofins_cst, i.cbs_cst, i.ibs_cst, i.c_class_trib, i.inf_cpl,
+	                i.emission_inputs
         FROM nfe_invoice i
         LEFT JOIN nfe_invoice_tax_rates t ON t.invoice_id = i.id
-        WHERE i.departure_id = $1
+        WHERE i.departure_id = @departure_id
         ORDER BY i.id DESC
         LIMIT 1
     `
-	row := m.pool.QueryRow(context.Background(), query, departureID)
+	row := m.pool.QueryRow(context.Background(), query, pgx.NamedArgs{"departure_id": departureID})
 
 	inv, err := scanInvoice(row)
 	if err != nil {
@@ -630,10 +657,10 @@ func (m *NFeModel) GetInvoicesByFarm(farmID uint32, page int) ([]Invoice, int, e
 		SELECT COUNT(*)
 		FROM nfe_invoice i
 		JOIN departure d ON d.id = i.departure_id
-		WHERE d.farm = $1
+		WHERE d.farm = @farm_id
 	`
 	var total int
-	if err := m.pool.QueryRow(context.Background(), countQuery, farmID).Scan(&total); err != nil {
+	if err := m.pool.QueryRow(context.Background(), countQuery, pgx.NamedArgs{"farm_id": farmID}).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("failed to count invoices: %w", err)
 	}
 
@@ -645,16 +672,21 @@ func (m *NFeModel) GetInvoicesByFarm(farmID uint32, page int) ([]Invoice, int, e
 		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id,
 		       i.created_at, i.signed_at, i.sent_at, i.authorized_at,
 		       t.icms_rate, t.pis_rate, t.cofins_rate, t.cbs_rate, t.ibs_rate,
-               i.natureza_op, i.product_description, i.cest, i.unit, i.mod_frete,
-               i.icms_cst, i.pis_cst, i.cofins_cst, i.cbs_cst, i.ibs_cst, i.c_class_trib, i.inf_cpl
+                i.natureza_op, i.product_description, i.cest, i.unit, i.mod_frete,
+                i.icms_cst, i.pis_cst, i.cofins_cst, i.cbs_cst, i.ibs_cst, i.c_class_trib, i.inf_cpl,
+                i.emission_inputs
 		FROM nfe_invoice i
 		JOIN departure d ON d.id = i.departure_id
 		LEFT JOIN nfe_invoice_tax_rates t ON t.invoice_id = i.id
-		WHERE d.farm = $1
+		WHERE d.farm = @farm_id
 		ORDER BY i.created_at DESC
-		LIMIT $2 OFFSET $3
+		LIMIT @page_size OFFSET @offset
 	`
-	rows, err := m.pool.Query(context.Background(), query, farmID, pageSize, offset)
+	rows, err := m.pool.Query(context.Background(), query, pgx.NamedArgs{
+		"farm_id":   farmID,
+		"page_size": pageSize,
+		"offset":    offset,
+	})
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get invoices: %w", err)
 	}
@@ -682,14 +714,15 @@ func (m *NFeModel) GetInvoiceByAccessKey(accessKey string) (*Invoice, error) {
 		       i.retry_count, i.tp_emis, i.dh_cont, i.x_just, i.contingency_parent_id,
 		       i.created_at, i.signed_at, i.sent_at, i.authorized_at,
 		       t.icms_rate, t.pis_rate, t.cofins_rate, t.cbs_rate, t.ibs_rate,
-               i.natureza_op, i.product_description, i.cest, i.unit, i.mod_frete,
-               i.icms_cst, i.pis_cst, i.cofins_cst, i.cbs_cst, i.ibs_cst, i.c_class_trib, i.inf_cpl
+                i.natureza_op, i.product_description, i.cest, i.unit, i.mod_frete,
+                i.icms_cst, i.pis_cst, i.cofins_cst, i.cbs_cst, i.ibs_cst, i.c_class_trib, i.inf_cpl,
+                i.emission_inputs
 		FROM nfe_invoice i
 		LEFT JOIN nfe_invoice_tax_rates t ON t.invoice_id = i.id
-		WHERE i.access_key = $1
+		WHERE i.access_key = @access_key
 		LIMIT 1
 	`
-	row := m.pool.QueryRow(context.Background(), query, accessKey)
+	row := m.pool.QueryRow(context.Background(), query, pgx.NamedArgs{"access_key": accessKey})
 
 	inv, err := scanInvoice(row)
 	if err != nil {
@@ -716,6 +749,7 @@ func scanInvoice(row invoiceScanner) (*Invoice, error) {
 	var contingencyParentID *int
 	var icmsRate, pisRate, cofinsRate, cbsRate, ibsRate *decimal.Decimal
 	var ibsCST, cbsCST, cClassTrib *string
+	var emissionInputsJSON []byte
 	err := row.Scan(
 		&inv.ID, &inv.DepartureID, &inv.AccessKey, &inv.Serie, &inv.Number, &inv.Status,
 		&inv.CFOP, &inv.NCM, &inv.QuantityKG, &inv.UnitPrice, &inv.TotalValue,
@@ -726,6 +760,7 @@ func scanInvoice(row invoiceScanner) (*Invoice, error) {
 		&icmsRate, &pisRate, &cofinsRate, &cbsRate, &ibsRate,
 		&inv.NaturezaOp, &inv.ProductDescription, &inv.CEST, &inv.Unit, &inv.ModFrete,
 		&inv.ICMSCST, &inv.PISCST, &inv.COFINSCST, &cbsCST, &ibsCST, &cClassTrib, &inv.InfCpl,
+		&emissionInputsJSON,
 	)
 	if err != nil {
 		return nil, err
@@ -743,6 +778,13 @@ func scanInvoice(row invoiceScanner) (*Invoice, error) {
 	inv.CBSCST = cbsCST
 	inv.IBSCST = ibsCST
 	inv.CClassTrib = cClassTrib
+	if len(emissionInputsJSON) > 0 && string(emissionInputsJSON) != "{}" && string(emissionInputsJSON) != "null" {
+		var emissionInputs entity.InvoiceEmissionInputs
+		if err := json.Unmarshal(emissionInputsJSON, &emissionInputs); err != nil {
+			return nil, fmt.Errorf("failed to decode invoice emission inputs: %w", err)
+		}
+		inv.EmissionInputs = &emissionInputs
+	}
 
 	if icmsRate != nil || pisRate != nil || cofinsRate != nil || cbsRate != nil || ibsRate != nil {
 		inv.TaxRates = &entity.TaxRates{

@@ -54,6 +54,29 @@ type DetachedItemInput struct {
 	GrossWeight decimal.Decimal
 	UnitPrice   decimal.Decimal
 	Unit        string
+	// Discount is the optional per-item discount in BRL (prod/vDesc). Tax
+	// bases (ICMS/PIS/COFINS/IBS) stay on the gross total (reference
+	// emitter corpus behavior); only the invoice TotalValue sums net.
+	Discount decimal.Decimal
+	// InfAdProd is the optional per-item additional information
+	// (det/infAdProd, emitted right before <vItem>). Blank means "not
+	// informed" and the builder omits the element.
+	InfAdProd string
+}
+
+// DetachedEntregaInput holds the raw delivery-address (entrega) section of
+// the detached form. City is the municipality NAME; the service resolves the
+// IBGE code through the same GetMunicipio source as the inline recipient.
+type DetachedEntregaInput struct {
+	Name         string
+	Document     string // CPF (11 digits) or CNPJ (14 digits), inferred by length
+	IE           *string
+	Street       string
+	Number       string
+	Neighborhood string
+	City         *string
+	State        *string
+	CEP          *string
 }
 
 // DetachedInvoiceInput holds all data needed to build a detached NF-e
@@ -64,7 +87,17 @@ type DetachedInvoiceInput struct {
 	Transport DetachedTransportInput
 	TaxRates  entity.TaxRates
 	Overrides *entity.InvoiceOverrides
-	Items     []DetachedItemInput
+	// TPag is the detPag payment-method code: "01" Dinheiro, "90" Sem
+	// pagamento, "99" Outros. Empty defaults to "90" (the previous hardcoded
+	// behavior) inside prepareDetachedBuildData.
+	TPag string
+	// NFRefs carries the 44-digit NF-e keys referenced by this emission
+	// (devoluções); validated before any write by the service.
+	NFRefs []string
+	// Entrega is the optional delivery-site section, already validated
+	// syntactically by the router and resolved to IBGE codes here.
+	Entrega *DetachedEntregaInput
+	Items   []DetachedItemInput
 }
 
 // DetachedInvoiceResult is returned when a detached NF-e was built and
@@ -73,6 +106,20 @@ type DetachedInvoiceInput struct {
 type DetachedInvoiceResult struct {
 	XML       string
 	AccessKey string
+}
+
+// defaultPayment builds the single-detPag payment (MOC grupo Y). indPag
+// defaults to 0 (à vista): the builder omits the tag when 0, matching the
+// reference emitter corpus (indPag appears in only 3/115 corpus docs) and
+// fixing the à-vista/a-prazo semantics flagged by the homolog comparison.
+// A scheduled (a prazo) payment would be an explicit future feature, not a
+// hardcoded sentinel.
+func defaultPayment(tpag string, vPag decimal.Decimal) entity.PaymentData {
+	return entity.PaymentData{
+		Detalhes: []entity.PagamentoDetalhe{
+			{TPag: tpag, VPag: vPag},
+		},
+	}
 }
 
 // detachedBuildData carries the validated mapping produced by
@@ -128,6 +175,30 @@ func (s *NFeService) prepareDetachedBuildData(input DetachedInvoiceInput, dryRun
 		)
 	}
 	codesSnapshot := MergeEffectiveOverrides(input.Overrides, farmNFeConfig, regime)
+
+	// Item-level wiring validations run before any writes: in the emission
+	// path the inline recipient person row is created only when the whole
+	// input resolves cleanly (see resolveOrCreateRecipient).
+	if errs := validateItemDiscounts(input.Items); len(errs) > 0 {
+		return empty, entity_public.GetWarningToast("Desconto inválido", strings.Join(errs, "; "))
+	}
+	finNFe, finNFeErrs := resolveDetachedFinNFe(input.Items)
+	if len(finNFeErrs) > 0 {
+		return empty, entity_public.GetWarningToast("Devolução inválida", strings.Join(finNFeErrs, "; "))
+	}
+	if refErrs := validateNFRefs(input.NFRefs); len(refErrs) > 0 {
+		return empty, entity_public.GetWarningToast("NF-e de referência inválida", strings.Join(refErrs, "; "))
+	}
+	if cstErrs := validateDetachedCSTs(&codesSnapshot); len(cstErrs) > 0 {
+		return empty, entity_public.GetWarningToast("CST inválido", strings.Join(cstErrs, "; "))
+	}
+	// Delivery-site section: validated (mandatory set) and resolved to IBGE
+	// codes before the recipient branch so a delivery typo cannot end up
+	// creating an inline person row.
+	entrega, entregaErrs := mapDetachedEntregaInput(input.Entrega, nfeModel.GetMunicipio)
+	if len(entregaErrs) > 0 {
+		return empty, entity_public.GetWarningToast("Endereço de entrega inválido", strings.Join(entregaErrs, "; "))
+	}
 
 	// Get full farm data for the emitter address (same source as the
 	// departure flow)
@@ -227,28 +298,42 @@ func (s *NFeService) prepareDetachedBuildData(input DetachedInvoiceInput, dryRun
 
 	// Build invoice input (number/CNF are allocated later by the emission
 	// path; the preview consumes this as-is with Numero 0)
+	// detPag payment method: form-selected tPag; empty keeps the legacy
+	// "90" (Sem pagamento) — the previous hardcoded behavior.
+	tpag := resolveDetachedTPag(input.TPag)
+
 	invoiceInput := entity.InvoiceInput{
 		Serie:       farmNFeConfig.Serie,
 		Numero:      0,
 		Environment: farmNFeConfig.Environment,
 		TpEmis:      defaults.EmissaoNormal,
 		NaturezaOp:  naturezaOp,
-		Emitter:     emitter,
-		Recipient:   recipient,
-		Items:       items,
-		Transport:   transport,
-		Payment: entity.PaymentData{
-			IndPag: 1,
-			Detalhes: []entity.PagamentoDetalhe{
-				{
-					IndPag: 1,
-					TPag:   "90",
-					VPag:   totalValue,
-				},
-			},
-		},
+		// finNFe (B26): derived from the item CFOPs ("4" devolução /
+		// "1" normal — resolveDetachedFinNFe enforces homogeneity); the
+		// builder defaults to "1" when empty.
+		FinNFe: finNFe,
+		// NFref (BA): referenced NF-e keys for devoluções.
+		NFRefs:                input.NFRefs,
+		Entrega:               entrega,
+		Emitter:               emitter,
+		Recipient:             recipient,
+		Items:                 items,
+		Transport:             transport,
+		Payment:               defaultPayment(tpag, totalValue),
 		TotalValue:            totalValue,
 		InformacoesAdicionais: infCpl,
+	}
+
+	// infRespTec (E28a, NT 2022.002): system-scoped — the software vendor
+	// behind Armazenda, identical for every farm. Deferred-per-farm configs
+	// were rejected; see docs/sdd/resptec_system_defaults/sdd.md.
+	if defaults.RespTecConfigured() {
+		invoiceInput.RespTec = &entity.RespTecData{
+			CNPJ:     defaults.RespTec.CNPJ,
+			XContato: defaults.RespTec.XContato,
+			Email:    defaults.RespTec.Email,
+			Fone:     defaults.RespTec.Fone,
+		}
 	}
 
 	return detachedBuildData{
@@ -333,6 +418,7 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (DetachedI
 		&naturezaOp, &effectiveModFrete,
 		invoiceInput.TotalValue, build.TotalIBS, build.TotalCBS,
 		1, nil, "", ratesToPersist, codesToPersist, build.ItemsForDB,
+		invoiceInput.FinNFe, invoiceInput.NFRefs, invoiceInput.Entrega,
 	)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateDetachedInvoice error: %v", createErr.Error()))
@@ -407,6 +493,10 @@ func (s *NFeService) resolveOrCreateRecipient(input DetachedRecipient, farmID ui
 			return 0, entity.RecipientData{}, entity_public.GetErrorToast("Falha ao buscar destinatário", "")
 		}
 		recipient := s.mapFullPersonToRecipient(person, nfeModel)
+		// Detached-only email propagation (E20 dest/email): the person's
+		// contact email. The departure flow intentionally ignores it for
+		// now (see docs/sdd/detached_nfe_input_wiring/sdd.md — out of scope).
+		applyRecipientEmail(&recipient, person.Email)
 		return *input.PersonID, recipient, entity_public.Toast{}
 	}
 
@@ -496,6 +586,8 @@ func (s *NFeService) mapInlineRecipientData(input DetachedRecipient, nfeModel *n
 	if input.PhoneNumber != nil {
 		recipient.Fone = *input.PhoneNumber
 	}
+	// E20 dest/email from the inline form (recipientEmail).
+	applyRecipientEmail(&recipient, input.Email)
 
 	// Resolve municipality code
 	if input.City != nil && input.State != nil {
@@ -622,9 +714,14 @@ func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, farmConfig *
 			productName = "Produto Agricola"
 		}
 
-		// Calculate total
+		// Calculate totals. `itemTotal` is the GROSS item value and stays
+		// the base of every tax group (ICMS/PIS/COFINS/IBS) — the reference
+		// emitter corpus behaves this way (G3 devoluções carry vBC = vProd
+		// with prod/vDesc present). The invoice TotalValue sums the NET
+		// value (gross − discount) — the amount the buyer pays.
 		itemTotal := input.Quantity.Mul(input.UnitPrice)
-		totalValue = totalValue.Add(itemTotal)
+		itemNet := itemTotal.Sub(input.Discount)
+		totalValue = totalValue.Add(itemNet)
 
 		// Determine tax CSTs — pre-resolved; the regime only selects which
 		// ICMS XML group the code belongs to (CST vs CSOSN).
@@ -640,9 +737,17 @@ func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, farmConfig *
 			picms = decimal.Zero
 		} else {
 			icmsCST = codeOr(codes.ICMSCST, defaults.CSTTributadaIntegral)
-			vBC = itemTotal
-			vICMS = itemTotal.Mul(*rates.ICMSRate)
-			picms = rates.ICMSRate.Mul(decimal.NewFromInt(100))
+			// Only CSTs whose emitted group declares vBC/pICMS/vICMS
+			// (00/20/51/90) carry item-level values; isenta/não
+			// tributada/suspensão (40/41/50) emit ICMS40 with only
+			// orig+CST, so their values stay zero and ICMSTot equals the
+			// sum of the declared item values (SEFAZ Rej. 531, seen on
+			// the G4 homolog replay).
+			if defaults.ICMSDeclaresValues(icmsCST) {
+				vBC = itemTotal
+				vICMS = itemTotal.Mul(*rates.ICMSRate)
+				picms = rates.ICMSRate.Mul(decimal.NewFromInt(100))
+			}
 		}
 
 		// PIS / COFINS CST
@@ -664,8 +769,29 @@ func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, farmConfig *
 			totalCBS = totalCBS.Add(ibsVCBS)
 		}
 
+		// PIS/COFINS values mirror the emitted group: PISAliq/COFINSAliq
+		// (CST 01/02) declare vBC/pPIS/vPIS; NT codes (04–09) emit
+		// PISNT/COFINSNT with a single <CST> child, so their values stay
+		// zero and the totals equal the sum of the item-declared values
+		// (SEFAZ Rej. 531 family).
+		pisData := entity.PISData{CST: pisCST}
+		if defaults.PISDeclaresValues(pisCST) {
+			pisData.VBC = itemTotal
+			pisData.PPIS = rates.PISRate.Mul(decimal.NewFromInt(100))
+			pisData.VPIS = itemTotal.Mul(*rates.PISRate)
+		}
+		cofinsData := entity.COFINSData{CST: cofinsCST}
+		if defaults.COFINSDeclaresValues(cofinsCST) {
+			cofinsData.VBC = itemTotal
+			cofinsData.PCOFINS = rates.COFINSRate.Mul(decimal.NewFromInt(100))
+			cofinsData.VCOFINS = itemTotal.Mul(*rates.COFINSRate)
+		}
+
 		itemData := entity.ItemData{
 			Numero: len(items) + 1,
+			// InfAdProd flows through unchanged; the builder sanitizes it
+			// via setSchemaText and omits the element when empty.
+			InfAdProd: input.InfAdProd,
 			Produto: entity.ProdutoData{
 				Codigo:   fmt.Sprintf("%d", len(items)+1),
 				CEAN:     "SEM GTIN",
@@ -681,7 +807,10 @@ func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, farmConfig *
 				UTrib:    unit,
 				QTrib:    input.Quantity,
 				VUnTrib:  input.UnitPrice,
-				IndTot:   1,
+				// VDesc (prod/vDesc): zero values are omitted by the
+				// builder and leave the item total untouched.
+				VDesc:  input.Discount,
+				IndTot: 1,
 			},
 			Imposto: entity.ImpostoData{
 				ICMS: entity.ICMSData{
@@ -693,18 +822,8 @@ func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, farmConfig *
 					PICMS:  picms,
 					VICMS:  vICMS,
 				},
-				PIS: entity.PISData{
-					CST:  pisCST,
-					VBC:  itemTotal,
-					PPIS: rates.PISRate.Mul(decimal.NewFromInt(100)),
-					VPIS: itemTotal.Mul(*rates.PISRate),
-				},
-				COFINS: entity.COFINSData{
-					CST:     cofinsCST,
-					VBC:     itemTotal,
-					PCOFINS: rates.COFINSRate.Mul(decimal.NewFromInt(100)),
-					VCOFINS: itemTotal.Mul(*rates.COFINSRate),
-				},
+				PIS:    pisData,
+				COFINS: cofinsData,
 				IBSCBS: entity.IBSCBSData{
 					CST:        ibsCbsCST,
 					CClassTrib: cClassTrib,
@@ -720,7 +839,9 @@ func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, farmConfig *
 
 		items = append(items, itemData)
 
-		// Build item for DB storage
+		// Build item for DB storage (TotalValue is the NET buyer value —
+		// gross minus discount; existing rows without the discount key
+		// retain their original gross values via the JSONB default).
 		itemForDB := nfe_model.DetachedInvoiceItem{
 			FarmProductID: input.FarmProductID,
 			ProductName:   productName,
@@ -731,7 +852,9 @@ func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, farmConfig *
 			Quantity:      input.Quantity,
 			GrossWeight:   input.GrossWeight,
 			UnitPrice:     input.UnitPrice,
-			TotalValue:    itemTotal,
+			Discount:      input.Discount,
+			InfAdProd:     input.InfAdProd,
+			TotalValue:    itemNet,
 		}
 		itemsForDB = append(itemsForDB, itemForDB)
 	}
@@ -1000,6 +1123,7 @@ func (s *NFeService) attemptDetachedSVCContingency(input entity.InvoiceInput, de
 		&input.NaturezaOp, nil,
 		totalValue, totalIBS, totalCBS,
 		int(tpEmis), time.Now(), reason, taxRates, taxCodes, itemsForDB,
+		input.FinNFe, input.NFRefs, input.Entrega,
 	)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateDetachedInvoice (SVC) error: %v", createErr.Error()))

@@ -27,11 +27,31 @@ type InvoiceInput struct {
 	DhCont *time.Time
 	XJust  string
 
+	// Exit/entry date-time (dhSaiEnt, B15a). Nil omits the element; the
+	// caller owns the DhSaiEnt >= DhEmi validation.
+	DhSaiEnt *time.Time
+
+	// Finalidade da emissão (finNFe): "1"=normal, "2"=complementar,
+	// "3"=ajuste, "4"=devolução. Empty defaults to "1" in the builder.
+	FinNFe string
+
+	// Referenced NF-e access keys (NFref/refNFe) — devoluções must
+	// reference the originating NF-e. Invalid entries (not 44 digits) are
+	// skipped by the builder.
+	NFRefs []string
+
 	// Emitter
 	Emitter EmitterData
 
 	// Recipient
 	Recipient RecipientData
+
+	// Delivery-site group (vendas a ordem). Nil omits <entrega>.
+	Entrega *EntregaData
+
+	// Technical responsible (<infRespTec>, NT 2022.002 / E28a). Nil omits
+	// the block, but SEFAZ rejects production emissions without it.
+	RespTec *RespTecData
 
 	// Product / Items
 	Items []ItemData
@@ -41,6 +61,9 @@ type InvoiceInput struct {
 
 	// Payment
 	Payment PaymentData
+	// Billing/fatura. Nil preserves the builder's legacy behavior (emit
+	// <cobr>/<fat> for non-zero totals); an explicit value can suppress it.
+	Cobranca *CobrancaData
 
 	// Totals
 	TotalValue decimal.Decimal
@@ -73,6 +96,7 @@ type RecipientData struct {
 	CNPJ       string
 	CPF        string
 	IE         string
+	Email      string
 	XNome      string
 	Logradouro string
 	Numero     string
@@ -109,7 +133,10 @@ type ProdutoData struct {
 	UTrib    string
 	QTrib    decimal.Decimal
 	VUnTrib  decimal.Decimal
-	IndTot   int // 1=item compoe total
+	// VDesc is the item-level discount (prod/vDesc, G3 devoluções). Zero
+	// omits the element and feeds the ICMSTot/vDesc total.
+	VDesc  decimal.Decimal
+	IndTot int // 1=item compoe total
 }
 
 // ImpostoData holds tax (imposto) information for an item.
@@ -177,14 +204,67 @@ type InvoiceOverrides struct {
 	COFINSCST   *string
 	// Tax reform overrides (IBS/CBS). All optional; nil falls back to farm
 	// config (which itself defaults to the 2026 symbolic rates).
-	CBSCST    *string
-	IBSCST    *string
+	CBSCST     *string
+	IBSCST     *string
 	CClassTrib *string
-	InfCpl    *string // Informações complementares; overrides the auto-generated CND text
+	InfCpl     *string // Informações complementares; overrides the auto-generated CND text
+	// Departure-only inputs. Detached NF-e does not consume this field.
+	Departure *DepartureInvoiceOverrides
+}
+
+// DepartureInvoiceOverrides carries form values specific to romaneio-linked
+// NF-e emission. Nil inclusion flags preserve the existing departure-derived
+// defaults for old clients; explicit false suppresses that generated group.
+type DepartureInvoiceOverrides struct {
+	TPag            string
+	IndPag          int
+	IncludeCobranca *bool
+	Transport       DepartureTransportInput
+}
+
+// DepartureTransportInput is the optional form payload for Grupo X. The
+// service validates it and merges it with the existing departure-derived
+// vehicle/volume defaults.
+type DepartureTransportInput struct {
+	TransporterName     string
+	TransporterDocument string
+	TransporterIE       string
+	TransporterStreet   string
+	TransporterNumber   string
+	TransporterCity     string
+	TransporterUF       string
+
+	VehiclePlate string
+	VehicleUF    string
+	VehicleRNTC  string
+
+	IncludeVehicle *bool
+	IncludeVolumes *bool
+	VolumeQuantity *int
+	VolumeSpecies  string
+	VolumeBrand    string
+	VolumeNet      *decimal.Decimal
+	VolumeGross    *decimal.Decimal
+}
+
+// InvoiceEmissionInputs is the resolved, per-invoice snapshot needed to
+// reproduce payment, billing and transport XML during draft/SVC retries.
+// Older invoice rows have no snapshot and continue to use legacy defaults.
+type InvoiceEmissionInputs struct {
+	Payment         PaymentData   `json:"payment"`
+	IncludeCobranca bool          `json:"include_cobranca"`
+	Transport       TransportData `json:"transport"`
 }
 
 // ICMSData holds ICMS tax information.
 // For Simples Nacional, use CSOSN instead of CST, and leave VBC/PICMS/VICMS zero.
+//
+// The extra regime-normal fields below back the CST variants beyond ICMS00
+// (real-world corpus shapes — see pkg/nfe/xml/builder.go buildICMS):
+//   - PRedBC feeds <pRedBC> inside ICMS20/ICMS51/ICMS90 (base reduction).
+//   - ModBCST/VBCST/PICMSST/VICMSST feed the ICMS90 substitution terms.
+//
+// They are zero-valued in today's Armazenda flows; ICMS40 ignores them.
 type ICMSData struct {
 	Origem string // 0=Nacional
 	CST    string
@@ -193,6 +273,12 @@ type ICMSData struct {
 	VBC    decimal.Decimal
 	PICMS  decimal.Decimal
 	VICMS  decimal.Decimal
+
+	PRedBC  decimal.Decimal // pRedBC (40)
+	ModBCST string          // modBCST (72)
+	VBCST   decimal.Decimal // vBCST (74)
+	PICMSST decimal.Decimal // pICMSST (75)
+	VICMSST decimal.Decimal // vICMSST (76)
 }
 
 // PISData holds PIS tax information.
@@ -209,6 +295,32 @@ type COFINSData struct {
 	VBC     decimal.Decimal
 	PCOFINS decimal.Decimal
 	VCOFINS decimal.Decimal
+}
+
+// RespTecData holds the technical responsible (infRespTec, NT 2022.002
+// / E28a) — mandatory in production emissions.
+type RespTecData struct {
+	CNPJ     string
+	XContato string
+	Email    string
+	Fone     string
+}
+
+// EntregaData holds the delivery-site group (<entrega>), used by vendas a
+// ordem flows. Flat group (CNPJ-or-CPF chosen by Type), sibling of <dest>.
+type EntregaData struct {
+	Type       int // 1=CNPJ, 2=CPF
+	CNPJ       string
+	CPF        string
+	XNome      string
+	Logradouro string
+	Numero     string
+	Bairro     string
+	CodigoMun  string
+	Municipio  string
+	UF         string
+	CEP        string
+	IE         string
 }
 
 // TransportData holds transport (transp) information.
@@ -258,7 +370,14 @@ type PaymentData struct {
 type PagamentoDetalhe struct {
 	IndPag int    // 0=a vista
 	TPag   string // 90=Sem pagamento (common for grain sales with deferred payment)
+	XPag   string // free-text mechanic description (detPag/xPag, optional)
 	VPag   decimal.Decimal
+}
+
+// CobrancaData controls whether the optional <cobr>/<fat> group is emitted.
+// The departure flow derives its number and amounts from the NF-e itself.
+type CobrancaData struct {
+	Enabled bool
 }
 
 // AccessKeyData holds the 44-digit NF-e access key components.

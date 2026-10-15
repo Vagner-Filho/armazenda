@@ -1,0 +1,4541 @@
+{
+  "schemaVersion": 1,
+  "docs": [
+    {
+      "key": "k3NyfrYW8No=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e - Pacote de Liberação nº 9j (Novo leiaute da NF-e, NT 2022.003 v.1.00a). Publicado em 22/12/2022",
+      "date": "22/12/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=k3NyfrYW8No=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "P3TfrfqQ38U=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e - Pacote de Liberação nº 9j (Novo leiaute da NF-e, NT 2022.003 v.1.00b). Publicado em 05/01/2023",
+      "date": "05/01/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=P3TfrfqQ38U=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "rV e6KpRuRc=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e - Pacote de Liberação nº 9k (Novo leiaute da NF-e, NT 2023.001 v.1.00). Publicado em 16/02/2023",
+      "date": "16/02/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=rV%20e6KpRuRc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "2wl0SFyVu/g=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e - Pacote de Liberação nº 9k (Novo leiaute da NF-e, NT 2023.001 v.1.10). Publicado em 10/03/2023",
+      "date": "10/03/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=2wl0SFyVu/g=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "WJZMmPlQAE4=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e/NFC-e - Pacote de Liberação nº 010a (Novo leiaute da NF-e, NT 2025.002 v.1.01) (ZIP). Publicado em 15/04/2025",
+      "date": "15/04/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=WJZMmPlQAE4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "T97MsW48FOM=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e/NFC-e - Pacote de Liberação nº 010b (Novo leiaute da NF-e, NT 2025.002 v.1.10, NT 2024.003 e NT 2025.001) (ZIP). Publicado em 09/06/2025",
+      "date": "09/06/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=T97MsW48FOM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "lM8atKSxb90=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e/NFC-e - Pacote de Liberação nº 010b (Novo leiaute da NF-e, NT 2025.002 v.1.20, NT 2024.003 e NT 2025.001) (ZIP). Publicado em 20/08/2025",
+      "date": "20/08/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=lM8atKSxb90=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "r TFT/MIJ0E=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e/NFC-e - Pacote de Liberação nº 010b (Novo leiaute da NF-e, NT 2025.002 v.1.20, NT 2024.003 e NT 2025.001) (ZIP). Publicado em 30/07/2025",
+      "date": "30/07/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=r%20TFT/MIJ0E=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "zaSePUxCMcs=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e/NFC-e - Pacote de Liberação nº 010b (Novo leiaute da NF-e, NT 2025.002 v.1.30, NT 2024.003 e NT 2025.001) (ZIP). Publicado em 07/10/2025",
+      "date": "07/10/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=zaSePUxCMcs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "8chO69DQYZ8=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e/NFC-e - Pacote de Liberação nº 010c (NT 2022.002 v.1.30) (ZIP) - (Publicado em 26/03/2026)",
+      "date": "26/03/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=8chO69DQYZ8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "SNZ421bisdY=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e/NFC-e - Pacote de Liberação nº 9k (Novo leiaute da NF-e, NT 2023.001 v.1.10). Publicado em 29/03/2023",
+      "date": "29/03/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=SNZ421bisdY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "t/qO0j4mHlU=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e/NFC-e - Pacote de Liberação nº 9k (Novo leiaute da NF-e, NT 2023.001 v.1.20). Publicado em 11/04/2023",
+      "date": "11/04/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=t/qO0j4mHlU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "yxUPAVPKsmA=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e/NFC-e - Pacote de Liberação nº 9o (Novo leiaute da NF-e, NT 2024.001 v.1.00) (ZIP). Publicado em 04/06/2024",
+      "date": "04/06/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=yxUPAVPKsmA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "sjdK/JDjQs8=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e/NFC-e - Pacote de Liberação nº 9p (Novo leiaute da NF-e, NT 2024.003 v.1.03) (ZIP). Publicado em 24/02/2025",
+      "date": "24/02/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=sjdK/JDjQs8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "wE F/jg3BPI=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e/NFC-e - Pacote de Liberação nº 9p1 (Novo leiaute da NF-e, NT 2024.003 v.1.02) (ZIP). Publicado em 23/10/2024",
+      "date": "23/10/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=wE%20F/jg3BPI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "0qRvxtvKcj4=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e/NFC-e - Pacote de Liberação nº 9q (Novo leiaute da NF-e, NT 2025.001 v.1.00) (ZIP). Publicado em 19/05/2025",
+      "date": "19/05/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=0qRvxtvKcj4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "R3nupHT9LqA=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e/NFC-e - Schema dos eventos da NT 2025.002 v.1.20 - RTC (ZIP). Publicado em 18/08/2025",
+      "date": "18/08/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=R3nupHT9LqA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "HNw47nrc4Xk=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e/NFC-e - Schema dos eventos da NT 2025.002 v.1.30 - RTC (ZIP). Publicado em 07/10/2025 - Atualizado em 30/10/2025",
+      "date": "07/10/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=HNw47nrc4Xk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "kp0SXLu ZdI=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquema XML NF-e/NFC-e - Schema dos eventos da NT 2025.002 v.1.40 - RTC (ZIP). Publicado em 27/07/2026",
+      "date": "27/07/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=kp0SXLu%20ZdI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "jK01LUrnjlk=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML DPEC - Pacote de Liberação No. 101a(14/01/09) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=jK01LUrnjlk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "wM8gLm3mL7I=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML DPEC - Pacote de Liberação No. 101a(14/01/09) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=wM8gLm3mL7I=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "oSGGlEahvCA=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Carta de Correção Eletrônica(17/05/11) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=oSGGlEahvCA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "S8HypghBRdk=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Carta de Correção Eletrônica(17/05/11) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=S8HypghBRdk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "O5z/3yYsxnc=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Consulta Situação NF-e(01/10/10) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=O5z/3yYsxnc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "yTfL24SQU/o=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Consulta Situação NF-e(01/10/10) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=yTfL24SQU/o=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "vfqvQnqWYL8=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Evento Ator Interessado na NF-e - Transportador. Publicado em 19/10/2020.",
+      "date": "19/10/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=vfqvQnqWYL8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Y1hrcyzvncE=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Evento Ator Interessado na NF-e - Transportador. Publicado em 28/01/2021.",
+      "date": "28/01/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Y1hrcyzvncE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": " /MpllB6VEM=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Evento Cancelamento( Atualizado em 05/04/2012) (ZIP)",
+      "date": "05/04/2012",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=%20/MpllB6VEM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "NNHgxEa9 rU=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Evento Cancelamento( Atualizado em 05/04/2012) (ZIP)",
+      "date": "05/04/2012",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=NNHgxEa9%20rU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "W9sYeScSDZg=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Evento Comprovante Entrega da NF-e . Publicado em 19/05/2021 (Atualizado em 15/06/2021)",
+      "date": "19/05/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=W9sYeScSDZg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "hgMnsRcQa8I=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Evento Insucesso na Entrega da NF-e. Publicado em 09/01/2024 (ZIP)",
+      "date": "09/01/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=hgMnsRcQa8I=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "qvyq5vuft74=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Evento Insucesso na Entrega da NF-e. Publicado em 26/04/2024 (ZIP)",
+      "date": "26/04/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=qvyq5vuft74=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "C2PYHmfXYYw=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Manifestacão Destinatário v1.01 (21/03/2012) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=C2PYHmfXYYw=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "AFej8q3vClM=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Manifestacão Destinatário v1.02 (06/09/2012) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=AFej8q3vClM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "mTqIpyaZCAU=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Distribuição de DF-e v.1.03. Publicado em 23/06/2022 (ZIP)",
+      "date": "23/06/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=mTqIpyaZCAU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "IzuP2y0G6hk=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Distribuição de DF-e v.1.04. Publicado em 03/07/2026 (ZIP)",
+      "date": "03/07/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=IzuP2y0G6hk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "pyrpXvGG934=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Distribuição de DF-e v1.00 (Atualizado em 19/09/14) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=pyrpXvGG934=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "WJhjnLlVE6A=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Distribuição de DF-e v1.02 (Atualizado em 25/10/16) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=WJhjnLlVE6A=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Ig8Y9i6kgOc=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento Canc v1.01 (30/05/2014) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Ig8Y9i6kgOc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": " 0MSTVshMl8=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento CCe v1.01 (30/05/2014) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=%200MSTVshMl8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "yA5Y2t7Zdn8=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento de Averbação v1.00 (atualizado em 23/08/2018) (ZIP)",
+      "date": "23/08/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=yA5Y2t7Zdn8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "G3fIxJUvAD8=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento de Averbação v1.01 (atualizado em 30/04/2025) (ZIP)",
+      "date": "30/04/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=G3fIxJUvAD8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "vJ6Ja1Upn2o=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento EPEC NFCe v1.00 (07/05/2014) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=vJ6Ja1Upn2o=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "kGjQ86TloMI=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento EPEC v1.00 (18/03/2014) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=kGjQ86TloMI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "OPt9hJUGOv0=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento EPEC v1.01 (30/05/2014) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=OPt9hJUGOv0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "zHyCKC788y8=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento Generico v1.01 (Atualizado em 30/05/2014) (ZIP)",
+      "date": "30/05/2014",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=zHyCKC788y8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Q7x6aqhBAy4=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento Manifesta Destinatário v1.01 (30/05/2014) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Q7x6aqhBAy4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "KSNIzTeJ4mY=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento Prorrog. Indust. 1.0 (27/11/2015) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=KSNIzTeJ4mY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "D8VcRXDh9xk=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento Suframa Internaliza v1.01 (26/01/2015) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=D8VcRXDh9xk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "QuYuRVqPWuQ=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento Suframa Vistoria v1.01 (25/11/2015) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=QuYuRVqPWuQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "ZGWa0 9MU84=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 006pre (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=ZGWa0%209MU84=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "MpBYi9pDWjI=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 006preC (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=MpBYi9pDWjI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "mxDumozdKn8=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 2 (08/05/06) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=mxDumozdKn8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "7TSwrbbL/iA=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 3a (26/05/06) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=7TSwrbbL/iA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "cEmKJvnCyLQ=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 4 (29/11/06) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=cEmKJvnCyLQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "j63rY PEDbo=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 5a(01/11/07) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=j63rY%20PEDbo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "INq93BY9jJs=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 5b(04/11/08) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=INq93BY9jJs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "6BfKhXe74y8=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 5c(14/01/09) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=6BfKhXe74y8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "04BIflQt1aY=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 5d(14/08/09) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=04BIflQt1aY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "FZuhO6k3aMg=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 5d(14/08/09) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=FZuhO6k3aMg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "esCrSQFUvGg=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 5f(29/06/10) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=esCrSQFUvGg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "IxrHf962gts=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 5f(29/06/10) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=IxrHf962gts=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "HlvBRYu 9nU=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6d(12/03/2010) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=HlvBRYu%209nU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "MtGNG1bDy1s=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6e(24/03/2010) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=MtGNG1bDy1s=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "ndIjl iEFdE=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6e(24/03/2010) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=ndIjl%20iEFdE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Ahn3wrNsBC4=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6f(01/06/2010) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Ahn3wrNsBC4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "jdiaX7ANtZ4=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6f(01/06/2010) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=jdiaX7ANtZ4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "6H4uVlIEaKs=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6g(29/06/2010) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=6H4uVlIEaKs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "mOb mjeespc=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6g(29/06/2010) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=mOb%20mjeespc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "p2NchwK32T4=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6i (26/07/2011) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=p2NchwK32T4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "7y251TDfAIY=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6j - Sem Ancora (26/10/2011) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=7y251TDfAIY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "hAdTXNWwWqY=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6j - Sem Âncora (26/10/2011) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=hAdTXNWwWqY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Zsgv5p58qjk=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6j (21/10/2011) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Zsgv5p58qjk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "zUpX6cqt6 E=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6j (21/10/2011) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=zUpX6cqt6%20E=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "bg4j7fiynz0=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6m (01/08/2012) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=bg4j7fiynz0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "cb5zVCGVE3Y=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6n (27/08/2012) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=cb5zVCGVE3Y=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "s9kvPE4lgTo=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6p (31/10/2012) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=s9kvPE4lgTo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "U96OXkuVanY=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6q (29/11/2012) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=U96OXkuVanY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "jq8tImlIJIs=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6r (05/04/2013) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=jq8tImlIJIs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "BrS43szSbpY=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6s (05/08/2013) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=BrS43szSbpY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Z56PxmDvwqI=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6t (21/03/2014) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Z56PxmDvwqI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "UExBdx1qhfI=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6u (30/05/2014) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=UExBdx1qhfI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "YHNFGG7NaI0=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 6v (05/08/2014) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=YHNFGG7NaI0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "65SJAUSAG3w=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 8b (11/12/2013) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=65SJAUSAG3w=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": " mbJDwYkbL4=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 8c (21/03/2014) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=%20mbJDwYkbL4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "F/08vf17NhQ=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 8d (02/05/2014) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=F/08vf17NhQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "YRh86QCKsbY=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 8e (05/08/2014) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=YRh86QCKsbY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "hfNDIDvETtk=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 8f (09/10/2014) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=hfNDIDvETtk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Y2aX9lDrNsM=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 8g (16/10/2015) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Y2aX9lDrNsM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "O28CM3eBb6g=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 8h1 (17/11/2015) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=O28CM3eBb6g=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Mr9oWIJNvrs=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 8h2 (17/12/2015) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Mr9oWIJNvrs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "XrRtyO64Rz8=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 8i (CFOP NOVO) (22/03/2016) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=XrRtyO64Rz8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Dg8dA04r2aE=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 8i1 (CFOP EXTERNO) (22/03/2016) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Dg8dA04r2aE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "OriMsXS1nS0=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 8i2 (CFOP EXTERNO) (13/04/2016) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=OriMsXS1nS0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "WBAhKoN7XPo=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 9 (Novas validações do GTIN, Nota Técnica 2017.001 v.1.00) (06/12/2017) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=WBAhKoN7XPo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "KPKKxDMtJ50=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 9 (novo leiaute da NF-e, NT 2016.002 v.1.10) (10/04/2017) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=KPKKxDMtJ50=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "5yYdg dcUkc=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 9 (novo leiaute da NF-e, NT 2016.002 v.1.20) (28/07/2017) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=5yYdg%20dcUkc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "P7nq1EHFeu8=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 9 (novo leiaute da NF-e, NT 2016.002 v.1.30) (14/09/2017) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=P7nq1EHFeu8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "hf4wldv89mQ=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 9 (Novo leiaute da NF-e, NT 2016.002 v.1.40) (24/10/2017) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=hf4wldv89mQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "51K60G9B2Ss=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 9 (Novo leiaute da NF-e, NT 2016.002 v.1.50) (27/04/2017) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=51K60G9B2Ss=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "jnRfCzspXrU=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 9 (Novo leiaute da NF-e, NT 2016.002 v.1.60 - b). Publicado em 02/07/2018.",
+      "date": "02/07/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=jnRfCzspXrU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "iZ2KRKGirRc=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No. 9 (Novo leiaute da NF-e, NT 2016.002 v.1.60)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=iZ2KRKGirRc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "TZtY9OKF4PY=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e - Pacote de Liberação No.7a (06/05/2013) (ZIP) - para uso exclusivo das empresas integrantes do grupo piloto da NFC-e",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=TZtY9OKF4PY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "0Yynu2Ck bM=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e / NFC-e - Evento Cancelamento (Atualizado em 21/12/2018) (ZIP)",
+      "date": "21/12/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=0Yynu2Ck%20bM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "JkHUPWX/FE8=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e / NFC-e - Pacote de Liberação No. 8a (10/10/2013) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=JkHUPWX/FE8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "tL1S8quJtVE=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Evento de Conciliação Financeira. Publicado em 30/07/2024 (ZIP)",
+      "date": "30/07/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=tL1S8quJtVE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "xJdTH687/8s=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação da consulta GTIN (NT 2022.001 v.1.00). Publicado em 31/05/22",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=xJdTH687/8s=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "CM32B8 NFr8=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação nº 9 (Novo leiaute da NF-e, NT 2020.005 v.1.10). Publicado em 22/12/2020",
+      "date": "22/12/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=CM32B8%20NFr8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "5YV2ASx7f0A=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação nº 9 (Novo leiaute da NF-e, NT 2020.005, 2020.006 e NT 2021.002). Publicado em 29/06/2021.",
+      "date": "29/06/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=5YV2ASx7f0A=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "TM OHbWgTOI=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação nº 9 (novo Leiaute da NF-e, NT 2020.006 v.1.20) Válido a partir de 01/09/2021. Publicado em 17/03/2021. Substituido pelo PL_009f_V4_00_NT_2020_005_v100.zip",
+      "date": "17/03/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=TM%20OHbWgTOI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "VL30zMPQQCY=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação nº 9 (novo Leiaute da NF-e, NT 2020.006 v.1.20) Válido de 05/04/2021 a 31/08/2021. Publicado em 25/03/2021.",
+      "date": "25/03/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=VL30zMPQQCY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "y5fs7drMmmA=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação nº 9i (Novo leiaute da NF-e, NT 2021.004 v.1.00). Publicado em 06/01/22",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=y5fs7drMmmA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "ukpDDIExQQ8=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação nº 9i (Novo leiaute da NF-e, NT 2021.004 v.1.00b). Publicado em 24/02/22",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=ukpDDIExQQ8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "LDyR7xusJZc=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação nº 9i (Novo leiaute da NF-e, NT 2021.004 v.1.00c). Publicado em 17/03/22",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=LDyR7xusJZc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "jkJ62OcEpnY=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação nº 9i (Novo leiaute da NF-e, NT 2021.004 v.1.00d). Publicado em 17/05/22",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=jkJ62OcEpnY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "y OyghHsVZ0=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação nº 9m (Novo leiaute da NF-e, NT 2023.004 v.1.01 e NT 2019.001 v.1.60). Publicado em 07/02/2024.",
+      "date": "07/02/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=y%20OyghHsVZ0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": " 1c4qtey iA=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação nº 9n (Novo leiaute da NF-e, NT 2023.004 v.1.11 e NT 2019.001 v.1.62). Publicado em 19/03/2024",
+      "date": "19/03/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=%201c4qtey%20iA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "cY51npryvi4=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação No. 9 - (Novo leiaute da NF-e - Inclusão de código na lista de serviços). Publicado em 04/10/21.",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=cY51npryvi4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "L5 rqbfATI8=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação No. 9 (Novo leiaute da NF-e, NT 2018.005 v.1.00). Publicado em 02/01/2019",
+      "date": "02/01/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=L5%20rqbfATI8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "DvO/TV2dV68=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação No. 9 (Novo leiaute da NF-e, NT 2018.005 v.1.10). Publicado em 27/02/2019.",
+      "date": "27/02/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=DvO/TV2dV68=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "WYFlPpo9Mxg=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação No. 9 (Novo leiaute da NF-e, NT 2018.005 v.1.20). Publicado em 15/03/2019.",
+      "date": "15/03/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=WYFlPpo9Mxg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "0x80//g/gwI=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação No. 9 (Novo leiaute da NF-e, NT 2019.001 v.1.20a). Publicado em 20/08/2019.",
+      "date": "20/08/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=0x80//g/gwI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "aJF0TJ9LsN4=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação No. 9 (Novo Leiaute da NF-e, NT 2020.006 v.1.00a). Publicado em 19/10/2020.",
+      "date": "19/10/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=aJF0TJ9LsN4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "6UBZKIOo6qU=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NFC-e - Evento Cancelamento por Substituição (Atualizado em 21/12/2018) (ZIP)",
+      "date": "21/12/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=6UBZKIOo6qU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "S6Qbe3sagSU=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Esquemas XML NFC-e - Pacote de Liberação No. 7b (05/08/2013) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=S6Qbe3sagSU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "1vG bcFJAEA=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Pacote de liberação No. 5a (10/07/2007) (ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=1vG%20bcFJAEA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "JcM57FABN1M=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Schemas XML NF-e - Pacote de Liberação nº 010d_v1.02 - CNPJ Alfanumérico- NT 2026.004.v.1.01 - (Publicado em 26/06/2026)",
+      "date": "26/06/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=JcM57FABN1M=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "zOhiRJjtQHs=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Schemas XML NF-e - Pacote de Liberação nº 010e_v1.01 - NT 2025.002 v.1.40 , NT 2026.002 v.1.0 e NT 2026.003 v.1.0 - (Publicado em 26/06/2026)",
+      "date": "26/06/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=zOhiRJjtQHs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "8ITFuBLltXs=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Schemas XML NF-e - Pacote de Liberação nº 010f - NT 2025.002 v.1.50 e NT 2026.007 v.1.00 (Publicado em 31/08/26)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=8ITFuBLltXs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "FOEnx2KAsCk=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Schemas XML NF-e 010d_v1.01 - CNPJ Alfanumérico - NT 2026.004.v.1.01, Eventos e ws de Consulta CCC. (Publicado em 08/06/2026)",
+      "date": "08/06/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=FOEnx2KAsCk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": " pBOYTXBtbk=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Schemas XML NF-e/NFC-e - Pacote de Liberação 010d_v.1.03(ZIP) CNPJ Alfanumérico- NT 2026.004.v.1.01- (Publicado em 10/07/2026)",
+      "date": "10/07/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=%20pBOYTXBtbk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "c14derMqb2Y=",
+      "rootKey": "esquemas-xml",
+      "section": "Esquemas XML",
+      "title": "Schemas XML NF-e/NFC-e - Pacote de Liberação 010e_v.1.02 (ZIP) - NT 2025.002 v.1.40 , NT 2026.002 v.1.0 e NT 2026.003 v.1.0 - (Publicado em 10/07/2026)",
+      "date": "10/07/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=c14derMqb2Y=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "CnlB0bY/dZM=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.001 - v.1.00 - Vigente a partir de 13/03/2023 - Publicado em 03/02/2023",
+      "date": "03/02/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=CnlB0bY/dZM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "e2WH33Ck/48=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.001 v.1.10 - Publicado em 18/11/2024",
+      "date": "18/11/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=e2WH33Ck/48=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "c0/Cs9Cj84Q=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.002 - v.1.00 - Vigente a partir de 24/04/2023 - Publicado em 11/04/2023",
+      "date": "11/04/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=c0/Cs9Cj84Q=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "GyPA/cEjrMk=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.002 - v.2.10 - Publicado em 04/09/2026",
+      "date": "04/09/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=GyPA/cEjrMk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "gaJUpz VGdc=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.002 v.2.00 - CFOP - Publicado em 25/08/2026",
+      "date": "25/08/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=gaJUpz%20VGdc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Ft4x423aB6s=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.003 - v.1.00 - Publicado em 03/05/2023",
+      "date": "03/05/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Ft4x423aB6s=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "SzaK/rPsPjc=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.003 - v.1.01 - Publicado em 29/01/2024",
+      "date": "29/01/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=SzaK/rPsPjc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "GA462X 3atA=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.003 - v.1.02 - Publicado em 23/02/2024",
+      "date": "23/02/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=GA462X%203atA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "8NGLm789Z 0=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.003 - v.1.03 - Publicado em 27/05/2024",
+      "date": "27/05/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=8NGLm789Z%200=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "PJO0usPAAuE=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.003 - v.1.04 - Publicado em 06/12/2024",
+      "date": "06/12/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=PJO0usPAAuE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "8Jb bFd3mdM=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.003 - v.1.05 - Publicado em 14/01/2025",
+      "date": "14/01/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=8Jb%20bFd3mdM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "TupjnFxb1ws=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.003 - v.1.06 - Publicado em 29/09/2025",
+      "date": "29/09/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=TupjnFxb1ws=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "4TTWW00lVUc=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.003 v.1.07 - Publicado em 04/11/2025",
+      "date": "04/11/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=4TTWW00lVUc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "QurUUUf8Q1A=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.003.1.08 - Publicado em 05/12/2025",
+      "date": "05/12/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=QurUUUf8Q1A=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "ELLzu7b/YHU=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.004 - v.1.00 - Publicado em 03/05/2023",
+      "date": "03/05/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=ELLzu7b/YHU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "2DuboicICSo=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.004 - v.1.01 - Publicado em 22/01/2024",
+      "date": "22/01/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=2DuboicICSo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "R3NUt2vTFgI=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.004 - v.1.02 - Publicado em 30/01/2024",
+      "date": "30/01/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=R3NUt2vTFgI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "l0TyVGUbrqs=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2023.004 - v.1.03 - Publicado em 25/02/2025",
+      "date": "25/02/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=l0TyVGUbrqs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "XBgqrMtxPVY=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2024.001 - v. 1.00 - CORRIGIDO em 09/12/24 - Publicado em 07/12/2024",
+      "date": "07/12/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=XBgqrMtxPVY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "XX8wbmaJpZg=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2024.001 - v.1.00 - Publicado em 07/03/2024",
+      "date": "07/03/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=XX8wbmaJpZg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "0xh8W2y tIA=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2024.001 - v.1.01 - Publicado em 14/03/2024",
+      "date": "14/03/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=0xh8W2y%20tIA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "BSUCYHAKYUk=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2024.001 - v.2.00 - Publicado em 01/10/2024",
+      "date": "01/10/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=BSUCYHAKYUk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "SLTFe3dIJMI=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2024.001 - v.2.10 - Publicado em 18/12/2024",
+      "date": "18/12/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=SLTFe3dIJMI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "nIXsNKJXnBY=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2024.001 - v.2.20 - Publicado em 31/07/2025",
+      "date": "31/07/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=nIXsNKJXnBY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "T5gf Nmt8DM=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2024.001 - v.2.30 - Publicado em 24/11/2025",
+      "date": "24/11/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=T5gf%20Nmt8DM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "nCdXYyjCKQg=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2024.001 - v.2.40 - Publicado em 03/09/2026",
+      "date": "03/09/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=nCdXYyjCKQg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "1rS27BEDS6c=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2024.002 - v.1.00 - Publicado em 11/04/2024",
+      "date": "11/04/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=1rS27BEDS6c=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "T1W3L10vCC4=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2024.002 - v.1.01 - Publicado em 07/06/2024",
+      "date": "07/06/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=T1W3L10vCC4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "3PHE6qUImTU=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2024.002 v.1.10 - Publicado em 29/09/2025",
+      "date": "29/09/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=3PHE6qUImTU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "6KiYymMwdyQ=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2024.002 v.1.11 - Publicado em 06/03/2026",
+      "date": "06/03/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=6KiYymMwdyQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "HfcGH9K3i3E=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2025.001 - v.1.00 - Publicado em 18/02/2025",
+      "date": "18/02/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=HfcGH9K3i3E=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "ph9Q7hYZ0QU=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2025.002 - v.1.00 - Publicado em 19/05/2025",
+      "date": "19/05/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=ph9Q7hYZ0QU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "h9o7idH OcI=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2025.002 - v.1.70 - Publicado em 01/10/2026",
+      "date": "01/10/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=h9o7idH%20OcI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "zjSr04nEi/w=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2025.002 v.1.10 - Publicado em 23/06/2025",
+      "date": "23/06/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=zjSr04nEi/w=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "5gah0mS g5I=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2025.002 v.1.11 - Publicado em 24/06/2025",
+      "date": "24/06/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=5gah0mS%20g5I=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "a KEDzprL94=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2025.002 v.1.20 - Publicado em 03/10/2025",
+      "date": "03/10/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=a%20KEDzprL94=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "VA/3IAyJmSw=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2025.002 v.1.21 - Publicado em 07/10/2025",
+      "date": "07/10/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=VA/3IAyJmSw=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "RkY7TWxNDgU=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2025.002 v.1.30 - Publicado em 24/11/2025",
+      "date": "24/11/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=RkY7TWxNDgU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "gya58CS0dHU=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2025.002 v.1.31 - Publicado em 15/12/2025",
+      "date": "15/12/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=gya58CS0dHU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "ljFBKt0aLks=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2025.002 v.1.40 - Publicado em 28/01/2026",
+      "date": "28/01/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=ljFBKt0aLks=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "JDJJBVuJyoA=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2025.002 v.1.50 - Publicado em 15/04/2026",
+      "date": "15/04/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=JDJJBVuJyoA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "jxTMMQeEVM8=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2025.002 v.1.60 - Publicado em 23/06/2026",
+      "date": "23/06/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=jxTMMQeEVM8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "VPJWnW2ypos=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2025.003 - v.1.00 - Publicado em 11/06/2025",
+      "date": "11/06/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=VPJWnW2ypos=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "4vMWSDJp7p4=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2025.004 v.1.00 - Publicado em 23/06/2025",
+      "date": "23/06/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=4vMWSDJp7p4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "q3/Dcwlx2PI=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2025.004 v.1.10 - Publicado em 24/04/2026",
+      "date": "24/04/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=q3/Dcwlx2PI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "0rn5SbsoDi0=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2025.004 v.1.20 - Publicado em 25/08/2026",
+      "date": "25/08/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=0rn5SbsoDi0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": " 97zJVvurKU=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2026.001 v.1.00 - Publicado em 12/05/2026",
+      "date": "12/05/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=%2097zJVvurKU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "vZg2QuZtVg0=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2026.001 v.1.01 - meios de pagamento - Publicado em 25/08/2026",
+      "date": "25/08/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=vZg2QuZtVg0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "p3diw3stE7w=",
+      "rootKey": "informes-tecnicos",
+      "section": "Informes Técnicos",
+      "title": "Informe Técnico 2026.002 v.1.00 - Publicado em 12/05/2026",
+      "date": "12/05/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=p3diw3stE7w=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "J I v4eN00E=",
+      "rootKey": "manuais",
+      "section": "Manuais",
+      "title": "------> Anexo I - Leiaute e Regra de Validação - NF-e e NFC-e",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=J%20I%20v4eN00E=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "f NhsSn3/5M=",
+      "rootKey": "manuais",
+      "section": "Manuais",
+      "title": "------> Anexo II - Manual Especificações Técnicas - Danfe-Código-Barras",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=f%20NhsSn3/5M=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "cMjGAyYrb/s=",
+      "rootKey": "manuais",
+      "section": "Manuais",
+      "title": "------> Anexo III - Manual de Contingência - NF-e",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=cMjGAyYrb/s=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "fMhAfsQfE M=",
+      "rootKey": "manuais",
+      "section": "Manuais",
+      "title": "------> Anexo IV - Manual de Contingência - NFC-e",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=fMhAfsQfE%20M=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "R7Y/bEE/RM8=",
+      "rootKey": "manuais",
+      "section": "Manuais",
+      "title": "Manual de Boas Práticas no desenvolvimento de emissor de NFC-e - BP 2018.001 - versão 1.0",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=R7Y/bEE/RM8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "TanMatXmIAY=",
+      "rootKey": "manuais",
+      "section": "Manuais",
+      "title": "Manual de Contingência da NF-e - Versão 1.01",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=TanMatXmIAY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "tG8 fKpcfbM=",
+      "rootKey": "manuais",
+      "section": "Manuais",
+      "title": "Manual de Especificações da Contingência Offline para NFC-e - versão 2.0",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=tG8%20fKpcfbM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "k/IuuaW4YiY=",
+      "rootKey": "manuais",
+      "section": "Manuais",
+      "title": "Manual de especificações técnicas do DANFE_NFC-e e Qr_Code Versão 6.0",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=k/IuuaW4YiY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "LrBx7WT9PuA=",
+      "rootKey": "manuais",
+      "section": "Manuais",
+      "title": "Manual de Orientação ao Contribuinte - MOC - versão 7.0 - NF-e e NFC-e",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=LrBx7WT9PuA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Nwgpbl6wSNI=",
+      "rootKey": "manuais",
+      "section": "Manuais",
+      "title": "Manual de Usuários da Sefaz Virtual - RS.",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Nwgpbl6wSNI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "O2Op0gbMOvE=",
+      "rootKey": "manuais",
+      "section": "Manuais",
+      "title": "Manual de Utilização da Sefaz Virtual do Ambiente Nacional(ZIP)",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=O2Op0gbMOvE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "ZE7XRC1vqJ4=",
+      "rootKey": "manuais",
+      "section": "Manuais",
+      "title": "Manual do Emissor de NF-e",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=ZE7XRC1vqJ4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "vwOEM2bec/4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2007.001 - Publicada em 15/09/2011",
+      "date": "15/09/2011",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=vwOEM2bec/4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "maWWkq0BtFk=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2007.002 - Publicada em 30/11/2010",
+      "date": "30/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=maWWkq0BtFk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "HtdVTPjb0Aw=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2007.003 - Publicada em 30/11/2010",
+      "date": "30/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=HtdVTPjb0Aw=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "c5x CA0wBEU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2007.004 - Publicada em 15/09/2011",
+      "date": "15/09/2011",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=c5x%20CA0wBEU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "rMaI56pPlHY=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2007.005 - Publicada em 30/11/2010",
+      "date": "30/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=rMaI56pPlHY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "z4creCJiKjg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2007.006 - Publicada em 30/11/2010",
+      "date": "30/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=z4creCJiKjg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "DvB9NkiGTi4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2007.007 - Publicada em 30/11/2010",
+      "date": "30/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=DvB9NkiGTi4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "dKjOIvm8x00=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2007.008 - Publicada em 30/11/2010",
+      "date": "30/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=dKjOIvm8x00=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "EbAMQW4kYWs=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2007.009 - Publicada em 30/11/2010",
+      "date": "30/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=EbAMQW4kYWs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "yUBNkkTeLmQ=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2008.001 - Publicada em 30/11/2010",
+      "date": "30/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=yUBNkkTeLmQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Vh5SE5WQq74=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2008.002 - Publicada em 15/09/2011",
+      "date": "15/09/2011",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Vh5SE5WQq74=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "fxIT/ASpGZU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2008.003 - Publicada em 30/11/2010",
+      "date": "30/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=fxIT/ASpGZU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "StUR4XLmiS4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2008.004 - Publicada em 30/11/2010",
+      "date": "30/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=StUR4XLmiS4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "cOoq3SOWosA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2008.005 - Publicada em 30/11/2010",
+      "date": "30/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=cOoq3SOWosA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "t3f8GiTbHG8=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2008.006 - Publicada em 30/11/2010",
+      "date": "30/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=t3f8GiTbHG8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "pdaamp008is=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2009.001 - Publicada em 29/11/2010",
+      "date": "29/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=pdaamp008is=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "s5NPBBj/v4Q=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2009.002 - Publicada em 29/11/2010",
+      "date": "29/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=s5NPBBj/v4Q=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "2TtEAyyG lk=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2009.003 - Publicada em 15/09/2011",
+      "date": "15/09/2011",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=2TtEAyyG%20lk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "W89LGdqZ6Kk=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2009.004 - Publicada em 30/11/2010",
+      "date": "30/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=W89LGdqZ6Kk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "DssydLvB4Ds=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2009.005 (substituída pela NT 2009.006) - Publicada em 30/11/2010",
+      "date": "30/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=DssydLvB4Ds=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "VOYEgBgD3iU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2009.006 - Publicada em 16/05/2011",
+      "date": "16/05/2011",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=VOYEgBgD3iU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "XLkH1X 5wbw=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2010.001 - Publicada em 29/11/2010",
+      "date": "29/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=XLkH1X%205wbw=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "/jxretPputg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2010.002 - Publicada em 29/11/2010",
+      "date": "29/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=/jxretPputg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "xRROnuMkiNs=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2010.003 (substituída pela NT 2010.004) - Publicada em 29/11/2010",
+      "date": "29/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=xRROnuMkiNs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "/NJarYc9nus=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2010.004 - Publicada em 06/07/2010",
+      "date": "06/07/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=/NJarYc9nus=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "BMPFMBoln3w=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2010.005 - Publicada em 06/07/2010",
+      "date": "06/07/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=BMPFMBoln3w=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "yLKEXvriYcY=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2010.006 - Publicada em 16/09/2011",
+      "date": "16/09/2011",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=yLKEXvriYcY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Pa6GWghiG3c=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2010.007 - Publicada em 29/11/2010",
+      "date": "29/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Pa6GWghiG3c=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "xY T5JoiOMc=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2010.008 - Publicada em 29/11/2010",
+      "date": "29/11/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=xY%20T5JoiOMc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "k850Io7vg/E=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2010.009 - Publicada em 10/12/2010",
+      "date": "10/12/2010",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=k850Io7vg/E=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "9Y3oazEBkt0=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2010.010 - Publicada em 13/05/2011",
+      "date": "13/05/2011",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=9Y3oazEBkt0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "QheHZf7/YWs=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2011.001 - Publicada em 25/02/2011",
+      "date": "25/02/2011",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=QheHZf7/YWs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Ll7tbBdZPyE=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2011.002 - Publicada em 23/03/2011",
+      "date": "23/03/2011",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Ll7tbBdZPyE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "hNJXbmu l8Q=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2011.003 - Publicada em 19/05/2011",
+      "date": "19/05/2011",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=hNJXbmu%20l8Q=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Z1ivX0aahCM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2011.004 - Publicada em 26/07/2011",
+      "date": "26/07/2011",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Z1ivX0aahCM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "/wTuqXU5sGA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2011.005 - Publicada em 21/10/2011",
+      "date": "21/10/2011",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=/wTuqXU5sGA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Q3i7ueu77HY=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2011.006 - Publicada em 15/04/2013",
+      "date": "15/04/2013",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Q3i7ueu77HY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "okkNxGLkQ94=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2011.007 - Publicada em 26/12/2011",
+      "date": "26/12/2011",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=okkNxGLkQ94=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "U2yjcqzCLHU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2012.001 - Publicada em 17/02/2012",
+      "date": "17/02/2012",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=U2yjcqzCLHU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "nrErNm QeWE=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2012.002 - Publicada em 24/09/2012",
+      "date": "24/09/2012",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=nrErNm%20QeWE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "9d6ind6OMpo=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2012.003 - Publicada em 01/11/2012",
+      "date": "01/11/2012",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=9d6ind6OMpo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "cjp9G N7Xew=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2012.004 - Publicada em 09/05/2013",
+      "date": "09/05/2013",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=cjp9G%20N7Xew=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "VmUMIa8PJAg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2012.005 - Publicada em 08/02/2013",
+      "date": "08/02/2013",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=VmUMIa8PJAg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "74XhRcycM5s=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2013.001 - v.1.00 - Publicada em 12/03/2013",
+      "date": "12/03/2013",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=74XhRcycM5s=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "fB97I2palIA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2013.002 - v.1.00b - Publicada em 28/03/2013",
+      "date": "28/03/2013",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=fB97I2palIA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "/mjaQ31Xphs=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2013.003 - v.1.00a - Publicada em 26/04/2013",
+      "date": "26/04/2013",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=/mjaQ31Xphs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "9G89B LireQ=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2013.004 - Publicada em 06/05/2013",
+      "date": "06/05/2013",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=9G89B%20LireQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "//4Va12lruw=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2013.005 - v.1.02 - Publicada em 12/12/2013",
+      "date": "12/12/2013",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=//4Va12lruw=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "OeljCPBB1ds=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2013.005 - v.1.03 - Publicada em 02/04/2014",
+      "date": "02/04/2014",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=OeljCPBB1ds=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "sddBHHvutwY=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2013.005 - v.1.10 - Publicada em 08/10/2014",
+      "date": "08/10/2014",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=sddBHHvutwY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "gtDBDppETfg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2013.005 - v.1.20 - Publicada em 18/11/2014",
+      "date": "18/11/2014",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=gtDBDppETfg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "y9Xj8twyoic=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2013.005 - v.1.22 - Publicada em 25/03/2015",
+      "date": "25/03/2015",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=y9Xj8twyoic=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "slmjSi5sbdk=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2013.006 - Publicada em 05/08/2013",
+      "date": "05/08/2013",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=slmjSi5sbdk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "t9wZjQqKdXQ=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2013.007 - SVC - v1.02 - Publicada em 13/12/2013",
+      "date": "13/12/2013",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=t9wZjQqKdXQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "b4h3Pi Helo=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2013.007 - v.1.03 - Publicada em 16/09/2014",
+      "date": "16/09/2014",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=b4h3Pi%20Helo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "gfp9WZDzUcI=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2013.008 - Publicada em 12/12/2013",
+      "date": "12/12/2013",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=gfp9WZDzUcI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "4DEC09bLV4U=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.001 - v.1.00 - Publicada em 12/05/2014",
+      "date": "12/05/2014",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=4DEC09bLV4U=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "srOjfZFQM9c=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.001 - v.1.20 - Publicada em 05/12/2019",
+      "date": "05/12/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=srOjfZFQM9c=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "sH7AubTOZew=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.001 - v.1.21 - Publicada em 03/12/2021",
+      "date": "03/12/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=sH7AubTOZew=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "sIUh41wCvIg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.001 - v.1.30 - Publicada em 21/06/2022",
+      "date": "21/06/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=sIUh41wCvIg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "JtWH/2b4Vk0=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.001 v.1.40 - Publicada em 15/07/2026",
+      "date": "15/07/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=JtWH/2b4Vk0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "9hgG  cH8gA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.001 v.1.41 - Publicada em 04/08/2026",
+      "date": "04/08/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=9hgG%20%20cH8gA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Enkznb1F1SM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.002 - v.1.01b - Publicada em 25/10/2016",
+      "date": "25/10/2016",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Enkznb1F1SM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "FflWJduJxwQ=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.002 - v.1.01c - Publicada em 29/05/2017",
+      "date": "29/05/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=FflWJduJxwQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "BttMW6T7ib8=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.002 - v.1.02 - Publicada em 25/10/2016",
+      "date": "25/10/2016",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=BttMW6T7ib8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Zbpc//iP7HQ=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.002 - v.1.02b - Publicada em 30/05/2017",
+      "date": "30/05/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Zbpc//iP7HQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "155Wx5/JB5A=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.002 - v.1.02c - Publicada em 31/08/2020",
+      "date": "31/08/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=155Wx5/JB5A=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "wLVBlKchUb4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.002 - v.1.02d - Publicada em 11/03/2021",
+      "date": "11/03/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=wLVBlKchUb4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "pem6jrh73h4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.002 - v.1.10 - Publicada em 15/10/2021",
+      "date": "15/10/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=pem6jrh73h4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "0rPhVp1wRqc=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.002 - v.1.11 - Publicada em 17/11/2021",
+      "date": "17/11/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=0rPhVp1wRqc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "C/xkRclIh74=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.002 - v.1.12 - Publicada em 09/03/2022",
+      "date": "09/03/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=C/xkRclIh74=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "VgPuhtPApQo=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.002 - v.1.13 a 1.15 - Publicada em 26/05/2022",
+      "date": "26/05/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=VgPuhtPApQo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "U0LlsYVGBRU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.002 - v.1.20 - Publicada em 22/05/2024",
+      "date": "22/05/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=U0LlsYVGBRU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "FM KdU7EQrQ=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.002 - v.1.21 - Publicada em 27/06/2024",
+      "date": "27/06/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=FM%20KdU7EQrQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "P0U3lU1Fe40=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.002 - v.1.30 - Publicada em 09/02/2026",
+      "date": "09/02/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=P0U3lU1Fe40=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "uWO2d/gTuWg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.002 - v.1.40 - Publicada em 03/07/2026",
+      "date": "03/07/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=uWO2d/gTuWg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "JM1otSWbkHA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.004 - v.1.00 - Publicada em 11/06/2014",
+      "date": "11/06/2014",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=JM1otSWbkHA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "ycHRQDy lb8=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2014.004 - v.1.10 - Publicada em 11/08/2014",
+      "date": "11/08/2014",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=ycHRQDy%20lb8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "IomtsTmodq4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.001 - v.1.10 - Publicada em 12/06/2015",
+      "date": "12/06/2015",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=IomtsTmodq4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "XaYOLvyq7B8=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.001 - v.1.20 - Publicada em 25/07/2016",
+      "date": "25/07/2016",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=XaYOLvyq7B8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "CGAKR5siRHM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.001 v.1.30 - Publicada em 06/12/2024",
+      "date": "06/12/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=CGAKR5siRHM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "o3F7TPyvBAg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.002 - v.1.20 - Publicada em 19/11/2015",
+      "date": "19/11/2015",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=o3F7TPyvBAg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "FACIWTc5Dso=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.002 - v.1.30 - Publicada em 28/12/2015",
+      "date": "28/12/2015",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=FACIWTc5Dso=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Cb/1Gj6T5Uo=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.002 - v.1.40 - Publicada em 23/03/2015",
+      "date": "23/03/2015",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Cb/1Gj6T5Uo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "iaOu3l1k9aE=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.002 - v.1.41 - Publicada em 26/08/2016",
+      "date": "26/08/2016",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=iaOu3l1k9aE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "7zB0EFSFqa0=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.003 - v.1.40 - Publicada em 01/12/2015",
+      "date": "01/12/2015",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=7zB0EFSFqa0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "xWTG95gSn9s=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.003 - v.1.50 - Publicada em 17/12/2015",
+      "date": "17/12/2015",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=xWTG95gSn9s=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "fF1FWopij5w=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.003 - v.1.60 - Publicada em 30/12/2015",
+      "date": "30/12/2015",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=fF1FWopij5w=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "NYT  S3Oca0=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.003 - v.1.70 - Publicada em 29/03/2016",
+      "date": "29/03/2016",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=NYT%20%20S3Oca0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "/F0Jf9wwafo=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.003 - v.1.71 - Publicada em 13/04/2016",
+      "date": "13/04/2016",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=/F0Jf9wwafo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "ee/BnNosTWA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.003 - v.1.80 - Publicada em 09/06/2016",
+      "date": "09/06/2016",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=ee/BnNosTWA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "wjxsqmEaELI=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.003 - v.1.90 - Publicada em 18/10/2016",
+      "date": "18/10/2016",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=wjxsqmEaELI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "qwGYmXx/Wio=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.003 - v.1.91 - Publicada em 03/11/2016",
+      "date": "03/11/2016",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=qwGYmXx/Wio=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "dgIA1 97QzE=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.003 - v.1.92 - Publicada em 04/01/2017",
+      "date": "04/01/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=dgIA1%2097QzE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "rrVF29xpuiQ=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.003 - v.1.93 - Publicada em 20/01/2017",
+      "date": "20/01/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=rrVF29xpuiQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "2q67SVnECYk=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2015.003 - v.1.94 - Publicada em 23/06/2017",
+      "date": "23/06/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=2q67SVnECYk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "CtiBWEXJP0k=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.001 - v.1.00 - Publicada em 01/11/2016",
+      "date": "01/11/2016",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=CtiBWEXJP0k=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "aoqTWoXO2 k=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.001 - v.1.10 - Publicada em 28/12/2016",
+      "date": "28/12/2016",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=aoqTWoXO2%20k=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "HeEWJN 2zts=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.001 - v.1.20 - Publicada em 24/02/2017",
+      "date": "24/02/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=HeEWJN%202zts=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "/a6sjrDR6UI=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.001 - v.1.30 - Publicada em 17/04/2017",
+      "date": "17/04/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=/a6sjrDR6UI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Xvi 4M3GeHU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.001 - v.1.40 - Publicada em 16/07/2018",
+      "date": "16/07/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Xvi%204M3GeHU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "II//XG3KKAM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.002 - v.1.00 - Publicada em 30/11/2016",
+      "date": "30/11/2016",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=II//XG3KKAM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "FqiYXBVYKrc=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.002 - v.1.10 - Publicada em 11/04/2017",
+      "date": "11/04/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=FqiYXBVYKrc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "u/8gEs0hzEM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.002 - v.1.20 - Publicada em 31/05/2017",
+      "date": "31/05/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=u/8gEs0hzEM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "DWKGtaF34LE=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.002 - v.1.30 - Publicada em 12/09/2017",
+      "date": "12/09/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=DWKGtaF34LE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "IZykcMhPYac=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.002 - v.1.31 - Publicada em 27/09/2017",
+      "date": "27/09/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=IZykcMhPYac=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "7rAFHqqLNyM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.002 - v.1.40 - Publicada em 24/10/2017",
+      "date": "24/10/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=7rAFHqqLNyM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "PJs5hjRsOaI=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.002 - v.1.41 - Publicada em 07/11/2017",
+      "date": "07/11/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=PJs5hjRsOaI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "mITbhYamFQU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.002 - v.1.42 - Publicada em 22/12/2017",
+      "date": "22/12/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=mITbhYamFQU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "NsGi2n016p8=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.002 - v.1.50 - Publicada em 26/04/2018",
+      "date": "26/04/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=NsGi2n016p8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "mqf2EDdt9Ug=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.002 - v.1.51 - Publicada em 16/05/2018",
+      "date": "16/05/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=mqf2EDdt9Ug=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "tQNDQOeNeyI=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.002 - v.1.60 - Publicada em 18/06/2018",
+      "date": "18/06/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=tQNDQOeNeyI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "9bznzUXCXr0=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.002 - v.1.61 - Publicada em 10/09/2018",
+      "date": "10/09/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=9bznzUXCXr0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "in UUWw15K0=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - Publicada em 28/12/2016",
+      "date": "28/12/2016",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=in%20UUWw15K0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": " At2WeXwpKk=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v. 1.60 - Publicada em 11/11/2019",
+      "date": "11/11/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=%20At2WeXwpKk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "neeFdEUMD2Y=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.1.30 - Publicada em 15/12/2017",
+      "date": "15/12/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=neeFdEUMD2Y=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "1XmHZyrfNGM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.1.40 - Publicada em 07/05/2018",
+      "date": "07/05/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=1XmHZyrfNGM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "nklBdgK4s1E=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.1.50 - Publicada em 09/11/2018",
+      "date": "09/11/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=nklBdgK4s1E=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "gK4lFO0xNKE=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.1.70 - Publicada em 01/06/2020",
+      "date": "01/06/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=gK4lFO0xNKE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "c/xA1KV0IBY=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.1.80 - Publicada em 14/10/2020",
+      "date": "14/10/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=c/xA1KV0IBY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "1vyyjkZSjJM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.1.81 - Publicada em 16/11/2020",
+      "date": "16/11/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=1vyyjkZSjJM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "TYtLIzVo1Lg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.1.90 - Publicada em 19/02/2021",
+      "date": "19/02/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=TYtLIzVo1Lg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "WTEFyO54Juo=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.2.00 - Publicada em 29/06/2021",
+      "date": "29/06/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=WTEFyO54Juo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "7y4AFjI4sJ4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.2.10 - Publicada em 14/09/2021",
+      "date": "14/09/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=7y4AFjI4sJ4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "lbpa538TYoA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.3.00 - Publicada em 07/12/2021",
+      "date": "07/12/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=lbpa538TYoA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "FHn62qOKXxo=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.3.10 - Publicada em 02/05/2022",
+      "date": "02/05/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=FHn62qOKXxo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "NTdR2XGZ/1o=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.3.20 - Publicada em 01/08/2022",
+      "date": "01/08/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=NTdR2XGZ/1o=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "FIDhg/zGft8=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.3.30 - Publicada em 05/09/2022",
+      "date": "05/09/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=FIDhg/zGft8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "6BTWDAit8To=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.3.40 - Publicada em 04/11/2022 - Atualizada em 07/11/2022",
+      "date": "04/11/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=6BTWDAit8To=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "MADEdZye1UA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.3.50 - Publicada em 03/02/2023",
+      "date": "03/02/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=MADEdZye1UA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "6WfrpZYE4Ik=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.3.60 - Publicada em 18/08/2023",
+      "date": "18/08/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=6WfrpZYE4Ik=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "8Kl5CTYXdJg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.3.61 - Publicada em 29/09/2023",
+      "date": "29/09/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=8Kl5CTYXdJg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "IwSVzZ/ibco=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.3.62 - Publicada em 30/10/2023",
+      "date": "30/10/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=IwSVzZ/ibco=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "3AwHG inHoY=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2016.003 - v.3.70 - Publicada em 09/01/2024",
+      "date": "09/01/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=3AwHG%20inHoY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "6n  3V14654=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2017.001 - v.1.10 - Publicada em 14/12/2017",
+      "date": "14/12/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=6n%20%203V14654=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "CQGK8CQLu40=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2017.001 - v.1.20 - Publicada em 27/02/2018",
+      "date": "27/02/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=CQGK8CQLu40=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "MbBDSMcebGg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2017.001 - v.1.30 - Publicada em 25/06/2018",
+      "date": "25/06/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=MbBDSMcebGg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "ItjrLYerN/E=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2017.001 - v.1.40 - Publicada em 28/08/2018",
+      "date": "28/08/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=ItjrLYerN/E=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "5xfrYjX1kSo=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2017.001 - v.1.50 - Publicada em 07/12/2018",
+      "date": "07/12/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=5xfrYjX1kSo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "laJqZaU2WeA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2017.002 - v.1.00 - Publicada em 18/12/2017",
+      "date": "18/12/2017",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=laJqZaU2WeA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Cgkf3vF6i7g=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2017.002 - v.1.10 - Publicada em 28/08/2018",
+      "date": "28/08/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Cgkf3vF6i7g=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "7Y2uYoZhGas=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2017.002 - v.1.20 - Publicada em 12/04/2019",
+      "date": "12/04/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=7Y2uYoZhGas=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "6GsMA H77MA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2017.002 - v.1.30 - Publicada em 25/11/2019",
+      "date": "25/11/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=6GsMA%20H77MA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "O8deOg40iNU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2017.002 - v.1.40 - Publicada em 15/01/2020",
+      "date": "15/01/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=O8deOg40iNU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "PSVK9st3J8U=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2018.001 - v.1.00 - Publicada em 19/04/2018",
+      "date": "19/04/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=PSVK9st3J8U=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "JlPBgTc3TQo=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2018.001 - v.1.10 - Publicada em 27/02/2020",
+      "date": "27/02/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=JlPBgTc3TQo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "HAYP6dvLy7I=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2018.002 - v.1.00 - Publicada em 23/04/2018",
+      "date": "23/04/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=HAYP6dvLy7I=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "yGVkb5qZU5U=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2018.003 - v.1.00 - Publicada em 02/05/2018",
+      "date": "02/05/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=yGVkb5qZU5U=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "gHRm/SYAvM0=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2018.003 - v.1.01 - Publicada em 12/04/2019",
+      "date": "12/04/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=gHRm/SYAvM0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "DEisbx2XCIs=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2018.004 - v.1.00 - Publicada em 21/12/2018",
+      "date": "21/12/2018",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=DEisbx2XCIs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "gU6W5KJQ6QM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2018.005 - v.1.00 - Publicada em 02/01/2019",
+      "date": "02/01/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=gU6W5KJQ6QM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "cMMn5vosZC4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2018.005 - v.1.10 - Publicada em 12/02/2019",
+      "date": "12/02/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=cMMn5vosZC4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "S3zuI/MZfaU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2018.005 - v.1.20 - Publicada em 15/03/2019",
+      "date": "15/03/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=S3zuI/MZfaU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "C40eUgxYAIg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2018.005 - v.1.30 - Publicada em 26/04/2019",
+      "date": "26/04/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=C40eUgxYAIg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "swvdr1Waqik=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2018.005 - v.1.40 - Publicada em 13/09/2024",
+      "date": "13/09/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=swvdr1Waqik=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "WqT5kbVRtNQ=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2018.005 - v.1.50 - Publicada em 25/02/2025",
+      "date": "25/02/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=WqT5kbVRtNQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "URRwWd0zp2U=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2018.005 - v.1.51 - Publicada em 13/03/2025",
+      "date": "13/03/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=URRwWd0zp2U=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "vZguLua3oPM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2018.005 v.1.52 - Publicada em 10/07/2025",
+      "date": "10/07/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=vZguLua3oPM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "VW9Y6sAJBvw=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2019.001 - v.1.00 - Publicada em 03/05/2019",
+      "date": "03/05/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=VW9Y6sAJBvw=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "CrFAbPH4O9s=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2019.001 - v.1.10 - Publicada em 16/07/2019",
+      "date": "16/07/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=CrFAbPH4O9s=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "zcqqdtzgG8c=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2019.001 - v.1.20 - Publicada em 20/08/2019",
+      "date": "20/08/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=zcqqdtzgG8c=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "2uCobLdZMIM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2019.001 - v.1.30 - Publicada em 30/08/2019",
+      "date": "30/08/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=2uCobLdZMIM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "ycMLTxeLils=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2019.001 - v.1.40 - Publicada em 30/12/2019",
+      "date": "30/12/2019",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=ycMLTxeLils=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "z/yLH4zy3JY=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2019.001 - v.1.50 - Publicada em 08/04/2020",
+      "date": "08/04/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=z/yLH4zy3JY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "p z9cD02umI=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2019.001 - v.1.51 - Publicada em 25/09/2020",
+      "date": "25/09/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=p%20z9cD02umI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "TMi7Yw9xrXU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2019.001 - v.1.52 - Publicada em 29/08/2022",
+      "date": "29/08/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=TMi7Yw9xrXU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "LcDe63k 9Vk=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2019.001 - v.1.53 - Publicada em 07/02/2023",
+      "date": "07/02/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=LcDe63k%209Vk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "GKxb5ZZeQIM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2019.001 - v.1.54 - Publicada em 12/12/2023",
+      "date": "12/12/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=GKxb5ZZeQIM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "cKe3X6pJ 2Q=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2019.001 - v.1.63 - Publicada em 13/08/2024",
+      "date": "13/08/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=cKe3X6pJ%202Q=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "uZcHEjJMQF4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2019.001 - v.1.64 - Publicada em 03/09/2024",
+      "date": "03/09/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=uZcHEjJMQF4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "pGfPgyEaNGg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2019.001 -v.1.60 - Publicada em 28/12/2023",
+      "date": "28/12/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=pGfPgyEaNGg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "GCguA5ZEWjM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2019.001 -v.1.61 - Publicada em 05/02/2024",
+      "date": "05/02/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=GCguA5ZEWjM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "pOpc8eWvlKc=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2019.001 -v.1.62 - Publicada em 19/03/2024",
+      "date": "19/03/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=pOpc8eWvlKc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "suszdTDFNOk=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2019.001.v.1.70 - Publicada em 18/08/2025",
+      "date": "18/08/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=suszdTDFNOk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "x/N7MoSHLxE=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.001 - v.1.00 - Publicada em 07/01/2020",
+      "date": "07/01/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=x/N7MoSHLxE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "vuPAbOafoX4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.001 - v.1.10 - Publicada em 22/06/2021",
+      "date": "22/06/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=vuPAbOafoX4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "dlSL5ODYKeg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.001 - v.1.20 - Publicada em 21/03/2022",
+      "date": "21/03/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=dlSL5ODYKeg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Y5Ssy GDOWc=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.001 - v.1.30 - Publicada em 17/05/2022",
+      "date": "17/05/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Y5Ssy%20GDOWc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "nPKQWFVzvQo=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.001 - v.1.40 - Publicada em 02/06/2022",
+      "date": "02/06/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=nPKQWFVzvQo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "G2gXyQBCCZQ=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.001 - v.1.50 - Publicada em 06/03/2024",
+      "date": "06/03/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=G2gXyQBCCZQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": " WTd7iuD21s=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.001 v.1.60 - Publicada em 23/04/2026",
+      "date": "23/04/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=%20WTd7iuD21s=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "usCYB1coPQw=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.002 - v.1.00 - Publicada em 18/05/2020",
+      "date": "18/05/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=usCYB1coPQw=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "zRz9Xc658tM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.002 - v.1.01 - Publicada em 19/08/2022",
+      "date": "19/08/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=zRz9Xc658tM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "VbDaS9t yUE=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.003 - v.1.00 - Publicada em 25/06/2020",
+      "date": "25/06/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=VbDaS9t%20yUE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "eYbbUUApSQI=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.004 - v.1.00 - Publicada em 28/08/2020",
+      "date": "28/08/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=eYbbUUApSQI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "6VJK0RTUooA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.004 - v.1.10 - Publicada em 19/08/2024",
+      "date": "19/08/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=6VJK0RTUooA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "AoPQKN2Orqw=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.005 - v. 1.20 - Publicada em 29/06/2021",
+      "date": "29/06/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=AoPQKN2Orqw=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "CSi/nvRo99E=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.005 - v.1.00 - Publicada em 12/11/2020",
+      "date": "12/11/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=CSi/nvRo99E=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "KG9zngPAflQ=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.005 - v.1.10 - Publicada em 22/12/2020",
+      "date": "22/12/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=KG9zngPAflQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "vcqS7b0oTnU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.005 - v.1.21 - Publicada em 15/10/2021",
+      "date": "15/10/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=vcqS7b0oTnU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "KtGJOkA/j2k=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.006 - v.1.00 - Publicada em 02/10/2020",
+      "date": "02/10/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=KtGJOkA/j2k=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "VlNSI1qsiIA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.006 - v.1.10 - Publicada em 15/02/2021",
+      "date": "15/02/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=VlNSI1qsiIA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "A6qvFRVbPSA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.006 - v.1.20 - Publicada em 17/03/2021",
+      "date": "17/03/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=A6qvFRVbPSA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "/RzDxklkYPU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.006 - v.1.30 - Publicada em 28/07/2021",
+      "date": "28/07/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=/RzDxklkYPU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "/RFndRUpZJw=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.006 - v.1.31 - Publicada em 26/09/2022",
+      "date": "26/09/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=/RFndRUpZJw=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "T36FvIa5Y k=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.007 - v.1.00 - Publicada em 02/10/2020",
+      "date": "02/10/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=T36FvIa5Y%20k=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "A1ayJmuTiI8=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.007 - v.1.00a - Publicada em 05/11/2020",
+      "date": "05/11/2020",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=A1ayJmuTiI8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "cgv3iDtM0R0=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.007 - v.1.10 - Publicada em 11/02/2021",
+      "date": "11/02/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=cgv3iDtM0R0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "RCv1W2OGY3U=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.007 - v.1.20 - Publicada em 18/10/2021",
+      "date": "18/10/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=RCv1W2OGY3U=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "I zlcbz4WXc=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.007 - v.1.21 - Publicada em 01/02/2022",
+      "date": "01/02/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=I%20zlcbz4WXc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "L/sJFheNDP4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.007 - v.1.22 - Publicada em 31/10/2022",
+      "date": "31/10/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=L/sJFheNDP4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "XIfDB7ypnF4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.007 - v.1.23 - Publicada em 03/02/2023",
+      "date": "03/02/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=XIfDB7ypnF4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "4uZw9LDQg4g=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.007 - v.1.30 - Publicada em 26/06/2023",
+      "date": "26/06/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=4uZw9LDQg4g=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "E1nOtSqZmEI=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2020.007 v.1.40 - Publicada em 02/08/2024",
+      "date": "02/08/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=E1nOtSqZmEI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "3ogS20ezQ/I=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.001 - v.1.00 - Publicada em 24/02/2021",
+      "date": "24/02/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=3ogS20ezQ/I=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "JBybnXaa1QU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.001 - v.1.01 - Publicada em 06/07/2022",
+      "date": "06/07/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=JBybnXaa1QU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "xiPZuDlV4eY=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.002 - v.1.00 - Publicada em 26/03/2021",
+      "date": "26/03/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=xiPZuDlV4eY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "ONSoKlWi2aA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.002 - v.1.10 - Publicada em 09/07/2021",
+      "date": "09/07/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=ONSoKlWi2aA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "aOZYFk0MTiw=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.002 - v.1.11 - Publicada em 17/03/2022",
+      "date": "17/03/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=aOZYFk0MTiw=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "6wb21O4RVtg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.002 - v.1.11 (correção) - Publicada em 14/12/2022",
+      "date": "14/12/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=6wb21O4RVtg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "hFtSfuCjY0A=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.002 v.1.12 - Publicada em 28/01/2025",
+      "date": "28/01/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=hFtSfuCjY0A=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "iMqXryAlBn4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.003 - v.1.00 - Publicada em 13/09/2021",
+      "date": "13/09/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=iMqXryAlBn4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "mpnXoESqzwE=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.003 - v.1.10 - Publicada em 07/07/2022",
+      "date": "07/07/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=mpnXoESqzwE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "4DkRp4SPAgM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.003 - v.1.20 - Publicada em 14/12/2022",
+      "date": "14/12/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=4DkRp4SPAgM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "4ZobCyIrn9U=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.003 - v.1.21 - Publicada em 30/05/2023",
+      "date": "30/05/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=4ZobCyIrn9U=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "SrQT9ys8ODo=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.003 - v.1.30 - Publicada em 05/12/2023",
+      "date": "05/12/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=SrQT9ys8ODo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "tfoysypOTPE=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.003 - v.1.40 - Publicada em 26/02/2025",
+      "date": "26/02/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=tfoysypOTPE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "ENot2yWE72Q=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.003 - v.1.50 - Publicada em 25/09/2026",
+      "date": "25/09/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=ENot2yWE72Q=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "K2lNvPJ2Ei4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.004 - v.1.00 - Publicada em 29/11/2021",
+      "date": "29/11/2021",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=K2lNvPJ2Ei4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "aSBQN 4e wY=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.004 - v.1.10 - Publicada em 12/01/2022",
+      "date": "12/01/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=aSBQN%204e%20wY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "gv5XFF3hh0Y=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.004 - v.1.20 - Publicada em 14/03/2022",
+      "date": "14/03/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=gv5XFF3hh0Y=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "BTPBprGTrG4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.004 - v.1.21 - Publicada em 18/04/2022",
+      "date": "18/04/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=BTPBprGTrG4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "LA92obztjuA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.004 - v.1.30 - Publicada em 12/05/2022",
+      "date": "12/05/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=LA92obztjuA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "cg5YiSwNBcU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.004 - v.1.31 - Publicada em 08/07/2022",
+      "date": "08/07/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=cg5YiSwNBcU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "JeLYMujeNcU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.004 - v.1.32 - Publicada em 25/07/2022",
+      "date": "25/07/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=JeLYMujeNcU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "No7WPPlEEeg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.004 - v.1.33 - Publicada em 31/08/2022",
+      "date": "31/08/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=No7WPPlEEeg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "mCodklBEULU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.004 - v.1.34 - Publicada em 21/09/2022",
+      "date": "21/09/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=mCodklBEULU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "i0rK6ogxnx8=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2021.004 - v.1.35 - Publicada em 01/11/2022",
+      "date": "01/11/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=i0rK6ogxnx8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "WpIPyTpmMsM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2022.001 - v.1.00 - Publicada em 31/05/2022",
+      "date": "31/05/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=WpIPyTpmMsM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "4HsUqfpp1X0=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2022.002 - v.1.00 - Publicada em 05/07/2022",
+      "date": "05/07/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=4HsUqfpp1X0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "WO8HojcAqOs=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2022.002 - v.1.10 - Publicada em 04/08/2022",
+      "date": "04/08/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=WO8HojcAqOs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": " pNymOM0e5c=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2022.002 v.1.20 - Publicada em 11/11/2025",
+      "date": "11/11/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=%20pNymOM0e5c=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": " IiFtKQlAoQ=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2022.002 v.1.30 - Publicada em 02/03/2026",
+      "date": "02/03/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=%20IiFtKQlAoQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "NpWPjigODyU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2022.002 v.1.30a - Publicada em 26/03/2026",
+      "date": "26/03/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=NpWPjigODyU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "apviUTdjA/E=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2022.003 - v.1.00 - Publicada em 09/11/2022 - Atualizada em 09/11/2022",
+      "date": "09/11/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=apviUTdjA/E=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "rs3weqsjqPE=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2022.003 - v.1.10 - Publicada em 22/12/2022",
+      "date": "22/12/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=rs3weqsjqPE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "/C5jc3RZhNQ=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2022.003 - v.1.11 - Publicada em 25/01/2023",
+      "date": "25/01/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=/C5jc3RZhNQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "kNPvYorj Qs=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2022.004 - v.1.00 - Publicada em 16/12/2022",
+      "date": "16/12/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=kNPvYorj%20Qs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "DRupDGLKaP4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2022.004 - v1.10 - Publicada em 14/02/2023",
+      "date": "14/02/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=DRupDGLKaP4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "1cQAAhUi9mY=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2022.005 - v.1.00 - Publicada em 16/12/2022",
+      "date": "16/12/2022",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=1cQAAhUi9mY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "luPNP4uqZQM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2022.005 - v.1.10 - Publicada em 25/01/2023",
+      "date": "25/01/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=luPNP4uqZQM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "3jGaJGqngls=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2022.005 v.1.11 - Publicada em 11/10/2024",
+      "date": "11/10/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=3jGaJGqngls=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Li420kNzaH0=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.001 - v1.00 - Publicada em 16/02/2023",
+      "date": "16/02/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Li420kNzaH0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "ZD9Zq9iCs8w=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.001 - v1.10 - Publicada em 10/03/2023",
+      "date": "10/03/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=ZD9Zq9iCs8w=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "fA6GQkFjWK0=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.001 - v1.11 - Publicada em 03/04/2023",
+      "date": "03/04/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=fA6GQkFjWK0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "sBgzpM0849E=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.001 - v1.20 - Publicada em 11/04/2023",
+      "date": "11/04/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=sBgzpM0849E=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "B/6oigHgyAw=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.001 - v1.30 - Publicada em 24/08/2023",
+      "date": "24/08/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=B/6oigHgyAw=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "Rm0biO64eeg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.001 - v1.40 - Publicada em 27/09/2023",
+      "date": "27/09/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Rm0biO64eeg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "8YZ0kyjcy6g=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.001 - v1.50 - Publicada em 01/11/2023",
+      "date": "01/11/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=8YZ0kyjcy6g=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "nyszXJzXYlk=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.001 - v1.51 - Publicada em 27/05/2024",
+      "date": "27/05/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=nyszXJzXYlk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "FZn7 YawPY4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.001 v.1.60 - Publicada em 09/06/2025",
+      "date": "09/06/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=FZn7%20YawPY4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "4m9xb5EYa/w=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.002 - v1.00 - Publicada em 24/05/2023",
+      "date": "24/05/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=4m9xb5EYa/w=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "T3QyeMfpios=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.002 v.1.01 - Publicada em 18/11/2025",
+      "date": "18/11/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=T3QyeMfpios=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "1U1vsLzXGPE=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.003 - v1.00 - Publicada em 01/06/2023",
+      "date": "01/06/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=1U1vsLzXGPE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "hXzemuyNHW4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.003 - v1.10 - Publicada em 21/08/2023",
+      "date": "21/08/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=hXzemuyNHW4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "G/2/d90vIC4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.003 v.1.20 - Publicada em 08/10/2024",
+      "date": "08/10/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=G/2/d90vIC4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "NjyiPKZOBFU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.003 v.1.30 - Publicada em 29/07/2026",
+      "date": "29/07/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=NjyiPKZOBFU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "JSxhEY85vRU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.003 v.1.40 - Publicada em 25/09/2026",
+      "date": "25/09/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=JSxhEY85vRU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "/BmhvTh1gRI=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.004 -v.1.00 - Publicada em 11/12/2023",
+      "date": "11/12/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=/BmhvTh1gRI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "eWTd1q6pRMM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.004 -v.1.10 - Publicada em 02/02/2024",
+      "date": "02/02/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=eWTd1q6pRMM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "gHveCSDQhSM=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.004 -v.1.11 - Publicada em 19/03/2024",
+      "date": "19/03/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=gHveCSDQhSM=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "hoSIJ5lGBNc=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.004 v.1.20 - Publicada em 07/10/2024",
+      "date": "07/10/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=hoSIJ5lGBNc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "DyTMNOYLDgE=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.005 - v.1.00 - Publicada em 20/12/2023",
+      "date": "20/12/2023",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=DyTMNOYLDgE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "pHDvlSJIO00=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2023.005 - v.1.02 - Publicada em 26/04/2024",
+      "date": "26/04/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=pHDvlSJIO00=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "6luq3tpmg08=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2024.001 -v.1.00 - Publicada em 12/04/2024",
+      "date": "12/04/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=6luq3tpmg08=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "kyIo/HqJ3n0=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2024.001 -v.1.10 - Publicada em 17/06/2024",
+      "date": "17/06/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=kyIo/HqJ3n0=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "kIiniiSkpKc=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2024.001 v.1.20 - Publicada em 29/08/2024",
+      "date": "29/08/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=kIiniiSkpKc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "sNOtscnJo6w=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2024.002 - v.1.00 - Publicada em 27/05/2024",
+      "date": "27/05/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=sNOtscnJo6w=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "7fsG1qp0vrU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2024.003 - v.1.00 - Publicada em 17/09/2024",
+      "date": "17/09/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=7fsG1qp0vrU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "dMiMZQil B8=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2024.003 v.1.01 - Publicada em 09/10/2024",
+      "date": "09/10/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=dMiMZQil%20B8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "CSFwxvS0yKg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2024.003 v.1.03 - Publicada em 24/02/2025",
+      "date": "24/02/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=CSFwxvS0yKg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "cxMJm9jaFo8=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2024.003 v.1.04 - Publicada em 27/05/2025",
+      "date": "27/05/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=cxMJm9jaFo8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "20sEGWECyAI=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2024.003 v.1.05 - Publicada em 10/06/2025",
+      "date": "10/06/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=20sEGWECyAI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "2q0DSboUCOw=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2024.003 v.1.06 - Publicada em 27/06/2025",
+      "date": "27/06/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=2q0DSboUCOw=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "geby3m13 Vg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2024.003 v.1.07 - Publicada em 03/10/2025",
+      "date": "03/10/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=geby3m13%20Vg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "PBCYnANG1vU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2024.003 v.1.08 - Publicada em 24/10/2025",
+      "date": "24/10/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=PBCYnANG1vU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": " cVstk1aziE=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2024.003 v.1.09 - Publicada em 11/03/2026",
+      "date": "11/03/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=%20cVstk1aziE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "iamjHzm 4/I=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2024.003 v.1.10 - Publicada em 11/05/2026",
+      "date": "11/05/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=iamjHzm%204/I=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "trSXReoZPuY=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.001 v.1.00 - Publicada em 25/03/2025",
+      "date": "25/03/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=trSXReoZPuY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "uE fQh6OuYw=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.001 v.1.01 - Publicada em 26/06/2025",
+      "date": "26/06/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=uE%20fQh6OuYw=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "3NLMgy80wTE=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.001 v.1.02 - Publicada em 02/09/2025",
+      "date": "02/09/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=3NLMgy80wTE=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "NvuzQGYd6E8=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.001. v.1.03 - Corrigido - Publicada em 29/09/2025",
+      "date": "29/09/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=NvuzQGYd6E8=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "6vT0rTNhFLY=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.002 v.1.30 - Publicada em 03/10/2025",
+      "date": "03/10/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=6vT0rTNhFLY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "xxtjiU7xjnk=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.002 v.1.31 - Publicada em 11/11/2025",
+      "date": "11/11/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=xxtjiU7xjnk=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "8H1QDj2ADhQ=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.002 v.1.32 - Publicada em 25/11/2025",
+      "date": "25/11/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=8H1QDj2ADhQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "AklZnck3o6I=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.002 v.1.33 - Publicada em 02/12/2025",
+      "date": "02/12/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=AklZnck3o6I=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "IwLPdZ67F5M=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.002 v.1.34 - Publicada em 04/12/2025",
+      "date": "04/12/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=IwLPdZ67F5M=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "SA3Qh5Htywo=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.002 v.1.35 - Publicada em 31/03/2026",
+      "date": "31/03/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=SA3Qh5Htywo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "bBbBVKSai3U=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.002 v.1.36 - Publicada em 30/04/2026",
+      "date": "30/04/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=bBbBVKSai3U=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "lWEyoabukyw=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.002 v.1.40 - Publicada em 20/05/2026",
+      "date": "20/05/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=lWEyoabukyw=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "pD4YrecPV6s=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.002 v.1.50 - Publicada em 03/06/2026",
+      "date": "03/06/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=pD4YrecPV6s=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "AKD/muSmiIY=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.002 v.1.51 - Publicada em 04/08/2026",
+      "date": "04/08/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=AKD/muSmiIY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "HXPO8VLbh4o=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.002 v.1.52 - Publicada em 01/10/2026",
+      "date": "01/10/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=HXPO8VLbh4o=",
+      "adoptedAt": "2026-10-15T02:45:52.318Z",
+      "sha256": "54ed893327040a20a4a3c0562d342953542a1dc98e55d73dbe607d6c13d3d416",
+      "pdfPath": "pkg/nfe/resources/sefaz_docs/inbox/pdf/notas-tecnicas-nota-tecnica-2025-002-v-1-52-publicada-em-01-10-2026-HXPO8VLbh4.pdf",
+      "mdPath": "pkg/nfe/resources/sefaz_docs/inbox/md/notas-tecnicas-nota-tecnica-2025-002-v-1-52-publicada-em-01-10-2026-HXPO8VLbh4.md"
+    },
+    {
+      "key": "YmYqYBW8gGQ=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.002.v.1.00 - Publicada em 28/03/2025",
+      "date": "28/03/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=YmYqYBW8gGQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "wuVuolIzJLs=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.002.v.1.01 - Publicada em 15/04/2025",
+      "date": "15/04/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=wuVuolIzJLs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "B7DBKw UPbs=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.002.v.1.10 - Publicada em 09/06/2025",
+      "date": "09/06/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=B7DBKw%20UPbs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "YFz9is R6tw=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2025.002.v.1.20 - Publicada em 30/07/2025",
+      "date": "30/07/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=YFz9is%20R6tw=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "52e8psumXNc=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.001 v.1.00 - Publicada em 22/04/2026",
+      "date": "22/04/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=52e8psumXNc=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "/DaakiRMGrw=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.001 v.1.02 - Publicada em 09/06/2026",
+      "date": "09/06/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=/DaakiRMGrw=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "17/3gkpGzPY=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.001 v.1.02a - Publicada em 23/06/2026",
+      "date": "23/06/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=17/3gkpGzPY=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "AlgHfV6gpAU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.001 v.1.02b - Publicada em 31/07/2026",
+      "date": "31/07/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=AlgHfV6gpAU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "3v7VFvaogiA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.002 v.1.00 - Publicada em 25/05/2026",
+      "date": "25/05/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=3v7VFvaogiA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "3K1wvjKu/gs=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.002 v.1.10 - Publicada em 04/08/2026",
+      "date": "04/08/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=3K1wvjKu/gs=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "8zOzIahvn8I=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.002 v.1.10a - Publicada em 25/08/2026",
+      "date": "25/08/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=8zOzIahvn8I=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "m8aACnFLK/Y=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.002 v.1.11 - Publicada em 01/10/2026",
+      "date": "01/10/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=m8aACnFLK/Y=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "2YdaBTIql k=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.003 v.1.00 - Publicada em 25/05/2026",
+      "date": "25/05/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=2YdaBTIql%20k=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "2/TP/AP Pb4=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.004 v.1.00 - Publicada em 30/04/2026",
+      "date": "30/04/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=2/TP/AP%20Pb4=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "BTZQzgsO9Ws=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.004 v.1.01 - Publicada em 08/06/2026",
+      "date": "08/06/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=BTZQzgsO9Ws=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "k7zG06n5M6I=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.006 v.1.00 - Publicada em 25/08/2026",
+      "date": "25/08/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=k7zG06n5M6I=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "jVEAeMhv83w=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.007 v.1.00 - Publicada em 04/08/2026",
+      "date": "04/08/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=jVEAeMhv83w=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "fpJlwzhffcQ=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.007 v.1.10 - Publicada em 01/10/2026",
+      "date": "01/10/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=fpJlwzhffcQ=",
+      "adoptedAt": "2026-10-15T02:45:52.318Z",
+      "sha256": "4a9d9de64504f4091c55e3e8a2d499116d4bac1a2009a874a7b9ce26d9fe8b10",
+      "pdfPath": "pkg/nfe/resources/sefaz_docs/inbox/pdf/notas-tecnicas-nota-tecnica-2026-007-v-1-10-publicada-em-01-10-2026-fpJlwzhffc.pdf",
+      "mdPath": "pkg/nfe/resources/sefaz_docs/inbox/md/notas-tecnicas-nota-tecnica-2026-007-v-1-10-publicada-em-01-10-2026-fpJlwzhffc.md"
+    },
+    {
+      "key": "qAoMot6VyiY=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.008 v.1.00 - Publicada em 01/10/2026",
+      "date": "01/10/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=qAoMot6VyiY=",
+      "adoptedAt": "2026-10-15T02:45:52.318Z",
+      "sha256": "bc56e76ae5f3354f7ae636d87908840c5c685284f0f8f32bb29579f8124e44cd",
+      "pdfPath": "pkg/nfe/resources/sefaz_docs/inbox/pdf/notas-tecnicas-nota-tecnica-2026-008-v-1-00-publicada-em-01-10-2026-qAoMot6Vyi.pdf",
+      "mdPath": "pkg/nfe/resources/sefaz_docs/inbox/md/notas-tecnicas-nota-tecnica-2026-008-v-1-00-publicada-em-01-10-2026-qAoMot6Vyi.md"
+    },
+    {
+      "key": "ADlgg2xjMZI=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.009 v.1.00 - Publicada em 09/09/2026",
+      "date": "09/09/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=ADlgg2xjMZI=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "ugn4MYF5PLg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica 2026.010 v.1.00 - Publicada em 01/10/2026",
+      "date": "01/10/2026",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=ugn4MYF5PLg=",
+      "adoptedAt": "2026-10-15T02:45:52.318Z",
+      "sha256": "eadc5246235f37a55f8140ddcf84595c8ce77f2d760f111f7b85ddf389b8f484",
+      "pdfPath": "pkg/nfe/resources/sefaz_docs/inbox/pdf/notas-tecnicas-nota-tecnica-2026-010-v-1-00-publicada-em-01-10-2026-ugn4MYF5PL.pdf",
+      "mdPath": "pkg/nfe/resources/sefaz_docs/inbox/md/notas-tecnicas-nota-tecnica-2026-010-v-1-00-publicada-em-01-10-2026-ugn4MYF5PL.md"
+    },
+    {
+      "key": "5ZkvIZt10mQ=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica Conjunta 2025.001 - Publicada em 08/05/2025",
+      "date": "08/05/2025",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=5ZkvIZt10mQ=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "wI3fsjkCDWg=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica NFC-e 2014.001 - Publicada em 20/08/2014",
+      "date": "20/08/2014",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=wI3fsjkCDWg=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "3EB/BUc8g I=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica NFC-e 2014.003 - v.1.00 - Publicada em 30/05/2014",
+      "date": "30/05/2014",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=3EB/BUc8g%20I=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "HYPw DBncKo=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "Nota Técnica NFC-e 2014.003 - v.1.02 - Publicada em 12/01/2015",
+      "date": "12/01/2015",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=HYPw%20DBncKo=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "DaB0yzqdbRU=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "RT - Nota Técnica 2024.002 v.1.10 - IBS/CBS - Publicada em 06/12/2024",
+      "date": "06/12/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=DaB0yzqdbRU=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    },
+    {
+      "key": "OJQR7LXdlWA=",
+      "rootKey": "notas-tecnicas",
+      "section": "Notas Técnicas",
+      "title": "RT Nota Técnica 2024.002 - IBS/CBS - Publicada em 01/08/2024",
+      "date": "01/08/2024",
+      "sourceHref": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=OJQR7LXdlWA=",
+      "adoptedAt": "2026-10-15T02:44:48.253Z"
+    }
+  ]
+}

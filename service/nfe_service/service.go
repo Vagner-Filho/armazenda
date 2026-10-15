@@ -43,7 +43,7 @@ func NewNFeService() *NFeService {
 // without allocating a number, signing, or persisting anything.
 // The overrides struct carries per-emission user inputs that take precedence over
 // the farm config defaults. Nil fields in overrides mean "use the default".
-func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates, overrides *entity.InvoiceOverrides) (entity.InvoiceInput, entity_public.Departure, *entity_public.FarmConfig, entity_public.Product, emissionTaxSnapshot, entity_public.Toast) {
+func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates, overrides *entity.InvoiceOverrides, emissionInputs *entity.InvoiceEmissionInputs) (entity.InvoiceInput, entity_public.Departure, *entity_public.FarmConfig, entity_public.Product, emissionTaxSnapshot, entity_public.Toast) {
 	var emptyInput entity.InvoiceInput
 
 	// Get departure
@@ -189,6 +189,22 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 		)
 	}
 	codes := MergeEffectiveOverrides(overrides, farmNFeConfig, regime)
+	if codeErrors := validateDepartureTaxCodes(codes, regime); len(codeErrors) > 0 {
+		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast(
+			"Código tributário inválido",
+			strings.Join(codeErrors, "; "),
+		)
+	}
+	var departureOptions *entity.DepartureInvoiceOverrides
+	if overrides != nil {
+		departureOptions = overrides.Departure
+	}
+	if paymentErrors := validateDeparturePayment(departureOptions); len(paymentErrors) > 0 {
+		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast(
+			"Dados de pagamento inválidos",
+			strings.Join(paymentErrors, "; "),
+		)
+	}
 	items := s.buildItems(departure, unitPrice, effectiveNCM, effectiveCEST, effectiveUnit, effectiveDescription, regime, effectiveCFOP, rates, codes)
 
 	// Determine NaturezaOp from overrides, config, or derive from CFOP
@@ -206,8 +222,18 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	if overrides != nil && overrides.ModFrete != nil {
 		effectiveModFrete = *overrides.ModFrete
 	}
+	if emissionInputs != nil {
+		effectiveModFrete = emissionInputs.Transport.ModFrete
+	}
+	if !validDepartureModFrete(effectiveModFrete) {
+		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast(
+			"Modalidade de frete inválida",
+			"Selecione uma modalidade de frete válida",
+		)
+	}
 
-	// Build transport data: map departure vehicle + weights
+	// Build transport data: preserve the romaneio-derived vehicle and volumes
+	// unless the user supplied explicit Grupo X choices.
 	transport := entity.TransportData{
 		ModFrete: effectiveModFrete,
 	}
@@ -229,6 +255,23 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 			PesoB: departure.GrossWeight,
 		}}
 	}
+	if emissionInputs != nil {
+		transport = emissionInputs.Transport
+	} else {
+		var transportForm *entity.DepartureTransportInput
+		if departureOptions != nil {
+			transportForm = &departureOptions.Transport
+		}
+		var transportErrors []string
+		transport, transportErrors = mergeDepartureTransport(
+			transport, transportForm, departure, farmNFeConfig.EmitterUF, recipient.UF)
+		if len(transportErrors) > 0 {
+			return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast(
+				"Dados de transporte inválidos",
+				strings.Join(transportErrors, "; "),
+			)
+		}
+	}
 
 	// Build CND additional info: certificate blocks first, then all metadata.
 	infCpl := BuildDefaultInfCpl(farmNFeConfig.FarmCND, person.PersonCND)
@@ -240,26 +283,31 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 
 	// Build input
 	input := entity.InvoiceInput{
-		Serie:       farmNFeConfig.Serie,
-		Numero:      0,
-		Environment: farmNFeConfig.Environment,
-		NaturezaOp:  naturezaOp,
-		Emitter:     emitter,
-		Recipient:   recipient,
-		Items:       items,
-		Transport:   transport,
-		Payment: entity.PaymentData{
-			IndPag: 1,
-			Detalhes: []entity.PagamentoDetalhe{
-				{
-					IndPag: 1,
-					TPag:   "90",
-					VPag:   departure.NetWeight.Mul(unitPrice),
-				},
-			},
-		},
+		Serie:                 farmNFeConfig.Serie,
+		Numero:                0,
+		Environment:           farmNFeConfig.Environment,
+		NaturezaOp:            naturezaOp,
+		Emitter:               emitter,
+		Recipient:             recipient,
+		Items:                 items,
+		Transport:             transport,
+		Payment:               departurePayment(departureOptions, departure.NetWeight.Mul(unitPrice)),
+		Cobranca:              &entity.CobrancaData{Enabled: departureCobrancaEnabled(departureOptions)},
 		TotalValue:            departure.NetWeight.Mul(unitPrice),
 		InformacoesAdicionais: infCpl,
+	}
+	applyInvoiceEmissionInputs(&input, emissionInputs)
+
+	// infRespTec (E28a, NT 2022.002): system-scoped — the software vendor
+	// behind Armazenda, identical for every farm. See
+	// docs/sdd/resptec_system_defaults/sdd.md.
+	if defaults.RespTecConfigured() {
+		input.RespTec = &entity.RespTecData{
+			CNPJ:     defaults.RespTec.CNPJ,
+			XContato: defaults.RespTec.XContato,
+			Email:    defaults.RespTec.Email,
+			Fone:     defaults.RespTec.Fone,
+		}
 	}
 
 	return input, departure, farmNFeConfig, product, emissionTaxSnapshot{Rates: rates, Codes: codes}, entity_public.Toast{}
@@ -269,7 +317,7 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 // If the normal SEFAZ is unavailable, it automatically tries SVC. If both are down,
 // the invoice is saved as 'draft' and an error is returned — no DANFE is issued.
 func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates, overrides *entity.InvoiceOverrides) (string, entity_public.Toast) {
-	input, departure, farmNFeConfig, product, snap, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop, userRates, overrides)
+	input, departure, farmNFeConfig, product, snap, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop, userRates, overrides, nil)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		return "", toast
 	}
@@ -330,7 +378,7 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	invoiceID, createErr := nfeModel.CreateInvoiceWithEmission(departureID, accessKey, farmNFeConfig.Serie, number,
 		farmNFeConfig.DefaultCFOP, product.NCM, departure.NetWeight, unitPrice, input.TotalValue,
 		totalIBSValue, totalCBSValue,
-		1, nil, "", &snap.Rates, &snap.Codes)
+		1, nil, "", &snap.Rates, &snap.Codes, emissionInputsFromInvoiceInput(input))
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateInvoice error: %v", createErr.Error()))
 		return "", entity_public.GetErrorToast("Failed to save invoice", "")
@@ -463,7 +511,7 @@ func (s *NFeService) attemptSVCContingency(input entity.InvoiceInput, departure 
 		departure.Id, newAccessKey, farmNFeConfig.Serie, newNumber,
 		farmNFeConfig.DefaultCFOP, product.NCM, departure.NetWeight, unitPrice, input.TotalValue,
 		totalIBSValue, totalCBSValue,
-		int(tpEmis), now, reason, taxRates, taxCodes,
+		int(tpEmis), now, reason, taxRates, taxCodes, emissionInputsFromInvoiceInput(input),
 	)
 	if createErr != nil {
 		model_error.GetLoggerModel().Log(fmt.Sprintf("CreateInvoice (SVC) error: %v", createErr.Error()))
@@ -642,7 +690,7 @@ func (s *NFeService) CancelInvoice(accessKey, justification string, farmID uint3
 // GeneratePreviewDANFE builds a preview DANFE PDF without allocating an invoice number,
 // signing, or persisting anything. It returns the PDF bytes and any validation toast.
 func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.Decimal, farmID uint32, cfop string, userRates entity.TaxRates, overrides *entity.InvoiceOverrides) ([]byte, entity_public.Toast) {
-	input, _, _, _, _, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop, userRates, overrides)
+	input, _, _, _, _, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop, userRates, overrides, nil)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		return nil, toast
 	}
@@ -752,6 +800,7 @@ func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.
 	if transport.Veiculo != nil {
 		data.VeicPlate = transport.Veiculo.Placa
 		data.VeicUF = transport.Veiculo.UF
+		data.VeicRNTC = transport.Veiculo.RNTC
 	}
 
 	generator := service.NewDANFEGenerator()
@@ -821,14 +870,38 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 		picms = decimal.Zero
 	} else {
 		icmsCST = codeOr(codes.ICMSCST, defaults.CSTTributadaIntegral)
-		vBC = totalValue
-		vICMS = totalValue.Mul(icmsRate)
-		picms = icmsRate.Mul(decimal.NewFromInt(100)) // rate as percentage
+		// Only CSTs whose emitted group declares vBC/pICMS/vICMS (00/20/51/90)
+		// carry item-level values; isenta/não tributada/suspensão (40/41/50)
+		// emit ICMS40 with only orig+CST, so their values stay zero and
+		// ICMSTot equals the sum of the declared item values (SEFAZ Rej. 531).
+		if defaults.ICMSDeclaresValues(icmsCST) {
+			vBC = totalValue
+			vICMS = totalValue.Mul(icmsRate)
+			picms = icmsRate.Mul(decimal.NewFromInt(100)) // rate as percentage
+		}
 	}
 
 	pisCST := codeOr(codes.PISCST, "01")
 
 	cofinsCST := codeOr(codes.COFINSCST, "01")
+
+	// PIS/COFINS values mirror the emitted group: PISAliq/COFINSAliq
+	// (CST 01/02) declare vBC/pPIS/vPIS; NT codes (04–09) emit
+	// PISNT/COFINSNT with a single <CST> child, so their values stay
+	// zero and the totals equal the sum of the item-declared values
+	// (SEFAZ Rej. 531 family).
+	pisData := entity.PISData{CST: pisCST}
+	if defaults.PISDeclaresValues(pisCST) {
+		pisData.VBC = totalValue
+		pisData.PPIS = pisRate.Mul(decimal.NewFromInt(100))
+		pisData.VPIS = totalValue.Mul(pisRate)
+	}
+	cofinsData := entity.COFINSData{CST: cofinsCST}
+	if defaults.COFINSDeclaresValues(cofinsCST) {
+		cofinsData.VBC = totalValue
+		cofinsData.PCOFINS = cofinsRate.Mul(decimal.NewFromInt(100))
+		cofinsData.VCOFINS = totalValue.Mul(cofinsRate)
+	}
 
 	// Description fallback: if empty, try the product defaults; finally "Produto Agricola"
 	if description == "" {
@@ -898,18 +971,8 @@ func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice dec
 					PICMS:  picms,
 					VICMS:  vICMS,
 				},
-				PIS: entity.PISData{
-					CST:  pisCST,
-					VBC:  totalValue,
-					PPIS: pisRate.Mul(decimal.NewFromInt(100)),
-					VPIS: totalValue.Mul(pisRate),
-				},
-				COFINS: entity.COFINSData{
-					CST:     cofinsCST,
-					VBC:     totalValue,
-					PCOFINS: cofinsRate.Mul(decimal.NewFromInt(100)),
-					VCOFINS: totalValue.Mul(cofinsRate),
-				},
+				PIS:    pisData,
+				COFINS: cofinsData,
 				IBSCBS: entity.IBSCBSData{
 					CST:        ibsCbsCST,
 					CClassTrib: cClassTrib,

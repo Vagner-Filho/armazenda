@@ -15,6 +15,7 @@ import (
 	"armazenda/model/nfe_model"
 	"armazenda/model/person_model"
 	"armazenda/model/product_model"
+	"armazenda/model/vehicle_model"
 	"armazenda/pkg/nfe/defaults"
 	"armazenda/pkg/nfe/entity"
 	nfe_pdf "armazenda/pkg/nfe/service"
@@ -54,7 +55,12 @@ func buildNFe(c *gin.Context) {
 		return
 	}
 
-	overrides := parseInvoiceOverrides(c)
+	overrides, overrideToast := parseDepartureFormOverrides(c)
+	if overrideToast.Type == entity_public.WarningToast || overrideToast.Type == entity_public.ErrorToast {
+		c.Header("HX-Trigger", string(overrideToast.ToJson()))
+		c.Status(http.StatusBadRequest)
+		return
+	}
 
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
@@ -104,7 +110,12 @@ func previewNFe(c *gin.Context) {
 		return
 	}
 
-	overrides := parseInvoiceOverrides(c)
+	overrides, overrideToast := parseDepartureFormOverrides(c)
+	if overrideToast.Type == entity_public.WarningToast || overrideToast.Type == entity_public.ErrorToast {
+		c.Header("HX-Trigger", string(overrideToast.ToJson()))
+		c.Status(http.StatusBadRequest)
+		return
+	}
 
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
@@ -137,32 +148,50 @@ func previewNFe(c *gin.Context) {
 
 	nonce, _ := c.Get("csp_nonce")
 	c.HTML(http.StatusOK, "nfe-preview", gin.H{
-		"DepartureID": departureID,
-		"Product":     productName,
-		"NetWeight":   departure.NetWeight,
-		"UnitPrice":   unitPrice,
-		"TotalValue":  departure.NetWeight.Mul(unitPrice),
-		"PDFBase64":   base64.StdEncoding.EncodeToString(pdfBytes),
-		"CFOP":        cfop,
-		"ICMSRate":    rateDisplayString(userRates.ICMSRate),
-		"PISRate":     rateDisplayString(userRates.PISRate),
-		"COFINSRate":  rateDisplayString(userRates.COFINSRate),
-		"IBSRate":     rateDisplayString(userRates.IBSRate),
-		"CBSRate":     rateDisplayString(userRates.CBSRate),
-		"NaturezaOp":  safeFormValue(c, "naturezaOp"),
-		"ProductDesc": safeFormValue(c, "productDesc"),
-		"NCM":         safeFormValue(c, "ncm"),
-		"CEST":        safeFormValue(c, "cest"),
-		"Unit":        safeFormValue(c, "unit"),
-		"ModFrete":    safeFormValue(c, "modFrete"),
-		"ICMSCST":     safeFormValue(c, "icmsCST"),
-		"PISCST":      safeFormValue(c, "pisCST"),
-		"COFINSCST":   safeFormValue(c, "cofinsCST"),
-		"CBSCST":      safeFormValue(c, "cbsCST"),
-		"IBSCST":      safeFormValue(c, "ibsCST"),
-		"CClassTrib":  safeFormValue(c, "cClassTrib"),
-		"InfCpl":      safeFormValue(c, "infCpl"),
-		"CSPNonce":    nonce.(string),
+		"DepartureID":         departureID,
+		"Product":             productName,
+		"NetWeight":           departure.NetWeight,
+		"UnitPrice":           unitPrice,
+		"TotalValue":          departure.NetWeight.Mul(unitPrice),
+		"PDFBase64":           base64.StdEncoding.EncodeToString(pdfBytes),
+		"CFOP":                cfop,
+		"ICMSRate":            rateDisplayString(userRates.ICMSRate),
+		"PISRate":             rateDisplayString(userRates.PISRate),
+		"COFINSRate":          rateDisplayString(userRates.COFINSRate),
+		"IBSRate":             rateDisplayString(userRates.IBSRate),
+		"CBSRate":             rateDisplayString(userRates.CBSRate),
+		"NaturezaOp":          safeFormValue(c, "naturezaOp"),
+		"ProductDesc":         safeFormValue(c, "productDesc"),
+		"NCM":                 safeFormValue(c, "ncm"),
+		"CEST":                safeFormValue(c, "cest"),
+		"Unit":                safeFormValue(c, "unit"),
+		"ModFrete":            safeFormValue(c, "modFrete"),
+		"ICMSCST":             safeFormValue(c, "icmsCST"),
+		"PISCST":              safeFormValue(c, "pisCST"),
+		"COFINSCST":           safeFormValue(c, "cofinsCST"),
+		"CBSCST":              safeFormValue(c, "cbsCST"),
+		"IBSCST":              safeFormValue(c, "ibsCST"),
+		"CClassTrib":          safeFormValue(c, "cClassTrib"),
+		"InfCpl":              safeFormValue(c, "infCpl"),
+		"TPag":                formValueOr(c, "tpag", "90"),
+		"TransportNome":       safeFormValue(c, "transportNome"),
+		"TransportDocumento":  safeFormValue(c, "transportDocumento"),
+		"TransportIE":         safeFormValue(c, "transportIE"),
+		"TransportLogradouro": safeFormValue(c, "transportLogradouro"),
+		"TransportNumero":     safeFormValue(c, "transportNumero"),
+		"TransportMunicipio":  safeFormValue(c, "transportMunicipio"),
+		"TransportUF":         safeFormValue(c, "transportUF"),
+		"IncludeVehicle":      formBoolValue(c, "includeVehicle"),
+		"TransportPlaca":      safeFormValue(c, "transportPlaca"),
+		"TransportPlacaUF":    safeFormValue(c, "transportPlacaUF"),
+		"TransportRNTC":       safeFormValue(c, "transportRNTC"),
+		"IncludeVolumes":      formBoolValue(c, "includeVolumes"),
+		"VolQtd":              safeFormValue(c, "volQtd"),
+		"VolEsp":              safeFormValue(c, "volEsp"),
+		"VolMarca":            safeFormValue(c, "volMarca"),
+		"VolPesoL":            safeFormValue(c, "volPesoL"),
+		"VolPesoB":            safeFormValue(c, "volPesoB"),
+		"CSPNonce":            nonce.(string),
 	})
 }
 
@@ -646,11 +675,13 @@ func getNFeEmitModal(c *gin.Context) {
 	var defaultNaturezaOp, defaultCEST, defaultUnit, defaultICMSCST, defaultPISCST, defaultCOFINSCST *string
 	var defaultCBSCST, defaultIBSCST, defaultCClassTrib *string
 	var defaultModFrete int
+	taxRegime := defaults.TaxRegimeSimplesNacional
 	var defaultCFOP string
 	var farmNFeConfig *entity_public.FarmConfig
 	hasConfig := false
 	if fc, fcErr := nfeModel.GetFarmConfig(farmID); fcErr == nil && fc != nil {
 		farmNFeConfig = fc
+		taxRegime = defaults.TaxRegime(fc.TaxRegime)
 		defaultICMS = fc.ICMSRate
 		defaultPIS = fc.PISRate
 		defaultCOFINS = fc.COFINSRate
@@ -691,30 +722,61 @@ func getNFeEmitModal(c *gin.Context) {
 		}
 	}
 
+	defaultTransportPlate := ""
+	defaultTransportPlateUF := ""
+	defaultUseVehicle := false
+	if departure.Vehicle > 0 {
+		if vehicle, vehicleErr := vehicle_model.GetVehicleModel().GetVehicle(departure.Vehicle); vehicleErr == nil && vehicle.Plate != "" {
+			defaultTransportPlate = vehicle.Plate
+			if farmNFeConfig != nil {
+				defaultTransportPlateUF = farmNFeConfig.EmitterUF
+				defaultUseVehicle = true
+			}
+		}
+	}
+	defaultUseVolumes := !departure.NetWeight.IsZero() || !departure.GrossWeight.IsZero()
+	defaultVolQtd := "1"
+	defaultVolEsp := "Granel"
+	defaultVolPesoL := departure.NetWeight.StringFixed(3)
+	defaultVolPesoB := departure.GrossWeight.StringFixed(3)
+
 	c.HTML(http.StatusOK, "nfe-emit-modal", gin.H{
-		"DepartureID":        departureID,
-		"Product":            product.Name,
-		"NetWeight":          departure.NetWeight,
-		"DefaultICMSRate":    percentDisplay(defaultICMS),
-		"DefaultPISRate":     percentDisplay(defaultPIS),
-		"DefaultCOFINSRate":  percentDisplay(defaultCOFINS),
-		"DefaultIBSRate":     percentDisplay(defaultIBS),
-		"DefaultCBSRate":     percentDisplay(defaultCBS),
-		"DefaultNaturezaOp":  safePtrString(defaultNaturezaOp),
-		"DefaultProductDesc": product.Name,
-		"DefaultNCM":         product.NCM,
-		"DefaultCEST":        safePtrString(defaultCEST),
-		"DefaultUnit":        safePtrString(defaultUnit),
-		"DefaultModFrete":    defaultModFrete,
-		"DefaultICMSCST":     safePtrString(defaultICMSCST),
-		"DefaultPISCST":      safePtrString(defaultPISCST),
-		"DefaultCOFINSCST":   safePtrString(defaultCOFINSCST),
-		"DefaultCBSCST":      safePtrString(defaultCBSCST),
-		"DefaultIBSCST":      safePtrString(defaultIBSCST),
-		"DefaultCClassTrib":  safePtrString(defaultCClassTrib),
-		"DefaultInfCpl":      defaultInfCpl,
-		"CSPNonce":           nonce.(string),
-		"HasNFEFarmConfig":   hasConfig,
+		"DepartureID":             departureID,
+		"Product":                 product.Name,
+		"NetWeight":               departure.NetWeight,
+		"DefaultICMSRate":         percentDisplay(defaultICMS),
+		"DefaultPISRate":          percentDisplay(defaultPIS),
+		"DefaultCOFINSRate":       percentDisplay(defaultCOFINS),
+		"DefaultIBSRate":          percentDisplay(defaultIBS),
+		"DefaultCBSRate":          percentDisplay(defaultCBS),
+		"DefaultNaturezaOp":       safePtrString(defaultNaturezaOp),
+		"DefaultProductDesc":      product.Name,
+		"DefaultNCM":              product.NCM,
+		"DefaultCEST":             safePtrString(defaultCEST),
+		"DefaultUnit":             safePtrString(defaultUnit),
+		"DefaultModFrete":         defaultModFrete,
+		"DefaultTPag":             "90",
+		"DefaultUseVehicle":       defaultUseVehicle,
+		"DefaultTransportPlate":   defaultTransportPlate,
+		"DefaultTransportPlateUF": defaultTransportPlateUF,
+		"DefaultUseVolumes":       defaultUseVolumes,
+		"DefaultVolQtd":           defaultVolQtd,
+		"DefaultVolEsp":           defaultVolEsp,
+		"DefaultVolPesoL":         defaultVolPesoL,
+		"DefaultVolPesoB":         defaultVolPesoB,
+		"DefaultICMSCST":          safePtrString(defaultICMSCST),
+		"DefaultPISCST":           safePtrString(defaultPISCST),
+		"DefaultCOFINSCST":        safePtrString(defaultCOFINSCST),
+		"DefaultCBSCST":           safePtrString(defaultCBSCST),
+		"DefaultIBSCST":           safePtrString(defaultIBSCST),
+		"DefaultCClassTrib":       safePtrString(defaultCClassTrib),
+		"TaxRegime":               taxRegime,
+		"IsSimpleNational":        taxRegime == defaults.TaxRegimeSimplesNacional,
+		"ICMSCodeOptions":         nfe_service.DepartureICMSOptions(taxRegime),
+		"PISCOFINSOptions":        nfe_service.DeparturePISCOFINSOptions(),
+		"DefaultInfCpl":           defaultInfCpl,
+		"CSPNonce":                nonce.(string),
+		"HasNFEFarmConfig":        hasConfig,
 	})
 }
 
@@ -948,6 +1010,18 @@ func parseInvoiceOverrides(c *gin.Context) *entity.InvoiceOverrides {
 // safeFormValue returns the trimmed form value or an empty string.
 func safeFormValue(c *gin.Context, key string) string {
 	return strings.TrimSpace(c.PostForm(key))
+}
+
+func formValueOr(c *gin.Context, key, fallback string) string {
+	if value := safeFormValue(c, key); value != "" {
+		return value
+	}
+	return fallback
+}
+
+func formBoolValue(c *gin.Context, key string) bool {
+	value := strings.ToLower(safeFormValue(c, key))
+	return value == "1" || value == "true" || value == "on"
 }
 
 // safePtrString returns the string pointed to by p, or an empty string if p is nil.

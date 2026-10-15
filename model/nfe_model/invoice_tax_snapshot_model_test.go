@@ -171,7 +171,7 @@ func TestInvoice_TaxSnapshot_DBRoundTrip(t *testing.T) {
 		"5101", "12019000",
 		decimal.RequireFromString("100"), decimal.RequireFromString("150.25"),
 		decimal.RequireFromString("15025"), decimal.Zero, decimal.Zero,
-		1, nil, "", snapshotRates(), snapshotCodes(),
+		1, nil, "", snapshotRates(), snapshotCodes(), nil,
 	)
 	if createErr != nil {
 		t.Fatalf("CreateInvoiceWithEmission failed: %v", createErr)
@@ -250,6 +250,7 @@ func TestDetachedInvoice_TaxSnapshot_DBRoundTrip(t *testing.T) {
 		decimal.NewFromInt(100), decimal.Zero, decimal.Zero,
 		1, nil, "", snapshotRates(), snapshotCodes(),
 		[]nfe_model.DetachedInvoiceItem{},
+		"1", nil, nil,
 	)
 	if createErr != nil {
 		t.Fatalf("CreateDetachedInvoice failed: %v", createErr)
@@ -321,6 +322,7 @@ func TestDetachedInvoice_TaxSnapshot_DBRoundTrip(t *testing.T) {
 		decimal.NewFromInt(100), decimal.Zero, decimal.Zero,
 		1, nil, "", nil, snapshotCodes(),
 		[]nfe_model.DetachedInvoiceItem{},
+		"1", nil, nil,
 	)
 	if createErr != nil {
 		t.Fatalf("CreateDetachedInvoice (legacy shape) failed: %v", createErr)

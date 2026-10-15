@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { login, TEST_ADMIN, visitHome } from '../utils/auth';
 
+const LOGIN_URL = (process.env.BASE_URL || 'http://localhost:8100')
+  .replace('localhost', '127.0.0.1') + '/';
+
 test.describe('Login Flow', () => {
   test('should display login page', async ({ page }) => {
     await visitHome(page);
@@ -38,7 +41,7 @@ test.describe('Login Flow', () => {
     await page.click('button[type="submit"]');
 
     // INFO: localhost replaced by 127 on visitHome func
-    await expect(page).toHaveURL('http://127.0.0.1:8100/');
+    await expect(page).toHaveURL(LOGIN_URL);
 
     // Check for error message (this might vary based on your app's error handling)
     // Common patterns: toast notification, error div, or form validation
@@ -61,7 +64,7 @@ test.describe('Login Flow', () => {
     await page.click('button[type="submit"]');
 
     // INFO: localhost replaced by 127 on visitHome func
-    await expect(page).toHaveURL('http://127.0.0.1:8100/');
+    await expect(page).toHaveURL(LOGIN_URL);
   });
 
   test('should require password field', async ({ page }) => {
@@ -72,7 +75,7 @@ test.describe('Login Flow', () => {
     await page.click('button[type="submit"]');
 
     // INFO: localhost replaced by 127 on visitHome func
-    await expect(page).toHaveURL('http://127.0.0.1:8100/');
+    await expect(page).toHaveURL(LOGIN_URL);
   });
 });
 

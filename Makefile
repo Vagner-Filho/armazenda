@@ -50,3 +50,14 @@ build-go:
 # --- Cleanup ---
 clean:
 	rm -f $(OUTPUT_DIR)/main ./assets/wasm/calculator.wasm ./assets/static/css/output.css
+
+# --- SEFAZ docs sync (manual-only, never part of test/build; see docs/SEFAZ_DOCS_SYNC.md) ---
+.PHONY: sefaz-docs-check sefaz-docs-sync sefaz-docs-adopt
+sefaz-docs-check:
+	cd test/e2e && $(BUN) tools/sefaz-docs-sync/cli.ts --mode check
+
+sefaz-docs-sync:
+	cd test/e2e && $(BUN) tools/sefaz-docs-sync/cli.ts --mode sync
+
+sefaz-docs-adopt:
+	cd test/e2e && $(BUN) tools/sefaz-docs-sync/cli.ts --mode adopt

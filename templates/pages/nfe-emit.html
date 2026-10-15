@@ -215,6 +215,15 @@
                     </label>
                 </div>
 
+                <div class="flex flex-col-reverse">
+                    <textarea name="nfRefs" id="nfRefs" rows="2"
+                        class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 resize-none"
+                        placeholder="Chaves de 44 dígitos separadas por espaço, vírgula ou ponto-e-vírgula"></textarea>
+                    <label for="nfRefs" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                        NF-e de referência (devolução) <span class="text-white/40 normal-case tracking-normal">— 44 dígitos por chave</span>
+                    </label>
+                </div>
+
                 <h4 class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
                     Itens
                 </h4>
@@ -268,6 +277,14 @@
                                 </label>
                             </div>
                             <div class="flex flex-col-reverse">
+                                <input type="text" inputmode="decimal" name="items[{{ $index }}].discount" value="{{ $item.Discount }}"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="0,00">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    Desconto (R$)
+                                </label>
+                            </div>
+                            <div class="flex flex-col-reverse">
                                 <input type="text" inputmode="decimal" name="items[{{ $index }}].grossWeight"
                                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                     placeholder="0,000">
@@ -295,6 +312,15 @@
                                     CEST
                                 </label>
                             </div>
+                            <div class="flex flex-col-reverse md:col-span-2 lg:col-span-3">
+                                <input type="text" name="items[{{ $index }}].infAdProd" value="{{ $item.InfAdProd }}"
+                                    maxlength="500" data-test-id="item-inf-ad-prod-{{ $index }}"
+                                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                    placeholder="Info. adicionais do item (ex. Série, OBS)">
+                                <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                    Informações adicionais do item <span class="text-white/40 normal-case tracking-normal">— opcional, até 500 caracteres</span>
+                                </label>
+                            </div>
                         </div>
                         <button type="button" class="remove-item-btn mt-2 text-red-400 hover:text-red-300 text-sm {{ if eq (len $.Items) 1 }}hidden{{ end }}">
                             Remover item
@@ -307,6 +333,28 @@
                     <iconify-icon icon="mdi:plus" width="20" height="20"></iconify-icon>
                     Adicionar Item
                 </button>
+            </fieldset>
+
+            <!-- Pagamento (MOC Grupo Y): a single detPag whose tPag drives
+                 the payment block. "99" (Outros) carries the corpus xPag
+                 label; "90" keeps vPag=0.00. -->
+            <fieldset class="flex flex-col gap-4 p-4 glass-panel rounded-xl hidden" id="pagamento-fieldset">
+                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
+                    Pagamento
+                </legend>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex flex-col-reverse">
+                        <select name="tpag" id="tpag"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                            <option value="90" selected>90 - Sem pagamento</option>
+                            <option value="01">01 - Dinheiro</option>
+                            <option value="99">99 - Outros</option>
+                        </select>
+                        <label for="tpag" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Forma de pagamento
+                        </label>
+                    </div>
+                </div>
             </fieldset>
 
             <!-- Transporte (MOC Grupo X): three sub-groups — transportadora
@@ -472,6 +520,89 @@
                 </p>
             </fieldset>
 
+            <!-- Entrega (E5a): optional delivery-site group — used when the
+                 delivery address differs from the recipient's (vendas a
+                 ordem). Leave every field blank to omit the <entrega> group. -->
+            <fieldset class="flex flex-col gap-4 p-4 glass-panel rounded-xl hidden" id="entrega-fieldset">
+                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
+                    Entrega da mercadoria <span class="text-white/40 text-xs normal-case tracking-normal">— opcional</span>
+                </legend>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="flex flex-col-reverse md:col-span-2">
+                        <input type="text" name="entregaNome" id="entregaNome"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="Nome / Razão Social">
+                        <label for="entregaNome" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Nome / Razão Social
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="entregaDocumento" id="entregaDocumento"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="CPF / CNPJ">
+                        <label for="entregaDocumento" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            CPF / CNPJ
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse md:col-span-2">
+                        <input type="text" name="entregaLogradouro" id="entregaLogradouro"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="Logradouro">
+                        <label for="entregaLogradouro" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Logradouro
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="entregaNumero" id="entregaNumero"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="Número ou S/N">
+                        <label for="entregaNumero" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Número
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="entregaBairro" id="entregaBairro"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="Bairro">
+                        <label for="entregaBairro" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Bairro
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="entregaCidade" id="entregaCidade"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="Cidade">
+                        <label for="entregaCidade" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Cidade
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="entregaUF" id="entregaUF" maxlength="2"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 uppercase"
+                            placeholder="UF">
+                        <label for="entregaUF" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            UF
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="entregaCEP" id="entregaCEP"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="CEP (opcional)">
+                        <label for="entregaCEP" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            CEP
+                        </label>
+                    </div>
+                    <div class="flex flex-col-reverse">
+                        <input type="text" name="entregaIE" id="entregaIE"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                            placeholder="Inscrição Estadual (opcional)">
+                        <label for="entregaIE" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            IE
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+
             <!-- Tributação -->
             <fieldset class="flex flex-col gap-4 p-4 glass-panel rounded-xl hidden" id="trib">
                 <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
@@ -479,28 +610,48 @@
                 </legend>
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div class="flex flex-col-reverse">
-                        <input type="text" name="icmsCST" id="icmsCST"
-                            value="{{ .DefaultICMSCST }}"
-                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                            placeholder="00">
+                        <select name="icmsCST" id="icmsCST"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                            <option value="00" {{ if eq .DefaultICMSCST "00" }}selected{{ end }}>00 - Tributada integralmente</option>
+                            <option value="20" {{ if eq .DefaultICMSCST "20" }}selected{{ end }}>20 - Com redução da base</option>
+                            <option value="40" {{ if eq .DefaultICMSCST "40" }}selected{{ end }}>40 - Isenta</option>
+                            <option value="41" {{ if eq .DefaultICMSCST "41" }}selected{{ end }}>41 - Não tributada</option>
+                            <option value="50" {{ if eq .DefaultICMSCST "50" }}selected{{ end }}>50 - Suspensão</option>
+                            <option value="51" {{ if eq .DefaultICMSCST "51" }}selected{{ end }}>51 - Diferimento</option>
+                            <option value="90" {{ if eq .DefaultICMSCST "90" }}selected{{ end }}>90 - Outras</option>
+                        </select>
                         <label for="icmsCST" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             CST ICMS
                         </label>
                     </div>
                     <div class="flex flex-col-reverse">
-                        <input type="text" name="pisCST" id="pisCST"
-                            value="{{ .DefaultPISCST }}"
-                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                            placeholder="01">
+                        <select name="pisCST" id="pisCST"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                            <option value="01" {{ if eq .DefaultPISCST "01" }}selected{{ end }}>01 - Tributável cumulativo</option>
+                            <option value="02" {{ if eq .DefaultPISCST "02" }}selected{{ end }}>02 - Tributável não cumulativo</option>
+                            <option value="04" {{ if eq .DefaultPISCST "04" }}selected{{ end }}>04 - Monofásico (alíquota zero)</option>
+                            <option value="05" {{ if eq .DefaultPISCST "05" }}selected{{ end }}>05 - Suspenso por litígio</option>
+                            <option value="06" {{ if eq .DefaultPISCST "06" }}selected{{ end }}>06 - Alíquota zero</option>
+                            <option value="07" {{ if eq .DefaultPISCST "07" }}selected{{ end }}>07 - Isenta</option>
+                            <option value="08" {{ if eq .DefaultPISCST "08" }}selected{{ end }}>08 - Sem incidência</option>
+                            <option value="09" {{ if eq .DefaultPISCST "09" }}selected{{ end }}>09 - Suspensão</option>
+                        </select>
                         <label for="pisCST" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             CST PIS
                         </label>
                     </div>
                     <div class="flex flex-col-reverse">
-                        <input type="text" name="cofinsCST" id="cofinsCST"
-                            value="{{ .DefaultCOFINSCST }}"
-                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                            placeholder="01">
+                        <select name="cofinsCST" id="cofinsCST"
+                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                            <option value="01" {{ if eq .DefaultCOFINSCST "01" }}selected{{ end }}>01 - Tributável cumulativo</option>
+                            <option value="02" {{ if eq .DefaultCOFINSCST "02" }}selected{{ end }}>02 - Tributável não cumulativo</option>
+                            <option value="04" {{ if eq .DefaultCOFINSCST "04" }}selected{{ end }}>04 - Monofásico (alíquota zero)</option>
+                            <option value="05" {{ if eq .DefaultCOFINSCST "05" }}selected{{ end }}>05 - Suspenso por litígio</option>
+                            <option value="06" {{ if eq .DefaultCOFINSCST "06" }}selected{{ end }}>06 - Alíquota zero</option>
+                            <option value="07" {{ if eq .DefaultCOFINSCST "07" }}selected{{ end }}>07 - Isenta</option>
+                            <option value="08" {{ if eq .DefaultCOFINSCST "08" }}selected{{ end }}>08 - Sem incidência</option>
+                            <option value="09" {{ if eq .DefaultCOFINSCST "09" }}selected{{ end }}>09 - Suspensão</option>
+                        </select>
                         <label for="cofinsCST" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             CST COFINS
                         </label>

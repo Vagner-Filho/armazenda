@@ -44,7 +44,9 @@
         <input type="hidden" name="items[{{ .Index }}].quantity" value="{{ .Quantity }}">
         <input type="hidden" name="items[{{ .Index }}].grossWeight" value="{{ .GrossWeight }}">
         <input type="hidden" name="items[{{ .Index }}].unitPrice" value="{{ .UnitPrice }}">
+        <input type="hidden" name="items[{{ .Index }}].discount" value="{{ .Discount }}">
         <input type="hidden" name="items[{{ .Index }}].unit" value="{{ .Unit }}">
+        <input type="hidden" name="items[{{ .Index }}].infAdProd" value="{{ .InfAdProd }}">
         {{ end }}
 
         <!-- Informational only: the rascunho is never reloaded/reapplied at
@@ -84,6 +86,20 @@
         <input type="hidden" name="ibsCST" value="{{ .IBSCST }}">
         <input type="hidden" name="cbsCST" value="{{ .CBSCST }}">
         <input type="hidden" name="cClassTrib" value="{{ .CClassTrib }}">
+
+        <!-- Payment / references / delivery-site round-trip: the confirm step
+             re-submits exactly what the preview validated. -->
+        <input type="hidden" name="tpag" value="{{ .TPag }}">
+        <input type="hidden" name="nfRefs" value="{{ .NFRefs }}">
+        <input type="hidden" name="entregaNome" value="{{ .EntregaNome }}">
+        <input type="hidden" name="entregaDocumento" value="{{ .EntregaDocumento }}">
+        <input type="hidden" name="entregaIE" value="{{ .EntregaIE }}">
+        <input type="hidden" name="entregaLogradouro" value="{{ .EntregaLogradouro }}">
+        <input type="hidden" name="entregaNumero" value="{{ .EntregaNumero }}">
+        <input type="hidden" name="entregaBairro" value="{{ .EntregaBairro }}">
+        <input type="hidden" name="entregaCidade" value="{{ .EntregaCidade }}">
+        <input type="hidden" name="entregaUF" value="{{ .EntregaUF }}">
+        <input type="hidden" name="entregaCEP" value="{{ .EntregaCEP }}">
 
         <div class="flex items-center justify-center gap-2">
             <button type="button" id="detached-nfe-preview-back" class="glass-btn flex items-center gap-1 p-3">

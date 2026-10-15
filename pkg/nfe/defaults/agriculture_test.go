@@ -88,3 +88,39 @@ func TestNaturezaOpForCFOP(t *testing.T) {
 		})
 	}
 }
+
+// TestFinNFeForCFOP verifies the curated devolução (finNFe=4) CFOP set:
+// corpus anchors and the x202/x555 families flip to "4", everything else
+// stays "1" (normal emission).
+func TestFinNFeForCFOP(t *testing.T) {
+	tests := []struct {
+		cfop     string
+		expected string
+	}{
+		// Corpus G3 anchor: devolução de compra de material de uso e consumo.
+		{"5556", "4"},
+		// Full curated return set.
+		{"1202", "4"}, {"2202", "4"}, {"5202", "4"}, {"6202", "4"},
+		{"5555", "4"}, {"6555", "4"}, {"6556", "4"},
+		{"5557", "4"}, {"6557", "4"}, {"5558", "4"}, {"6558", "4"},
+		{"5559", "4"}, {"6559", "4"},
+		// Corpus non-return anchors — these must stay finNFe 1.
+		{"5101", "1"}, // G1 venda de produção
+		{"5118", "1"}, // G2 vendas a ordem
+		{"5913", "1"}, // G4 retorno de demonstração (corpus: finNFe 1)
+		{"5915", "1"}, // G5 remessa para conserto
+		{"5551", "1"}, // G6 venda de imobilizado
+		{"5949", "1"}, // G7 outras saídas
+		{"5901", "1"}, // remessa para industrialização
+	}
+	for _, tt := range tests {
+		t.Run(tt.cfop, func(t *testing.T) {
+			if got := defaults.FinNFeForCFOP(tt.cfop); got != tt.expected {
+				t.Errorf("FinNFeForCFOP(%s) = %q, want %q", tt.cfop, got, tt.expected)
+			}
+			if got := defaults.IsDevolucaoCFOP(tt.cfop); got != (tt.expected == "4") {
+				t.Errorf("IsDevolucaoCFOP(%s) = %v, inconsistent with FinNFeForCFOP", tt.cfop, got)
+			}
+		})
+	}
+}

@@ -27,3 +27,6 @@ go.work
 go.work.sum
 
 .env
+
+# SEFAZ docs sync inbox (working artifacts, not committed)
+pkg/nfe/resources/sefaz_docs/inbox/

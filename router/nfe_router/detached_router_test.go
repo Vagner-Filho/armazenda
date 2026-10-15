@@ -91,6 +91,64 @@ func TestParseDetachedItems_RejectsMissingCFOP(t *testing.T) {
 	}
 }
 
+func TestParseDetachedItems_InfAdProd(t *testing.T) {
+	values := url.Values{
+		"itemCount":            {"2"},
+		"items[0].cfop":        {"5101"},
+		"items[0].productName": {"Soja"},
+		"items[0].quantity":    {"10"},
+		"items[0].unitPrice":   {"150.25"},
+		"items[0].unit":        {"KG"},
+		"items[0].infAdProd":   {"  SERIE ABC123  "},
+		"items[1].cfop":        {"5102"},
+		"items[1].productName": {"Milho"},
+		"items[1].quantity":    {"5"},
+		"items[1].unitPrice":   {"120.75"},
+		"items[1].unit":        {"KG"},
+		"items[1].infAdProd":   {"   "},
+	}
+
+	items, toast := parseDetachedItems(newFormContext(t, values))
+	if toast.Type != 0 {
+		t.Fatalf("expected no toast, got %+v", toast)
+	}
+	if items[0].InfAdProd != "SERIE ABC123" {
+		t.Errorf("expected trimmed infAdProd to round-trip, got %q", items[0].InfAdProd)
+	}
+	if items[1].InfAdProd != "" {
+		t.Errorf("expected whitespace-only infAdProd to be treated as absent, got %q", items[1].InfAdProd)
+	}
+}
+
+func TestParseDetachedItems_InfAdProdLengthGuard(t *testing.T) {
+	valuesWith := func(infAdProd string) url.Values {
+		return url.Values{
+			"itemCount":            {"1"},
+			"items[0].cfop":        {"5101"},
+			"items[0].productName": {"Soja"},
+			"items[0].quantity":    {"10"},
+			"items[0].unitPrice":   {"150.25"},
+			"items[0].unit":        {"KG"},
+			"items[0].infAdProd":   {infAdProd},
+		}
+	}
+
+	// 500 characters pass — the layout bound itself is accepted.
+	items, toast := parseDetachedItems(newFormContext(t, valuesWith(strings.Repeat("A", 500))))
+	if toast.Type != 0 || len(items) != 1 {
+		t.Fatalf("expected the 500-character value to pass, got toast %+v", toast)
+	}
+
+	// 501 characters are rejected, naming the item.
+	_, toast = parseDetachedItems(newFormContext(t, valuesWith(strings.Repeat("A", 501))))
+	if toast.Type == 0 {
+		t.Fatal("expected a warning for a value beyond 500 characters")
+	}
+	if combined := toast.Message + " " + toast.Hint; !strings.Contains(combined, "item 1") {
+		t.Errorf("expected the toast to name item 1, got %q", combined)
+	}
+}
+
 func TestParseDetachedProfileItems_DoesNotRequireQuantity(t *testing.T) {
 	values := url.Values{
 		"itemCount":            {"2"},
@@ -270,6 +328,7 @@ func TestDetachedPreviewItems_RoundTrip(t *testing.T) {
 			GrossWeight:   decimal.RequireFromString("10200"),
 			UnitPrice:     decimal.RequireFromString("150.25"),
 			Unit:          "KG",
+			InfAdProd:     "SERIE ABC123",
 		},
 		{
 			ProductName: "Milho",
@@ -297,6 +356,12 @@ func TestDetachedPreviewItems_RoundTrip(t *testing.T) {
 	}
 	if items[0].FarmProductID != "9" || items[0].CEST != "0100101" {
 		t.Errorf("expected optional references to round-trip, got %q/%q", items[0].FarmProductID, items[0].CEST)
+	}
+	if items[0].InfAdProd != "SERIE ABC123" {
+		t.Errorf("expected infAdProd to round-trip, got %q", items[0].InfAdProd)
+	}
+	if items[1].InfAdProd != "" {
+		t.Errorf("expected an uninformed infAdProd to round-trip blank, got %q", items[1].InfAdProd)
 	}
 }
 

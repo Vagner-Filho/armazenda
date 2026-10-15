@@ -124,8 +124,8 @@ type ProductDefaults struct {
 	// Tax reform (IBS/CBS) defaults applied when the farm config does not
 	// override them. CClassTrib is the NT 2025.002-RTC classification code
 	// that ties IBS/CBS to a specific tax regime / sector rule.
-	IBSCBSCST   string
-	CClassTrib  string
+	IBSCBSCST  string
+	CClassTrib string
 }
 
 // GetProductDefaults returns the default fiscal configuration for a product.
@@ -191,6 +191,78 @@ func defaultPISCST(regime TaxRegime) string {
 
 func defaultCOFINSCST(regime TaxRegime) string {
 	return "01" // Operacao tributavel com aliquota basica
+}
+
+// devolucaoCFOPs is the curated set of return/devolução CFOPs: purchases
+// received by the emitter being given back. Character families:
+//   - x202 (1202/2202/5202/6202): devolução de compra / de venda
+//   - x555–x559 (…55)/ 6555–6559: devolução de compra (industrialização,
+//     intermediação, comercialização, comércio, etc.)
+//
+// Real-world corpus anchors (docs/research_nfe_use_case/USE_CASES.md):
+// 5556 → finNFe 4; 5913/5949/5551/5118/5101 → finNFe 1.
+// Format documented in docs/sdd/detached_nfe_input_wiring/sdd.md (F5).
+var devolucaoCFOPs = map[string]bool{
+	"1202": true, "2202": true, "5202": true, "6202": true,
+	"5555": true, "6555": true,
+	"5556": true, "6556": true,
+	"5557": true, "6557": true,
+	"5558": true, "6558": true,
+	"5559": true, "6559": true,
+}
+
+// IsDevolucaoCFOP reports whether the CFOP denotes a return/devolução
+// operation (finNFe 4 = Devolução/Retorno).
+func IsDevolucaoCFOP(cfop string) bool {
+	return devolucaoCFOPs[cfop]
+}
+
+// FinNFeForCFOP returns the finNFe finalidade for an item CFOP:
+// "4" (devolução) for the curated return set, "1" (operação normal)
+// otherwise. Item CFOP homogeneity is enforced by the caller.
+func FinNFeForCFOP(cfop string) string {
+	if IsDevolucaoCFOP(cfop) {
+		return "4"
+	}
+	return "1"
+}
+
+// ICMSDeclaresValues reports whether the ICMS XML group emitted for the
+// given CST declares vBC/pICMS/vICMS. The ICMS40 family (isenta 40,
+// não tributada 41, suspensão 50) emits only orig+CST, so item-level
+// values must stay zero for ICMSTot to equal the sum of the item-declared
+// values (SEFAZ Rej. 531 — "Total da BC ICMS difere do somatório dos
+// itens", seen on the G4 homolog replay). Caller: buildDetachedItems and
+// the departure-flow buildItems keep item values zero for non-declaring
+// CSTs; declaring CSTs keep the farm-rate behavior.
+func ICMSDeclaresValues(cst string) bool {
+	switch cst {
+	case "00", "20", "51", "90":
+		return true
+	}
+	return false
+}
+
+// PISDeclaresValues reports whether the PIS XML group emitted for the
+// given CST declares vBC/pPIS/vPIS: PISAliq for CST 01/02 (and any
+// non-whitelisted default routing). NT codes 04–09 emit PISNT with a
+// single <CST> child, so their values stay zero.
+func PISDeclaresValues(cst string) bool {
+	switch cst {
+	case "01", "02":
+		return true
+	}
+	return false
+}
+
+// COFINSDeclaresValues mirrors PISDeclaresValues for the COFINS group
+// (COFINSAliq vs COFINSNT).
+func COFINSDeclaresValues(cst string) bool {
+	switch cst {
+	case "01", "02":
+		return true
+	}
+	return false
 }
 
 // UFCode returns the IBGE state code.

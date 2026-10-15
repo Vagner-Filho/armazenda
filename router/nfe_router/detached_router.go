@@ -35,7 +35,14 @@ type detachedPageItem struct {
 	CEST          string
 	CFOP          string
 	UnitPrice     string
-	Unit          string
+	// Discount is the optional per-item discount prefill (rascunhos saved
+	// before the discount feature show no discount field value).
+	Discount string
+	Unit     string
+	// InfAdProd is the optional per-item additional information
+	// (det/infAdProd). Rascunhos do not persist it today, so a page
+	// prefilled from a rascunho always renders it blank.
+	InfAdProd string
 }
 
 // detachedPageView is the view model of the detached emission page, rendered
@@ -369,6 +376,13 @@ type detachedFormData struct {
 	Overrides *entity.InvoiceOverrides
 	VehicleID *uint16
 	ProfileID string // informational only: the rascunho the form started from
+
+	// Payment method (detPag/tPag): "01"/"90"/"99"; default "90".
+	TPag string
+	// Referenced NF-e keys (NFref, devoluções) and the optional delivery
+	// site (<entrega> group).
+	NFRefs  []string
+	Entrega *nfe_service.DetachedEntregaInput
 }
 
 // isFailureToast reports whether a toast represents a failure the request must
@@ -412,6 +426,35 @@ func parseDetachedForm(c *gin.Context) (detachedFormData, entity_public.Toast) {
 		return detachedFormData{}, transportToast
 	}
 
+	// detPag/tPag (MB01): payment method. Default "90" (Sem pagamento)
+	// preserves the pre-wiring behavior; values outside the whitelist are
+	// rejected with a pt-br message.
+	tpag := strings.TrimSpace(c.PostForm("tpag"))
+	if tpag == "" {
+		tpag = nfe_service.TPagSemPagamento
+	}
+	if !nfe_service.ValidDetachedTPag(tpag) {
+		return detachedFormData{}, entity_public.GetWarningToast(
+			"Forma de pagamento inválida",
+			"Opções válidas: 01 (Dinheiro), 90 (Sem pagamento) ou 99 (Outros)")
+	}
+
+	// NFref (BA, devoluções): referenced NF-e keys as free text (space /
+	// comma / semicolon separators); every key must be 44 digits.
+	nfRefs, refErrs := nfe_service.ParseNFRefs(c.PostForm("nfRefs"))
+	if len(refErrs) > 0 {
+		return detachedFormData{}, entity_public.GetWarningToast(
+			"NF-e de referência inválida", strings.Join(refErrs, "; "))
+	}
+
+	// entrega (E5a): optional delivery-address section; mandatory-field
+	// rules validated here (no DB access), IBGE codes resolved at service
+	// level.
+	entrega, entregaToast := parseDetachedEntrega(c)
+	if isFailureToast(entregaToast) {
+		return detachedFormData{}, entregaToast
+	}
+
 	return detachedFormData{
 		Recipient: recipient,
 		Items:     items,
@@ -420,7 +463,54 @@ func parseDetachedForm(c *gin.Context) (detachedFormData, entity_public.Toast) {
 		Overrides: parseInvoiceOverrides(c),
 		VehicleID: vehicleID,
 		ProfileID: c.PostForm("rascunhoId"),
+		TPag:      tpag,
+		NFRefs:    nfRefs,
+		Entrega:   entrega,
 	}, entity_public.Toast{}
+}
+
+// parseDetachedEntrega parses the optional delivery-address (entrega) form
+// section. An all-empty section returns nil (no <entrega> group); any
+// non-empty field makes the mandatory set required — the name→IBGE
+// resolution happens at service level (mapDetachedEntregaInput).
+func parseDetachedEntrega(c *gin.Context) (*nfe_service.DetachedEntregaInput, entity_public.Toast) {
+	input := &nfe_service.DetachedEntregaInput{
+		Name:         strings.TrimSpace(c.PostForm("entregaNome")),
+		Document:     strings.TrimSpace(c.PostForm("entregaDocumento")),
+		IE:           formStringRef(c, "entregaIE"),
+		Street:       strings.TrimSpace(c.PostForm("entregaLogradouro")),
+		Number:       strings.TrimSpace(c.PostForm("entregaNumero")),
+		Neighborhood: strings.TrimSpace(c.PostForm("entregaBairro")),
+		City:         formStringRef(c, "entregaCidade"),
+		State:        formStringRef(c, "entregaUF"),
+		CEP:          formStringRef(c, "entregaCEP"),
+	}
+	if input.Name == "" && input.Document == "" && input.IE == nil &&
+		input.Street == "" && input.Number == "" && input.Neighborhood == "" &&
+		input.City == nil && input.State == nil && input.CEP == nil {
+		return nil, entity_public.Toast{}
+	}
+
+	if input.Name == "" {
+		return nil, entity_public.GetWarningToast("Endereço de entrega incompleto", "Informe o nome / razão social do local de entrega")
+	}
+	if input.Document == "" {
+		return nil, entity_public.GetWarningToast("Endereço de entrega incompleto", "Informe o CPF/CNPJ do local de entrega")
+	}
+	if input.Street == "" {
+		return nil, entity_public.GetWarningToast("Endereço de entrega incompleto", "Informe o logradouro do local de entrega")
+	}
+	if input.Number == "" {
+		return nil, entity_public.GetWarningToast("Endereço de entrega incompleto", "Informe o número do local de entrega (ou \"S/N\")")
+	}
+	if input.Neighborhood == "" {
+		return nil, entity_public.GetWarningToast("Endereço de entrega incompleto", "Informe o bairro do local de entrega")
+	}
+	if input.City == nil || input.State == nil {
+		return nil, entity_public.GetWarningToast("Endereço de entrega incompleto", "Informe cidade e UF do local de entrega")
+	}
+
+	return input, entity_public.Toast{}
 }
 
 // formStringRef reads an optional trimmed form string, nil when blank.
@@ -505,6 +595,9 @@ func detachedInputFromForm(farmID uint32, form detachedFormData) nfe_service.Det
 		Transport: form.Transport,
 		TaxRates:  form.TaxRates,
 		Overrides: form.Overrides,
+		TPag:      form.TPag,
+		NFRefs:    form.NFRefs,
+		Entrega:   form.Entrega,
 		Items:     form.Items,
 	}
 }
@@ -542,6 +635,11 @@ func buildDetachedNFe(c *gin.Context) {
 	})
 }
 
+// detachedInfAdProdMaxLen caps the per-item additional information
+// (det/infAdProd) at the 500-character bound of the v4.00 TString layout
+// type. Longer values are rejected before anything is persisted or emitted.
+const detachedInfAdProdMaxLen = 500
+
 // detachedPreviewItem is the hidden-field representation of one parsed item.
 type detachedPreviewItem struct {
 	Index         int
@@ -553,7 +651,13 @@ type detachedPreviewItem struct {
 	Quantity      string
 	GrossWeight   string
 	UnitPrice     string
-	Unit          string
+	// Discount is the optional per-item discount (empty = "0"); the
+	// confirm step re-submits the exact value.
+	Discount string
+	Unit     string
+	// InfAdProd is the optional per-item additional information; the
+	// confirm step re-submits the exact text.
+	InfAdProd string
 }
 
 // detachedPreviewView is the view model for the nfe-detached-preview
@@ -611,6 +715,24 @@ type detachedPreviewView struct {
 	IBSCST     string
 	CBSCST     string
 	CClassTrib string
+
+	// Payment method (detPag/tPag); default "90" re-parsed at confirm.
+	TPag string
+
+	// Referenced NF-e keys (devoluções); the confirm step re-submits the
+	// same separator-joined string, so ParseNFRefs validates it again.
+	NFRefs string
+
+	// Delivery-site (entrega) round-trip; empty strings mean "not informed".
+	EntregaNome       string
+	EntregaDocumento  string
+	EntregaIE         string
+	EntregaLogradouro string
+	EntregaNumero     string
+	EntregaBairro     string
+	EntregaCidade     string
+	EntregaUF         string
+	EntregaCEP        string
 }
 
 // detachedPreviewItems maps parsed items to their hidden-field representation.
@@ -629,7 +751,9 @@ func detachedPreviewItems(parsed []nfe_service.DetachedItemInput) []detachedPrev
 			Quantity:      item.Quantity.String(),
 			GrossWeight:   item.GrossWeight.String(),
 			UnitPrice:     item.UnitPrice.String(),
+			Discount:      item.Discount.String(),
 			Unit:          item.Unit,
+			InfAdProd:     item.InfAdProd,
 		})
 	}
 	return items
@@ -689,9 +813,11 @@ func detachedTransportView(transport nfe_service.DetachedTransportInput) detache
 // reproduce the exact input the preview was generated from.
 func buildDetachedPreviewViewData(farmID uint32, form detachedFormData, pdfBytes []byte, nonce string) detachedPreviewView {
 	items := detachedPreviewItems(form.Items)
+	// Displayed total = the emitted vNF: Σ (gross − discount) per item,
+	// mirroring the service's net-item arithmetic.
 	var totalValue decimal.Decimal
 	for _, item := range form.Items {
-		totalValue = totalValue.Add(item.Quantity.Mul(item.UnitPrice))
+		totalValue = totalValue.Add(item.Quantity.Mul(item.UnitPrice).Sub(item.Discount))
 	}
 
 	// Serie/environment are display-only context; a missing config is
@@ -756,6 +882,21 @@ func buildDetachedPreviewViewData(farmID uint32, form detachedFormData, pdfBytes
 	}
 
 	view.Transport = detachedTransportView(form.Transport)
+
+	// Payment, referenced keys and delivery-site round-trip.
+	view.TPag = form.TPag
+	view.NFRefs = strings.Join(form.NFRefs, " ")
+	if form.Entrega != nil {
+		view.EntregaNome = form.Entrega.Name
+		view.EntregaDocumento = form.Entrega.Document
+		view.EntregaIE = safePtrString(form.Entrega.IE)
+		view.EntregaLogradouro = form.Entrega.Street
+		view.EntregaNumero = form.Entrega.Number
+		view.EntregaBairro = form.Entrega.Neighborhood
+		view.EntregaCidade = safePtrString(form.Entrega.City)
+		view.EntregaUF = safePtrString(form.Entrega.State)
+		view.EntregaCEP = safePtrString(form.Entrega.CEP)
+	}
 
 	return view
 }
@@ -937,6 +1078,20 @@ func parseDetachedItems(c *gin.Context) ([]nfe_service.DetachedItemInput, entity
 				fmt.Sprintf("Item %d: informe um preço unitário válido", i+1))
 		}
 
+		// Parse optional per-item discount (prod/vDesc, BRL). Blank → zero
+		// (no vDesc element; totals unchanged). Non-numeric values abort
+		// with a pt-br message; bounds are validated at service level
+		// (validateItemDiscounts) so the preview shares the same rules.
+		var discount decimal.Decimal
+		if discountStr := strings.TrimSpace(c.PostForm(prefix + "discount")); discountStr != "" {
+			discount, err = decimal.NewFromString(discountStr)
+			if err != nil {
+				return nil, entity_public.GetWarningToast(
+					"Desconto inválido",
+					fmt.Sprintf("Item %d: informe um desconto válido", i+1))
+			}
+		}
+
 		// Parse the per-item CFOP (required: exactly four ASCII digits)
 		cfop := strings.TrimSpace(c.PostForm(prefix + "cfop"))
 		if !nfe_service.IsFourDigitCFOP(cfop) {
@@ -958,6 +1113,18 @@ func parseDetachedItems(c *gin.Context) ([]nfe_service.DetachedItemInput, entity
 			cest = &v
 		}
 
+		// Parse the optional per-item additional information (det/infAdProd,
+		// the det group's free-text child, emitted right before <vItem>).
+		// Trimmed; whitespace-only values are treated as absent so the
+		// element is never emitted. Values beyond the 500-character layout
+		// bound abort with a pt-br message naming the item.
+		infAdProd := strings.TrimSpace(c.PostForm(prefix + "infAdProd"))
+		if len([]rune(infAdProd)) > detachedInfAdProdMaxLen {
+			return nil, entity_public.GetWarningToast(
+				"Informações adicionais do item inválidas",
+				fmt.Sprintf("Informações adicionais do item %d excede %d caracteres", i+1, detachedInfAdProdMaxLen))
+		}
+
 		items = append(items, nfe_service.DetachedItemInput{
 			FarmProductID: farmProductID,
 			ProductName:   productName,
@@ -968,6 +1135,8 @@ func parseDetachedItems(c *gin.Context) ([]nfe_service.DetachedItemInput, entity
 			GrossWeight:   grossWeight,
 			UnitPrice:     unitPrice,
 			Unit:          unit,
+			Discount:      discount,
+			InfAdProd:     infAdProd,
 		})
 	}
 

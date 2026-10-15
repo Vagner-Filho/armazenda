@@ -332,3 +332,123 @@ func TestDetachedDocumentType(t *testing.T) {
 		}
 	}
 }
+
+// TestBuildDetachedItems_Discount verifies the per-item discount wiring
+// (docs/sdd/detached_nfe_input_wiring AC5): prod VDesc carries the discount,
+// the invoice TotalValue sums the NET item value (gross − discount), the
+// DB item records both, and the tax bases stay on the gross total (the
+// reference-emitter corpus behavior).
+func TestBuildDetachedItems_Discount(t *testing.T) {
+	svc := NewNFeService()
+
+	cfg := &entity_public.FarmConfig{
+		TaxRegime:  3,
+		ICMSRate:   decimal.RequireFromString("0.12"),
+		PISRate:    decimal.RequireFromString("0.0165"),
+		COFINSRate: decimal.RequireFromString("0.076"),
+		IBSRate:    decimal.RequireFromString("0.001"),
+		CBSRate:    decimal.RequireFromString("0.009"),
+	}
+
+	inputs := []DetachedItemInput{
+		{
+			ProductName: "Veneziana",
+			NCM:         "84339090",
+			CFOP:        "5556",
+			Quantity:    decimal.RequireFromString("3"),
+			UnitPrice:   decimal.RequireFromString("425.85"),
+			Unit:        "PC",
+			Discount:    decimal.RequireFromString("319.39"),
+		},
+		{
+			ProductName: "Grão",
+			CFOP:        "5101",
+			Quantity:    decimal.RequireFromString("1"),
+			UnitPrice:   decimal.RequireFromString("500"),
+			GrossWeight: decimal.RequireFromString("1"),
+			Unit:        "KG",
+			// zero discount → VDesc zero / element omitted downstream
+		},
+	}
+
+	items, itemsForDB, totalValue, _, _ := svc.buildDetachedItems(inputs, cfg, resolvedSnapshot(t, entity.TaxRates{}, nil, cfg), nil)
+	if len(items) != 2 || len(itemsForDB) != 2 {
+		t.Fatalf("expected 2 items, got %d/%d", len(items), len(itemsForDB))
+	}
+
+	// Gross per item: 3 × 425.85 = 1277.55 (kept as VProd and tax base).
+	if !items[0].Produto.VProd.Equal(decimal.RequireFromString("1277.55")) {
+		t.Errorf("item 1 vProd = %s, want 1277.55 (gross)", items[0].Produto.VProd)
+	}
+	if !items[0].Imposto.IBSCBS.VBC.Equal(decimal.RequireFromString("1277.55")) {
+		t.Errorf("item 1 IBS vBC = %s, want 1277.55 (gross base, corpus behavior)", items[0].Imposto.IBSCBS.VBC)
+	}
+	// Discount landed on the product data (builder emits prod/vDesc).
+	if !items[0].Produto.VDesc.Equal(decimal.RequireFromString("319.39")) {
+		t.Errorf("item 1 vDesc = %s, want 319.39", items[0].Produto.VDesc)
+	}
+	// Discount zero item: VDesc zero (element omitted by the builder).
+	if !items[1].Produto.VDesc.IsZero() {
+		t.Errorf("item 2 vDesc = %s, want zero", items[1].Produto.VDesc)
+	}
+
+	// DB item: net total + discount mirrored.
+	if !itemsForDB[0].TotalValue.Equal(decimal.RequireFromString("958.16")) {
+		t.Errorf("item 1 db total = %s, want 958.16 (net)", itemsForDB[0].TotalValue)
+	}
+	if !itemsForDB[0].Discount.Equal(decimal.RequireFromString("319.39")) {
+		t.Errorf("item 1 db discount = %s, want 319.39", itemsForDB[0].Discount)
+	}
+	if !itemsForDB[1].TotalValue.Equal(decimal.RequireFromString("500")) {
+		t.Errorf("item 2 db total = %s, want 500 (no discount)", itemsForDB[1].TotalValue)
+	}
+
+	// Invoice TotalValue = Σ net: 958.16 + 500 = 1458.16.
+	if !totalValue.Equal(decimal.RequireFromString("1458.16")) {
+		t.Errorf("total value = %s, want 1458.16", totalValue)
+	}
+}
+
+// TestBuildDetachedItems_DiscountZeroMatchesLegacy keeps the no-discount
+// legacy behavior byte-equal: VTotals equal to the gross amounts and items
+// untouched.
+func TestBuildDetachedItems_DiscountZeroMatchesLegacy(t *testing.T) {
+	svc := NewNFeService()
+
+	cfg := &entity_public.FarmConfig{
+		TaxRegime:  3,
+		ICMSRate:   decimal.RequireFromString("0.12"),
+		PISRate:    decimal.RequireFromString("0.0165"),
+		COFINSRate: decimal.RequireFromString("0.076"),
+		IBSRate:    decimal.RequireFromString("0.001"),
+		CBSRate:    decimal.RequireFromString("0.009"),
+	}
+
+	inputs := []DetachedItemInput{
+		{
+			ProductName: "Soja",
+			CFOP:        "5101",
+			Quantity:    decimal.RequireFromString("10"),
+			UnitPrice:   decimal.RequireFromString("100"),
+			GrossWeight: decimal.RequireFromString("11"),
+			Unit:        "KG",
+		},
+	}
+
+	_, itemsForDB, totalValue, totalIBS, totalCBS := svc.buildDetachedItems(inputs, cfg, resolvedSnapshot(t, entity.TaxRates{}, nil, cfg), nil)
+	if !itemsForDB[0].TotalValue.Equal(decimal.RequireFromString("1000")) {
+		t.Errorf("db total = %s, want 1000 (gross, no discount)", itemsForDB[0].TotalValue)
+	}
+	if !itemsForDB[0].Discount.IsZero() {
+		t.Errorf("db discount = %s, want zero", itemsForDB[0].Discount)
+	}
+	if !totalValue.Equal(decimal.RequireFromString("1000")) {
+		t.Errorf("total = %s, want 1000", totalValue)
+	}
+	if !totalIBS.Equal(itemsForDB[0].Quantity.Mul(decimal.RequireFromString("100")).Mul(decimal.RequireFromString("0.001"))) {
+		t.Errorf("total IBS = %s, want gross-based symbolic", totalIBS)
+	}
+	if !totalCBS.Equal(itemsForDB[0].Quantity.Mul(decimal.RequireFromString("100")).Mul(decimal.RequireFromString("0.009"))) {
+		t.Errorf("total CBS = %s, want gross-based symbolic", totalCBS)
+	}
+}

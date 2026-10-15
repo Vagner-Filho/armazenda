@@ -36,6 +36,27 @@
         <input type="hidden" name="cbsCST" value="{{ .CBSCST }}">
         <input type="hidden" name="cClassTrib" value="{{ .CClassTrib }}">
         <input type="hidden" name="infCpl" value="{{ .InfCpl }}">
+        <input type="hidden" name="tpag" value="{{ .TPag }}">
+        <input type="hidden" name="transportFieldsSpecified" value="1">
+        <input type="hidden" name="transportNome" value="{{ .TransportNome }}">
+        <input type="hidden" name="transportDocumento" value="{{ .TransportDocumento }}">
+        <input type="hidden" name="transportIE" value="{{ .TransportIE }}">
+        <input type="hidden" name="transportLogradouro" value="{{ .TransportLogradouro }}">
+        <input type="hidden" name="transportNumero" value="{{ .TransportNumero }}">
+        <input type="hidden" name="transportMunicipio" value="{{ .TransportMunicipio }}">
+        <input type="hidden" name="transportUF" value="{{ .TransportUF }}">
+        <input type="hidden" name="includeVehicleSpecified" value="1">
+        <input type="hidden" name="includeVehicle" value="{{ if .IncludeVehicle }}1{{ else }}0{{ end }}">
+        <input type="hidden" name="transportPlaca" value="{{ .TransportPlaca }}">
+        <input type="hidden" name="transportPlacaUF" value="{{ .TransportPlacaUF }}">
+        <input type="hidden" name="transportRNTC" value="{{ .TransportRNTC }}">
+        <input type="hidden" name="includeVolumesSpecified" value="1">
+        <input type="hidden" name="includeVolumes" value="{{ if .IncludeVolumes }}1{{ else }}0{{ end }}">
+        <input type="hidden" name="volQtd" value="{{ .VolQtd }}">
+        <input type="hidden" name="volEsp" value="{{ .VolEsp }}">
+        <input type="hidden" name="volMarca" value="{{ .VolMarca }}">
+        <input type="hidden" name="volPesoL" value="{{ .VolPesoL }}">
+        <input type="hidden" name="volPesoB" value="{{ .VolPesoB }}">
         <div class="flex items-center justify-center gap-2">
             <button type="button" hx-get="/nfe/modal/{{ .DepartureID }}" hx-target="#nfe-emit-dialog"
                 hx-swap="outerHTML" class="glass-btn flex items-center gap-1 p-3">
