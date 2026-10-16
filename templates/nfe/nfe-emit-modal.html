@@ -128,7 +128,7 @@
                             </div>
                         </div>
                     </fieldset>
-                    <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2">
+                    <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2 col-span-2">
                         <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 w-full">
                             Transporte
                         </legend>
@@ -263,7 +263,7 @@
                             </div>
                         </div>
                     </fieldset>
-                    <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2">
+                    <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2 col-span-2">
                         <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 w-full">
                             Tributação
                         </legend>
@@ -344,8 +344,8 @@
                                     class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white">
                                 <span class="text-xs 2xl:text-sm uppercase tracking-wider font-medium">Usar taxa padrão</span>
                             </label>
-                            <div class="flex flex-col gap-3 pl-2 border-l border-white/10">
-                                <div class="flex flex-col-reverse">
+                            <div class="grid grid-cols-2 gap-3 pl-2 border-l border-white/10">
+                                <div class="flex flex-col-reverse col-span-2">
                                     <input type="text" inputmode="decimal" name="icmsRate" id="icmsRate"
                                         value="{{ .DefaultICMSRate }}" disabled
                                         class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
