@@ -28,7 +28,7 @@
     {{ template "navbar" . }}
   {{ template "menu" (dict "page" "romaneio" "CSPNonce" .CSPNonce "TierKey" .TierKey) }}
     <section class="content-container">
-      <header class="text-center mb-8">
+      <header class="text-center mb-4 2xl:mb-8">
         <h1 class="text-xl 2xl:text-3xl font-bold text-white font-[Noto_Sans] drop-shadow-lg">
           Controle de Romaneios
         </h1>
@@ -36,7 +36,7 @@
           Gerencie as entradas e saídas de cargas do seu armazém.
         </p>
       </header>
-      <div class="max-w-md mx-auto mb-8 w-full">
+      <div class="max-w-md mx-auto mb-4 2xl:mb-8 w-full">
         <div class="glass-panel rounded-2xl p-1 flex" id="type-toggler">
           <button type="button" id="toggler" class="flex-1 py-2 px-4 rounded-2xl flex items-center justify-center gap-2 bg-blue-500/70 text-white shadow-sm transition-colors duration-300" hx-trigger="click" hx-get="/entry/list" hx-target="#content-container" data-test-id="entry-toggler">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">

@@ -2,15 +2,15 @@
 <dialog id="departure-form-dialog" class="glass-panel rounded-xl w-full max-w-5xl">
     <div class="p-4 relative">
         {{ template "close-dialog-btn" (dict "selector" "dialog#departure-form-dialog" "CSPNonce" .CSPNonce) }}
-        <header class="text-center mb-4">
-            <h1 class="text-xl lg:text-3xl font-bold text-white/95 font-[Noto_Sans]">
+        <header class="text-center 2xl:mb-4">
+            <h1 class="text-xl 2xl::text-3xl font-bold text-white/95 font-[Noto_Sans]">
                 {{ if .Departure.Id }}
                 Editando Saída
                 {{ else }}
                 Nova Saída
                 {{ end }}
             </h1>
-            <p class="text-sm text-white/90 mt-2">
+            <p class="text-sm text-white/90 2xl:mt-2">
                 {{ if .Departure.Id }}
                 Atualize os detalhes deste registro de saída.
                 {{ else }}
@@ -22,7 +22,7 @@
             hx-target="#departure-{{ .Departure.Id }}" hx-swap="outerHTML" {{ else }} hx-post="/departure"
             hx-target="#departure-table-body" hx-swap="afterbegin" {{ end }} hx-indicator="#btns-container">
             <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl">
-                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20">
                     Identificação
                 </legend>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -33,62 +33,62 @@
             </fieldset>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <fieldset class="flex flex-col gap-6 p-4 glass-panel rounded-xl">
-                    <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+                    <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20">
                         Saída
                     </legend>
                     {{ template "vehicle-selector" . }}
-                    <div class="flex flex-col-reverse gap-2">
+                    <div class="flex flex-col-reverse gap-1 2xl:gap-2">
                         <input type="text" inputmode="numeric" name="grossWeight" id="grossWeight" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ if decIsNotZero
                             .Departure.GrossWeight }} value="{{ .Departure.GrossWeight }}" {{ end }} required>
-                        <label for="grossWeight" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                        <label for="grossWeight" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs 2xl:text-sm font-medium uppercase tracking-wider">
                             Peso Bruto
                         </label>
                     </div>
-                    <div class="flex flex-col-reverse gap-2">
+                    <div class="flex flex-col-reverse gap-1 2xl:gap-2">
                         <input type="text" inputmode="numeric" name="tare" id="tare" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ if decIsNotZero .Departure.Tare }}
                             value="{{ .Departure.Tare }}" {{ end }} required>
-                        <label for="tare" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                        <label for="tare" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs 2xl:text-sm font-medium uppercase tracking-wider">
                             Tara
                         </label>
                     </div>
-                    <div class="flex flex-col-reverse gap-2">
+                    <div class="flex flex-col-reverse gap-1 2xl:gap-2">
                         <input type="text" name="netWeight" id="netWeight" class="peer bg-white/10 border-white/20 text-white placeholder-white/50 cursor-not-allowed" {{ if decIsNotZero
                             .Departure.NetWeight }} value="{{ .Departure.NetWeight }}" {{ end }} readonly min="0"
                             required data-raw="0" disabled>
-                        <label for="netWeight" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                        <label for="netWeight" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs 2xl:text-sm font-medium uppercase tracking-wider">
                             Peso Líquido (preenchimento automático)
                         </label>
                     </div>
-                    <div class="flex flex-col-reverse gap-2">
+                    <div class="flex flex-col-reverse gap-1 2xl:gap-2">
                         <input type="datetime-local" name="departureDate" id="departure-input" class="peer bg-white/10 border-white/20 text-white placeholder-white/50"
                             value="{{ .Departure.DepartureDate }}" required>
-                        <label for="departure-input" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                        <label for="departure-input" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs 2xl:text-sm font-medium uppercase tracking-wider">
                             Data de Saída
                         </label>
                     </div>
                 </fieldset>
                 <fieldset class="flex flex-col gap-6 p-4 glass-panel rounded-xl">
-                    <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+                    <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20">
                         Análise
                     </legend>
-                    <div class="flex flex-col-reverse gap-2">
+                    <div class="flex flex-col-reverse gap-1 2xl:gap-2">
                         <input type="number" step="0.01" min="0" max="100" name="humidity" id="humidity" class="peer bg-white/10 border-white/20 text-white placeholder-white/50"
                             value="{{ .Departure.Humidity }}">
-                        <label for="humidity" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                        <label for="humidity" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs 2xl:text-sm font-medium uppercase tracking-wider">
                             % Umidade (opcional)
                         </label>
                     </div>
-                    <div class="flex flex-col-reverse gap-2">
+                    <div class="flex flex-col-reverse gap-1 2xl:gap-2">
                         <input type="number" step="0.01" min="0" max="100" name="damage" id="damage" class="peer bg-white/10 border-white/20 text-white placeholder-white/50"
                             value="{{ .Departure.Damage }}">
-                        <label for="damage" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                        <label for="damage" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs 2xl:text-sm font-medium uppercase tracking-wider">
                             % Avariado (opcional)
                         </label>
                     </div>
-                    <div class="flex flex-col-reverse gap-2">
+                    <div class="flex flex-col-reverse gap-1 2xl:gap-2">
                         <input type="number" step="0.01" min="0" max="100" name="impurity" id="impurity" class="peer bg-white/10 border-white/20 text-white placeholder-white/50"
                             value="{{ .Departure.Impurity }}">
-                        <label for="impurity" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                        <label for="impurity" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs 2xl:text-sm font-medium uppercase tracking-wider">
                             % Impureza (opcional)
                         </label>
                     </div>

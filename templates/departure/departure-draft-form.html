@@ -2,8 +2,8 @@
 <dialog id="addDepartureDraftDialog" class="glass-panel rounded-xl w-full max-w-3xl">
     <div class="p-4 relative">
         {{ template "close-dialog-btn" (dict "selector" "dialog#addDepartureDraftDialog" "CSPNonce" .CSPNonce) }}
-        <header class="text-center mb-4">
-            <h1 class="text-xl lg:text-3xl font-bold text-white/95 font-[Noto_Sans]">
+        <header class="text-center mb-2 2xl:mb-4">
+            <h1 class="text-xl 2xl:text-3xl font-bold text-white/95 font-[Noto_Sans]">
                 {{ if .Draft.Id }}
                 Editando Rascunho de Saída
                 {{ else }}
@@ -22,13 +22,13 @@
             hx-target="#departure-draft-{{ .Draft.Id }}" hx-swap="outerHTML" {{ else }} hx-post="/departure/draft"
             hx-target="#departures-draft-table-body" hx-swap="beforeend" {{ end }} hx-indicator="#btns-container">
             <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl">
-                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20">
                     Identificação
                 </legend>
                 <div class="flex flex-col-reverse">
                     <input type="text" name="name" id="name" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required {{ if .Draft.Name }}
                         value="{{ .Draft.Name }}" {{ end }}>
-                    <label for="name" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    <label for="name" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs 2xl:text-sm font-medium uppercase tracking-wider">
                         Nome
                     </label>
                 </div>
@@ -37,14 +37,14 @@
                 {{ template "recipient-selector" . }}
             </fieldset>
             <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl">
-                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2">
+                <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20">
                     Carga
                 </legend>
                 {{ template "vehicle-selector" . }}
                 <div class="flex flex-col-reverse">
                     <input type="number" name="tare" id="tare" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" {{ if ne .Draft.Tare nil }}{{ if ne .Draft.Tare.String "0" }}
                         value="{{ .Draft.Tare }}" {{ end }}{{ end }}>
-                    <label for="tare" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    <label for="tare" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs 2xl:text-sm font-medium uppercase tracking-wider">
                         Tara
                     </label>
                 </div>
