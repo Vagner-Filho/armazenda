@@ -364,3 +364,26 @@
 .progression-threshold-label.last {
     @apply left-auto right-0;
 }
+
+.default-style-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.25) rgba(0, 0, 0, 0.3);
+}
+
+.default-style-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.default-style-scroll::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 999px;
+}
+
+.default-style-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+}
+
+.default-style-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+}

@@ -3,7 +3,7 @@
     <h2 class="text-lg font-bold text-white/95 border-b border-white/20 pb-2 mb-4">
         Notas Fiscais Eletrônicas
     </h2>
-    <div class="overflow-y-auto">
+    <div class="overflow-y-auto default-style-scroll">
         <table class="responsive-table">
             <thead
                 class="border-b border-white/10 text-xs text-gray-400 uppercase tracking-wider *:font-medium">
@@ -34,7 +34,7 @@
         </table>
     </div>
     {{ if gt .TotalPages 1 }}
-    <div class="flex justify-center items-center">
+    <div class="flex justify-center items-center mt-auto">
         {{ if .HasPrev }}
         <button hx-get="/nfe/list?page={{ .PrevPage }}" hx-target="#nfe-list-container" hx-swap="outerHTML" class="px-2 lg:px-4 py-1 lg:py-2 bg-sky-50/20 hover:bg-sky-50/30 rounded-lg transition-colors">Anterior</button>
         {{ else }}
