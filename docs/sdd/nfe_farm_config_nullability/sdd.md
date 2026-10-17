@@ -1,7 +1,7 @@
 # sdd:nfe_farm_config_nullability
 
 ## Status
-Backlog
+Done
 
 ## Goal
 Make farm NFe configuration saves partial and crash-free, and make the emission
@@ -111,5 +111,12 @@ emission) — they were sliced apart so each can land and be reviewed alone.
 | AC7 | Environment normalization lives only in the model (`fConfig.Environment = 2` removed from the router); a form save with `environment=2` still stores 2 | Covered by AC2/AC4 round-trips through the service path plus a grep-level review note in `Verification Results` (mechanical, no runtime difference) |
 
 ## Verification Results
-<!-- Commands run and PASS/FAIL/NOT RUN with reasons — filled during implementation. -->
-Not run yet.
+- `go test -run '^TestNFeCertGate' -v ./service/nfe_service/` → PASS (TestNFeCertGate_Helper, 4 subtests)
+- `DB_* + RUN_DB_TESTS=1 go test -run '^TestMigration000031_FarmConfigColumnsNullable_DBRoundTrip$' -v ./model/nfe_model/` → PASS
+- `DB_* + RUN_DB_TESTS=1 go test -run '^TestUpsertFarmConfig_CertOnly_DBRoundTrip$' -v ./model/nfe_model/` → PASS
+- `DB_* + RUN_DB_TESTS=1 go test -run '^TestUpsertFarmConfig_RejectsInvalidTaxRegime_DBRoundTrip$' -v ./model/nfe_model/` → PASS
+- `DB_* + RUN_DB_TESTS=1 go test -run '^TestUpsertFarmConfig_FullRoundTrip_DBRoundTrip$' -v ./model/nfe_model/` → PASS
+- `DB_* + RUN_DB_TESTS=1 go test -run '^TestUpsertFarmConfig_NullCertificateData_DBRoundTrip$' -v ./model/nfe_model/` → PASS
+- `go build ./...` → PASS
+- `go test ./...` → pre-existing failure `TestDeparturePaymentAndBillingDefaults` (unrelated, present on baseline) and DB-gated tests skipped without RUN_DB_TESTS
+- Manual smoke of emission certificate gate: NOT RUN (prepare functions not model-injectable; helper logic unit-covered) — justification per plan.md Phase 3

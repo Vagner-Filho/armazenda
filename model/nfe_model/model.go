@@ -94,6 +94,26 @@ func (m *NFeModel) GetFarmConfig(farmID uint32) (*entity_public.FarmConfig, erro
 
 // UpsertFarmConfig inserts or updates the NFe configuration for a farm.
 func (m *NFeModel) UpsertFarmConfig(cfg entity_public.FarmConfig, farmerName *string) *model_error.ModelError {
+	// Environment normalization: Go zero value means "not provided"; the DB
+	// default (and the form's only enabled option) is Homologação (2).
+	if cfg.Environment == 0 {
+		cfg.Environment = 2
+	}
+
+	// certificate_path is NOT NULL in the schema; a programmatic save that
+	// omits it (no upload yet) is normalized to an empty string instead of
+	// crashing on the NOT NULL constraint.
+	if cfg.CertificatePath == nil {
+		empty := ""
+		cfg.CertificatePath = &empty
+	}
+
+	// Tax-regime validation: assigning a regime has fiscal consequences in the
+	// emitted XML (CRT), so an unidentified value is refused, not guessed.
+	if cfg.TaxRegime < 1 || cfg.TaxRegime > 3 {
+		return &model_error.ModelError{IsServerErr: false, Message: "Regime tributário inválido: selecione Simples Nacional, Lucro Real ou Lucro Presumido"}
+	}
+
 	query := `
 		INSERT INTO nfe_farm_config (
 			farm_id, certificate_path, certificate_data, certificate_password_encrypted, environment,

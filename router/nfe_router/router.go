@@ -244,7 +244,6 @@ func saveNFeConfig(c *gin.Context) {
 
 	farmID := user_service.GetFarmFromToken(sid)
 
-	fConfig.Environment = 2
 	if fConfig.Serie == 0 {
 		fConfig.Serie = 1
 	}

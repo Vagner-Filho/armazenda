@@ -78,7 +78,9 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	if farmNFeConfig == nil {
 		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast("NF-e não configurada", "acesse NF-e em Configurações")
 	}
-
+	if toastPtr := nfeCertGate(farmNFeConfig); toastPtr != nil {
+		return emptyInput, departure, farmNFeConfig, entity_public.Product{}, emissionTaxSnapshot{}, *toastPtr
+	}
 	// Get full farm data for emitter address
 	farmConfigModel := farm_config_model.GetFarmConfigModel()
 	farmData, farmErr := farmConfigModel.GetFarmConfig(farmID)

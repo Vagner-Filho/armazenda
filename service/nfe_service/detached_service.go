@@ -161,7 +161,9 @@ func (s *NFeService) prepareDetachedBuildData(input DetachedInvoiceInput, dryRun
 	if farmNFeConfig == nil {
 		return empty, entity_public.GetWarningToast("NF-e não configurada", "acesse NF-e em Configurações")
 	}
-
+	if toastPtr := nfeCertGate(farmNFeConfig); toastPtr != nil {
+		return empty, *toastPtr
+	}
 	// Resolve and validate the effective tax configuration before any writes:
 	// the emission path creates the inline recipient person row further below,
 	// so a validation failure must happen first — and before buildDetachedItems
