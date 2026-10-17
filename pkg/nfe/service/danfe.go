@@ -38,25 +38,33 @@ func NewDANFEGenerator() *DANFEGenerator {
 	return &DANFEGenerator{}
 }
 
-// Generate creates a DANFE PDF and returns it as bytes.
+// Generate creates a single-page DANFE PDF and returns it as bytes.
 func (g *DANFEGenerator) Generate(data entity.DANFEData) ([]byte, error) {
-	return g.generatePDF(data, "")
+	return g.generatePDF(data, "", true)
 }
 
-// GeneratePreview creates a preview DANFE PDF with a watermark banner.
+// GeneratePreview creates a single-page preview DANFE PDF with a watermark banner.
 func (g *DANFEGenerator) GeneratePreview(data entity.DANFEData) ([]byte, error) {
-	return g.generatePDF(data, "DOCUMENTO DE PRÉ-VISUALIZAÇÃO — SEM VALOR FISCAL")
+	return g.generatePDF(data, "DOCUMENTO DE PRÉ-VISUALIZAÇÃO — SEM VALOR FISCAL", true)
 }
 
-// GenerateCancelled creates a DANFE PDF for a cancelled NF-e with a prominent
-// "NF-e CANCELADA" banner, as required by MOC Anexo II for cancelled invoices.
+// GenerateCancelled creates a single-page DANFE PDF for a cancelled NF-e with a
+// prominent "NF-e CANCELADA" banner, as required by MOC Anexo II.
 func (g *DANFEGenerator) GenerateCancelled(data entity.DANFEData) ([]byte, error) {
-	return g.generatePDF(data, "NF-e CANCELADA")
+	return g.generatePDF(data, "NF-e CANCELADA", true)
+}
+
+// GenerateMultiPage creates a DANFE PDF that may span multiple pages when the
+// content exceeds a single A4 sheet. This is the entry point for long invoices;
+// Generate remains strictly single-page.
+func (g *DANFEGenerator) GenerateMultiPage(data entity.DANFEData) ([]byte, error) {
+	return g.generatePDF(data, "", false)
 }
 
 // generatePDF renders the DANFE. When banner is non-empty, a highlighted
-// banner with the given text is drawn at the top of the page.
-func (g *DANFEGenerator) generatePDF(data entity.DANFEData, banner string) ([]byte, error) {
+// banner with the given text is drawn at the top of the page. When singlePage
+// is false the renderer inserts page breaks between sections as needed.
+func (g *DANFEGenerator) generatePDF(data entity.DANFEData, banner string, singlePage bool) ([]byte, error) {
 	// Per MOC Anexo II: FS-DA (tpEmis=5) and EPEC (tpEmis=4) are reserved
 	// and not actively wired (see AGENTS.md). Return a clear error so the
 	// caller can surface it instead of silently producing a non-compliant DANFE.
@@ -131,39 +139,50 @@ func (g *DANFEGenerator) generatePDF(data entity.DANFEData, banner string) ([]by
 
 	// Section 1: Canhoto / Receipt + DANFE header
 	y = g.drawHeaderBlock(&pdf, data, margin, y, usableW)
+	y = g.checkPageBreak(&pdf, y, pageH, margin, singlePage)
 
 	// Section 1b: Contingency banner (SVC only)
 	if data.TpEmis == "6" || data.TpEmis == "7" {
 		y = g.drawContingencyBanner(&pdf, data, margin, y, usableW)
+		y = g.checkPageBreak(&pdf, y, pageH, margin, singlePage)
 	}
 
 	// Section 2: Access Key + Barcode + Campo 1/2
 	y = g.drawAccessKeyBlock(&pdf, data, margin, y, usableW)
+	y = g.checkPageBreak(&pdf, y, pageH, margin, singlePage)
 
 	// Section 3: Natureza da Operação
 	y = g.drawNaturezaOp(&pdf, data, margin, y, usableW)
+	y = g.checkPageBreak(&pdf, y, pageH, margin, singlePage)
 
 	// Section 4: Emitente
-	y = g.drawEmitente(&pdf, data, margin, y+4, usableW)
+	y = g.drawEmitente(&pdf, data, margin, y, usableW)
+	y = g.checkPageBreak(&pdf, y, pageH, margin, singlePage)
 
 	// Section 5: Destinatário
 	y = g.drawDestinatario(&pdf, data, margin, y, usableW)
+	y = g.checkPageBreak(&pdf, y, pageH, margin, singlePage)
 
 	// Section 6: Cálculo do Imposto
 	y = g.drawTaxCalc(&pdf, data, margin, y, usableW)
+	y = g.checkPageBreak(&pdf, y, pageH, margin, singlePage)
 
 	// Section 7: Transportador / Volumes
 	y = g.drawTransport(&pdf, data, margin, y, usableW)
+	y = g.checkPageBreak(&pdf, y, pageH, margin, singlePage)
 
 	// Section 8: Dados do Produto
 	y = g.drawProductTable(&pdf, data, margin, y, usableW)
+	y = g.checkPageBreak(&pdf, y, pageH, margin, singlePage)
 
 	// Section 9: Total da Nota
 	y = g.drawTotalNota(&pdf, data, margin, y, usableW)
+	y = g.checkPageBreak(&pdf, y, pageH, margin, singlePage)
 
 	// Section 10: ISSQN (conditional)
 	if data.VISSQN.GreaterThan(decimal.Zero) {
 		y = g.drawISSQN(&pdf, data, margin, y, usableW)
+		y = g.checkPageBreak(&pdf, y, pageH, margin, singlePage)
 	}
 
 	// Section 11: Dados Adicionais + Reservado ao Fisco
@@ -180,6 +199,19 @@ func (g *DANFEGenerator) generatePDF(data entity.DANFEData, banner string) ([]by
 
 func (g *DANFEGenerator) box(pdf *gopdf.GoPdf, x, y, w, h float64) {
 	pdf.Rectangle(x, y, x+w, y+h, "D", 3, 10)
+}
+
+// checkPageBreak adds a new page and resets y when the current y position is
+// near the bottom of the page. It is a no-op when singlePage is true.
+func (g *DANFEGenerator) checkPageBreak(pdf *gopdf.GoPdf, y, pageH, margin float64, singlePage bool) float64 {
+	if singlePage {
+		return y
+	}
+	if y > pageH-margin-20 {
+		pdf.AddPage()
+		return margin
+	}
+	return y
 }
 
 // labelValue renders a label (6pt) and value at the given size inside a boxed cell.
@@ -256,9 +288,47 @@ func formatAccessKey(key string) string {
 
 func fmtDec(d decimal.Decimal, places int32) string {
 	if d.IsZero() {
-		return "0,00"
+		if places <= 0 {
+			return "0"
+		}
+		return "0," + strings.Repeat("0", int(places))
 	}
-	return d.StringFixed(places)
+	s := d.StringFixed(places)
+	parts := strings.SplitN(s, ".", 2)
+	intPart := formatThousands(parts[0])
+	if len(parts) == 1 {
+		return intPart
+	}
+	return intPart + "," + parts[1]
+}
+
+// formatThousands inserts a dot every three digits in the integer part of a
+// number (Brazilian grouping separator). It preserves a leading minus sign.
+func formatThousands(intPart string) string {
+	negative := false
+	if strings.HasPrefix(intPart, "-") {
+		negative = true
+		intPart = intPart[1:]
+	}
+	n := len(intPart)
+	if n <= 3 {
+		if negative {
+			return "-" + intPart
+		}
+		return intPart
+	}
+	var groups []string
+	for n > 3 {
+		groups = append([]string{intPart[n-3:n]}, groups...)
+		intPart = intPart[:n-3]
+		n = len(intPart)
+	}
+	groups = append([]string{intPart}, groups...)
+	result := strings.Join(groups, ".")
+	if negative {
+		return "-" + result
+	}
+	return result
 }
 
 func fmtDec0(d decimal.Decimal) string {
@@ -354,15 +424,16 @@ func (g *DANFEGenerator) drawHeaderBlock(pdf *gopdf.GoPdf, data entity.DANFEData
 	// TODO(P1): multi-page support — currently single page only
 	pdf.Cell(nil, "FOLHA 1/1")
 
-	return y + h
+	return y + h + 4
 }
 
 // drawContingencyBanner renders a highlighted contingency header per MOC
 // Anexo IV (SVC-AN / SVC-RS only — FS-DA and EPEC are stubbed).
 func (g *DANFEGenerator) drawContingencyBanner(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
-	h := 20.0
-	pdf.SetFillColor(255, 240, 200)
-	pdf.Rectangle(x, y, x+w, y+h, "FD", 0.5, 0)
+	const minH = 20.0
+	const infoStartY = 12.0
+	const lineHeight = 7.0
+	const padding = 4.0
 
 	svcName := "SVC"
 	switch data.TpEmis {
@@ -372,14 +443,6 @@ func (g *DANFEGenerator) drawContingencyBanner(pdf *gopdf.GoPdf, data entity.DAN
 		svcName = "SVC-RS"
 	}
 
-	pdf.SetFont("serif-bold", "", 10)
-	pdf.SetTextColor(180, 80, 0)
-	pdf.SetXY(x+4, y+3)
-	pdf.Cell(nil, fmt.Sprintf("EMITIDA EM CONTINGÊNCIA %s", svcName))
-	pdf.SetTextColor(0, 0, 0)
-
-	pdf.SetFont("serif", "", 8)
-	pdf.SetXY(x+4, y+12)
 	contInfo := ""
 	if data.DhCont != "" {
 		contInfo = "Entrada em contingência: " + data.DhCont
@@ -390,18 +453,39 @@ func (g *DANFEGenerator) drawContingencyBanner(pdf *gopdf.GoPdf, data entity.DAN
 		}
 		contInfo += "Justificativa: " + data.XJust
 	}
+
+	var contLines []string
 	if contInfo != "" {
 		pdf.SetFont("serif", "", 8)
-		contLines := wrapText(pdf, contInfo, w-8)
-		contY := y + 12.0
+		contLines = wrapText(pdf, contInfo, w-8)
+	}
+
+	infoH := float64(len(contLines))*lineHeight + padding
+	h := infoStartY + infoH + padding
+	if h < minH {
+		h = minH
+	}
+
+	pdf.SetFillColor(255, 240, 200)
+	pdf.Rectangle(x, y, x+w, y+h, "FD", 0.5, 0)
+
+	pdf.SetFont("serif-bold", "", 10)
+	pdf.SetTextColor(180, 80, 0)
+	pdf.SetXY(x+4, y+3)
+	pdf.Cell(nil, fmt.Sprintf("EMITIDA EM CONTINGÊNCIA %s", svcName))
+	pdf.SetTextColor(0, 0, 0)
+
+	if len(contLines) > 0 {
+		pdf.SetFont("serif", "", 8)
+		contY := y + infoStartY
 		for _, line := range contLines {
 			pdf.SetXY(x+4, contY)
 			pdf.Cell(nil, line)
-			contY += 7
+			contY += lineHeight
 		}
 	}
 
-	return y + h
+	return y + h + 4
 }
 
 func (g *DANFEGenerator) drawAccessKeyBlock(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
@@ -465,50 +549,56 @@ func (g *DANFEGenerator) drawAccessKeyBlock(pdf *gopdf.GoPdf, data entity.DANFED
 	// Divider line above Campo 1/2 area
 	pdf.Line(x, y+h-18, x+w, y+h-18)
 
-	return y + h
+	return y + h + 4
 }
 
 func (g *DANFEGenerator) drawNaturezaOp(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
 	h := 24.0
 	g.cell(pdf, x, y, w, h, "NATUREZA DA OPERAÇÃO", data.NaturezaOp)
-	return y + h
+	return y + h + 4
 }
 
 func (g *DANFEGenerator) drawEmitente(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
-	h := 69.0
-	//g.box(pdf, x, y, w, h)
+	const row1H = 24.0
+	const row2H = 23.0
 
 	pdf.SetFont("serif", "", 6)
 	pdf.SetXY(x+4, y+3)
 	pdf.Cell(nil, "EMITENTE")
 
-	// Razão Social (12pt bold per §3.7.6)
-	nameLines := wrapText(pdf, data.EmitterName, w-8)
-	nameY := y + 12.0
+	// Razão Social (12pt bold per §3.7.6). Measure and wrap using the same
+	// font that will be used for rendering so the box height grows correctly.
+	nameBoxTop := y + 10
+	nameLabelY := nameBoxTop + 2
+	nameValueStartY := nameBoxTop + 12
+	nameLineHeight := 10.0
 
-	pdf.SetXY(x+4, nameY)
-	g.box(pdf, x, nameY-2, w, 22)
+	pdf.SetFont("serif", "", 6)
+	pdf.SetXY(x+4, nameLabelY)
 	pdf.Cell(nil, "NOME / RAZÃO SOCIAL")
-	nameY += 10
 
 	pdf.SetFont("serif-bold", "", 12)
+	nameLines := wrapText(pdf, data.EmitterName, w-8)
+	nameY := nameValueStartY
 	for _, line := range nameLines {
 		pdf.SetXY(x+4, nameY)
 		pdf.Cell(nil, line)
-		nameY += 10
+		nameY += nameLineHeight
 	}
 
+	nameBoxH := nameValueStartY - nameBoxTop + float64(len(nameLines))*nameLineHeight + 4
+	g.box(pdf, x, nameBoxTop, w, nameBoxH)
+
 	// CNPJ | IE | CRT (8pt per §3.7.6)
-	row1H := 24.0
 	col1 := w * 0.35
 	col2 := w * 0.35
 	col3 := w - col1 - col2
-	g.cellEmit(pdf, x, nameY, col1, row1H, "CNPJ", formatCNPJ(data.EmitterCNPJ))
-	g.cellEmit(pdf, x+col1, nameY, col2, row1H, "INSCRIÇÃO ESTADUAL", data.EmitterIE)
-	g.cellEmit(pdf, x+col1+col2, nameY, col3, row1H, "REGIME TRIBUTÁRIO", crtLabel(data.EmitterCRT))
+	row1Y := nameBoxTop + nameBoxH
+	g.cellEmit(pdf, x, row1Y, col1, row1H, "CNPJ", formatCNPJ(data.EmitterCNPJ))
+	g.cellEmit(pdf, x+col1, row1Y, col2, row1H, "INSCRIÇÃO ESTADUAL", data.EmitterIE)
+	g.cellEmit(pdf, x+col1+col2, row1Y, col3, row1H, "REGIME TRIBUTÁRIO", crtLabel(data.EmitterCRT))
 
 	// Endereço completo (8pt per §3.7.6)
-	row2H := h - 22 - row1H
 	addr := joinNonEmpty(
 		data.EmitterAddress,
 		data.EmitterNumber,
@@ -518,43 +608,48 @@ func (g *DANFEGenerator) drawEmitente(pdf *gopdf.GoPdf, data entity.DANFEData, x
 		fmt.Sprintf("%s/%s", data.EmitterCity, data.EmitterUF),
 		data.EmitterPhone,
 	)
-	g.cellEmit(pdf, x, nameY+row1H, w, row2H, "ENDEREÇO", addr)
+	g.cellEmit(pdf, x, row1Y+row1H, w, row2H, "ENDEREÇO", addr)
 
-	return y + h + 12
+	return y + 10 + nameBoxH + row1H + row2H + 4
 }
 
 func (g *DANFEGenerator) drawDestinatario(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
-	h := 69.0
-	//g.box(pdf, x, y, w, h)
+	const row1H = 24.0
+	const row2H = 23.0
 
 	pdf.SetFont("serif", "", 6)
 	pdf.SetXY(x+4, y+3)
 	pdf.Cell(nil, "DESTINATÁRIO / REMETENTE")
 
-	nameLines := wrapText(pdf, data.DestName, w-8)
-	nameY := y + 12.0
+	nameBoxTop := y + 10
+	nameLabelY := nameBoxTop + 2
+	nameValueStartY := nameBoxTop + 12
+	nameLineHeight := 10.0
 
-	pdf.SetXY(x+4, nameY)
-	g.box(pdf, x, nameY-2, w, 22)
+	pdf.SetFont("serif", "", 6)
+	pdf.SetXY(x+4, nameLabelY)
 	pdf.Cell(nil, "NOME / RAZÃO SOCIAL")
-	nameY += 10
 
 	pdf.SetFont("serif-bold", "", 12)
+	nameLines := wrapText(pdf, data.DestName, w-8)
+	nameY := nameValueStartY
 	for _, line := range nameLines {
 		pdf.SetXY(x+4, nameY)
 		pdf.Cell(nil, line)
-		nameY += 10
+		nameY += nameLineHeight
 	}
 
-	row1H := 24.0
+	nameBoxH := nameValueStartY - nameBoxTop + float64(len(nameLines))*nameLineHeight + 4
+	g.box(pdf, x, nameBoxTop, w, nameBoxH)
+
 	col1 := w * 0.35
 	col2 := w * 0.35
 	col3 := w - col1 - col2
-	g.cell(pdf, x, nameY, col1, row1H, "CNPJ/CPF", formatCNPJ(data.DestCNPJ))
-	g.cell(pdf, x+col1, nameY, col2, row1H, "INSCRIÇÃO ESTADUAL", data.DestIE)
-	g.cell(pdf, x+col1+col2, nameY, col3, row1H, "INDICADOR IE DEST.", indIEDestLabel(data.DestIndIEDest))
+	row1Y := nameBoxTop + nameBoxH
+	g.cell(pdf, x, row1Y, col1, row1H, "CNPJ/CPF", formatCNPJ(data.DestCNPJ))
+	g.cell(pdf, x+col1, row1Y, col2, row1H, "INSCRIÇÃO ESTADUAL", data.DestIE)
+	g.cell(pdf, x+col1+col2, row1Y, col3, row1H, "INDICADOR IE DEST.", indIEDestLabel(data.DestIndIEDest))
 
-	row2H := h - 22 - row1H
 	addr := joinNonEmpty(
 		data.DestAddress,
 		data.DestNumber,
@@ -564,13 +659,14 @@ func (g *DANFEGenerator) drawDestinatario(pdf *gopdf.GoPdf, data entity.DANFEDat
 		fmt.Sprintf("%s/%s", data.DestCity, data.DestUF),
 		data.DestPhone,
 	)
-	g.cell(pdf, x, nameY+row1H, w, row2H, "ENDEREÇO", addr)
+	g.cell(pdf, x, row1Y+row1H, w, row2H, "ENDEREÇO", addr)
 
-	return y + h + 12
+	return y + 10 + nameBoxH + row1H + row2H + 4
 }
 
 func (g *DANFEGenerator) drawTaxCalc(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
-	h := 34.0
+	const rowH = 24.0
+	h := 10 + rowH*2
 	//g.box(pdf, x, y, w, h)
 	pdf.SetFont("serif", "", 6)
 	pdf.SetXY(x+4, y+3)
@@ -584,7 +680,7 @@ func (g *DANFEGenerator) drawTaxCalc(pdf *gopdf.GoPdf, data entity.DANFEData, x,
 		{"V. ICMS", fmtDec2(data.VICMS)},
 		{"B.CÁLC. ST", fmtDec2(data.VBCST)},
 		{"V. ICMS ST", fmtDec2(data.VST)},
-		{"V. PRODUTOS", fmtDec2(data.TotalValue)},
+		{"V. PRODUTOS", fmtDec2(data.VProd)},
 		{"V. FRETE", fmtDec2(data.VFrete)},
 		{"V. SEGURO", fmtDec2(data.VSeg)},
 		{"DESCONTO", fmtDec2(data.VDesc)},
@@ -593,18 +689,24 @@ func (g *DANFEGenerator) drawTaxCalc(pdf *gopdf.GoPdf, data entity.DANFEData, x,
 		{"V. NF", fmtDec2(data.TotalValue)},
 		{"V.EST.TRI.", fmtDec2(data.VTotTrib)},
 	}
-	colW := w / float64(len(fields))
-	for i, f := range fields {
+	colW := w / 6.0
+	for i := 0; i < 6; i++ {
+		f := fields[i]
 		fx := x + float64(i)*colW
-		g.cell(pdf, fx, y+10, colW, h-10, f.label, f.value)
+		g.cell(pdf, fx, y+10, colW, rowH, f.label, f.value)
 	}
-	return y + h
+	for i := 6; i < 12; i++ {
+		f := fields[i]
+		fx := x + float64(i-6)*colW
+		g.cell(pdf, fx, y+10+rowH, colW, rowH, f.label, f.value)
+	}
+	return y + h + 4
 }
 
 func (g *DANFEGenerator) drawTransport(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
 	// Vehicle row (PLACA / UF / RNTRC) is only drawn when the NF-e carries
 	// vehicle data, so DANFEs without it keep the classic layout height.
-	row4H := 16.0
+	row4H := 24.0
 	hasVehicle := data.VeicPlate != "" || data.VeicUF != "" || data.VeicRNTC != ""
 	h := 72.0
 	if hasVehicle {
@@ -665,7 +767,7 @@ func (g *DANFEGenerator) drawTransport(pdf *gopdf.GoPdf, data entity.DANFEData, 
 		g.cell(pdf, x+p1+p2, row4Y, p3, row4H, "RNTRC/ANTT", data.VeicRNTC)
 	}
 
-	return y + h
+	return y + h + 4
 }
 
 func (g *DANFEGenerator) drawProductTable(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
@@ -822,11 +924,12 @@ func (g *DANFEGenerator) drawProductTable(pdf *gopdf.GoPdf, data entity.DANFEDat
 		cyAcc += lh
 	}
 
-	return y + h
+	return y + h + 4
 }
 
 func (g *DANFEGenerator) drawTotalNota(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
-	h := 34.0
+	const rowH = 24.0
+	h := 10 + rowH*2
 	//g.box(pdf, x, y, w, h)
 	pdf.SetFont("serif", "", 6)
 	pdf.SetXY(x+4, y+3)
@@ -840,7 +943,7 @@ func (g *DANFEGenerator) drawTotalNota(pdf *gopdf.GoPdf, data entity.DANFEData, 
 		{"V. ICMS", fmtDec2(data.VICMS)},
 		{"B.CÁLC. ST", fmtDec2(data.VBCST)},
 		{"V. ICMS ST", fmtDec2(data.VST)},
-		{"V. PRODUTOS", fmtDec2(data.TotalValue)},
+		{"V. PRODUTOS", fmtDec2(data.VProd)},
 		{"V. FRETE", fmtDec2(data.VFrete)},
 		{"V. SEGURO", fmtDec2(data.VSeg)},
 		{"DESCONTO", fmtDec2(data.VDesc)},
@@ -849,12 +952,18 @@ func (g *DANFEGenerator) drawTotalNota(pdf *gopdf.GoPdf, data entity.DANFEData, 
 		{"V. NF", fmtDec2(data.TotalValue)},
 		{"V.EST.TRI.", fmtDec2(data.VTotTrib)},
 	}
-	colW := w / float64(len(fields))
-	for i, f := range fields {
+	colW := w / 6.0
+	for i := 0; i < 6; i++ {
+		f := fields[i]
 		fx := x + float64(i)*colW
-		g.cell(pdf, fx, y+10, colW, h-10, f.label, f.value)
+		g.cell(pdf, fx, y+10, colW, rowH, f.label, f.value)
 	}
-	return y + h
+	for i := 6; i < 12; i++ {
+		f := fields[i]
+		fx := x + float64(i-6)*colW
+		g.cell(pdf, fx, y+10+rowH, colW, rowH, f.label, f.value)
+	}
+	return y + h + 4
 }
 
 func (g *DANFEGenerator) drawISSQN(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
@@ -866,11 +975,11 @@ func (g *DANFEGenerator) drawISSQN(pdf *gopdf.GoPdf, data entity.DANFEData, x, y
 
 	cols := w / 5.0
 	g.cell(pdf, x, y+10, cols, h-10, "IM", "")
-	g.cell(pdf, x+cols, y+10, cols, h-10, "VALOR TOTAL DOS SERVIÇOS", fmtDec2(data.TotalValue))
+	g.cell(pdf, x+cols, y+10, cols, h-10, "VALOR TOTAL DOS SERVIÇOS", fmtDec2(data.VServ))
 	g.cell(pdf, x+cols*2, y+10, cols, h-10, "BASE DE CÁLCULO DO ISSQN", fmtDec2(data.VBCISSQN))
 	g.cell(pdf, x+cols*3, y+10, cols, h-10, "VALOR DO ISSQN", fmtDec2(data.VISSQN))
-	g.cell(pdf, x+cols*4, y+10, w-cols*4, h-10, "VALOR TOTAL DOS SERVIÇOS", fmtDec2(data.TotalValue))
-	return y + h
+	g.cell(pdf, x+cols*4, y+10, w-cols*4, h-10, "VALOR TOTAL DA NOTA", fmtDec2(data.TotalValue))
+	return y + h + 4
 }
 
 func (g *DANFEGenerator) drawAdditionalInfo(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
@@ -930,7 +1039,7 @@ func (g *DANFEGenerator) drawAdditionalInfo(pdf *gopdf.GoPdf, data entity.DANFED
 		drawWrapped(pdf, infFiscoLines, x+leftW+4, y+20, lineH)
 	}
 
-	return y + h
+	return y + h + 4
 }
 
 // --- Formatting utilities ---
@@ -996,7 +1105,17 @@ func formatCNPJ(cnpj string) string {
 	if len(cnpj) == 14 {
 		return fmt.Sprintf("%s.%s.%s/%s-%s", cnpj[:2], cnpj[2:5], cnpj[5:8], cnpj[8:12], cnpj[12:])
 	}
+	if len(cnpj) == 11 {
+		return formatCPF(cnpj)
+	}
 	return cnpj
+}
+
+func formatCPF(cpf string) string {
+	if len(cpf) == 11 {
+		return fmt.Sprintf("%s.%s.%s-%s", cpf[:3], cpf[3:6], cpf[6:9], cpf[9:])
+	}
+	return cpf
 }
 
 func crtLabel(crt string) string {

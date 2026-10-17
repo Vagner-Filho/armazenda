@@ -53,6 +53,7 @@ type DANFEData struct {
 
 	// Totals (ICMS)
 	TotalValue decimal.Decimal
+	VProd      decimal.Decimal
 	VBC        decimal.Decimal
 	VICMS      decimal.Decimal
 	VICMSDeson decimal.Decimal
@@ -93,6 +94,7 @@ type DANFEData struct {
 	// ISSQN (conditional)
 	VBCISSQN      decimal.Decimal
 	VISSQN        decimal.Decimal
+	VServ         decimal.Decimal
 	VPISISSQN     decimal.Decimal
 	VCOFINSSISSQN decimal.Decimal
 

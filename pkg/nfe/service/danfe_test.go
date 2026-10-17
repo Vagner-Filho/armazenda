@@ -129,6 +129,7 @@ func fullDANFEData() entity.DANFEData {
 		},
 
 		TotalValue: decimal.NewFromFloat(7500000),
+		VProd:      decimal.NewFromFloat(7500000),
 		VBC:        decimal.NewFromFloat(7500000),
 		VICMS:      decimal.NewFromFloat(1275000),
 		VICMSDeson: decimal.NewFromFloat(0),

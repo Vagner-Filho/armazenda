@@ -769,6 +769,7 @@ func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.
 			},
 		},
 		TotalValue: input.TotalValue,
+		VProd:      product.VProd,
 		VBC:        imp.ICMS.VBC,
 		VICMS:      imp.ICMS.VICMS,
 		VPIS:       imp.PIS.VPIS,

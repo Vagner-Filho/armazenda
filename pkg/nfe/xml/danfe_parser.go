@@ -200,6 +200,7 @@ func ParseDANFEData(xmlContent string) (*entity.DANFEData, error) {
 	if total := infNFe.SelectElement("total"); total != nil {
 		if icmsTot := total.SelectElement("ICMSTot"); icmsTot != nil {
 			data.TotalValue = parseDecimalText(icmsTot.SelectElement("vNF"))
+			data.VProd = parseDecimalText(icmsTot.SelectElement("vProd"))
 			data.VBC = parseDecimalText(icmsTot.SelectElement("vBC"))
 			data.VICMS = parseDecimalText(icmsTot.SelectElement("vICMS"))
 			data.VICMSDeson = parseDecimalText(icmsTot.SelectElement("vICMSDeson"))
@@ -218,6 +219,7 @@ func ParseDANFEData(xmlContent string) (*entity.DANFEData, error) {
 		if issqnTot := total.SelectElement("ISSQNtot"); issqnTot != nil {
 			data.VBCISSQN = parseDecimalText(issqnTot.SelectElement("vBC"))
 			data.VISSQN = parseDecimalText(issqnTot.SelectElement("vISS"))
+			data.VServ = parseDecimalText(issqnTot.SelectElement("vServ"))
 			data.VPISISSQN = parseDecimalText(issqnTot.SelectElement("vPIS"))
 			data.VCOFINSSISSQN = parseDecimalText(issqnTot.SelectElement("vCOFINS"))
 		}
