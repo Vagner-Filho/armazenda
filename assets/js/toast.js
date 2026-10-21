@@ -123,14 +123,59 @@ class ToastManager {
 
 		document.body.append(toast)
 		toast.togglePopover()
-		const t = setTimeout(() => {
-			const toRemove = this.toastQueue.shift()
-			if (toRemove) {
-				toast.togglePopover()
-				document.body.removeChild(toRemove)
+
+		const DURATION = 6000
+		let remaining = DURATION
+		let startTime = Date.now()
+		let timer = null
+
+		const removeToast = () => {
+			if (timer) {
+				clearTimeout(timer)
+				timer = null
 			}
-			clearTimeout(t)
-		}, 3000)
+			const idx = this.toastQueue.indexOf(toast)
+			if (idx !== -1) {
+				this.toastQueue.splice(idx, 1)
+			}
+			try {
+				toast.togglePopover()
+			} catch (e) {
+				// ignore if already hidden
+			}
+			if (toast.parentNode) {
+				document.body.removeChild(toast)
+			}
+		}
+
+		const startTimer = () => {
+			startTime = Date.now()
+			timer = setTimeout(removeToast, remaining)
+		}
+
+		const pauseTimer = () => {
+			if (timer) {
+				clearTimeout(timer)
+				timer = null
+				remaining -= Date.now() - startTime
+				if (remaining < 0) {
+					remaining = 0
+				}
+			}
+		}
+
+		const resumeTimer = () => {
+			if (remaining <= 0) {
+				removeToast()
+				return
+			}
+			startTimer()
+		}
+
+		toast.addEventListener('mouseenter', pauseTimer)
+		toast.addEventListener('mouseleave', resumeTimer)
+
+		startTimer()
 	}
 
 	constructor(message, hint, type) {

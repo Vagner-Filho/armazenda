@@ -754,7 +754,7 @@ func getNFeEmitModal(c *gin.Context) {
 		"DefaultCEST":             safePtrString(defaultCEST),
 		"DefaultUnit":             safePtrString(defaultUnit),
 		"DefaultModFrete":         defaultModFrete,
-		"DefaultTPag":             "90",
+		"DefaultTPag":             "99",
 		"DefaultUseVehicle":       defaultUseVehicle,
 		"DefaultTransportPlate":   defaultTransportPlate,
 		"DefaultTransportPlateUF": defaultTransportPlateUF,

@@ -95,7 +95,6 @@ func (m *NFeModel) GetFarmConfig(farmID uint32) (*entity_public.FarmConfig, erro
 // UpsertFarmConfig inserts or updates the NFe configuration for a farm.
 func (m *NFeModel) UpsertFarmConfig(cfg entity_public.FarmConfig, farmerName *string) *model_error.ModelError {
 	// Environment normalization: Go zero value means "not provided"; the DB
-	// default (and the form's only enabled option) is Homologação (2).
 	if cfg.Environment == 0 {
 		cfg.Environment = 2
 	}
@@ -391,9 +390,11 @@ func safeInt(overrides *entity.InvoiceOverrides, getter func(*entity.InvoiceOver
 	return getter(overrides)
 }
 
-// insertInvoiceTaxRates persists a row in nfe_invoice_tax_rates when at least
-// one rate was provided by the user. Nil inputs are written as NULL columns,
-// preserving the per-axis "user provided / not provided" distinction.
+// insertInvoiceTaxRates persists the effective tax-rate snapshot of an emission
+// in nfe_invoice_tax_rates. Since the rates waterfall (user > farm > corpus
+// fallback) resolves every axis on every emission, every emission now stores
+// the full effective snapshot — including resolved defaults and zeros. The
+// all-nil guard below is retained as a defensive no-op for legacy/nil inputs.
 func (m *NFeModel) insertInvoiceTaxRates(invoiceID int, taxRates *entity.TaxRates) error {
 	if taxRates == nil {
 		return nil

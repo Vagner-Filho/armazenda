@@ -178,18 +178,14 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	}
 
 	// Merge the user-typed rates with the farm config and resolve the
-	// effective tax codes. Validation fires here — before buildItems
-	// dereferences the rates and before any allocation/persistence happens
-	// downstream — and the whole resolved configuration is returned so the
-	// caller persists exactly what the XML used.
+	// effective tax codes. The rates waterfall (user > farm > corpus fallback)
+	// never leaves an axis unresolved, so no rate validation is needed here;
+	// validation of the tax codes still runs before buildItems dereferences
+	// them and before any allocation/persistence happens downstream. The whole
+	// resolved configuration is returned so the caller persists exactly what
+	// the XML used.
 	regime := defaults.TaxRegime(farmNFeConfig.TaxRegime)
 	rates := MergeRates(userRates, farmNFeConfig)
-	if ratesErrs := validateResolvedRates(rates, regime); len(ratesErrs) > 0 {
-		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast(
-			"Configuração de taxas incompleta",
-			strings.Join(ratesErrs, "; "),
-		)
-	}
 	codes := MergeEffectiveOverrides(overrides, farmNFeConfig, regime)
 	if codeErrors := validateDepartureTaxCodes(codes, regime); len(codeErrors) > 0 {
 		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast(
@@ -845,14 +841,15 @@ func padLeftZeros(s string, length int) string {
 }
 
 // buildItems creates the NF-e item data from departure and configs.
-// The tax rates are pre-validated (validateResolvedRates) and the tax codes
-// are pre-resolved (MergeEffectiveOverrides) — resolution lives in one place
-// and the same snapshot is what the callers persist.
+// The tax rates are pre-resolved from the MergeRates waterfall (user > farm >
+// corpus fallback) and the tax codes are pre-resolved (MergeEffectiveOverrides)
+// — resolution lives in one place and the same snapshot is what the callers
+// persist.
 func (s *NFeService) buildItems(departure entity_public.Departure, unitPrice decimal.Decimal, ncm string, cest string, unit string, description string, regime defaults.TaxRegime, cfop string, rates entity.TaxRates, codes entity.InvoiceOverrides) []entity.ItemData {
 	totalValue := departure.NetWeight.Mul(unitPrice)
 
 	// Resolved rates are authoritative (MergeRates already applied user >
-	// farm, and validateResolvedRates guaranteed the consumed axes).
+	// farm > corpus fallback).
 	icmsRate := *rates.ICMSRate
 	pisRate := *rates.PISRate
 	cofinsRate := *rates.COFINSRate
@@ -1007,30 +1004,34 @@ type emissionTaxSnapshot struct {
 // resolveRate picks the effective rate for one axis. The user-typed rate is
 // authoritative when present — a typed zero is an explicit exemption (see the
 // entity.TaxRates contract). The farm config rate is used when configured
-// (non-zero). Anything else is unresolvable (nil): validateResolvedRates must
-// refuse the emission for the axes the regime uses. There is intentionally no
-// hardcoded fallback — the historical (0.17 / 0.0165 / 0.076) values were an
-// emission-test convenience and guessing a tax rate produces a fiscally
-// wrong but schema-valid XML.
-func resolveRate(override *decimal.Decimal, farm decimal.Decimal) *decimal.Decimal {
+// (non-zero). Otherwise the axis falls back to a corpus-derived default:
+// zero for ICMS/PIS/COFINS (corpus-proven: pICMS 0.0000 authorized 107x,
+// PIS/COFINS never declared via CST 08 NT) and the regulator-fixed 2026
+// symbolic rates for IBS/CBS (defaults.IBSRate2026 / CBSRate2026, present in
+// 115/115 corpus files — Ato Conjunto RFB/CGIBS). See
+// docs/research_nfe_use_case/USE_CASES.md. There is never a nil result, so
+// emission never blocks on a missing rate.
+func resolveRate(override *decimal.Decimal, farm decimal.Decimal, fallback decimal.Decimal) *decimal.Decimal {
 	if override != nil {
 		return override
 	}
 	if !farm.IsZero() {
 		return &farm
 	}
-	return nil
+	f := fallback
+	return &f
 }
 
 // MergeRates resolves the effective TaxRates for an emission with the
-// precedence user > farm config. A returned nil pointer means the axis could
-// not be resolved; run validateResolvedRates right after and block the
-// emission for the axes the regime uses.
+// precedence user > farm config > corpus-derived fallback. No axis is ever
+// left unresolved (nil): unconfigured farms resolve to zero (ICMS/PIS/COFINS)
+// or the official 2026 constants (IBS/CBS).
 //
-// MergeRates is idempotent on a complete snapshot: calling it again with a
+// MergeRates is idempotent on a resolved snapshot: calling it again with a
 // previously resolved snapshot as overrides returns that snapshot unchanged
-// (every non-nil field wins over the farm arm). That property is what lets
-// worker rebuilds and SVC attempts reproduce the original emission exactly.
+// (every non-nil field wins over the farm/fallback arms). That property is
+// what lets worker rebuilds and SVC attempts reproduce the original emission
+// exactly.
 func MergeRates(overrides entity.TaxRates, farmConfig *entity_public.FarmConfig) entity.TaxRates {
 	var pICMS, pPIS, pCOFINS decimal.Decimal
 	var pIBS, pCBS decimal.Decimal
@@ -1039,41 +1040,12 @@ func MergeRates(overrides entity.TaxRates, farmConfig *entity_public.FarmConfig)
 		pIBS, pCBS = farmConfig.IBSRate, farmConfig.CBSRate
 	}
 	return entity.TaxRates{
-		ICMSRate:   resolveRate(overrides.ICMSRate, pICMS),
-		PISRate:    resolveRate(overrides.PISRate, pPIS),
-		COFINSRate: resolveRate(overrides.COFINSRate, pCOFINS),
-		IBSRate:    resolveRate(overrides.IBSRate, pIBS),
-		CBSRate:    resolveRate(overrides.CBSRate, pCBS),
+		ICMSRate:   resolveRate(overrides.ICMSRate, pICMS, decimal.Zero),
+		PISRate:    resolveRate(overrides.PISRate, pPIS, decimal.Zero),
+		COFINSRate: resolveRate(overrides.COFINSRate, pCOFINS, decimal.Zero),
+		IBSRate:    resolveRate(overrides.IBSRate, pIBS, defaults.IBSRate2026),
+		CBSRate:    resolveRate(overrides.CBSRate, pCBS, defaults.CBSRate2026),
 	}
-}
-
-// validateResolvedRates reports the tax rates that could not be resolved
-// (nil pointers) among the axes the regime actually uses. Messages are in
-// pt-br and name where each rate can be fixed (the emission form or the farm
-// config). An empty result means the emission may proceed and callers own the
-// non-nil guarantees for the consumed axes.
-//
-// ICMS is only required for Regime Normal: Simples Nacional zeroes the ICMS
-// amounts (vBC / pICMS / vICMS) and the ICMS rate is never consumed by the
-// XML. PIS, COFINS, IBS and CBS are computed in both regimes.
-func validateResolvedRates(rates entity.TaxRates, regime defaults.TaxRegime) []string {
-	var errs []string
-	if regime != defaults.TaxRegimeSimplesNacional && rates.ICMSRate == nil {
-		errs = append(errs, "Alíquota ICMS não configurada: informe-a na emissão ou defina-a como valor padrão da fazenda")
-	}
-	if rates.PISRate == nil {
-		errs = append(errs, "Alíquota PIS não configurada: informe-a na emissão ou defina-a como valor padrão da fazenda")
-	}
-	if rates.COFINSRate == nil {
-		errs = append(errs, "Alíquota COFINS não configurada: informe-a na emissão ou defina-a como valor padrão da fazenda")
-	}
-	if rates.IBSRate == nil {
-		errs = append(errs, "Alíquota IBS não configurada: informe-a na emissão ou defina-a como valor padrão da fazenda")
-	}
-	if rates.CBSRate == nil {
-		errs = append(errs, "Alíquota CBS não configurada: informe-a na emissão ou defina-a como valor padrão da fazenda")
-	}
-	return errs
 }
 
 // codeOr dereferences a resolved code pointer, falling back only when the

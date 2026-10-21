@@ -1,7 +1,6 @@
 package nfe_service
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/shopspring/decimal"
@@ -104,78 +103,59 @@ func TestMergeRates_SnapshotIsIdempotent(t *testing.T) {
 	}
 }
 
-func TestMergeRates_MissingAxesSurfaceInValidation(t *testing.T) {
+func TestMergeRates_UnconfiguredFarmResolvesDefaults(t *testing.T) {
 	merged := MergeRates(entity.TaxRates{}, unconfiguredFarmConfig())
 
-	axes := map[string]*decimal.Decimal{
-		"ICMS":   merged.ICMSRate,
-		"PIS":    merged.PISRate,
-		"COFINS": merged.COFINSRate,
-		"IBS":    merged.IBSRate,
-		"CBS":    merged.CBSRate,
+	if merged.ICMSRate == nil || !merged.ICMSRate.IsZero() {
+		t.Errorf("ICMS: got %v, want 0", merged.ICMSRate)
 	}
-	for name, rate := range axes {
-		if rate != nil {
-			t.Errorf("%s: rate must come back nil (unresolvable), got %s", name, rate)
-		}
+	if merged.PISRate == nil || !merged.PISRate.IsZero() {
+		t.Errorf("PIS: got %v, want 0", merged.PISRate)
 	}
-
-	errs := validateResolvedRates(merged, defaults.TaxRegimeLucroReal)
-	if len(errs) != 5 {
-		t.Fatalf("expected 5 missing-rate errors for an unconfigured farm, got %d: %v", len(errs), errs)
+	if merged.COFINSRate == nil || !merged.COFINSRate.IsZero() {
+		t.Errorf("COFINS: got %v, want 0", merged.COFINSRate)
+	}
+	if merged.IBSRate == nil || !merged.IBSRate.Equal(defaults.IBSRate2026) {
+		t.Errorf("IBS: got %v, want %s", merged.IBSRate, defaults.IBSRate2026)
+	}
+	if merged.CBSRate == nil || !merged.CBSRate.Equal(defaults.CBSRate2026) {
+		t.Errorf("CBS: got %v, want %s", merged.CBSRate, defaults.CBSRate2026)
 	}
 }
 
-func TestValidateResolvedRates_SimpleNacionalICMSOptional(t *testing.T) {
-	// Simples Nacional never consumes the ICMS rate: unconfigured ICMS with
-	// every other axis resolved must validate clean.
-	rates := entity.TaxRates{
-		ICMSRate:   nil,
-		PISRate:    ratePtr("0.0165"),
-		COFINSRate: ratePtr("0.076"),
-		IBSRate:    ratePtr("0.001"),
-		CBSRate:    ratePtr("0.009"),
+func TestMergeRates_PrecedenceUserZeroBeatsFarmAndConstants(t *testing.T) {
+	cfg := snapshotFarmConfig()
+	// User-typed zero wins over a non-zero farm config and the constants.
+	user := snapshotRates("0", "0", "0", "0", "0")
+	merged := MergeRates(user, cfg)
+	if !merged.ICMSRate.Equal(decimal.Zero) {
+		t.Errorf("ICMS user zero should win, got %s", merged.ICMSRate)
 	}
-	if errs := validateResolvedRates(rates, defaults.TaxRegimeSimplesNacional); len(errs) != 0 {
-		t.Errorf("SN regime must not require the ICMS rate, got errors: %v", errs)
-	}
-
-	// Regime Normal (Lucro Real here) does require ICMS.
-	errs := validateResolvedRates(rates, defaults.TaxRegimeLucroReal)
-	if len(errs) != 1 {
-		t.Fatalf("expected exactly 1 error (ICMS) for a normal-regime farm, got %d: %v", len(errs), errs)
-	}
-	if want := "Alíquota ICMS"; !strings.Contains(errs[0], want) {
-		t.Errorf("error should mention the ICMS axis: %v", errs)
+	if !merged.IBSRate.Equal(decimal.Zero) {
+		t.Errorf("IBS user zero should win over constant, got %s", merged.IBSRate)
 	}
 }
 
-func TestValidateResolvedRates_UserZeroIsExempt(t *testing.T) {
-	// A user-typed zero is an explicit exemption, not a missing rate.
-	rates := entity.TaxRates{ICMSRate: ratePtr("0")}
-	errs := validateResolvedRates(rates, defaults.TaxRegimeLucroReal)
-	for _, e := range errs {
-		if strings.Contains(e, "ICMS") {
-			t.Errorf("a typed zero must not be reported as missing ICMS: %v", errs)
-		}
+func TestMergeRates_FarmNonZeroBeatsConstants(t *testing.T) {
+	cfg := snapshotFarmConfig()
+	merged := MergeRates(entity.TaxRates{}, cfg)
+	if !merged.ICMSRate.Equal(decimal.RequireFromString("0.17")) {
+		t.Errorf("ICMS farm should win, got %s", merged.ICMSRate)
 	}
-	if len(errs) != 4 {
-		t.Fatalf("expected the 4 remaining axes to be reported missing, got %d: %v", len(errs), errs)
+	if !merged.IBSRate.Equal(decimal.RequireFromString("0.001")) {
+		t.Errorf("IBS farm should win, got %s", merged.IBSRate)
 	}
 }
 
-func TestValidateResolvedRates_RequiredInBothRegimes(t *testing.T) {
-	for _, regime := range []defaults.TaxRegime{defaults.TaxRegimeSimplesNacional, defaults.TaxRegimeLucroReal} {
-		// An entirely empty rate set reports every axis the regime uses:
-		// 5 for the normal regimes, 4 for SN (ICMS not consumed there).
-		want := 4
-		if regime != defaults.TaxRegimeSimplesNacional {
-			want = 5
-		}
-		errs := validateResolvedRates(entity.TaxRates{}, regime)
-		if len(errs) != want {
-			t.Errorf("regime %v: expected %d errors, got %d: %v", regime, want, len(errs), errs)
-		}
+func TestMergeRates_UserBeatsFarm(t *testing.T) {
+	cfg := snapshotFarmConfig()
+	user := snapshotRates("0.07", "0.01", "0.02", "0.002", "0.018")
+	merged := MergeRates(user, cfg)
+	if !merged.ICMSRate.Equal(decimal.RequireFromString("0.07")) {
+		t.Errorf("ICMS user should beat farm, got %s", merged.ICMSRate)
+	}
+	if !merged.IBSRate.Equal(decimal.RequireFromString("0.002")) {
+		t.Errorf("IBS user should beat farm, got %s", merged.IBSRate)
 	}
 }
 
@@ -283,15 +263,12 @@ func intPtr(i int) *int {
 }
 
 // resolvedSnapshot runs the exact preparation the service prepare steps use
-// (merge → validation → codes) so `buildDetachedItems`/`buildItems` test
-// fixtures mirror the production path. Tests with unresolvable fixture rates
-// fail here with the validation message instead of dereferencing nils.
+// (merge → codes) so `buildDetachedItems`/`buildItems` test fixtures mirror
+// the production path. The rates waterfall never leaves an axis unresolved,
+// so no rate validation is needed here.
 func resolvedSnapshot(t *testing.T, userRates entity.TaxRates, overrides *entity.InvoiceOverrides, cfg *entity_public.FarmConfig) emissionTaxSnapshot {
 	t.Helper()
 	rates := MergeRates(userRates, cfg)
 	regime := defaults.TaxRegime(cfg.TaxRegime)
-	if errs := validateResolvedRates(rates, regime); len(errs) > 0 {
-		t.Fatalf("test fixture has unresolvable rates: %v", errs)
-	}
 	return emissionTaxSnapshot{Rates: rates, Codes: MergeEffectiveOverrides(overrides, cfg, regime)}
 }

@@ -26,8 +26,8 @@ func TestDeparturePaymentAndBillingDefaults(t *testing.T) {
 	if len(defaultsPayment.Detalhes) != 1 {
 		t.Fatalf("default payment details = %d, want one", len(defaultsPayment.Detalhes))
 	}
-	if got := defaultsPayment.Detalhes[0]; got.TPag != "90" || got.IndPag != 0 || !got.VPag.Equal(total) {
-		t.Errorf("legacy payment default = %+v, want tPag 90 / indPag 0 / total value", got)
+	if got := defaultsPayment.Detalhes[0]; got.TPag != "99" || got.IndPag != 0 || got.XPag != "Outros" || !got.VPag.Equal(total) {
+		t.Errorf("default payment = %+v, want tPag 99 / indPag 0 / xPag Outros / total value", got)
 	}
 	if !departureCobrancaEnabled(nil) {
 		t.Error("legacy nil billing option must keep cobr/fat enabled")
@@ -49,8 +49,8 @@ func TestDeparturePaymentAndBillingDefaults(t *testing.T) {
 		t.Errorf("valid payment options returned errors: %v", errs)
 	}
 	invalid := &entity.DepartureInvoiceOverrides{TPag: "03", IndPag: 3}
-	if errs := validateDeparturePayment(invalid); len(errs) != 2 {
-		t.Errorf("invalid payment options errors = %v, want tPag and indPag errors", errs)
+	if errs := validateDeparturePayment(invalid); len(errs) != 1 {
+		t.Errorf("invalid payment options errors = %v, want tPag error", errs)
 	}
 }
 

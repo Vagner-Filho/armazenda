@@ -33,7 +33,7 @@ func TestDefaultPayment_IndPagOmitted(t *testing.T) {
 		t.Errorf("detPag.VPag = %s, want 600.00", det.VPag)
 	}
 
-	// tPag 90 (sem pagamento), the departure-flow shape, must behave the same.
+	// tPag 90 (sem pagamento) keeps vPag zero and no xPag.
 	pg90 := defaultPayment("90", decimal.Zero)
 	if pg90.IndPag != 0 || pg90.Detalhes[0].IndPag != 0 {
 		t.Error("tPag 90 must also keep indPag zeroed (tag omitted)")

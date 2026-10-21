@@ -28,9 +28,8 @@
             </div>
             <div class="flex flex-col-reverse">
                 <select name="environment" id="environment" class="peer bg-white/10 border border-white/20 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
-                    <option value="2" selected>Homologação</option>
-                    <!--<option value="2" {{ if eq .Config.Environment 2 }}selected{{ end }}>Homologação</option>
-                    <option value="1" {{ if eq .Config.Environment 1 }}selected{{ end }}>Produção</option>-->
+                    <option value="2" {{ if eq .Config.Environment 2 }}selected{{ end }}>Homologação (teste - sem valor fiscal)</option>
+                    <option value="1" {{ if eq .Config.Environment 1 }}selected{{ end }}>Produção (real - com valor fiscal)</option>
                 </select>
                 <label for="environment" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                     Ambiente SEFAZ

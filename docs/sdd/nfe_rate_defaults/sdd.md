@@ -1,7 +1,7 @@
 # sdd:nfe_rate_defaults
 
 ## Status
-Backlog
+Done
 
 ## Goal
 Replace the "rates required" gate with corpus-derived automatic fallbacks, so
@@ -111,5 +111,9 @@ untouched.
 | AC7 | Documentation: AGENTS.md rate-policy paragraph rewritten (waterfall user > farm > corpus fallback; no gate); `docs/sdd/nfe_rate_snapshot/sdd.md` gains a superseded-notice on its R10 gate | doc review (mechanical grep for the old sentence) |
 
 ## Verification Results
-<!-- Commands run and PASS/FAIL/NOT RUN with reasons — filled during implementation. -->
-Not run yet.
+- `go build ./...` — PASS
+- `go test ./service/nfe_service/` — PASS
+- `go test ./model/nfe_model/ -run 'TestInvoice_TaxSnapshot_DBRoundTrip|TestDetachedInvoice_TaxSnapshot_DBRoundTrip'` with RUN_DB_TESTS=1 + DB_* (local e2e Postgres) — PASS
+- `go test ./...` — PARTIAL: pre-existing failures in router/nfe_router (TestParseDepartureFormOverrides_PaymentBillingAndTransport, TestDepartureNFeModalRendersInputsAndTaxSelects, TestDepartureNFePreviewCarriesInputsToConfirm) unrelated to this SDD; nfe_service and model packages green.
+- `grep -rn "validateResolvedRates" --include="*.go"` — no matches (symbol absent)
+- `grep -rn "Configuração de taxas incompleta" --include="*.go"` — no matches

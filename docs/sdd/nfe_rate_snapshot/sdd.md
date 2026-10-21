@@ -123,14 +123,13 @@ to that post-cleanup tree (2026-10-11); re-locate by symbol name.
   `defaults.IBSRate2026`, `defaults.CBSRate2026` as resolution defaults) are
   removed. The farm-config zero/NULL case remains "unconfigured" (existing
   semantics, `pickRate`'s `IsZero()` check).
-- **R10** — New validation gate `validateResolvedRates(rates entity.TaxRates,
-  regime defaults.TaxRegime) []string`, called in **both** prepare steps
-  immediately after rate resolution and **before** item building / number
-  allocation (emission *and* preview paths get it free — both call prepare).
-  Missing (nil) axes that the regime actually uses produce a pt-br warning
-  toast listing each missing rate and where to fix it (farm config or the
-  emission form), e.g. "Alíquota ICMS não configurada: informe-a na emissão
-  ou configure o valor padrão da fazenda".
+- **R10** — ~~New validation gate `validateResolvedRates(...)`~~ **SUPERSEDED**
+  by `docs/sdd/nfe_rate_defaults/`: the rate gate is removed. `MergeRates`
+  now resolves every axis via the waterfall `user > farm config > corpus
+  fallback` (zero for ICMS/PIS/COFINS, `defaults.IBSRate2026`/`CBSRate2026`
+  for IBS/CBS), so an emission without any typed or saved rate never blocks and
+  there is no "Configuração de taxas incompleta" toast. The `validateResolvedRates`
+  symbol no longer exists.
 - **R11** — Regime carve-out: ICMS is required only for
   `defaults.TaxRegimeNormal` — Simples Nacional zeroes `vBC/pICMS/vICMS` and
   the ICMS rate is never consumed by the XML. PIS, COFINS, IBS, CBS are

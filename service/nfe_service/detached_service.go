@@ -164,18 +164,14 @@ func (s *NFeService) prepareDetachedBuildData(input DetachedInvoiceInput, dryRun
 	if toastPtr := nfeCertGate(farmNFeConfig); toastPtr != nil {
 		return empty, *toastPtr
 	}
-	// Resolve and validate the effective tax configuration before any writes:
-	// the emission path creates the inline recipient person row further below,
-	// so a validation failure must happen first — and before buildDetachedItems
-	// dereferences the rate pointers.
+	// Resolve the effective tax configuration before any writes: the rates
+	// waterfall (user > farm > corpus fallback) never leaves an axis
+	// unresolved, so no rate validation is needed; the tax codes are resolved
+	// here too. The emission path creates the inline recipient person row
+	// further below, so this resolution must happen first — and before
+	// buildDetachedItems dereferences the rate pointers.
 	regime := defaults.TaxRegime(farmNFeConfig.TaxRegime)
 	ratesSnapshot := MergeRates(input.TaxRates, farmNFeConfig)
-	if ratesErrs := validateResolvedRates(ratesSnapshot, regime); len(ratesErrs) > 0 {
-		return empty, entity_public.GetWarningToast(
-			"Configuração de taxas incompleta",
-			strings.Join(ratesErrs, "; "),
-		)
-	}
 	codesSnapshot := MergeEffectiveOverrides(input.Overrides, farmNFeConfig, regime)
 
 	// Item-level wiring validations run before any writes: in the emission

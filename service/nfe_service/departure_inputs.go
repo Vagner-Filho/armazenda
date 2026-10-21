@@ -116,19 +116,42 @@ func validDepartureModFrete(value int) bool {
 }
 
 func departurePayment(options *entity.DepartureInvoiceOverrides, total decimal.Decimal) entity.PaymentData {
-	tpag := "90"
+	tpag := "99"
 	if options != nil && options.TPag != "" {
 		tpag = options.TPag
 	}
-	payment := defaultPayment(tpag, total)
+	// tPag 90 ("sem pagamento") carries no value; every other option
+	// (including the 99 "Outros" default) declares vPag = total.
+	vpag := total
+	if tpag == "90" {
+		vpag = decimal.Zero
+	}
+	payment := defaultPayment(tpag, vpag)
 	if len(payment.Detalhes) > 0 {
 		payment.Detalhes[0].IndPag = 0
+		// The corpus G1 shape pairs tPag 99 with xPag "Outros"; the builder
+		// also defaults xPag for tPag 99, but set it here so the persisted
+		// snapshot is explicit and reproducible. Explicit 01/90 never carry xPag.
+		if tpag == "99" {
+			payment.Detalhes[0].XPag = "Outros"
+		}
+	}
+	// Preserve a user-typed indPag when one was supplied (the IndPag field is
+	// not part of the tPag defaulting above).
+	if options != nil && options.IndPag != 0 {
+		payment.IndPag = options.IndPag
+		if len(payment.Detalhes) > 0 {
+			payment.Detalhes[0].IndPag = options.IndPag
+		}
 	}
 	return payment
 }
 
 func departureCobrancaEnabled(options *entity.DepartureInvoiceOverrides) bool {
-	return true
+	if options == nil || options.IncludeCobranca == nil {
+		return true
+	}
+	return *options.IncludeCobranca
 }
 
 func emissionInputsFromInvoiceInput(input entity.InvoiceInput) *entity.InvoiceEmissionInputs {

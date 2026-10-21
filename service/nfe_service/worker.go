@@ -212,9 +212,9 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 	// Get the original tax rates from the persisted row. For complete snapshot
 	// rows (the norm since the rate-snapshot change) this equals exactly what
 	// the original XML used. For legacy invoices (no row) or partially-set
-	// rows, individual rates will be nil and the merge falls back to the farm
-	// config; anything still unresolvable is refused by the prepare-step
-	// validation instead of being guessed.
+	// rows, individual rates are missing and the merge falls back to the farm
+	// config and then to the corpus-derived defaults (zero / official 2026
+	// constants) instead of refusing the rebuild.
 	taxRateOverrides := invoiceRecord.TaxRates
 	if taxRateOverrides == nil {
 		taxRateOverrides = &entity.TaxRates{}
@@ -229,8 +229,7 @@ func processDraftInvoice(inv nfe_model.InvoiceForRetry) error {
 	nfeSvc := NewNFeService()
 	input, _, _, _, snap, toast := nfeSvc.prepareInvoiceBuildData(departure.Id, invoiceRecord.UnitPrice, uint32(departure.Farm), "", rates, invoiceOverrides, invoiceRecord.EmissionInputs)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
-		// Unresolvable rates on a legacy row (validation) and other
-		// preparation failures must not spin without backoff; increment the
+		// Preparation failures must not spin without backoff; increment the
 		// retry counter so the log stays bounded and visible.
 		if err := nfeModel.IncrementRetryCount(inv.ID); err != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("Retry worker: failed to increment retry count for draft invoice %d: %v", inv.ID, err))
