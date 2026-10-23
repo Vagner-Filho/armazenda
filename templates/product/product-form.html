@@ -35,6 +35,16 @@
                     <i class="text-xs font-normal text-white/60 normal-case">(8 dígitos)</i>
                 </label>
             </div>
+            <div class="flex flex-col-reverse">
+                <select name="unit_measurement" id="product-unit" class="peer bg-white/10 border-white/20 text-white placeholder-white/50" required>
+                    {{ range .UnitMeasurementOptions }}
+                    <option value="{{ .Code }}" {{ if and $.Product (eq $.Product.UnitMeasurement .Code) }}selected{{ end }}>{{ .Code }} - {{ .Label }}</option>
+                    {{ end }}
+                </select>
+                <label for="product-unit" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Unidade de Medida
+                </label>
+            </div>
             <div class="flex items-center justify-around mt-4 w-52 mx-auto">
                 <button type="button" class="cancel-btn" id="cancel-modal-btn">
                     Cancelar

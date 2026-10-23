@@ -243,7 +243,7 @@
                                 <select name="items[{{ $index }}].farmProductId" class="farm-product-select peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 truncate">
                                     <option value="">Produto cadastrado (opcional)</option>
                                     {{ range $.FarmProducts }}
-                                    <option value="{{ .Id }}" data-name="{{ .Name }}" data-ncm="{{ .NCM }}" {{ if eq (printf "%v" .Id) $item.FarmProductID }}selected{{ end }}>{{ .Name }}</option>
+                                    <option value="{{ .Id }}" data-name="{{ .Name }}" data-ncm="{{ .NCM }}" data-unit="{{ .UnitMeasurement }}" {{ if eq (printf "%v" .Id) $item.FarmProductID }}selected{{ end }}>{{ .Name }}</option>
                                     {{ end }}
                                 </select>
                                 <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -301,11 +301,9 @@
                             </div>
                             <div class="flex flex-col-reverse">
                                 <select name="items[{{ $index }}].unit" class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
-                                    <option value="KG" {{ if eq $item.Unit "KG" }}selected{{ end }}>KG - Quilograma</option>
-                                    <option value="T" {{ if eq $item.Unit "T" }}selected{{ end }}>T - Tonelada</option>
-                                    <option value="SC" {{ if eq $item.Unit "SC" }}selected{{ end }}>SC - Saca</option>
-                                    <option value="L" {{ if eq $item.Unit "L" }}selected{{ end }}>L - Litro</option>
-                                    <option value="UN" {{ if eq $item.Unit "UN" }}selected{{ end }}>UN - Unidade</option>
+                                    {{ range $.UnitMeasurementOptions }}
+                                    <option value="{{ .Code }}" {{ if eq $item.Unit .Code }}selected{{ end }}>{{ .Code }} - {{ .Label }}</option>
+                                    {{ end }}
                                 </select>
                                 <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                                     Unidade
@@ -888,6 +886,7 @@
                 const option = select.selectedOptions[0];
                 const productNameInput = row.querySelector('input[name$=".productName"]');
                 const ncmInput = row.querySelector('input[name$=".ncm"]');
+                const unitSelect = row.querySelector('select[name$=".unit"]');
                 const useFarmProduct = option && option.value !== '';
 
                 if (productNameInput) {
@@ -895,6 +894,9 @@
                 }
                 if (ncmInput) {
                     ncmInput.value = useFarmProduct ? (option.dataset.ncm || '') : '';
+                }
+                if (unitSelect && useFarmProduct && option.dataset.unit) {
+                    unitSelect.value = option.dataset.unit;
                 }
             });
 

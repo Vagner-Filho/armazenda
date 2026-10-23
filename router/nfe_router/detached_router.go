@@ -48,12 +48,13 @@ type detachedPageItem struct {
 // detachedPageView is the view model of the detached emission page, rendered
 // either blank (farm defaults) or prefilled from a Rascunho de NF-e.
 type detachedPageView struct {
-	FarmID           uint32
-	People           []personOptionDisplay
-	FarmProducts     []entity_public.FarmProduct
-	HasNFEFarmConfig bool
-	CSPNonce         string
-	TierKey          string
+	FarmID                 uint32
+	People                 []personOptionDisplay
+	FarmProducts           []entity_public.FarmProduct
+	UnitMeasurementOptions []entity_public.UnitMeasurementOption
+	HasNFEFarmConfig       bool
+	CSPNonce               string
+	TierKey                string
 
 	// Farm-ordered CFOP selector options ("Mais utilizados" / "Todos os CFOPs").
 	CfopOptions cfop_view.CfopOptions
@@ -131,12 +132,13 @@ func buildDetachedPageView(farmID uint32, profile *nfe_model.DetachedProfile) de
 	}
 
 	view := detachedPageView{
-		FarmID:             farmID,
-		People:             personOptionDisplays(people, nil),
-		FarmProducts:       productOptions,
-		HasNFEFarmConfig:   farmNFeConfig != nil,
-		RecipientType:      "existing",
-		UseDefaultTaxRates: true,
+		FarmID:                 farmID,
+		People:                 personOptionDisplays(people, nil),
+		FarmProducts:           productOptions,
+		UnitMeasurementOptions: entity_public.UnitMeasurementOptions,
+		HasNFEFarmConfig:       farmNFeConfig != nil,
+		RecipientType:          "existing",
+		UseDefaultTaxRates:     true,
 	}
 
 	defaultCFOP := "5101"

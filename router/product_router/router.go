@@ -67,7 +67,8 @@ func getProductsPage(c *gin.Context) {
 func getProductForm(c *gin.Context) {
 	nonce, _ := c.Get("csp_nonce")
 	c.HTML(http.StatusOK, "product-form", gin.H{
-		"CSPNonce": nonce.(string),
+		"CSPNonce":               nonce.(string),
+		"UnitMeasurementOptions": entity_public.UnitMeasurementOptions,
 	})
 }
 
@@ -91,13 +92,14 @@ func getProductEditForm(c *gin.Context) {
 
 	nonce, _ := c.Get("csp_nonce")
 	c.HTML(http.StatusOK, "product-form", gin.H{
-		"CSPNonce": nonce.(string),
-		"Product":  farmProduct,
+		"CSPNonce":               nonce.(string),
+		"Product":                farmProduct,
+		"UnitMeasurementOptions": entity_public.UnitMeasurementOptions,
 	})
 }
 
 func addProduct(c *gin.Context) {
-	var newProduct entity_public.Product
+	var newProduct entity_public.FarmProduct
 	bindErr := c.Bind(&newProduct)
 	if bindErr != nil {
 		toast := entity_public.GetWarningToast("Dados do produto inválidos", "")
@@ -109,10 +111,8 @@ func addProduct(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
 
-	farmProduct, toast := product_service.AddFarmProduct(entity_public.FarmProduct{
-		Product: newProduct,
-		FarmId:  &farm,
-	})
+	newProduct.FarmId = &farm
+	farmProduct, toast := product_service.AddFarmProduct(newProduct)
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 		c.Status(http.StatusBadRequest)
@@ -137,7 +137,7 @@ func updateProduct(c *gin.Context) {
 		return
 	}
 
-	var updatedProduct entity_public.Product
+	var updatedProduct entity_public.FarmProduct
 	bindErr := c.Bind(&updatedProduct)
 	if bindErr != nil {
 		toast := entity_public.GetWarningToast("Dados do produto inválidos", "")
@@ -149,14 +149,9 @@ func updateProduct(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farm := user_service.GetFarmFromToken(sid)
 
-	farmProduct, toast := product_service.UpdateFarmProduct(entity_public.FarmProduct{
-		Product: entity_public.Product{
-			Id:   uint8(id),
-			Name: updatedProduct.Name,
-			NCM:  updatedProduct.NCM,
-		},
-		FarmId: &farm,
-	})
+	updatedProduct.Id = uint8(id)
+	updatedProduct.FarmId = &farm
+	farmProduct, toast := product_service.UpdateFarmProduct(updatedProduct)
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 		c.Status(http.StatusBadRequest)

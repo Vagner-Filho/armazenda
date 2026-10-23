@@ -68,6 +68,9 @@ func AddFarmProduct(fp entity_public.FarmProduct) (entity_public.FarmProduct, *e
 		t = entity_public.GetErrorToast("Fazenda não identificada", "")
 		return entity_public.FarmProduct{}, &t
 	}
+	if fp.UnitMeasurement == "" {
+		fp.UnitMeasurement = "KG"
+	}
 
 	farmProduct, err := fm.AddFarmProduct(fp)
 	if err != nil {
@@ -98,6 +101,9 @@ func UpdateFarmProduct(fp entity_public.FarmProduct) (entity_public.FarmProduct,
 	if fp.FarmId == nil || *fp.FarmId == 0 {
 		t = entity_public.GetErrorToast("Fazenda não identificada", "")
 		return entity_public.FarmProduct{}, &t
+	}
+	if fp.UnitMeasurement == "" {
+		fp.UnitMeasurement = "KG"
 	}
 
 	farmProduct, err := fm.UpdateFarmProduct(fp)

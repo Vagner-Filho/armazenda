@@ -10,7 +10,8 @@ type Product struct {
 // the detached NF-e feature. It is independent from the global catalog.
 type FarmProduct struct {
 	Product
-	FarmId *uint32 `form:"-" json:"farmId"`
+	FarmId          *uint32 `form:"-" json:"farmId"`
+	UnitMeasurement string  `form:"unit_measurement" json:"unitMeasurement"`
 }
 
 // ProductDisplay is one row of the products management page: either a

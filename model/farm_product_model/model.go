@@ -42,7 +42,7 @@ func GetFarmProductModel() *FarmProductModel {
 
 func (fm *FarmProductModel) GetFarmProductsByFarm(farmId uint32) ([]entity_public.FarmProduct, error) {
 	rows, err := fm.pool.Query(context.Background(), `
-		SELECT id, name, ncm, farm_id FROM farm_product
+		SELECT id, name, ncm, farm_id, unit_measurement FROM farm_product
 		WHERE farm_id = @farmId
 		ORDER BY name
 	`, pgx.NamedArgs{"farmId": farmId})
@@ -54,13 +54,15 @@ func (fm *FarmProductModel) GetFarmProductsByFarm(farmId uint32) ([]entity_publi
 	farmProducts, collectErr := pgx.CollectRows(rows, func(row pgx.CollectableRow) (entity_public.FarmProduct, error) {
 		var product entity_public.Product
 		var farmId uint32
-		scanErr := row.Scan(&product.Id, &product.Name, &product.NCM, &farmId)
+		var unitMeasurement string
+		scanErr := row.Scan(&product.Id, &product.Name, &product.NCM, &farmId, &unitMeasurement)
 		if scanErr != nil {
 			return entity_public.FarmProduct{}, scanErr
 		}
 		return entity_public.FarmProduct{
-			Product: product,
-			FarmId:  &farmId,
+			Product:         product,
+			FarmId:          &farmId,
+			UnitMeasurement: unitMeasurement,
 		}, nil
 	})
 	if collectErr != nil {
@@ -73,7 +75,7 @@ func (fm *FarmProductModel) GetFarmProductsByFarm(farmId uint32) ([]entity_publi
 
 func (fm *FarmProductModel) GetFarmProductById(id uint8, farmId uint32) (entity_public.FarmProduct, error) {
 	rows, err := fm.pool.Query(context.Background(), `
-		SELECT id, name, ncm, farm_id FROM farm_product
+		SELECT id, name, ncm, farm_id, unit_measurement FROM farm_product
 		WHERE id = @id AND farm_id = @farmId
 	`, pgx.NamedArgs{"id": id, "farmId": farmId})
 	if err != nil {
@@ -84,13 +86,15 @@ func (fm *FarmProductModel) GetFarmProductById(id uint8, farmId uint32) (entity_
 	farmProducts, collectErr := pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (entity_public.FarmProduct, error) {
 		var product entity_public.Product
 		var farmId uint32
-		scanErr := row.Scan(&product.Id, &product.Name, &product.NCM, &farmId)
+		var unitMeasurement string
+		scanErr := row.Scan(&product.Id, &product.Name, &product.NCM, &farmId, &unitMeasurement)
 		if scanErr != nil {
 			return entity_public.FarmProduct{}, scanErr
 		}
 		return entity_public.FarmProduct{
-			Product: product,
-			FarmId:  &farmId,
+			Product:         product,
+			FarmId:          &farmId,
+			UnitMeasurement: unitMeasurement,
 		}, nil
 	})
 	if collectErr != nil {
@@ -113,13 +117,18 @@ func (fm *FarmProductModel) AddFarmProduct(fp entity_public.FarmProduct) (entity
 	var name string
 	var ncm string
 	var farmId uint32
+	var unitMeasurement string
+
+	if fp.UnitMeasurement == "" {
+		fp.UnitMeasurement = "KG"
+	}
 
 	scanErr := fm.pool.QueryRow(context.Background(), `
-		INSERT INTO farm_product (name, ncm, farm_id)
-		VALUES (@name, @ncm, @farmId)
-		RETURNING id, name, ncm, farm_id
-	`, pgx.NamedArgs{"name": fp.Name, "ncm": fp.NCM, "farmId": fp.FarmId}).
-		Scan(&id, &name, &ncm, &farmId)
+		INSERT INTO farm_product (name, ncm, farm_id, unit_measurement)
+		VALUES (@name, @ncm, @farmId, @unitMeasurement)
+		RETURNING id, name, ncm, farm_id, unit_measurement
+	`, pgx.NamedArgs{"name": fp.Name, "ncm": fp.NCM, "farmId": fp.FarmId, "unitMeasurement": fp.UnitMeasurement}).
+		Scan(&id, &name, &ncm, &farmId, &unitMeasurement)
 
 	if scanErr != nil {
 		var pgErr *pgconn.PgError
@@ -137,8 +146,9 @@ func (fm *FarmProductModel) AddFarmProduct(fp entity_public.FarmProduct) (entity
 	}
 
 	return entity_public.FarmProduct{
-		Product: entity_public.Product{Id: id, Name: name, NCM: ncm},
-		FarmId:  &farmId,
+		Product:         entity_public.Product{Id: id, Name: name, NCM: ncm},
+		FarmId:          &farmId,
+		UnitMeasurement: unitMeasurement,
 	}, nil
 }
 
@@ -148,14 +158,19 @@ func (fm *FarmProductModel) UpdateFarmProduct(fp entity_public.FarmProduct) (ent
 	var name string
 	var ncm string
 	var farmId uint32
+	var unitMeasurement string
+
+	if fp.UnitMeasurement == "" {
+		fp.UnitMeasurement = "KG"
+	}
 
 	scanErr := fm.pool.QueryRow(context.Background(), `
 		UPDATE farm_product
-		SET name = @name, ncm = @ncm
+		SET name = @name, ncm = @ncm, unit_measurement = @unitMeasurement
 		WHERE id = @id AND farm_id = @farmId
-		RETURNING id, name, ncm, farm_id
-	`, pgx.NamedArgs{"name": fp.Name, "ncm": fp.NCM, "id": fp.Id, "farmId": fp.FarmId}).
-		Scan(&id, &name, &ncm, &farmId)
+		RETURNING id, name, ncm, farm_id, unit_measurement
+	`, pgx.NamedArgs{"name": fp.Name, "ncm": fp.NCM, "id": fp.Id, "farmId": fp.FarmId, "unitMeasurement": fp.UnitMeasurement}).
+		Scan(&id, &name, &ncm, &farmId, &unitMeasurement)
 
 	if scanErr != nil {
 		var pgErr *pgconn.PgError
@@ -177,7 +192,8 @@ func (fm *FarmProductModel) UpdateFarmProduct(fp entity_public.FarmProduct) (ent
 	}
 
 	return entity_public.FarmProduct{
-		Product: entity_public.Product{Id: id, Name: name, NCM: ncm},
-		FarmId:  &farmId,
+		Product:         entity_public.Product{Id: id, Name: name, NCM: ncm},
+		FarmId:          &farmId,
+		UnitMeasurement: unitMeasurement,
 	}, nil
 }
