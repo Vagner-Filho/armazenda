@@ -1,0 +1,5 @@
+{{ define "analise-filter-form" }}
+<form class="flex flex-col sm:flex-row flex-wrap items-start gap-1 justify-start" id="analise-filters-form" hx-post="/analise/filter" hx-target="#analise-content" hx-swap="innerHTML">
+    {{ template "filter-entry-crop" .Crops }}
+</form>
+{{ end }}

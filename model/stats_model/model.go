@@ -38,7 +38,7 @@ func GetStatsModel() *StatsModel {
 	return statsModelImpl
 }
 
-func (sm *StatsModel) GetTopSupplier(farmId uint32) (entity_public.StatCard, *model_error.ModelError) {
+func (sm *StatsModel) GetTopSupplier(farmId uint32, cropID uint8) (entity_public.StatCard, *model_error.ModelError) {
 	var personName string
 	var totalWeight float64
 
@@ -54,11 +54,12 @@ func (sm *StatsModel) GetTopSupplier(farmId uint32) (entity_public.StatCard, *mo
 		LEFT JOIN farm_config fc ON e.farm = fc.farm_id
 		LEFT JOIN inactive_entry ie ON ie.entry_id = e.id
 		WHERE e.farm = @farmId AND ie.entry_id IS NULL
+		  AND (@crop_id = 0 OR e.crop = @crop_id)
 		GROUP BY COALESCE(np.name, lp.companyname, fc.name, 'Própria')
 		ORDER BY total_weight DESC
 		LIMIT 1;
 	`
-	err := sm.pool.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId}).Scan(&personName, &totalWeight)
+	err := sm.pool.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId, "crop_id": cropID}).Scan(&personName, &totalWeight)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return entity_public.StatCard{
@@ -80,7 +81,7 @@ func (sm *StatsModel) GetTopSupplier(farmId uint32) (entity_public.StatCard, *mo
 	}, nil
 }
 
-func (sm *StatsModel) GetTopBuyer(farmId uint32) (entity_public.StatCard, *model_error.ModelError) {
+func (sm *StatsModel) GetTopBuyer(farmId uint32, cropID uint8) (entity_public.StatCard, *model_error.ModelError) {
 	var personName string
 	var totalWeight float64
 
@@ -96,11 +97,12 @@ func (sm *StatsModel) GetTopBuyer(farmId uint32) (entity_public.StatCard, *model
 		LEFT JOIN farm_config fc ON fc.farm_id = d.farm
 		LEFT JOIN inactive_departure id ON id.departure_id = d.id
 		WHERE d.farm = @farmId AND id.departure_id IS NULL
+		  AND (@crop_id = 0 OR d.crop = @crop_id)
 		GROUP BY COALESCE(np.name, lp.companyname, fc.name, 'Própria')
 		ORDER BY total_weight DESC
 		LIMIT 1;
 	`
-	err := sm.pool.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId}).Scan(&personName, &totalWeight)
+	err := sm.pool.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId, "crop_id": cropID}).Scan(&personName, &totalWeight)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return entity_public.StatCard{
@@ -122,7 +124,7 @@ func (sm *StatsModel) GetTopBuyer(farmId uint32) (entity_public.StatCard, *model
 	}, nil
 }
 
-func (sm *StatsModel) GetMostFrequentSupplier(farmId uint32) (entity_public.StatCard, *model_error.ModelError) {
+func (sm *StatsModel) GetMostFrequentSupplier(farmId uint32, cropID uint8) (entity_public.StatCard, *model_error.ModelError) {
 	var personName string
 	var deliveryCount int
 
@@ -138,11 +140,12 @@ func (sm *StatsModel) GetMostFrequentSupplier(farmId uint32) (entity_public.Stat
 		LEFT JOIN farm_config fc ON e.farm = fc.farm_id
 		LEFT JOIN inactive_entry ie ON ie.entry_id = e.id
 		WHERE e.farm = @farmId AND ie.id IS NULL
+		  AND (@crop_id = 0 OR e.crop = @crop_id)
 		GROUP BY COALESCE(np.name, lp.companyname, fc.name, 'Própria')
 		ORDER BY delivery_count DESC
 		LIMIT 1;
 	`
-	err := sm.pool.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId}).Scan(&personName, &deliveryCount)
+	err := sm.pool.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId, "crop_id": cropID}).Scan(&personName, &deliveryCount)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return entity_public.StatCard{
@@ -163,7 +166,7 @@ func (sm *StatsModel) GetMostFrequentSupplier(farmId uint32) (entity_public.Stat
 	}, nil
 }
 
-func (sm *StatsModel) GetBestQualitySupplier(farmId uint32) (entity_public.StatCard, *model_error.ModelError) {
+func (sm *StatsModel) GetBestQualitySupplier(farmId uint32, cropID uint8) (entity_public.StatCard, *model_error.ModelError) {
 	var personName string
 	var avgHumidity float64
 
@@ -179,11 +182,12 @@ func (sm *StatsModel) GetBestQualitySupplier(farmId uint32) (entity_public.StatC
 		LEFT JOIN legal_person lp ON p.id = lp.personid
 		LEFT JOIN farm_config fc ON e.farm = fc.farm_id
 		WHERE e.farm = @farmId AND ea.humidity IS NOT NULL
+		  AND (@crop_id = 0 OR e.crop = @crop_id)
 		GROUP BY COALESCE(np.name, lp.companyname, fc.name, 'Própria')
 		ORDER BY avg_humidity DESC
 		LIMIT 1;
 	`
-	err := sm.pool.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId}).Scan(&personName, &avgHumidity)
+	err := sm.pool.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId, "crop_id": cropID}).Scan(&personName, &avgHumidity)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return entity_public.StatCard{
@@ -204,7 +208,7 @@ func (sm *StatsModel) GetBestQualitySupplier(farmId uint32) (entity_public.StatC
 	}, nil
 }
 
-func (sm *StatsModel) GetWorstQualitySupplier(farmId uint32) (entity_public.StatCard, *model_error.ModelError) {
+func (sm *StatsModel) GetWorstQualitySupplier(farmId uint32, cropID uint8) (entity_public.StatCard, *model_error.ModelError) {
 	var personName string
 	var totalAverage float64
 
@@ -220,11 +224,12 @@ func (sm *StatsModel) GetWorstQualitySupplier(farmId uint32) (entity_public.Stat
 		LEFT JOIN legal_person lp ON p.id = lp.personid
 		LEFT JOIN farm_config fc ON e.farm = fc.farm_id
 		WHERE e.farm = @farmId AND ea.humidity IS NOT NULL AND ea.impurity IS NOT NULL AND ea.damage IS NOT NULL
+		  AND (@crop_id = 0 OR e.crop = @crop_id)
 		GROUP BY COALESCE(np.name, lp.companyname, fc.name, 'Própria')
 		ORDER BY total_average DESC
 		LIMIT 1;
 	`
-	err := sm.pool.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId}).Scan(&personName, &totalAverage)
+	err := sm.pool.QueryRow(context.Background(), stmt, pgx.NamedArgs{"farmId": farmId, "crop_id": cropID}).Scan(&personName, &totalAverage)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return entity_public.StatCard{
@@ -249,7 +254,7 @@ func (sm *StatsModel) GetWorstQualitySupplier(farmId uint32) (entity_public.Stat
 // weight received (entries) and sent (departures). Global products and the
 // farm's own products are considered; products with no movements are
 // omitted.
-func (sm *StatsModel) GetProductTotals(farmId uint32) ([]entity_public.ProductVolumeStat, *model_error.ModelError) {
+func (sm *StatsModel) GetProductTotals(farmId uint32, cropID uint8) ([]entity_public.ProductVolumeStat, *model_error.ModelError) {
 	stmt := `
 		SELECT
 			p.name,
@@ -262,6 +267,7 @@ func (sm *StatsModel) GetProductTotals(farmId uint32) ([]entity_public.ProductVo
 			JOIN crop c ON e.crop = c.id
 			LEFT JOIN inactive_entry ie ON ie.entry_id = e.id
 			WHERE e.farm = @farm AND ie.entry_id IS NULL
+			  AND (@crop_id = 0 OR e.crop = @crop_id)
 			GROUP BY c.product
 		) entry_tot ON entry_tot.product = p.id
 		LEFT JOIN (
@@ -270,13 +276,14 @@ func (sm *StatsModel) GetProductTotals(farmId uint32) ([]entity_public.ProductVo
 			JOIN crop c ON d.crop = c.id
 			LEFT JOIN inactive_departure idp ON idp.departure_id = d.id
 			WHERE d.farm = @farm AND idp.departure_id IS NULL
+			  AND (@crop_id = 0 OR d.crop = @crop_id)
 			GROUP BY c.product
 		) dep_tot ON dep_tot.product = p.id
 		WHERE entry_tot.product IS NOT NULL OR dep_tot.product IS NOT NULL
 		ORDER BY COALESCE(entry_tot.total, 0) + COALESCE(dep_tot.total, 0) DESC;
 	`
 
-	rows, queryErr := sm.pool.Query(context.Background(), stmt, pgx.NamedArgs{"farm": farmId})
+	rows, queryErr := sm.pool.Query(context.Background(), stmt, pgx.NamedArgs{"farm": farmId, "crop_id": cropID})
 	if queryErr != nil {
 		fmt.Printf("\n queryErr: %v\n", queryErr.Error())
 		return []entity_public.ProductVolumeStat{}, &model_error.ModelError{Message: queryErr.Error()}
@@ -299,6 +306,7 @@ func getFieldProductSubquery(metric string) string {
 		JOIN field f2 ON e2.field = f2.id
 		LEFT JOIN inactive_entry ie2 ON ie2.entry_id = e2.id
 		WHERE e2.farm = @farm AND ie2.entry_id IS NULL AND f2.hectares > 0
+		  AND (@crop_id = 0 OR e2.crop = @crop_id)
 		GROUP BY f2.id, f2.hectares
 		ORDER BY ` + metric + ` DESC
 		LIMIT 5
@@ -307,7 +315,7 @@ func getFieldProductSubquery(metric string) string {
 
 // GetNominalFieldProductTotals returns, for the five fields with the
 // biggest received volume, one row per (field, product) pair.
-func (sm *StatsModel) GetNominalFieldProductTotals(farmID uint32) ([]entity_public.FieldProductTotal, error) {
+func (sm *StatsModel) GetNominalFieldProductTotals(farmID uint32, cropID uint8) ([]entity_public.FieldProductTotal, error) {
 	query := `
 		SELECT
 			f.name,
@@ -320,11 +328,12 @@ func (sm *StatsModel) GetNominalFieldProductTotals(farmID uint32) ([]entity_publ
 		JOIN product p ON c.product = p.id
 		LEFT JOIN inactive_entry ie ON ie.entry_id = e.id
 		WHERE e.farm = @farm AND ie.entry_id IS NULL
+		  AND (@crop_id = 0 OR e.crop = @crop_id)
 			AND f.id IN (` + getFieldProductSubquery("SUM(e2.netweight)") + `)
 		GROUP BY f.id, f.name, p.name
 		ORDER BY SUM(SUM(e.netweight)) OVER (PARTITION BY f.id) DESC, SUM(e.netweight) DESC;`
 
-	rows, queryErr := sm.pool.Query(context.Background(), query, pgx.NamedArgs{"farm": farmID})
+	rows, queryErr := sm.pool.Query(context.Background(), query, pgx.NamedArgs{"farm": farmID, "crop_id": cropID})
 	if queryErr != nil {
 		fmt.Printf("\n queryErr: %v\n", queryErr.Error())
 		return []entity_public.FieldProductTotal{}, &model_error.ModelError{Message: queryErr.Error()}
@@ -339,9 +348,9 @@ func (sm *StatsModel) GetNominalFieldProductTotals(farmID uint32) ([]entity_publ
 	return data, nil
 }
 
-// GetRelativeFieldProductTotals returns, for the five most productive
+// GetRelativeFieldProductTotals returns:, for the five most productive
 // fields (net weight / hectares), one row per (field, product).
-func (sm *StatsModel) GetRelativeFieldProductTotals(farmID uint32) ([]entity_public.FieldProductTotal, error) {
+func (sm *StatsModel) GetRelativeFieldProductTotals(farmID uint32, cropID uint8) ([]entity_public.FieldProductTotal, error) {
 	query := `
 		SELECT
 			f.name,
@@ -354,11 +363,12 @@ func (sm *StatsModel) GetRelativeFieldProductTotals(farmID uint32) ([]entity_pub
 		JOIN product p ON c.product = p.id
 		LEFT JOIN inactive_entry ie ON ie.entry_id = e.id
 		WHERE e.farm = @farm AND ie.entry_id IS NULL
+		  AND (@crop_id = 0 OR e.crop = @crop_id)
 			AND f.id IN (` + getFieldProductSubquery("(SUM(e2.netweight) / f2.hectares)") + `)
 		GROUP BY f.id, f.name, p.name, f.hectares
 		ORDER BY (SUM(SUM(e.netweight)) OVER (PARTITION BY f.id) / f.hectares) DESC, SUM(e.netweight) DESC;`
 
-	rows, queryErr := sm.pool.Query(context.Background(), query, pgx.NamedArgs{"farm": farmID})
+	rows, queryErr := sm.pool.Query(context.Background(), query, pgx.NamedArgs{"farm": farmID, "crop_id": cropID})
 	if queryErr != nil {
 		fmt.Printf("\n queryErr: %v\n", queryErr.Error())
 		return []entity_public.FieldProductTotal{}, &model_error.ModelError{Message: queryErr.Error()}

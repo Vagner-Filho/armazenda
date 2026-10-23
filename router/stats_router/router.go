@@ -17,5 +17,7 @@ func UseStatsRoutes(router *gin.Engine) {
 		statsGroup.GET("/product-totals", stats.ProductTotals)
 	}
 	router.GET("/analise", stats.GetAnalysisPage)
+	router.GET("/analise/filters", stats.GetAnalysisFiltersForm)
+	router.POST("/analise/filter", stats.FilterAnalysis)
 	router.GET("/analise/product-charts", stats.GetFieldProductCharts)
 }

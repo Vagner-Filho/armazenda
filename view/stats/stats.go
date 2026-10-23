@@ -2,10 +2,12 @@ package stats
 
 import (
 	"armazenda/entity/public"
+	crop_service "armazenda/service/crop"
 	"armazenda/service/stats_service"
 	"armazenda/service/user_service"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,7 +23,8 @@ type FieldProductChartsViewData struct {
 func TopSupplierCard(c *gin.Context) {
 	sessionCookie, _ := c.Request.Cookie("session_id")
 	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
-	stat, toast := stats_service.GetTopSupplierStat(farmId)
+	cropID := parseCropID(c)
+	stat, toast := stats_service.GetTopSupplierStat(farmId, cropID)
 	if toast != nil {
 		c.HTML(http.StatusOK, "toast", toast)
 		return
@@ -32,7 +35,8 @@ func TopSupplierCard(c *gin.Context) {
 func TopBuyerCard(c *gin.Context) {
 	sessionCookie, _ := c.Request.Cookie("session_id")
 	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
-	stat, toast := stats_service.GetTopBuyerStat(farmId)
+	cropID := parseCropID(c)
+	stat, toast := stats_service.GetTopBuyerStat(farmId, cropID)
 	if toast != nil {
 		c.HTML(http.StatusOK, "toast", toast)
 		return
@@ -43,7 +47,8 @@ func TopBuyerCard(c *gin.Context) {
 func MostFrequentSupplierCard(c *gin.Context) {
 	sessionCookie, _ := c.Request.Cookie("session_id")
 	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
-	stat, toast := stats_service.GetMostFrequentSupplierStat(farmId)
+	cropID := parseCropID(c)
+	stat, toast := stats_service.GetMostFrequentSupplierStat(farmId, cropID)
 	if toast != nil {
 		c.HTML(http.StatusOK, "toast", toast)
 		return
@@ -54,7 +59,8 @@ func MostFrequentSupplierCard(c *gin.Context) {
 func BestQualitySupplierCard(c *gin.Context) {
 	sessionCookie, _ := c.Request.Cookie("session_id")
 	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
-	stat, toast := stats_service.GetBestQualitySupplierStat(farmId)
+	cropID := parseCropID(c)
+	stat, toast := stats_service.GetBestQualitySupplierStat(farmId, cropID)
 	if toast != nil {
 		c.HTML(http.StatusOK, "toast", toast)
 		return
@@ -65,7 +71,8 @@ func BestQualitySupplierCard(c *gin.Context) {
 func WorstQualitySupplierCard(c *gin.Context) {
 	sessionCookie, _ := c.Request.Cookie("session_id")
 	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
-	stat, toast := stats_service.GetWorstQualitySupplierStat(farmId)
+	cropID := parseCropID(c)
+	stat, toast := stats_service.GetWorstQualitySupplierStat(farmId, cropID)
 	if toast != nil {
 		c.HTML(http.StatusOK, "toast", toast)
 		return
@@ -79,10 +86,54 @@ func GetAnalysisPage(c *gin.Context) {
 		c.Status(http.StatusForbidden)
 		c.Redirect(http.StatusTemporaryRedirect, "/")
 	}
+
+	farmId := uint32(0)
+	if sessionCookie, err := c.Request.Cookie("session_id"); err == nil && sessionCookie != nil {
+		farmId = user_service.GetFarmFromToken(sessionCookie.Value)
+	}
+	crops, _ := crop_service.GetCropsByFarm(farmId)
+
 	c.HTML(http.StatusOK, "analise.html", gin.H{
 		"CSPNonce": nonce.(string),
 		"TierKey":  user_service.GetTierKeyFromContext(c),
+		"Crops":    crops,
+		"Crop":     uint8(0),
 	})
+}
+
+func GetAnalysisFiltersForm(c *gin.Context) {
+	farmId := uint32(0)
+	if sessionCookie, err := c.Request.Cookie("session_id"); err == nil && sessionCookie != nil {
+		farmId = user_service.GetFarmFromToken(sessionCookie.Value)
+	}
+	crops, _ := crop_service.GetCropsByFarm(farmId)
+	c.HTML(http.StatusOK, "analise-filter-form", gin.H{
+		"Crops": crops,
+	})
+}
+
+func FilterAnalysis(c *gin.Context) {
+	cropID := uint8(0)
+	if v := c.PostForm("crop"); v != "" {
+		if n, err := strconv.ParseUint(v, 10, 8); err == nil {
+			cropID = uint8(n)
+		}
+	}
+	c.HTML(http.StatusOK, "analise-content", gin.H{
+		"Crop": cropID,
+	})
+}
+
+func parseCropID(c *gin.Context) uint8 {
+	v := c.Query("crop")
+	if v == "" {
+		return 0
+	}
+	n, err := strconv.ParseUint(v, 10, 8)
+	if err != nil {
+		return 0
+	}
+	return uint8(n)
 }
 
 // buildFieldProductSeries converts (field, product) rows into a grouped-bar
@@ -130,7 +181,8 @@ func buildFieldProductSeries(rows []entity_public.FieldProductTotal, metric func
 func GetFieldProductCharts(c *gin.Context) {
 	sessionCookie, _ := c.Request.Cookie("session_id")
 	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
-	charts, toast := stats_service.GetFieldProductTotals(farmId)
+	cropID := parseCropID(c)
+	charts, toast := stats_service.GetFieldProductTotals(farmId, cropID)
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 		return
@@ -162,7 +214,8 @@ func GetFieldProductCharts(c *gin.Context) {
 func ProductTotals(c *gin.Context) {
 	sessionCookie, _ := c.Request.Cookie("session_id")
 	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
-	totals, toast := stats_service.GetProductTotals(farmId)
+	cropID := parseCropID(c)
+	totals, toast := stats_service.GetProductTotals(farmId, cropID)
 	if toast != nil {
 		c.Header("HX-Trigger", string(toast.ToJson()))
 		return

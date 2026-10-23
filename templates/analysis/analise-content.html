@@ -1,0 +1,9 @@
+{{ define "analise-content" }}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  <div hx-get="/stats/top-supplier?crop={{ .Crop }}" hx-trigger="load" hx-swap="outerHTML"></div>
+  <div hx-get="/stats/top-buyer?crop={{ .Crop }}" hx-trigger="load" hx-swap="outerHTML"></div>
+  <div hx-get="/stats/most-frequent-supplier?crop={{ .Crop }}" hx-trigger="load" hx-swap="outerHTML"></div>
+</div>
+<div hx-get="/stats/product-totals?crop={{ .Crop }}" hx-trigger="load" hx-swap="outerHTML"></div>
+<div hx-get="/analise/product-charts?crop={{ .Crop }}" hx-trigger="load" hx-swap="outerHTML"></div>
+{{ end }}
