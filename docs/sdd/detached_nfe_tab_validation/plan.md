@@ -69,7 +69,7 @@ button rule) still passes unchanged.
 ## Phase 2 — Step validation module
 
 **Files:** `assets/js/detachedNFeValidation.js` (new),
-`templates/pages/nfe-emit.html`
+`assets/static/css/nfe-emit.css` (new), `templates/pages/nfe-emit.html`
 
 1. `initDetachedNFeValidation({ form, tabs })`:
    - `validateStep(tabId)`: iterate `stepControls(tabId)`, `checkValidity()`
@@ -89,7 +89,17 @@ button rule) still passes unchanged.
 2. Template: add the stepper status slot and `aria-current` hooks to the chips,
    and the marker classes for invalid controls (a red ring that does not fight
    the existing `peer` floating-label styles).
-3. Add the E2E cases for AC1–AC3 and AC6 to the new spec.
+3. **Deviation from the plan — the marker styles are hand-written**
+   (`assets/static/css/nfe-emit.css`, linked after `output.css`, like
+   `cfop-selector.css`): the Tailwind utilities the marker needs (`ring-2`,
+   `ring-red-500`) are not in the generated `output.css`, the `tailwindcss` CLI
+   is not available in this environment, and `border-white/20` would otherwise
+   win over a red border (same specificity, later in the sheet, inside
+   `@layer utilities`). Unlayered rules in the hand-written file take
+   precedence, so the marker works without a CSS rebuild. The badge also gets a
+   fixed `min-width` so it never resizes a chip under the pointer (a shifting
+   chip row is what made the WebKit clicks hang under parallel load).
+4. Add the E2E cases for AC1–AC3 and AC6 to the new spec.
 
 **Phase gate:** focused `--grep "validação"` passes for the step-gated cases in
 chromium/firefox/webkit.
@@ -112,7 +122,30 @@ chromium/firefox/webkit.
 
 **Phase gate:** focused E2E green for the new spec plus `Tabs` and `rascunho`.
 
-## Phase 4 — Completion verification
+## Phase 4 — Recipient contract (increment)
+
+**Files:** `templates/pages/nfe-emit.html`,
+`test/e2e/tests/detached_nfe_validation.spec.js`,
+`router/nfe_router/nfe_templates_test.go`
+
+1. The server accepts a recipient either as a registered person
+   (`recipientPersonId`) or as the inline name/document pair
+   (`parseDetachedRecipient`); the client only enforced the second half, so
+   "Selecionar existente" with nothing picked reported the step as valid.
+   Extend the page script's recipient-mode handler so the person select
+   carries `required` only while "Selecionar existente" is active (and the
+   inline fields only while "Novo destinatário" is). The attribute is toggled
+   in the script, not baked into the markup: a hidden required control blocks
+   the submission with "An invalid form control ... is not focusable", and the
+   no-JS fallback must stay the server toast.
+2. E2E: seed a contact for the farm (a `person` row with a unique IE — the
+   `(farm, ie)` index is unique — plus a `natural_person` row), assert the
+   ⚠ 1 badge, the blocked `Avançar` with the select focused, and the ✓ badge
+   plus the advance once a contact is picked.
+3. Go: assert the recipient select renders with its id and its placeholder
+   option in the stepper contract test.
+
+## Phase 5 — Completion verification
 
 1. Run and record in `sdd.md`: `go build ./...`, `make test-go`, `make test-js`,
    `cd test/e2e && bun run test --grep "validação"`, `make test-e2e`, and
@@ -140,6 +173,11 @@ chromium/firefox/webkit.
   cancelled `invalid` event means "not enforced"). Verified: all three engines
   still block the submission. If an engine submitted anyway, the server's toast
   is the answer — no data-integrity risk.
+- **Tailwind cannot be regenerated here**: `tailwindcss` is not installed and
+  the generated `output.css` is committed, so any new utility class would be
+  missing at runtime. The invalid-field marker and the status badge therefore
+  live in a hand-written stylesheet (`assets/static/css/nfe-emit.css`), whose
+  unlayered rules take precedence over `@layer utilities`.
 - **Focus move on step change** must not fight the Transporte auto-derivation
   (volume prefill, plate-UF default), which only writes values, never focus.
 

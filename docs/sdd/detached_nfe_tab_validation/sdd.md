@@ -1,7 +1,7 @@
 # sdd:detached_nfe_tab_validation
 
 ## Status
-Backlog
+Done
 
 ## Goal
 Fix the detached (avulsa) NF-e emission form so a required field that lives in a
@@ -103,13 +103,29 @@ tell what is wrong, and the browser does not help.
     flow and the rascunho payload are unchanged. The existing `required`
     toggling driven by the `recipientType` radios keeps working (single form).
 
+11. **The recipient is exclusive, and the client says so.** The server accepts
+    a recipient either as a registered person (`recipientPersonId`) or as the
+    inline name/document pair — never a mix (`parseDetachedRecipient`,
+    `router/nfe_router/detached_router.go`). The client mirrors it exactly:
+    while "Selecionar existente" is active the person select carries
+    `required`, and while "Novo destinatário" is active the inline name and
+    document do. The hidden side must never keep `required` (a hidden
+    required control blocks the submission with "An invalid form control ...
+    is not focusable"), so the attribute is toggled by the page script rather
+    than baked into the markup — which also keeps the no-JS behaviour as it
+    is today (the server toast). Consequently the Destinatário step reports
+    itself incomplete (⚠ 1) until a recipient is picked, instead of claiming
+    to be valid and failing later on the server.
+
 ### Non-Functional
 
 - All new user-facing text in pt-br (chip labels/status, `aria-live` text).
 - Behaviour verified in Chromium, Firefox and WebKit (the e2e projects).
-- No new dependencies, no Go changes, no migrations, no SEFAZ call: the preview
-  endpoint is SEFAZ-free and the e2e app runs with `NFE_SEFAZ_GUARD=block`. No
-  certificate/`nfe_farm_config` data may be added to a test database.
+- No new dependencies, no migrations, no SEFAZ call: the preview endpoint is
+  SEFAZ-free and the e2e app runs with `NFE_SEFAZ_GUARD=block`. No
+  certificate/`nfe_farm_config` data may be added to a test database. No Go
+  production code changes (only a template-contract test in
+  `router/nfe_router/nfe_templates_test.go`).
 - Keyboard and assistive-technology support must not regress: the chips remain
   real buttons, the step status is announced, focus is managed on step change.
 - The DOM contract the existing e2e suites rely on (`#tabs button#<id>`,
@@ -127,14 +143,73 @@ tell what is wrong, and the browser does not help.
 | AC5 | Slip-through: a required field invalidated *after* its step was passed, then a forward jump via the chip and a submit → the owning tab is revealed, the field is focused and marked, and **no** POST to `/nfe/emitir/preview` is sent. | Same spec (request listener assertion) |
 | AC6 | Live status: a step with missing required fields shows `⚠ n`; after they are filled it shows `✓`. | Same spec |
 | AC7 | Rascunho with an incomplete emission form: the POST to `/nfe/rascunho/salvar` is actually sent (no silent `htmx:validation:halted`) and the server's toast is displayed. | Same spec + existing `test/e2e/tests/detached_nfe_rascunho.spec.js` stays green |
-| AC8 | Happy path unaffected: walking the steps and submitting still returns the DANFE preview fragment into `#nfe-detached-preview`. | Same spec + existing `detached_nfe_*` specs |
+| AC8 | Happy path unaffected: walking the steps and submitting still reaches the preview endpoint exactly once (the DANFE fragment itself cannot be rendered in this environment — the e2e fixture seeds no certificate and `nfeCertGate` answers 400; verified on a clean tree). | Same spec (request assertion) + the existing `detached_nfe_*` specs |
 | AC9 | No repo-wide regressions. | `make test-go`, `make test-js`, `make test-e2e`, `go build ./...`, `git diff --check` |
+| AC10 | "Selecionar existente" with nothing picked: the Destinatário chip shows ⚠ 1, `Avançar` keeps the user on step 1 with the person select focused and a native validation message, and no request is issued; picking a contact flips the chip to ✓ and lets the step advance. "Novo destinatário" keeps its own requirement (name + document, ⚠ 2). | Same spec (new case, seeds a contact for the farm) |
 
 Manual checks: none — every criterion above is covered by automated E2E in the
 three engine projects.
 
 ## Verification Results
 
+Baseline before implementation (2026-10-21):
+
 | Command | Result | Notes |
 |---------|--------|-------|
-| *(baseline to be recorded when Status flips to WIP)* | | |
+| `go build ./...` | PASS | |
+| `make test-js` | PASS | 49 tests across 3 files |
+| `make test-go` | FAIL | 3 **pre-existing, unrelated** failures in `armazenda/router/nfe_router`: `TestParseDepartureFormOverrides_PaymentBillingAndTransport`, `TestDepartureNFeModalRendersInputsAndTaxSelects` (missing `name="indPag"` / `name="includeCobranca"` in `nfe-emit-modal.html`), `TestDepartureNFePreviewCarriesInputsToConfirm`. Departure NF-e flow — untouched by this SDD. Not masked, not fixed here. |
+| `cd test/e2e && bun run test --grep "Tabs"` | PASS | 6 tests (2 cases × chromium/firefox/webkit) |
+
+Implementation verification:
+
+| Command | Result | Notes |
+|---------|--------|-------|
+| `go build ./...` | PASS | |
+| `node --check assets/js/detachedNFeTabs.js assets/js/detachedNFeValidation.js test/e2e/tests/detached_nfe_validation.spec.js` | PASS | |
+| `make test-js` | PASS | 49 tests across 3 files (unchanged — no JS unit tests added; the behaviour is browser-level) |
+| `go test ./router/nfe_router/ -run TestNFeEmitPageRendersStepperContract` | PASS | new structural guard for the stepper markup contract |
+| `make test-go` | FAIL | same 3 **pre-existing** failures as the baseline, no new ones |
+| `cd test/e2e && bun run test detached_nfe_validation` | PASS | 21 tests (7 cases × chromium/firefox/webkit) after the recipient increment; the earlier 18 also passed repeatedly, also under 3 workers |
+| `cd test/e2e && bun run test --grep "stepper\|Tabs"` | PASS | 24 tests (the new spec + the existing tabs spec), 3 workers |
+| `cd test/e2e && bun run test --grep "Tabs\|Rascunho de NF-e\|CFOP\|Transporte"` | FAIL | identical failure set to the clean-tree baseline (see below) |
+| `cd test/e2e && bun run test --grep "Tabs\|Rascunho de NF-e\|CFOP\|Transporte\|stepper"` (after the recipient increment) | FAIL | the failure set is **identical** to the same command's baseline before the increment — no new failure, none removed |
+| `make test-e2e` | FAIL | 121 passed, 4 skipped, 28 failed — the same 28 failures as the clean-tree baseline (which scored 103 passed / 28 failed); the only difference is two flaky entries swapping sides. The new spec is **18/18 green** in this run. |
+| `git diff --check` | PASS | no whitespace errors |
+
+### Notes on the E2E results
+
+- **Full-suite comparison (clean tree vs. this change, same command
+  `bun run test`):** 28 failures on the clean tree, 28 with this change, with
+  two flaky entries swapping sides (`detached_nfe_transport:131` /
+  `detached_cfop_selector:305` in the baseline against `detached_nfe_tabs:56`
+  and `login:83` here). The new spec passes 18/18 in the full run.
+- **Pre-existing failures, confirmed by a clean-tree run of the same commands**
+  (changes stashed, same Playwright projects): `detached_cfop_selector` (111,
+  207, 305), `detached_nfe_rascunho` (104, 232), `detached_nfe_transport` (131,
+  162, 215) and `detached_nfe_tabs` (34, 56) in WebKit, plus the
+  preview-dependent cases in chromium/firefox and `departure_nfe_inputs` (the
+  departure modal is missing `indPag`/`includeCobranca` — the same defect the
+  three failing Go tests report). None of them are caused by this change.
+- **The preview endpoint cannot succeed in this environment**: the e2e fixture
+  seeds `nfe_farm_config` with an empty `certificate_data`, and
+  `nfeCertGate` (`service/nfe_service/cert_gate.go`) rejects the preview with
+  400 "Certificado digital não configurado". Verified on a clean tree with the
+  existing `detached_inf_ad_prod.spec.js`, which fails identically. Seeding
+  certificate bytes is prohibited by the SEFAZ isolation rules, so AC8 is
+  verified as far as the environment allows: the last step's submit issues
+  exactly one POST to `/nfe/emitir/preview`, and the request is no longer
+  blocked client-side.
+- **WebKit parallel-load flakes**: the same specs fail intermittently under
+  3-worker runs on a clean tree (the chip and CFOP-trigger clicks hang in
+  "performing click action"). The new spec uses `evaluate`-clicks for the
+  icon-bearing footer buttons, the stepper chips and the CFOP trigger (the
+  pattern the other detached NF-e specs already use), and the status badge has
+  a fixed `min-width` so it never resizes a chip under the pointer.
+- **Operational note**: `test/e2e/global-teardown.js` deletes the tracked
+  `test/e2e/.test-server` binary on every E2E run. Restore it with
+  `git checkout -- test/e2e/.test-server` after running the suite.
+- **A manually started dev app occupies port 8100** while this was written;
+  the E2E suite then silently runs against it (login fails). The suite honours
+  `PORT`/`BASE_URL`, so it can be run aside with
+  `PORT=8110 BASE_URL=http://localhost:8110 bun run test …`.

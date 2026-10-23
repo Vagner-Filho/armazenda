@@ -8,12 +8,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <link href="/public/assets/static/css/output.css" rel="stylesheet">
     <link href="/public/assets/static/css/cfop-selector.css" rel="stylesheet">
+    <link href="/public/assets/static/css/nfe-emit.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="/public/assets/favicon.ico">
     <title>Emitir NF-e Avulsa - Armazenda</title>
     <script nonce="{{ .CSPNonce }}" src="/public/assets/static/htmx.min.js.gz" defer></script>
     <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/toast.js"></script>
     <script nonce="{{ .CSPNonce }}" src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
-    <script nonce="{{ .CSPNonce }}" src="/public/assets/js/detachedNFeTabs.js" defer></script>
+    <!-- The stepper (detachedNFeTabs.js) and its validation
+         (detachedNFeValidation.js) are ES modules imported by the inline module
+         script at the bottom of the form. -->
 </head>
 <body class="main-bg">
     {{ template "navbar" . }}
@@ -49,11 +52,15 @@
         </div>
         {{ else }}
         <form id="detached-nfe-form" class="glass-panel rounded-xl p-6 space-y-6" hx-post="/nfe/emitir/preview" hx-target="#nfe-detached-preview" hx-swap="innerHTML">
+            <!-- Stepper: the chips keep their ids (dest/transac/transp/trib) so
+                 navigation stays addressable, and each carries a live status
+                 badge (✓ complete / ⚠ n invalid) filled by
+                 detachedNFeValidation.js. -->
             <div id="tabs" class="flex items-center justify-center gap-4 active-dest group font-mono">
-                <button type="button" class="p-2 rounded-lg bg-zinc-200/20 group-[.active-dest]:cursor-default text-white group-[.active-dest]:text-emerald-900 group-[.active-dest]:bg-green-300" id="dest">Destinatário</button>
-                <button type="button" class="p-2 rounded-lg bg-zinc-200/20 group-[.active-transac]:cursor-default text-white group-[.active-transac]:text-emerald-900 group-[.active-transac]:bg-green-300" id="transac">Transação</button>
-                <button type="button" class="p-2 rounded-lg bg-zinc-200/20 group-[.active-transp]:cursor-default text-white group-[.active-transp]:text-emerald-900 group-[.active-transp]:bg-green-300" id="transp">Transporte</button>
-                <button type="button" class="p-2 rounded-lg bg-zinc-200/20 group-[.active-trib]:cursor-default text-white group-[.active-trib]:text-emerald-900 group-[.active-trib]:bg-green-300" id="trib">Tributação</button>
+                <button type="button" class="p-2 rounded-lg bg-zinc-200/20 group-[.active-dest]:cursor-default text-white group-[.active-dest]:text-emerald-900 group-[.active-dest]:bg-green-300" id="dest"><span aria-hidden="true">1.</span> Destinatário<span class="step-status" data-step-status="dest" aria-live="polite"></span></button>
+                <button type="button" class="p-2 rounded-lg bg-zinc-200/20 group-[.active-transac]:cursor-default text-white group-[.active-transac]:text-emerald-900 group-[.active-transac]:bg-green-300" id="transac"><span aria-hidden="true">2.</span> Transação<span class="step-status" data-step-status="transac" aria-live="polite"></span></button>
+                <button type="button" class="p-2 rounded-lg bg-zinc-200/20 group-[.active-transp]:cursor-default text-white group-[.active-transp]:text-emerald-900 group-[.active-transp]:bg-green-300" id="transp"><span aria-hidden="true">3.</span> Transporte<span class="step-status" data-step-status="transp" aria-live="polite"></span></button>
+                <button type="button" class="p-2 rounded-lg bg-zinc-200/20 group-[.active-trib]:cursor-default text-white group-[.active-trib]:text-emerald-900 group-[.active-trib]:bg-green-300" id="trib"><span aria-hidden="true">4.</span> Tributação<span class="step-status" data-step-status="trib" aria-live="polite"></span></button>
             </div>
             <!-- Informational only: the applied rascunho is never reapplied at
                  preview/confirm time; the submitted form values are authoritative. -->
@@ -740,9 +747,22 @@
                 </div>
             </fieldset>
 
-            <!-- Submit -->
+            <!-- Wizard footer: Voltar never validates, Avançar validates only
+                 the current step, and the single network request (the preview
+                 submit) only exists on the last step. The submit starts hidden
+                 AND disabled: keeping it disabled off the last step is what
+                 makes Enter a no-op there (hiding it alone would let Enter
+                 issue a premature POST). -->
             <div class="flex flex-wrap items-center justify-center gap-4" id="finish-container">
-                <button disabled type="submit" class="primary-glass-btn flex items-center gap-2 p-4 text-lg" data-test-id="preview-detached-nfe" id="preview-nfe">
+                <button type="button" id="wizard-back" class="glass-btn flex items-center gap-2 p-4 text-lg hidden">
+                    <iconify-icon icon="mdi:arrow-left" width="24" height="24"></iconify-icon>
+                    Voltar
+                </button>
+                <button type="button" id="wizard-next" class="primary-glass-btn flex items-center gap-2 p-4 text-lg">
+                    Avançar
+                    <iconify-icon icon="mdi:arrow-right" width="24" height="24"></iconify-icon>
+                </button>
+                <button disabled type="submit" class="primary-glass-btn flex items-center gap-2 p-4 text-lg hidden" data-test-id="preview-detached-nfe" id="preview-nfe">
                     <iconify-icon icon="mdi:eye" width="24" height="24"></iconify-icon>
                     Gerar Pré-visualização
                 </button>
@@ -762,7 +782,7 @@
         <!-- Save-as-rascunho dialog. The dialog form includes the populated
              emission form, so the rascunho stores the exact visible values. -->
         <dialog id="save-rascunho-dialog" class="glass-panel rounded-xl w-full max-w-md">
-            <form id="save-rascunho-form" class="p-6 flex flex-col gap-4" hx-post="/nfe/rascunho/salvar" hx-include="#detached-nfe-form" hx-swap="none">
+            <form id="save-rascunho-form" class="p-6 flex flex-col gap-4" hx-post="/nfe/rascunho/salvar" hx-include="#detached-nfe-form" hx-swap="none" novalidate>
                 <h2 class="text-lg font-bold text-white">Salvar como Rascunho de NF-e</h2>
                 <p class="text-sm text-white/70">
                     O rascunho guarda destinatário, itens com CFOP e preço, e os dados de operação e tributação. Quantidade e peso não são salvos.
@@ -805,18 +825,22 @@
                     // Keep `required` in sync with visibility: a hidden required
                     // input blocks submission with "An invalid form control ...
                     // is not focusable".
+                    //
+                    // The recipient is exclusive, and the server agrees
+                    // (parseDetachedRecipient): either a picked person or the
+                    // inline name/document, never a mix. So the person select
+                    // is required only while "Selecionar existente" is active,
+                    // and the inline fields only while "Novo destinatário" is.
+                    document.getElementById('recipientPersonId').toggleAttribute('required', isExisting);
                     [document.getElementById('recipientName'), document.getElementById('recipientDocument')].forEach(input => {
-                        if (isExisting) {
-                            input.removeAttribute('required');
-                        } else {
-                            input.setAttribute('required', '');
-                        }
+                        input.toggleAttribute('required', !isExisting);
                     });
                 });
             });
 
             // Apply the initial state (existing recipient is checked by default,
-            // so the hidden new-recipient inputs must not be required).
+            // so the person select is the required one and the hidden
+            // new-recipient inputs must not be).
             const initialRecipientType = document.querySelector('input[name="recipientType"]:checked');
             if (initialRecipientType) {
                 initialRecipientType.dispatchEvent(new Event('change'));
@@ -1099,7 +1123,13 @@
         </script>
         <script nonce="{{ .CSPNonce }}" type="module">
             import { initCfopSelectors } from "/public/assets/js/cfopSelector.js"
+            import { initDetachedNFeTabs } from "/public/assets/js/detachedNFeTabs.js"
+            import { initDetachedNFeValidation } from "/public/assets/js/detachedNFeValidation.js"
             initCfopSelectors()
+            // Order matters: the stepper reveals the first step (and applies the
+            // footer button rules) before the validation module reads the steps.
+            initDetachedNFeTabs()
+            initDetachedNFeValidation()
             window.initCfopSelectors = initCfopSelectors
         </script>
         {{ end }}

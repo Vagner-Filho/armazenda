@@ -195,6 +195,87 @@ func TestNFeEmitPageRendersPerItemInfAdProd(t *testing.T) {
 	}
 }
 
+// TestNFeEmitPageRendersStepperContract guards the markup contract the stepper
+// (assets/js/detachedNFeTabs.js) and its validation
+// (assets/js/detachedNFeValidation.js) depend on:
+//   - the four step chips, each with its live status slot;
+//   - the Voltar / Avançar footer buttons;
+//   - the preview submit starting hidden AND disabled — the only network action
+//     of the form, and disabled off the last step so Enter stays a no-op;
+//   - the rascunho form opting out of native validation, so a draft always
+//     reaches the server and is reported with the server's pt-br toast.
+func TestNFeEmitPageRendersStepperContract(t *testing.T) {
+	parsed := parseAllTemplates(t)
+
+	view := detachedPageView{
+		HasNFEFarmConfig:   true,
+		RecipientType:      "existing",
+		Items:              []detachedPageItem{{CFOP: "5101", Unit: "KG"}},
+		CfopOptions:        cfop_view.CfopOptions{Default: "5101"},
+		UseDefaultTaxRates: true,
+		CSPNonce:           "test-nonce",
+		TierKey:            "fiscal",
+	}
+	out := executeBlock(t, parsed, "nfe-emit.html", view)
+
+	for _, want := range []string{
+		`id="wizard-back"`,
+		`id="wizard-next"`,
+		`data-step-status="dest"`,
+		`data-step-status="transac"`,
+		`data-step-status="transp"`,
+		`data-step-status="trib"`,
+		`data-test-id="preview-detached-nfe"`,
+		`id="preview-nfe"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("emission page must render %s", want)
+		}
+	}
+
+	preview := elementByID(t, out, "preview-nfe")
+	if !strings.Contains(preview, "disabled") {
+		t.Error("the preview submit must render disabled; only the last step enables it")
+	}
+	if !strings.Contains(preview, "hidden") {
+		t.Error("the preview submit must render hidden; it only exists on the last step")
+	}
+
+	rascunho := elementByID(t, out, "save-rascunho-form")
+	if !strings.Contains(rascunho, "novalidate") {
+		t.Error("the rascunho form must render with novalidate so a draft always reaches the server")
+	}
+
+	// The recipient select is the one the page script toggles `required` on
+	// (it is the recipient while "Selecionar existente" is active), so it must
+	// render with its id and its placeholder option.
+	if !strings.Contains(out, `id="recipientPersonId"`) {
+		t.Error("emission page must render the recipient person select")
+	}
+	if !strings.Contains(out, `<option value="">Selecione um destinatário</option>`) {
+		t.Error("the recipient person select must render its placeholder option")
+	}
+}
+
+// elementByID returns the opening tag of the element carrying the given id,
+// so attribute-level assertions do not depend on attribute ordering.
+func elementByID(t *testing.T, out, id string) string {
+	t.Helper()
+	start := strings.Index(out, `id="`+id+`"`)
+	if start < 0 {
+		t.Fatalf("element with id %q not found; got:\n%s", id, out)
+	}
+	open := strings.LastIndex(out[:start], "<")
+	if open < 0 {
+		t.Fatalf("no opening tag before id %q; got:\n%s", id, out)
+	}
+	end := strings.Index(out[start:], ">")
+	if end < 0 {
+		t.Fatalf("unterminated tag for id %q; got:\n%s", id, out)
+	}
+	return out[open : start+end]
+}
+
 // TestNFeDetachedPreviewRendersInfAdProd guards the preview round-trip on the
 // fragment side: the parsed per-item note must render into the hidden
 // items[i].infAdProd input so the confirm step re-submits exactly the

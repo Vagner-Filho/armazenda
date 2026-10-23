@@ -1,0 +1,64 @@
+/*
+ * Detached NF-e emission form (templates/pages/nfe-emit.html): stepper status
+ * badges and the invalid-field marker.
+ *
+ * Hand-written on purpose. Two utilities the form needs are not part of the
+ * generated Tailwind bundle (`ring-2`/`ring-red-500` are absent from
+ * output.css, and rebuilding it needs the tailwindcss CLI), and the marker has
+ * to win over the layered `@layer utilities` border colour without a rebuild.
+ * Rules here are unlayered, so they take precedence over that layer.
+ */
+
+/* Invalid control marker. Applied only after a validation attempt (Avançar or
+   a submit) and kept until the control becomes valid, so a problem is also
+   visible in a step the user is not looking at. */
+.nfe-field-invalid {
+  border-color: #f87171;
+  box-shadow: 0 0 0 1px #f87171;
+}
+
+.nfe-field-invalid:focus {
+  border-color: #fca5a5;
+  box-shadow: 0 0 0 1px #fca5a5;
+}
+
+/* Step status badge rendered inside the stepper chips. Pills keep the label
+   legible on both the inactive (dark) and the active (green) chip colours.
+   The min-width reserves the space so a badge appearing never resizes the
+   chip: a shifting chip row makes the buttons move under the pointer. */
+.step-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.6rem;
+  margin-left: 0.375rem;
+  padding: 0.3rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  font-weight: 600;
+  color: #ffffff;
+  vertical-align: middle;
+}
+
+.step-status[data-state="complete"] {
+  background-color: #047857;
+}
+
+.step-status[data-state="error"] {
+  background-color: #b91c1c;
+}
+
+/* Visually hidden text for the step status (announced by assistive
+   technology; Tailwind's `sr-only` is not in the generated bundle either). */
+.nfe-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

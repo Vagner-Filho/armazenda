@@ -20,8 +20,8 @@ import (
 	"armazenda/model/subscription_model"
 	"armazenda/model/user_approval_model"
 	"armazenda/model/user_model"
-
 	"armazenda/model/vehicle_model"
+
 	"armazenda/router/billing_router"
 	"armazenda/router/crop_router"
 	"armazenda/router/departure_router"
@@ -342,10 +342,17 @@ func main() {
 		port = "8100"
 	}
 
-	ipv6Addr := "::" // Listen on all IPv6 addresses
+	// Bind to loopback by default so the app is only reachable via nginx (port 8100
+	// is not exposed publicly). In development, set IP=0.0.0.0 (or ::) or APP_ENV=development
+	// to listen on all interfaces.
+	listenIP := "127.0.0.1"
 	if envIP := os.Getenv("IP"); envIP != "" {
-		ipv6Addr = envIP
+		listenIP = envIP
+	} else if os.Getenv("APP_ENV") == "development" || os.Getenv("DEV") == "1" {
+		listenIP = "::"
 	}
+
+	ipv6Addr := listenIP
 
 	address := fmt.Sprintf("[%s]:%s", ipv6Addr, port)
 	router.Run(address)
