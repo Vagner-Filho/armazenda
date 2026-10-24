@@ -18,6 +18,16 @@
                 <p class="text-sm text-green-400 mt-1">Certificado atual: {{ .Config.CertificatePath }}</p>
                 {{ end }}
             </div>
+            <div class="flex flex-col-reverse md:col-span-2">
+                <input type="file" name="logo" id="logo" accept="image/*"
+                    class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40">
+                <label for="logo" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                    Logo do Emitente (opcional)
+                </label>
+                {{ if .LogoPath }}
+                <p class="text-sm text-green-400 mt-1">Logo atual: {{ .LogoPath }}</p>
+                {{ end }}
+            </div>
             <div class="flex flex-col-reverse">
                 <input type="password" name="certificatePassword" id="certificatePassword"
                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"

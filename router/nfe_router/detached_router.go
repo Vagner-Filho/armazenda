@@ -9,6 +9,7 @@ import (
 
 	entity_public "armazenda/entity/public"
 	model_error "armazenda/model/error"
+	"armazenda/model/farm_logo_model"
 	"armazenda/model/farm_product_model"
 	"armazenda/model/nfe_model"
 	"armazenda/model/person_model"
@@ -1243,6 +1244,11 @@ func downloadDetachedNFeDANFE(c *gin.Context) {
 	// is filled.
 	if data.Protocol == "" && invoice.Protocol != nil {
 		data.Protocol = *invoice.Protocol
+	}
+
+	// Attach emitter logo when available.
+	if logoData, _, logoErr := farm_logo_model.GetFarmLogoModel().GetFarmLogo(farmID); logoErr == nil && len(logoData) > 0 {
+		data.LogoData = logoData
 	}
 
 	generator := nfe_pdf.NewDANFEGenerator()

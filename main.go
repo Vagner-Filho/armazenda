@@ -8,6 +8,7 @@ import (
 	"armazenda/model/entry_model"
 	model_error "armazenda/model/error"
 	"armazenda/model/farm_config_model"
+	"armazenda/model/farm_logo_model"
 	"armazenda/model/farm_product_model"
 	"armazenda/model/field_model"
 	"armazenda/model/humidity_progression_model"
@@ -254,6 +255,7 @@ func main() {
 	user_approval_model.InitUserApprovalModel(pool)
 	stats_model.InitStatsModel(pool)
 	nfe_model.InitNFeModel(pool)
+	farm_logo_model.InitFarmLogoModel(pool)
 	nfe_service.StartRetryWorker()
 	model_error.InitLoggerModel(pool)
 

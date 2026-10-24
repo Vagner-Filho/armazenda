@@ -12,6 +12,7 @@ import (
 	entity_public "armazenda/entity/public"
 	"armazenda/model/departure_model"
 	"armazenda/model/farm_config_model"
+	"armazenda/model/farm_logo_model"
 	"armazenda/model/nfe_model"
 	"armazenda/model/person_model"
 	"armazenda/model/product_model"
@@ -220,6 +221,8 @@ func getNFeConfigForm(c *gin.Context) {
 	fcm := farm_config_model.GetFarmConfigModel()
 	farm, err := fcm.GetFarmConfig(farmID)
 
+	_, logoPath, _ := farm_logo_model.GetFarmLogoModel().GetFarmLogo(farmID)
+
 	c.HTML(http.StatusOK, "nfe-config-form", gin.H{
 		"FarmID":        farmID,
 		"Config":        config,
@@ -232,6 +235,7 @@ func getNFeConfigForm(c *gin.Context) {
 		"IBSCST":        safePtrString(config.DefaultIBSCST),
 		"CClassTrib":    safePtrString(config.DefaultCClassTrib),
 		"FarmerName":    farm.FarmerName,
+		"LogoPath":      logoPath,
 	})
 }
 
@@ -362,6 +366,27 @@ func saveNFeConfig(c *gin.Context) {
 		encryptedPassword = nfe_service.EncryptPassword(certPassword)
 	} else if existingConfig != nil {
 		encryptedPassword = existingConfig.CertificatePasswordEncrypted
+	}
+
+	// Handle logo upload (stored in dedicated farm_logo table)
+	logoFile, logoHeader, logoErr := c.Request.FormFile("logo")
+	if logoErr == nil && logoFile != nil {
+		defer logoFile.Close()
+		logoData, readErr := io.ReadAll(logoFile)
+		if readErr != nil {
+			c.HTML(http.StatusInternalServerError, "nfe-config-form", gin.H{
+				"FarmID": farmID,
+				"Error":  "Failed to read logo",
+			})
+			return
+		}
+		if upsertErr := farm_logo_model.GetFarmLogoModel().UpsertFarmLogo(farmID, logoHeader.Filename, logoData); upsertErr != nil {
+			c.HTML(http.StatusInternalServerError, "nfe-config-form", gin.H{
+				"FarmID": farmID,
+				"Error":  "Failed to save logo",
+			})
+			return
+		}
 	}
 
 	config := entity_public.FarmConfig{
@@ -605,6 +630,11 @@ func downloadNFeDANFE(c *gin.Context) {
 	// protocol from the database column so Campo 2 on the DANFE is filled.
 	if data.Protocol == "" && invoice.Protocol != nil {
 		data.Protocol = *invoice.Protocol
+	}
+
+	// Attach emitter logo when available.
+	if logoData, _, logoErr := farm_logo_model.GetFarmLogoModel().GetFarmLogo(farmID); logoErr == nil && len(logoData) > 0 {
+		data.LogoData = logoData
 	}
 
 	generator := nfe_pdf.NewDANFEGenerator()

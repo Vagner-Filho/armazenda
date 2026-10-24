@@ -107,6 +107,9 @@ type DANFEData struct {
 	ProtocolDate string
 	CStat        string
 	XMotivo      string
+
+	// Logo (emitter logo bytes; empty falls back to default)
+	LogoData []byte
 }
 
 // DANFEProduct holds a single product line for the DANFE.

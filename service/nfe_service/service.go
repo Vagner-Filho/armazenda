@@ -17,6 +17,7 @@ import (
 	"armazenda/model/departure_model"
 	model_error "armazenda/model/error"
 	"armazenda/model/farm_config_model"
+	"armazenda/model/farm_logo_model"
 	"armazenda/model/nfe_model"
 	"armazenda/model/person_model"
 	"armazenda/model/product_model"
@@ -800,6 +801,11 @@ func (s *NFeService) GeneratePreviewDANFE(departureID uint32, unitPrice decimal.
 		data.VeicPlate = transport.Veiculo.Placa
 		data.VeicUF = transport.Veiculo.UF
 		data.VeicRNTC = transport.Veiculo.RNTC
+	}
+
+	// Attach emitter logo when available.
+	if logoData, _, logoErr := farm_logo_model.GetFarmLogoModel().GetFarmLogo(farmID); logoErr == nil && len(logoData) > 0 {
+		data.LogoData = logoData
 	}
 
 	generator := service.NewDANFEGenerator()

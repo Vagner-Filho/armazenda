@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"armazenda/pkg/nfe/config"
 	"armazenda/pkg/nfe/entity"
 	"armazenda/pkg/nfe/service"
 
@@ -61,6 +62,37 @@ func TestDANFEGenerator_Generate_NoProtocol(t *testing.T) {
 
 	if len(pdfBytes) == 0 {
 		t.Fatal("expected non-empty PDF bytes")
+	}
+}
+
+func TestDANFEGenerator_Generate_WithLogo(t *testing.T) {
+	g := service.NewDANFEGenerator()
+
+	data := fullDANFEData()
+	logoBytes, _ := config.DefaultLogoFS.ReadFile("default_logo.png")
+	data.LogoData = logoBytes
+
+	pdfBytes, err := g.Generate(data)
+	if err != nil {
+		t.Fatalf("unexpected error generating PDF with logo: %v", err)
+	}
+	if len(pdfBytes) == 0 || string(pdfBytes[:5]) != "%PDF-" {
+		t.Fatalf("invalid PDF output")
+	}
+}
+
+func TestDANFEGenerator_Generate_EmptyLogo(t *testing.T) {
+	g := service.NewDANFEGenerator()
+
+	data := fullDANFEData()
+	data.LogoData = nil
+
+	pdfBytes, err := g.Generate(data)
+	if err != nil {
+		t.Fatalf("unexpected error generating PDF without logo: %v", err)
+	}
+	if len(pdfBytes) == 0 || string(pdfBytes[:5]) != "%PDF-" {
+		t.Fatalf("invalid PDF output")
 	}
 }
 

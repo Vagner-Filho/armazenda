@@ -10,6 +10,7 @@ import (
 	"armazenda/model/cfop_model"
 	model_error "armazenda/model/error"
 	"armazenda/model/farm_config_model"
+	"armazenda/model/farm_logo_model"
 	"armazenda/model/nfe_model"
 	"armazenda/model/person_model"
 	"armazenda/pkg/nfe/config"
@@ -871,6 +872,11 @@ func (s *NFeService) GenerateDetachedPreviewDANFE(input DetachedInvoiceInput) ([
 	}
 
 	data := s.buildDetachedDANFEData(build.InvoiceInput)
+
+	// Attach emitter logo when available.
+	if logoData, _, logoErr := farm_logo_model.GetFarmLogoModel().GetFarmLogo(input.FarmID); logoErr == nil && len(logoData) > 0 {
+		data.LogoData = logoData
+	}
 
 	generator := service.NewDANFEGenerator()
 	pdfBytes, genErr := generator.GeneratePreview(data)

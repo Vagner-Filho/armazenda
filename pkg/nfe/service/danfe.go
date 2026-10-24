@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"fmt"
+	"image"
 	"strings"
 
 	// Internal - Config
@@ -253,6 +254,34 @@ func (g *DANFEGenerator) cellBoldValue(pdf *gopdf.GoPdf, x, y, w, h float64, lab
 	}
 }
 
+// drawImageFit renders image bytes scaled to fit within (maxW, maxH) while
+// preserving aspect ratio, centered in the available area.
+func (g *DANFEGenerator) drawImageFit(pdf *gopdf.GoPdf, imgBytes []byte, x, y, maxW, maxH float64) error {
+	cfg, _, err := image.DecodeConfig(bytes.NewReader(imgBytes))
+	if err != nil {
+		return err
+	}
+	if cfg.Width == 0 || cfg.Height == 0 {
+		return fmt.Errorf("invalid image dimensions")
+	}
+	imgW := float64(cfg.Width)
+	imgH := float64(cfg.Height)
+	scale := maxW / imgW
+	if maxH/imgH < scale {
+		scale = maxH / imgH
+	}
+	w := imgW * scale
+	h := imgH * scale
+	ix := x + (maxW-w)/2
+	iy := y + (maxH-h)/2
+
+	holder, err := gopdf.ImageHolderByBytes(imgBytes)
+	if err != nil {
+		return err
+	}
+	return pdf.ImageByHolder(holder, ix, iy, &gopdf.Rect{W: w, H: h})
+}
+
 // drawBarcode renders a strict CODE-128C barcode for the given numeric key
 // using the custom encoder (per MOC Anexo II §2). Dimensions must satisfy
 // the minimums: width ≥ 6cm (≈170pt for laser), height ≥ 0.8cm (≈23pt).
@@ -319,7 +348,7 @@ func formatThousands(intPart string) string {
 	}
 	var groups []string
 	for n > 3 {
-		groups = append([]string{intPart[n-3:n]}, groups...)
+		groups = append([]string{intPart[n-3 : n]}, groups...)
 		intPart = intPart[:n-3]
 		n = len(intPart)
 	}
@@ -383,46 +412,20 @@ func (g *DANFEGenerator) drawHeaderBlock(pdf *gopdf.GoPdf, data entity.DANFEData
 	pdf.SetXY(x+4, y+36)
 	pdf.Cell(nil, "IDENTIFICAÇÃO E ASSINATURA DO RECEBEDOR: _________________________________")
 
-	// Right: DANFE title block
+	// Right: keep only NF-e identification in the first row (cropped on sign)
 	leftW := w * 0.55
 	rightX := x + leftW
 	pdf.Line(rightX, y, rightX, y+h)
 
-	// "DANFE" — 12pt bold per §3.7.4
 	pdf.SetFont("serif-bold", "", 12)
 	pdf.SetXY(rightX+4, y+4)
-	pdf.Cell(nil, "DANFE")
-	// "DOCUMENTO AUXILIAR..." — 8pt per §3.7.4
-	pdf.SetFont("serif", "", 8)
-	pdf.SetXY(rightX+4, y+16)
-	pdf.Cell(nil, "Documento Auxiliar da Nota Fiscal Eletrônica")
-	// ENTRADA/SAÍDA — 8pt per §3.7.4
-	pdf.SetXY(rightX+4, y+26)
-	pdf.Cell(nil, "0 - ENTRADA")
-	pdf.SetXY(rightX+4, y+34)
-	pdf.Cell(nil, "1 - SAÍDA")
+	pdf.Cell(nil, "NF-e")
 
-	// Mark the active operation type per tpNF (B11)
-	tpNF := data.TpNF
-	if tpNF == "" {
-		tpNF = "1" // default to saída
-	}
-	pdf.SetLineWidth(0)
-	pdf.Rectangle(rightX+66, y+26, rightX+80, y+44, "D", 2, 10)
-	pdf.SetLineWidth(0)
 	pdf.SetFont("serif-bold", "", 10)
-	pdf.SetXY(rightX+70, y+31)
-	pdf.Cell(nil, tpNF)
-
-	// Nº/Série/Folha — 10pt bold per §3.7.4
-	pdf.SetFont("serif-bold", "", 10)
-	pdf.SetXY(rightX+180, y+10)
+	pdf.SetXY(rightX+4, y+18)
 	pdf.Cell(nil, fmt.Sprintf("Nº %d", data.Numero))
-	pdf.SetXY(rightX+180, y+20)
+	pdf.SetXY(rightX+4, y+30)
 	pdf.Cell(nil, fmt.Sprintf("SÉRIE %d", data.Serie))
-	pdf.SetXY(rightX+180, y+30)
-	// TODO(P1): multi-page support — currently single page only
-	pdf.Cell(nil, "FOLHA 1/1")
 
 	return y + h + 4
 }
@@ -492,27 +495,79 @@ func (g *DANFEGenerator) drawAccessKeyBlock(pdf *gopdf.GoPdf, data entity.DANFED
 	h := 70.0
 	g.box(pdf, x, y, w, h)
 
-	// Barcode left side (~55%)
-	barW := w * 0.55
+	col1W := w * 0.20
+	col2W := w * 0.40
+	col3W := w - col1W - col2W
+	col1X := x
+	col2X := x + col1W
+	col3X := x + col1W + col2W
+
+	pdf.Line(col2X, y, col2X, y+h)
+	pdf.Line(col3X, y, col3X, y+h)
+
+	// Column 1: emitter logo (user upload or Armazenda default)
+	logoBytes := data.LogoData
+	if len(logoBytes) == 0 {
+		if b, err := config.DefaultLogoFS.ReadFile("default_logo.png"); err == nil {
+			logoBytes = b
+		}
+	}
+	if len(logoBytes) > 0 {
+		_ = g.drawImageFit(pdf, logoBytes, col1X+4, y+4, col1W-8, h-8)
+	}
+
+	// Column 2: information moved from the first row
+	pdf.SetFont("serif-bold", "", 12)
+	pdf.SetXY(col2X+4, y+4)
+	pdf.Cell(nil, "DANFE")
+	pdf.SetFont("serif", "", 8)
+	pdf.SetXY(col2X+4, y+16)
+	pdf.Cell(nil, "Documento Auxiliar da Nota Fiscal Eletrônica")
+
+	pdf.SetXY(col2X+4, y+26)
+	pdf.Cell(nil, "0 - ENTRADA")
+	pdf.SetXY(col2X+4, y+34)
+	pdf.Cell(nil, "1 - SAÍDA")
+
+	tpNF := data.TpNF
+	if tpNF == "" {
+		tpNF = "1"
+	}
+	pdf.SetLineWidth(0)
+	pdf.Rectangle(col2X+66, y+26, col2X+80, y+44, "D", 2, 10)
+	pdf.SetLineWidth(0)
+	pdf.SetFont("serif-bold", "", 10)
+	pdf.SetXY(col2X+70, y+31)
+	pdf.Cell(nil, tpNF)
+
+	pdf.SetFont("serif-bold", "", 10)
+	pdf.SetXY(col2X+4, y+46)
+	pdf.Cell(nil, fmt.Sprintf("Nº %d", data.Numero))
+	pdf.SetXY(col2X+4, y+56)
+	pdf.Cell(nil, fmt.Sprintf("SÉRIE %d", data.Serie))
+	pdf.SetXY(col2X+4, y+64)
+	// TODO(P1): multi-page support — currently single page only
+	pdf.Cell(nil, "FOLHA 1/1")
+
+	// Column 3: barcode + existing access-key/protocol info
+	barW := col3W * 0.55
 	key := data.AccessKey
 	if key == "" {
 		key = "00000000000000000000000000000000000000000000"
 	}
-	if err := g.drawBarcode(pdf, key, x+4, y+4, barW-8, h-46); err != nil {
+	if err := g.drawBarcode(pdf, key, col3X+4, y+4, barW-8, h-46); err != nil {
 		pdf.SetFont("serif", "", 8)
-		pdf.SetXY(x+4, y+18)
+		pdf.SetXY(col3X+4, y+18)
 		pdf.Cell(nil, "[ERRO AO GERAR CÓDIGO DE BARRAS]")
 	}
-	// Key text below barcode (bold per §3.7.5)
 	keyText := formatAccessKey(key)
 	pdf.SetFont("serif-bold", "", 8)
 	textWidth, _ := pdf.MeasureTextWidth(keyText)
-	centerX := x + 4 + (barW-8-textWidth)/2
+	centerX := col3X + 4 + (barW-8-textWidth)/2
 	pdf.SetXY(centerX, y+h-36)
 	pdf.Cell(nil, keyText)
 
-	// Right side: key label + consulta text (Campo 1)
-	midX := x + barW
+	midX := col3X + barW
 	pdf.Line(midX, y, midX, y+h)
 	pdf.SetFont("serif", "", 6)
 	pdf.SetXY(midX+4, y+4)
@@ -521,14 +576,12 @@ func (g *DANFEGenerator) drawAccessKeyBlock(pdf *gopdf.GoPdf, data entity.DANFED
 	pdf.SetXY(midX+4, y+12)
 	pdf.Cell(nil, formatAccessKey(key))
 
-	// Campo 1: consulta de autenticidade (normal/SVC per §3.9.1)
 	pdf.SetFont("serif", "", 7)
 	pdf.SetXY(midX+4, y+24)
 	pdf.Cell(nil, "Consulta de autenticidade no portal nacional da NF-e")
 	pdf.SetXY(midX+4, y+32)
 	pdf.Cell(nil, "www.nfe.fazenda.gov.br/portal")
 
-	// Campo 2: protocolo de autorização de uso (normal/SVC per §3.9.1)
 	pdf.SetFont("serif", "", 6)
 	pdf.SetXY(midX+4, y+44)
 	pdf.Cell(nil, "PROTOCOLO DE AUTORIZAÇÃO DE USO")
@@ -546,7 +599,6 @@ func (g *DANFEGenerator) drawAccessKeyBlock(pdf *gopdf.GoPdf, data entity.DANFED
 		pdf.Cell(nil, "(sem autorização)")
 	}
 
-	// Divider line above Campo 1/2 area
 	pdf.Line(x, y+h-18, x+w, y+h-18)
 
 	return y + h + 4
