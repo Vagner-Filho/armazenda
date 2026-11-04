@@ -15,12 +15,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/stripe/stripe-go/v85"
-	portal "github.com/stripe/stripe-go/v85/billingportal/session"
-	"github.com/stripe/stripe-go/v85/checkout/session"
-	"github.com/stripe/stripe-go/v85/price"
-	"github.com/stripe/stripe-go/v85/subscription"
-	"github.com/stripe/stripe-go/v85/webhook"
+	"github.com/stripe/stripe-go/v87"
+	portal "github.com/stripe/stripe-go/v87/billingportal/session"
+	"github.com/stripe/stripe-go/v87/checkout/session"
+	"github.com/stripe/stripe-go/v87/price"
+	"github.com/stripe/stripe-go/v87/subscription"
+	"github.com/stripe/stripe-go/v87/webhook"
 )
 
 func init() {

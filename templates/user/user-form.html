@@ -11,7 +11,7 @@
       </p>
     </header>
     <div>
-      <form hx-post="/user" hx-vals='{"role": "user"}' hx-target="#user-form-content" class="flex flex-col gap-4 mt-4">
+      <form hx-post="/user" hx-vals='{"role": "user"}' hx-target="#user-form-content" hx-indicator="#submit-btn-container" class="flex flex-col gap-4 mt-4">
         <input type="hidden" name="priceId" value="{{ .PriceID }}">
         <fieldset class="flex gap-4 p-2 bg-fieldset rounded-lg" style="overflow-y: auto; flex-direction: column-reverse;">
           <legend class="fieldset-legend">
@@ -104,7 +104,10 @@
         </fieldset>
         <div class="flex items-center justify-center mt-2 gap-2">
           <button type="button" class="cancel-new-user">Cancelar</button>
-          <button type="submit" class="login-btn-primary" style="padding-left: 20px; padding-right: 20px; width: fit-content;">Cadastrar</button>
+          <div class="submit-btn-container" id="submit-btn-container">
+            <button type="submit" class="login-btn-primary" style="padding-left: 20px; padding-right: 20px; width: fit-content;">Cadastrar</button>
+            <img class="htmx-indicator" src="/public/assets/static/spinner.svg" alt="Carregando..." style="width: 2rem; height: 2rem;">
+          </div>
         </div>
       </form>
     </div>
@@ -429,6 +432,18 @@
       box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
       color: #065f46;
       background: #d1fae5;
+    }
+
+    .submit-btn-container .htmx-indicator {
+      display: none;
+    }
+
+    .submit-btn-container.htmx-request button {
+      display: none;
+    }
+
+    .submit-btn-container.htmx-request .htmx-indicator {
+      display: block;
     }
   </style>
 </dialog>

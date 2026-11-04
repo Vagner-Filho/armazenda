@@ -1,13 +1,18 @@
 package departure_router
 
 import (
+	"encoding/base64"
+	"html/template"
+	"net/http"
+	"strconv"
+
 	entity_public "armazenda/entity/public"
+	"armazenda/model/farm_logo_model"
+	"armazenda/pkg/nfe/config"
 	"armazenda/service/departure_service"
 	"armazenda/service/user_service"
 	"armazenda/view"
 	departure_view "armazenda/view/departure"
-	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -204,7 +209,29 @@ func getDeparturePdf(c *gin.Context) {
 		c.Status(http.StatusNoContent)
 		return
 	}
-	c.HTML(200, "departure-pdf", departurePdf)
+	logoURI := ""
+	dep, depErr := departure_service.GetDeparture(uint32(id))
+	if depErr == nil {
+		logoBytes, _, _ := farm_logo_model.GetFarmLogoModel().GetFarmLogo(dep.Farm)
+		if len(logoBytes) == 0 {
+			if b, readErr := config.DefaultLogoFS.ReadFile("logo_with_name.jpeg"); readErr == nil {
+				logoBytes = b
+			}
+		}
+		if len(logoBytes) > 0 {
+			mime := "image/jpeg"
+			if len(logoBytes) >= 4 && logoBytes[0] == 0x89 && logoBytes[1] == 0x50 && logoBytes[2] == 0x4e && logoBytes[3] == 0x47 {
+				mime = "image/png"
+			}
+			logoURI = "data:" + mime + ";base64," + base64.StdEncoding.EncodeToString(logoBytes)
+		}
+	}
+
+	type departurePdfView struct {
+		entity_public.DeparturePdf
+		LogoDataURI template.URL
+	}
+	c.HTML(200, "departure-pdf", departurePdfView{DeparturePdf: *departurePdf, LogoDataURI: template.URL(logoURI)})
 }
 
 func getDepartureDraftForm(c *gin.Context) {

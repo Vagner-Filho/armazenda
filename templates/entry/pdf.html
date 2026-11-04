@@ -1,7 +1,13 @@
 {{ block "entry-pdf" . }}
 <div class="hidden flex-col print:flex h-dvh" id="entry-pdf">
-    <div class="text-xl font-bold text-center" style="margin-bottom: 12px;">
-        Romaneio de Entrada
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div style="width: 80px;"></div>
+        <div class="text-xl font-bold text-center">
+            Romaneio de Entrada
+        </div>
+        <div style="width: 80px; text-align: right;">
+            {{ if .LogoDataURI }}<img src="{{ .LogoDataURI }}" alt="Logo" style="max-height: 48px; max-width: 80px;">{{ end }}
+        </div>
     </div>
     <div class="flex justify-between border-b my-1" style="border-color: #909699;">
         <div class="flex flex-col" style="width: 50%;">

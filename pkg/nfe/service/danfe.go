@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"strings"
 
 	// Internal - Config
@@ -492,11 +494,11 @@ func (g *DANFEGenerator) drawContingencyBanner(pdf *gopdf.GoPdf, data entity.DAN
 }
 
 func (g *DANFEGenerator) drawAccessKeyBlock(pdf *gopdf.GoPdf, data entity.DANFEData, x, y, w float64) float64 {
-	h := 70.0
+	h := 82.0
 	g.box(pdf, x, y, w, h)
 
-	col1W := w * 0.20
-	col2W := w * 0.40
+	col1W := w * 0.18
+	col2W := w * 0.30
 	col3W := w - col1W - col2W
 	col1X := x
 	col2X := x + col1W
@@ -508,7 +510,7 @@ func (g *DANFEGenerator) drawAccessKeyBlock(pdf *gopdf.GoPdf, data entity.DANFED
 	// Column 1: emitter logo (user upload or Armazenda default)
 	logoBytes := data.LogoData
 	if len(logoBytes) == 0 {
-		if b, err := config.DefaultLogoFS.ReadFile("default_logo.png"); err == nil {
+		if b, err := config.DefaultLogoFS.ReadFile("logo_with_name.jpeg"); err == nil {
 			logoBytes = b
 		}
 	}
@@ -549,57 +551,53 @@ func (g *DANFEGenerator) drawAccessKeyBlock(pdf *gopdf.GoPdf, data entity.DANFED
 	// TODO(P1): multi-page support — currently single page only
 	pdf.Cell(nil, "FOLHA 1/1")
 
-	// Column 3: barcode + existing access-key/protocol info
-	barW := col3W * 0.55
+	// Column 3: barcode and access-key info in the same column (stacked)
 	key := data.AccessKey
 	if key == "" {
 		key = "00000000000000000000000000000000000000000000"
 	}
-	if err := g.drawBarcode(pdf, key, col3X+4, y+4, barW-8, h-46); err != nil {
+	barcodeW := 200.0
+	if barcodeW > col3W-8 {
+		barcodeW = col3W - 8
+	}
+	barcodeX := col3X + (col3W-barcodeW)/2
+	if err := g.drawBarcode(pdf, key, barcodeX, y+4, barcodeW, 24); err != nil {
 		pdf.SetFont("serif", "", 8)
-		pdf.SetXY(col3X+4, y+18)
+		pdf.SetXY(col3X+4, y+12)
 		pdf.Cell(nil, "[ERRO AO GERAR CÓDIGO DE BARRAS]")
 	}
-	keyText := formatAccessKey(key)
-	pdf.SetFont("serif-bold", "", 8)
-	textWidth, _ := pdf.MeasureTextWidth(keyText)
-	centerX := col3X + 4 + (barW-8-textWidth)/2
-	pdf.SetXY(centerX, y+h-36)
-	pdf.Cell(nil, keyText)
-
-	midX := col3X + barW
-	pdf.Line(midX, y, midX, y+h)
 	pdf.SetFont("serif", "", 6)
-	pdf.SetXY(midX+4, y+4)
-	pdf.Cell(nil, "CHAVE DE ACESSO")
+	akLabel := "CHAVE DE ACESSO"
+	akTw, _ := pdf.MeasureTextWidth(akLabel)
+	pdf.SetXY(col3X+(col3W-akTw)/2, y+30)
+	pdf.Cell(nil, akLabel)
 	pdf.SetFont("serif-bold", "", 9)
-	pdf.SetXY(midX+4, y+12)
-	pdf.Cell(nil, formatAccessKey(key))
+	akVal := formatAccessKey(key)
+	akvTw, _ := pdf.MeasureTextWidth(akVal)
+	pdf.SetXY(col3X+(col3W-akvTw)/2, y+38)
+	pdf.Cell(nil, akVal)
 
 	pdf.SetFont("serif", "", 7)
-	pdf.SetXY(midX+4, y+24)
-	pdf.Cell(nil, "Consulta de autenticidade no portal nacional da NF-e")
-	pdf.SetXY(midX+4, y+32)
-	pdf.Cell(nil, "www.nfe.fazenda.gov.br/portal")
+	cons := "Consulta de autenticidade no portal nacional da NF-e"
+	consTw, _ := pdf.MeasureTextWidth(cons)
+	pdf.SetXY(col3X+(col3W-consTw)/2, y+46)
+	pdf.Cell(nil, cons)
 
 	pdf.SetFont("serif", "", 6)
-	pdf.SetXY(midX+4, y+44)
-	pdf.Cell(nil, "PROTOCOLO DE AUTORIZAÇÃO DE USO")
+	protText := "PROTOCOLO DE AUTORIZAÇÃO DE USO"
 	if data.Protocol != "" {
-		pdf.SetFont("serif-bold", "", 10)
-		pdf.SetXY(midX+4, y+52)
-		protText := data.Protocol
+		protText += ": " + data.Protocol
 		if data.ProtocolDate != "" {
 			protText += " " + data.ProtocolDate
 		}
-		pdf.Cell(nil, protText)
 	} else {
-		pdf.SetFont("serif", "", 8)
-		pdf.SetXY(midX+4, y+52)
-		pdf.Cell(nil, "(sem autorização)")
+		protText += ": (sem autorização)"
 	}
+	protTw, _ := pdf.MeasureTextWidth(protText)
+	pdf.SetXY(col3X+(col3W-protTw)/2, y+54)
+	pdf.Cell(nil, protText)
 
-	pdf.Line(x, y+h-18, x+w, y+h-18)
+	pdf.Line(col3X, y+h-18, x+w, y+h-18)
 
 	return y + h + 4
 }

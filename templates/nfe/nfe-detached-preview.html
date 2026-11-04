@@ -9,6 +9,7 @@
     </div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-white/80 text-base *:text-center">
         <p><strong>Destinatário:</strong> {{ .RecipientLabel }}</p>
+        {{ if .TransportLabel }}<p><strong>Transportadora:</strong> {{ .TransportLabel }}</p>{{ end }}
         <p><strong>Itens:</strong> {{ .ItemCount }}</p>
         <p><strong>Valor Total:</strong> <span data-raw-value="{{ .TotalValue }}">{{ .TotalValue }}</span></p>
         <p class="md:col-span-3 text-sm text-white/60">
@@ -57,7 +58,12 @@
         <input type="hidden" name="modFrete" value="{{ .ModFrete }}">
 
         <!-- Transport (MOC Grupo X): round-tripped so the confirm step emits
-             exactly the previewed transport data. -->
+             exactly the previewed transport data. A picked contact is
+             re-resolved at confirm, so only its id is carried; otherwise the
+             inline Transportadora fields are carried. -->
+        {{ if .Transport.PersonID }}
+        <input type="hidden" name="transportPersonId" value="{{ .Transport.PersonID }}">
+        {{ else }}
         <input type="hidden" name="transportNome" value="{{ .Transport.Nome }}">
         <input type="hidden" name="transportDocumento" value="{{ .Transport.Document }}">
         <input type="hidden" name="transportIE" value="{{ .Transport.IE }}">
@@ -65,6 +71,7 @@
         <input type="hidden" name="transportNumero" value="{{ .Transport.Numero }}">
         <input type="hidden" name="transportMunicipio" value="{{ .Transport.Municipio }}">
         <input type="hidden" name="transportUF" value="{{ .Transport.UF }}">
+        {{ end }}
         <input type="hidden" name="transportPlaca" value="{{ .Transport.Placa }}">
         <input type="hidden" name="transportPlacaUF" value="{{ .Transport.PlacaUF }}">
         <input type="hidden" name="transportRNTC" value="{{ .Transport.RNTC }}">

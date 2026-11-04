@@ -276,6 +276,181 @@ func elementByID(t *testing.T, out, id string) string {
 	return out[open : start+end]
 }
 
+// transportInlineControlIDs are the inline Transportadora controls that the
+// source switch hides and disables in "existing" mode.
+var transportInlineControlIDs = []string{
+	"transportNome",
+	"transportDocumento",
+	"transportIE",
+	"transportLogradouro",
+	"transportNumero",
+	"transportMunicipio",
+	"transportUF",
+}
+
+// recipientInlineControlIDs are the inline Destinatário controls that the
+// source switch hides and disables in "existing" mode.
+var recipientInlineControlIDs = []string{
+	"recipientName",
+	"recipientDocument",
+	"recipientIE",
+	"recipientPhone",
+	"recipientEmail",
+	"recipientStreet",
+	"recipientNumber",
+	"recipientNeighborhood",
+	"recipientCity",
+	"recipientState",
+	"recipientCEP",
+}
+
+// emitPageBaseView returns a minimal detached page view for the template
+// source-mode tests.
+func emitPageBaseView() detachedPageView {
+	return detachedPageView{
+		HasNFEFarmConfig:   true,
+		RecipientType:      "existing",
+		TransportType:      "existing",
+		Items:              []detachedPageItem{{CFOP: "5101", Unit: "KG"}},
+		CfopOptions:        cfop_view.CfopOptions{Default: "5101"},
+		UseDefaultTaxRates: true,
+		CSPNonce:           "test-nonce",
+		TierKey:            "fiscal",
+	}
+}
+
+// TestNFeEmitPageTransportSource guards the Transporte source switch: the
+// default is "Selecionar existente", the contact select is enabled with the
+// "Nenhuma transportadora" option first, contacts without an id are skipped,
+// and the inline fields are hidden and disabled. "Novo transportador" is the
+// inverse. Every new control has a <label for>.
+func TestNFeEmitPageTransportSource(t *testing.T) {
+	parsed := parseAllTemplates(t)
+
+	personID := uint32(7)
+	otherID := uint32(8)
+	people := []entity_public.PersonOption{
+		{Id: &otherID, Name: "Transportadora B"},
+		{Id: &personID, Name: "Transportadora A"},
+		{Name: "Sem id"},
+	}
+
+	existingView := emitPageBaseView()
+	existingView.TransportPeople = personOptionDisplays(people, nil)
+	out := executeBlock(t, parsed, "nfe-emit.html", existingView)
+
+	selectTag := elementByID(t, out, "transportPersonId")
+	if strings.Contains(selectTag, "disabled") {
+		t.Error("the contact select must be enabled in 'Selecionar existente' mode")
+	}
+	existingSection := elementByID(t, out, "existing-transport-section")
+	if strings.Contains(existingSection, "hidden") {
+		t.Error("the contact select section must be visible in 'Selecionar existente' mode")
+	}
+	newSection := elementByID(t, out, "new-transport-section")
+	if !strings.Contains(newSection, "hidden") {
+		t.Error("the inline section must be hidden in 'Selecionar existente' mode")
+	}
+	for _, id := range transportInlineControlIDs {
+		tag := elementByID(t, out, id)
+		if !strings.Contains(tag, "disabled") {
+			t.Errorf("inline control %s must be disabled in 'Selecionar existente' mode", id)
+		}
+		if !strings.Contains(out, `for="`+id+`"`) {
+			t.Errorf("inline control %s must have a <label for>", id)
+		}
+	}
+
+	if !strings.Contains(out, `<option value="">Nenhuma transportadora</option>`) {
+		t.Error("the contact select must render the 'Nenhuma transportadora' option first")
+	}
+	if strings.Index(out, `<option value="">Nenhuma transportadora</option>`) > strings.Index(out, `<option value="7"`) {
+		t.Error("the empty option must come before the contact options")
+	}
+	if !strings.Contains(out, `<option value="7">Transportadora A</option>`) ||
+		!strings.Contains(out, `<option value="8">Transportadora B</option>`) {
+		t.Error("the contact select must list the farm contacts")
+	}
+	if strings.Contains(out, "Sem id") {
+		t.Error("contacts without an id must be skipped")
+	}
+	if !strings.Contains(out, `for="transportPersonId"`) {
+		t.Error("the contact select must have a <label for>")
+	}
+
+	newView := emitPageBaseView()
+	newView.TransportType = "new"
+	newView.TransportPeople = personOptionDisplays(people, nil)
+	out = executeBlock(t, parsed, "nfe-emit.html", newView)
+
+	if !strings.Contains(elementByID(t, out, "transportPersonId"), "disabled") {
+		t.Error("the contact select must be disabled in 'Novo transportador' mode")
+	}
+	if !strings.Contains(elementByID(t, out, "existing-transport-section"), "hidden") {
+		t.Error("the contact select section must be hidden in 'Novo transportador' mode")
+	}
+	if strings.Contains(elementByID(t, out, "new-transport-section"), "hidden") {
+		t.Error("the inline section must be visible in 'Novo transportador' mode")
+	}
+	for _, id := range transportInlineControlIDs {
+		if strings.Contains(elementByID(t, out, id), "disabled") {
+			t.Errorf("inline control %s must be enabled in 'Novo transportador' mode", id)
+		}
+	}
+
+	// The vehicle and volume fields stay enabled in both modes.
+	for _, id := range []string{"transportPlaca", "volQtd", "volEsp", "volMarca", "volPesoL", "volPesoB"} {
+		if strings.Contains(elementByID(t, out, id), "disabled") {
+			t.Errorf("%s must stay enabled in every transport source mode", id)
+		}
+	}
+}
+
+// TestNFeEmitPageRecipientSource guards the Destinatário source switch: the
+// person select is enabled only in "Selecionar existente" and the inline
+// controls only in "Novo destinatário". Both states are rendered by the
+// server.
+func TestNFeEmitPageRecipientSource(t *testing.T) {
+	parsed := parseAllTemplates(t)
+
+	view := emitPageBaseView()
+	out := executeBlock(t, parsed, "nfe-emit.html", view)
+
+	if strings.Contains(elementByID(t, out, "recipientPersonId"), "disabled") {
+		t.Error("the recipient select must be enabled in 'Selecionar existente' mode")
+	}
+	if strings.Contains(elementByID(t, out, "new-recipient-section"), "hidden") == false {
+		t.Error("the inline recipient section must be hidden in 'Selecionar existente' mode")
+	}
+	for _, id := range recipientInlineControlIDs {
+		if !strings.Contains(elementByID(t, out, id), "disabled") {
+			t.Errorf("inline recipient control %s must be disabled in 'Selecionar existente' mode", id)
+		}
+		if !strings.Contains(out, `for="`+id+`"`) {
+			t.Errorf("inline recipient control %s must have a <label for>", id)
+		}
+	}
+
+	view = emitPageBaseView()
+	view.RecipientType = "new"
+	out = executeBlock(t, parsed, "nfe-emit.html", view)
+
+	if !strings.Contains(elementByID(t, out, "recipientPersonId"), "disabled") {
+		t.Error("the recipient select must be disabled in 'Novo destinatário' mode")
+	}
+	if strings.Contains(elementByID(t, out, "new-recipient-section"), "hidden") {
+		t.Error("the inline recipient section must be visible in 'Novo destinatário' mode")
+	}
+	for _, id := range recipientInlineControlIDs {
+		if strings.Contains(elementByID(t, out, id), "disabled") {
+			t.Errorf("inline recipient control %s must be enabled in 'Novo destinatário' mode", id)
+		}
+	}
+	if !strings.Contains(out, `for="recipientPersonId"`) {
+		t.Error("the recipient select must have a <label for>")
+	}
+}
+
 // TestNFeDetachedPreviewRendersInfAdProd guards the preview round-trip on the
 // fragment side: the parsed per-item note must render into the hidden
 // items[i].infAdProd input so the confirm step re-submits exactly the
@@ -299,6 +474,69 @@ func TestNFeDetachedPreviewRendersInfAdProd(t *testing.T) {
 	}
 	if !strings.Contains(out, `name="items[1].infAdProd" value=""`) {
 		t.Errorf("preview must round-trip a blank item note as empty; got:\n%s", out)
+	}
+}
+
+// TestDetachedPreviewTransportPerson guards the preview transport round-trip:
+// a picked contact carries only the hidden contact id plus the summary line,
+// while inline data carries the inline hidden inputs as before.
+func TestDetachedPreviewTransportPerson(t *testing.T) {
+	parsed := parseAllTemplates(t)
+
+	contactView := detachedPreviewView{
+		ItemCount:      1,
+		TransportLabel: "Transportes XYZ Ltda",
+		Transport: detachedTransportFields{
+			PersonID: "42",
+			Placa:    "ABC1D23",
+		},
+		TPag:     "90",
+		CSPNonce: "test-nonce",
+	}
+	out := executeBlock(t, parsed, "nfe-detached-preview", contactView)
+
+	if !strings.Contains(out, `name="transportPersonId" value="42"`) {
+		t.Errorf("a picked contact must round-trip its id; got:\n%s", out)
+	}
+	if strings.Contains(out, `name="transportNome"`) {
+		t.Error("a picked contact must not round-trip the inline transportadora fields")
+	}
+	if !strings.Contains(out, "Transportadora:</strong> Transportes XYZ Ltda") {
+		t.Errorf("the summary must show the transportadora name; got:\n%s", out)
+	}
+	if !strings.Contains(out, `name="transportPlaca" value="ABC1D23"`) {
+		t.Error("the vehicle fields must round-trip for a picked contact")
+	}
+
+	inlineView := detachedPreviewView{
+		ItemCount:      1,
+		TransportLabel: "Carreteiro Fulano",
+		Transport: detachedTransportFields{
+			Nome:     "Carreteiro Fulano",
+			Document: "529.982.247-25",
+			UF:       "MT",
+		},
+		TPag:     "90",
+		CSPNonce: "test-nonce",
+	}
+	out = executeBlock(t, parsed, "nfe-detached-preview", inlineView)
+
+	if strings.Contains(out, `name="transportPersonId"`) {
+		t.Error("inline data must not render a transport contact id")
+	}
+	if !strings.Contains(out, `name="transportNome" value="Carreteiro Fulano"`) ||
+		!strings.Contains(out, `name="transportDocumento" value="529.982.247-25"`) ||
+		!strings.Contains(out, `name="transportUF" value="MT"`) {
+		t.Errorf("inline data must round-trip its fields; got:\n%s", out)
+	}
+	if !strings.Contains(out, "Transportadora:</strong> Carreteiro Fulano") {
+		t.Errorf("the summary must show the typed transportadora name; got:\n%s", out)
+	}
+
+	emptyView := detachedPreviewView{ItemCount: 1, TPag: "90", CSPNonce: "test-nonce"}
+	out = executeBlock(t, parsed, "nfe-detached-preview", emptyView)
+	if strings.Contains(out, "Transportadora:</strong>") {
+		t.Error("the summary must omit the transportadora line when none is informed")
 	}
 }
 

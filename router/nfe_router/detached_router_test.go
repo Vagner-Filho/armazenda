@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	entity_public "armazenda/entity/public"
 	"armazenda/model/nfe_model"
 	"armazenda/pkg/nfe/entity"
 	"armazenda/service/nfe_service"
@@ -515,6 +516,77 @@ func TestParseDetachedTransport_RejectsMalformedNumber(t *testing.T) {
 	}
 	if _, toast := parseDetachedTransport(newFormContext(t, values)); toast.Type == 0 {
 		t.Fatal("expected a warning for a non-positive volume quantity")
+	}
+}
+
+// TestParseDetachedTransport_PersonID guards the picked transportadora
+// contact parsing: blank means no contact, a positive integer is accepted, and
+// anything else is a warning with no fallback to the inline fields.
+func TestParseDetachedTransport_PersonID(t *testing.T) {
+	transport, toast := parseDetachedTransport(newFormContext(t, url.Values{
+		"transportPersonId": {""},
+	}))
+	if toast.Type != entity_public.SuccessToast {
+		t.Fatalf("blank id must not warn, got %+v", toast)
+	}
+	if transport.PersonID != nil {
+		t.Errorf("blank id must produce no contact, got %v", *transport.PersonID)
+	}
+
+	transport, toast = parseDetachedTransport(newFormContext(t, url.Values{
+		"transportPersonId": {"42"},
+	}))
+	if toast.Type != entity_public.SuccessToast {
+		t.Fatalf("valid id must not warn, got %+v", toast)
+	}
+	if transport.PersonID == nil || *transport.PersonID != 42 {
+		t.Errorf("expected person id 42, got %v", transport.PersonID)
+	}
+
+	for _, value := range []string{"abc", "0", "-1"} {
+		transport, toast = parseDetachedTransport(newFormContext(t, url.Values{
+			"transportPersonId": {value},
+		}))
+		if toast.Type != entity_public.WarningToast {
+			t.Errorf("id %q must produce a warning, got %+v", value, toast)
+		}
+		if toast.Message != "Transportadora inválida" ||
+			toast.Hint != "Selecione uma transportadora da lista" {
+			t.Errorf("id %q must carry the pt-br warning, got %+v", value, toast)
+		}
+		if transport.Nome != nil || transport.PersonID != nil {
+			t.Errorf("id %q must not fall back to the inline transport, got %+v", value, transport)
+		}
+	}
+}
+
+// TestDetachedTransportView_PersonIDRoundTrip guards the preview hidden-field
+// mapping for a picked contact: only the contact id is carried, and the
+// vehicle/volume fields survive unchanged.
+func TestDetachedTransportView_PersonIDRoundTrip(t *testing.T) {
+	personID := uint32(42)
+	placa := "ABC-1234"
+	rntc := "12345"
+	pesoL := decimal.RequireFromString("15000.500")
+	qtd := 20
+	transport := nfe_service.DetachedTransportInput{
+		PersonID: &personID,
+		Placa:    &placa,
+		RNTC:     &rntc,
+		VolQtd:   &qtd,
+		VolPesoL: &pesoL,
+	}
+
+	view := detachedTransportView(transport)
+
+	if view.PersonID != "42" {
+		t.Errorf("expected person id '42', got %q", view.PersonID)
+	}
+	if view.Nome != "" || view.Document != "" || view.UF != "" {
+		t.Error("inline transportadora fields must stay empty for a picked contact")
+	}
+	if view.Placa != placa || view.RNTC != rntc || view.VolQtd != "20" || view.VolPesoL != "15000.5" {
+		t.Errorf("vehicle and volume fields lost in round trip: %+v", view)
 	}
 }
 

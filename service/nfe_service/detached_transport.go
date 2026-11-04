@@ -2,8 +2,10 @@ package nfe_service
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
+	entity_public "armazenda/entity/public"
 	"armazenda/model/nfe_model"
 	"armazenda/pkg/nfe/entity"
 
@@ -15,6 +17,11 @@ import (
 // informed" and fall back to the existing auto-derivation. Nil pointers are
 // converted from empty form strings by the router.
 type DetachedTransportInput struct {
+	// PersonID is the farm contact that supplies the Transportadora group,
+	// resolved (and validated) before the transport group is validated and
+	// mapped. When set, it replaces the whole inline Transportadora group.
+	PersonID *uint32
+
 	// Transportadora (transporta, X03-X10)
 	Nome       *string // xNome (X06)
 	Document   *string // CPF (11 digits) or CNPJ (14 digits), auto-detected
@@ -53,6 +60,36 @@ func decPtr(p *decimal.Decimal) decimal.Decimal {
 		return decimal.Zero
 	}
 	return *p
+}
+
+// transportInputFromPerson replaces the Transportadora group of in with the
+// data of the picked contact. The Veículo and Volumes fields are copied
+// unchanged. Blank contact fields stay absent so the validation and the XML
+// mapping treat them as "not informed".
+func transportInputFromPerson(in DetachedTransportInput, person entity_public.FullPerson) DetachedTransportInput {
+	out := in
+
+	out.Nome = nonEmptyStringPtr(strings.TrimSpace(person.Name))
+	out.Document = nonEmptyStringPtr(cleanDigits(person.Document))
+	out.IE = nonEmptyStringPtr(strings.TrimSpace(person.IE))
+	out.Logradouro = nonEmptyStringPtr(strings.TrimSpace(strPtr(person.Street)))
+	out.Numero = nil
+	if person.Number != nil && *person.Number != 0 {
+		number := strconv.FormatUint(uint64(*person.Number), 10)
+		out.Numero = &number
+	}
+	out.Municipio = nonEmptyStringPtr(strings.TrimSpace(strPtr(person.City)))
+	out.UF = nonEmptyStringPtr(strings.TrimSpace(strPtr(person.State)))
+
+	return out
+}
+
+// nonEmptyStringPtr returns a pointer to value, or nil when blank.
+func nonEmptyStringPtr(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
 }
 
 // hasTransportadora reports whether any transporta group field was informed.

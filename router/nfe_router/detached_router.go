@@ -78,6 +78,11 @@ type detachedPageView struct {
 	RecipientPhone        string
 	RecipientEmail        string
 
+	// Transportadora prefill. TransportType is "existing" or "new". The
+	// transport option list reuses the same farm contacts as Recipient's.
+	TransportType   string
+	TransportPeople []personOptionDisplay
+
 	// Rascunho context (informational; never reapplied at preview/confirm).
 	HasRascunho  bool
 	RascunhoID   string
@@ -139,7 +144,11 @@ func buildDetachedPageView(farmID uint32, profile *nfe_model.DetachedProfile) de
 		UnitMeasurementOptions: entity_public.UnitMeasurementOptions,
 		HasNFEFarmConfig:       farmNFeConfig != nil,
 		RecipientType:          "existing",
-		UseDefaultTaxRates:     true,
+		// The transportadora select reuses the farm contacts already loaded
+		// for the recipient select: no extra query on render.
+		TransportType:      "existing",
+		TransportPeople:    personOptionDisplays(people, nil),
+		UseDefaultTaxRates: true,
 	}
 
 	defaultCFOP := "5101"
@@ -547,6 +556,20 @@ func formDecimalRef(c *gin.Context, name, label string) (*decimal.Decimal, *enti
 func parseDetachedTransport(c *gin.Context) (nfe_service.DetachedTransportInput, entity_public.Toast) {
 	var in nfe_service.DetachedTransportInput
 
+	// Picked transportadora contact. Blank means "no contact" (the inline
+	// group applies); anything that is not a positive integer is rejected
+	// with a warning, with no fallback to the inline fields.
+	if personIDStr := strings.TrimSpace(c.PostForm("transportPersonId")); personIDStr != "" {
+		pid, err := strconv.ParseUint(personIDStr, 10, 32)
+		if err != nil || pid == 0 {
+			return in, entity_public.GetWarningToast(
+				"Transportadora inválida",
+				"Selecione uma transportadora da lista")
+		}
+		personID := uint32(pid)
+		in.PersonID = &personID
+	}
+
 	// Transportadora
 	in.Nome = formStringRef(c, "transportNome")
 	in.Document = formStringRef(c, "transportDocumento")
@@ -674,6 +697,10 @@ type detachedPreviewView struct {
 
 	// Summary (display only)
 	RecipientLabel string
+	// TransportLabel is the transportadora name shown beside the recipient
+	// line: the picked contact's name or the typed inline name. Empty when no
+	// transportadora was informed.
+	TransportLabel string
 	TotalValue     decimal.Decimal
 	ItemCount      int
 
@@ -765,6 +792,11 @@ func detachedPreviewItems(parsed []nfe_service.DetachedItemInput) []detachedPrev
 // detachedTransportFields is the hidden-field representation of the transport
 // (MOC Grupo X) section of the detached form.
 type detachedTransportFields struct {
+	// PersonID is the picked transportadora contact; when set, the inline
+	// Transportadora fields are not round-tripped (the confirm step re-resolves
+	// the contact).
+	PersonID string
+
 	// Transportadora (transporta)
 	Nome       string
 	Document   string
@@ -792,6 +824,7 @@ type detachedTransportFields struct {
 // of the transport section is unit-testable without the NFe model singleton.
 func detachedTransportView(transport nfe_service.DetachedTransportInput) detachedTransportFields {
 	return detachedTransportFields{
+		PersonID:   uint32PtrString(transport.PersonID),
 		Nome:       safePtrString(transport.Nome),
 		Document:   safePtrString(transport.Document),
 		IE:         safePtrString(transport.IE),
@@ -841,12 +874,23 @@ func buildDetachedPreviewViewData(farmID uint32, form detachedFormData, pdfBytes
 		}
 	}
 
+	transportLabel := ""
+	if form.Transport.PersonID != nil {
+		transportLabel = "Transportadora selecionada"
+		if person, err := person_model.GetPersonModel().GetFullPersonById(*form.Transport.PersonID); err == nil {
+			transportLabel = person.Name
+		}
+	} else {
+		transportLabel = safePtrString(form.Transport.Nome)
+	}
+
 	view := detachedPreviewView{
 		PDFBase64:             base64.StdEncoding.EncodeToString(pdfBytes),
 		Serie:                 serie,
 		Environment:           environment,
 		CSPNonce:              nonce,
 		RecipientLabel:        recipientLabel,
+		TransportLabel:        transportLabel,
 		TotalValue:            totalValue,
 		ItemCount:             len(items),
 		PersonID:              uint32PtrString(form.Recipient.PersonID),

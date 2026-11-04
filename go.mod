@@ -16,7 +16,7 @@ require (
 	github.com/russellhaering/goxmldsig v1.6.0
 	github.com/shopspring/decimal v1.4.0
 	github.com/signintech/gopdf v0.36.1
-	github.com/stripe/stripe-go/v85 v85.0.0
+	github.com/stripe/stripe-go/v87 v87.0.0
 	golang.org/x/crypto v0.37.0
 	golang.org/x/oauth2 v0.34.0
 	software.sslmate.com/src/go-pkcs12 v0.7.1

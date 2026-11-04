@@ -1,19 +1,24 @@
 package entry_router
 
 import (
+	"encoding/base64"
+	"fmt"
+	"html/template"
+	"net/http"
+	"strconv"
+
 	entity_public "armazenda/entity/public"
 	"armazenda/model/crop_model"
 	"armazenda/model/entry_model"
 	"armazenda/model/farm_config_model"
+	"armazenda/model/farm_logo_model"
 	"armazenda/model/humidity_progression_model"
 	"armazenda/model/person_model"
 	"armazenda/model/product_model"
+	"armazenda/pkg/nfe/config"
 	"armazenda/service/entry_service"
 	"armazenda/service/user_service"
 	entry_view "armazenda/view/entry"
-	"fmt"
-	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -315,7 +320,30 @@ func getEntryPdf(c *gin.Context) {
 		c.Status(http.StatusNoContent)
 		return
 	}
-	c.HTML(200, "entry-pdf", entryPdf)
+
+	logoURI := ""
+	entry, entryErr := entry_service.GetEntry(uint32(id))
+	if entryErr == nil {
+		logoBytes, _, _ := farm_logo_model.GetFarmLogoModel().GetFarmLogo(entry.Farm)
+		if len(logoBytes) == 0 {
+			if b, readErr := config.DefaultLogoFS.ReadFile("logo_with_name.jpeg"); readErr == nil {
+				logoBytes = b
+			}
+		}
+		if len(logoBytes) > 0 {
+			mime := "image/jpeg"
+			if len(logoBytes) >= 4 && logoBytes[0] == 0x89 && logoBytes[1] == 0x50 && logoBytes[2] == 0x4e && logoBytes[3] == 0x47 {
+				mime = "image/png"
+			}
+			logoURI = "data:" + mime + ";base64," + base64.StdEncoding.EncodeToString(logoBytes)
+		}
+	}
+
+	type entryPdfView struct {
+		entity_public.EntryPdf
+		LogoDataURI template.URL
+	}
+	c.HTML(200, "entry-pdf", entryPdfView{EntryPdf: *entryPdf, LogoDataURI: template.URL(logoURI)})
 }
 
 func getEntryDraftForm(c *gin.Context) {

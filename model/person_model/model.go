@@ -330,6 +330,21 @@ func handleInsertError(err error) (entity_public.PersonDisplay, *model_error.Mod
 	return entity_public.PersonDisplay{}, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
 }
 
+// PersonBelongsToFarm reports whether the person belongs to the given farm.
+// It is the tenancy guard used before a contact is resolved into an NF-e
+// group: a contact of another farm must never leak into a preview or an
+// emission.
+func (pm *PersonModel) PersonBelongsToFarm(personID, farmID uint32) (bool, *model_error.ModelError) {
+	var exists bool
+	err := pm.pool.QueryRow(context.Background(), `
+		SELECT EXISTS (SELECT 1 FROM person WHERE id = @id AND farm = @farm)
+	`, pgx.NamedArgs{"id": personID, "farm": farmID}).Scan(&exists)
+	if err != nil {
+		return false, &model_error.ModelError{Message: err.Error(), IsServerErr: true}
+	}
+	return exists, nil
+}
+
 func (bm *PersonModel) GetPeopleByFarm(farm uint32) ([]entity_public.PersonOption, *model_error.ModelError) {
 	rows, queryErr := bm.pool.Query(context.Background(), `
 		SELECT result.id, result.name, COALESCE(result.humidity_progression_id, dpc.humidity_progression_id) AS humidity_progression_id, COALESCE(result.entry_soy_discount, dpc.entry_soy_discount) AS entry_soy_discount, COALESCE(result.entry_corn_discount, dpc.entry_corn_discount) AS entry_corn_discount FROM (

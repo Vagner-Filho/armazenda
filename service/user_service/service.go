@@ -20,7 +20,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/shopspring/decimal"
-	"github.com/stripe/stripe-go/v85"
+	"github.com/stripe/stripe-go/v87"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"golang.org/x/oauth2/microsoft"

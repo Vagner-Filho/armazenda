@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	entity_public "armazenda/entity/public"
 	"armazenda/pkg/nfe/defaults"
 	"armazenda/pkg/nfe/entity"
 
@@ -332,6 +333,226 @@ func TestMapDetachedTransport_VolumesUserBlockWithFallbacks(t *testing.T) {
 	// Blank pesoB falls back to the item sums.
 	if !vol.PesoB.Equal(totalGross) {
 		t.Errorf("blank pesoB must fall back to the item sum, got %s", vol.PesoB)
+	}
+}
+
+// TestTransportInputFromPerson_NaturalPersonMapsCPF verifies the F3 mapping
+// for a natural person: name, CPF (digits only), IE and the full address; the
+// house number is carried as text.
+func TestTransportInputFromPerson_NaturalPersonMapsCPF(t *testing.T) {
+	street := "Rodovia BR-163"
+	number := uint32(12)
+	city := "Sorriso"
+	state := "MT"
+	person := entity_public.FullPerson{
+		Type:     1,
+		Name:     "Carreteiro Fulano",
+		Document: "529.982.247-25",
+		IE:       "ISENTO",
+		Street:   &street,
+		Number:   &number,
+		City:     &city,
+		State:    &state,
+	}
+
+	got := transportInputFromPerson(DetachedTransportInput{}, person)
+
+	if got.Nome == nil || *got.Nome != "Carreteiro Fulano" {
+		t.Errorf("Nome must come from the contact name, got %v", got.Nome)
+	}
+	if got.Document == nil || *got.Document != "52998224725" {
+		t.Errorf("Document must be the CPF reduced to digits, got %v", got.Document)
+	}
+	if got.IE == nil || *got.IE != "ISENTO" {
+		t.Errorf("IE must come from the contact IE, got %v", got.IE)
+	}
+	if got.Logradouro == nil || *got.Logradouro != street {
+		t.Errorf("Logradouro must come from the contact street, got %v", got.Logradouro)
+	}
+	if got.Numero == nil || *got.Numero != "12" {
+		t.Errorf("Numero must be the contact number as text, got %v", got.Numero)
+	}
+	if got.Municipio == nil || *got.Municipio != city {
+		t.Errorf("Municipio must come from the contact city, got %v", got.Municipio)
+	}
+	if got.UF == nil || *got.UF != state {
+		t.Errorf("UF must come from the contact state, got %v", got.UF)
+	}
+
+	// The mapped document is a valid CPF and the resolved group passes the
+	// transport validation.
+	if errs := validateDetachedTransport(got, "", ""); len(errs) > 0 {
+		t.Errorf("mapped contact must pass the transport validation, got %v", errs)
+	}
+}
+
+// TestTransportInputFromPerson_LegalPersonBlankFieldsStayAbsent verifies that
+// a legal person maps the CNPJ and that blank optional contact fields stay
+// absent (nil) instead of becoming empty strings. A zero house number is
+// treated as absent.
+func TestTransportInputFromPerson_LegalPersonBlankFieldsStayAbsent(t *testing.T) {
+	zero := uint32(0)
+	person := entity_public.FullPerson{
+		Type:     2,
+		Name:     "Transportes XYZ Ltda",
+		Document: "11.222.333/0001-81",
+		Number:   &zero,
+	}
+
+	got := transportInputFromPerson(DetachedTransportInput{}, person)
+
+	if got.Nome == nil || *got.Nome != "Transportes XYZ Ltda" {
+		t.Errorf("Nome must come from the contact name, got %v", got.Nome)
+	}
+	if got.Document == nil || *got.Document != "11222333000181" {
+		t.Errorf("Document must be the CNPJ reduced to digits, got %v", got.Document)
+	}
+	for name, field := range map[string]*string{
+		"IE":         got.IE,
+		"Logradouro": got.Logradouro,
+		"Numero":     got.Numero,
+		"Municipio":  got.Municipio,
+		"UF":         got.UF,
+	} {
+		if field != nil {
+			t.Errorf("%s must stay absent when the contact field is blank, got %q", name, *field)
+		}
+	}
+
+	if errs := validateDetachedTransport(got, "", ""); len(errs) > 0 {
+		t.Errorf("mapped contact must pass the transport validation, got %v", errs)
+	}
+}
+
+// TestTransportInputFromPerson_ReplacesOnlyTransportadora guards the
+// precedence rule: the contact replaces the whole Transportadora group while
+// the Veículo and Volumes fields are preserved.
+func TestTransportInputFromPerson_ReplacesOnlyTransportadora(t *testing.T) {
+	inlineName := "Transportadora Digitada"
+	inlineDocument := "529.982.247-25"
+	inlineStreet := "Rua Antiga"
+	inlineNumber := "99"
+	inlineCity := "Cuiabá"
+	inlineUF := "SP"
+	placa := "abc1d23"
+	placaUF := "MT"
+	rntc := "12345678901234567890"
+	qtd := 4
+	esp := "Big Bag"
+	marca := "MarcaZ"
+	pesoL := decimal.RequireFromString("1000")
+	pesoB := decimal.RequireFromString("1010")
+
+	in := DetachedTransportInput{
+		Nome:       &inlineName,
+		Document:   &inlineDocument,
+		Logradouro: &inlineStreet,
+		Numero:     &inlineNumber,
+		Municipio:  &inlineCity,
+		UF:         &inlineUF,
+		Placa:      &placa,
+		PlacaUF:    &placaUF,
+		RNTC:       &rntc,
+		VolQtd:     &qtd,
+		VolEsp:     &esp,
+		VolMarca:   &marca,
+		VolPesoL:   &pesoL,
+		VolPesoB:   &pesoB,
+	}
+
+	name := "Transportadora Contato"
+	document := "11222333000181"
+	city := "Sorriso"
+	state := "MT"
+	person := entity_public.FullPerson{
+		Name:     name,
+		Document: document,
+		City:     &city,
+		State:    &state,
+	}
+
+	got := transportInputFromPerson(in, person)
+
+	if got.Nome == nil || *got.Nome != name {
+		t.Errorf("the contact must replace the inline name, got %v", got.Nome)
+	}
+	if got.Document == nil || *got.Document != document {
+		t.Errorf("the contact must replace the inline document, got %v", got.Document)
+	}
+	if got.Logradouro != nil {
+		t.Errorf("an absent contact street must clear the inline street, got %q", *got.Logradouro)
+	}
+	if got.Numero != nil {
+		t.Errorf("an absent contact number must clear the inline number, got %q", *got.Numero)
+	}
+	if got.Municipio == nil || *got.Municipio != city {
+		t.Errorf("the contact must replace the inline city, got %v", got.Municipio)
+	}
+	if got.UF == nil || *got.UF != state {
+		t.Errorf("the contact must replace the inline UF, got %v", got.UF)
+	}
+
+	// Veículo and Volumes are untouched.
+	if got.Placa == nil || *got.Placa != placa || got.PlacaUF == nil || *got.PlacaUF != placaUF ||
+		got.RNTC == nil || *got.RNTC != rntc {
+		t.Errorf("vehicle fields must be preserved, got %+v", got)
+	}
+	if got.VolQtd == nil || *got.VolQtd != qtd || got.VolEsp == nil || *got.VolEsp != esp ||
+		got.VolMarca == nil || *got.VolMarca != marca ||
+		got.VolPesoL == nil || !got.VolPesoL.Equal(pesoL) ||
+		got.VolPesoB == nil || !got.VolPesoB.Equal(pesoB) {
+		t.Errorf("volume fields must be preserved, got %+v", got)
+	}
+}
+
+// TestResolvedTransportValidation verifies that a mapped contact still goes
+// through the existing transport validation: a wrong CNPJ check digit, an IE
+// without a UF and an over-long name are all rejected with the existing
+// messages.
+func TestResolvedTransportValidation(t *testing.T) {
+	ie := "123456789"
+	state := "MT"
+	cases := []struct {
+		name   string
+		person entity_public.FullPerson
+		want   string
+	}{
+		{
+			name:   "bad CNPJ check digit",
+			person: entity_public.FullPerson{Name: "Transportes XYZ Ltda", Document: "11222333000180"},
+			want:   "CNPJ do transportador inválido",
+		},
+		{
+			name:   "IE without UF",
+			person: entity_public.FullPerson{Name: "Transportes XYZ Ltda", Document: "11222333000181", IE: ie},
+			want:   "Informe a UF do transportador quando a inscrição estadual for informada",
+		},
+		{
+			name: "name over 60 characters",
+			person: entity_public.FullPerson{
+				Name:     strings.Repeat("A", 61),
+				Document: "11222333000181",
+				State:    &state,
+			},
+			want: "Nome do transportador excede 60 caracteres",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			mapped := transportInputFromPerson(DetachedTransportInput{}, tc.person)
+			errs := validateDetachedTransport(mapped, "", "")
+			found := false
+			for _, err := range errs {
+				if err == tc.want {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("expected %q, got %v", tc.want, errs)
+			}
+		})
 	}
 }
 

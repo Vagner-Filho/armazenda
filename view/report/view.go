@@ -1,17 +1,22 @@
 package report_view
 
 import (
+	"encoding/base64"
+	"html/template"
+	"reflect"
+	"strconv"
+	"time"
+
 	entity_public "armazenda/entity/public"
 	"armazenda/model/farm_config_model"
+	"armazenda/model/farm_logo_model"
+	"armazenda/pkg/nfe/config"
 	field_service "armazenda/service/field"
 	person_service "armazenda/service/person"
 	product_service "armazenda/service/product"
 	"armazenda/service/report_service"
 	"armazenda/service/vehicle_service"
 	"armazenda/view"
-	"reflect"
-	"strconv"
-	"time"
 
 	"github.com/shopspring/decimal"
 )
@@ -155,6 +160,7 @@ type FullReportView struct {
 	RequestedAt    time.Time `time_format:"2006-01-02T15:04"`
 	AppliedFilters map[string]string
 	FarmConfig     *entity_public.Farm
+	LogoDataURI    template.URL
 }
 
 func formatDec(d decimal.Decimal, places int32) string {
@@ -233,6 +239,23 @@ func GetFullReport(rf entity_public.ReportFilter, farm uint32) (FullReportView, 
 
 	fcModel := farm_config_model.GetFarmConfigModel()
 	farmConfig, errConfig := fcModel.GetFarmConfig(farm)
+
+	// Attach farm logo (or Armazenda default) as a data URI.
+	logoBytes, _, _ := farm_logo_model.GetFarmLogoModel().GetFarmLogo(farm)
+	if len(logoBytes) == 0 {
+		if b, readErr := config.DefaultLogoFS.ReadFile("logo_with_name.jpeg"); readErr == nil {
+			logoBytes = b
+		}
+	}
+	logoURI := template.URL("")
+	if len(logoBytes) > 0 {
+		mime := "image/jpeg"
+		if len(logoBytes) >= 4 && logoBytes[0] == 0x89 && logoBytes[1] == 0x50 && logoBytes[2] == 0x4e && logoBytes[3] == 0x47 {
+			mime = "image/png"
+		}
+		logoURI = template.URL("data:" + mime + ";base64," + base64.StdEncoding.EncodeToString(logoBytes))
+	}
+
 	if errConfig != nil {
 		toast := entity_public.GetInfoToast("Falha ao obter configuração da fazenda", "")
 		return FullReportView{
@@ -242,6 +265,7 @@ func GetFullReport(rf entity_public.ReportFilter, farm uint32) (FullReportView, 
 			Balance:        balance,
 			RequestedAt:    time.Now(),
 			AppliedFilters: appliedFilters,
+			LogoDataURI:    logoURI,
 		}, &toast
 	}
 
@@ -253,5 +277,6 @@ func GetFullReport(rf entity_public.ReportFilter, farm uint32) (FullReportView, 
 		RequestedAt:    time.Now(),
 		AppliedFilters: appliedFilters,
 		FarmConfig:     farmConfig,
+		LogoDataURI:    logoURI,
 	}, toast
 }

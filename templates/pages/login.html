@@ -34,15 +34,18 @@
       <div class="blob blob-2"></div>
       <div class="blob blob-3"></div>
     </div>
-    <main class="login-card-wrapper">
+    <main class="login-card-wrapper" id="login-card">
       <h2 class="login-title">Login</h2>
-      <form hx-post="/login" hx-target="#error-indicator-space" class="login-form">
+      <form hx-post="/login" hx-target="#error-indicator-space" hx-indicator="#login-card" class="login-form">
         {{ template "login-cpf-field" . }}
         <div class="login-field">
           <label for="password" class="login-label">Senha</label>
           <input type="password" id="password" name="passwd" required aria-placeholder="senha" placeholder="*********" class="login-input">
         </div>
-        <button type="submit" class="login-btn-primary">Entrar</button>
+        <div class="login-btn-container" id="login-btn-container">
+          <button type="submit" class="login-btn-primary">Entrar</button>
+          <span class="htmx-indicator css-spinner" role="status" aria-label="Carregando..."></span>
+        </div>
       </form>
       <div class="login-social-container">
         <a href="/auth/google/login" class="login-btn-social">
@@ -380,6 +383,43 @@
   .login-error-space {
     display: flex;
     justify-content: center;
+  }
+
+  .login-btn-container {
+    position: relative;
+    min-height: 3rem;
+  }
+
+  .login-card-wrapper .css-spinner {
+    display: none;
+  }
+
+  .login-card-wrapper.htmx-request .login-btn-container button {
+    visibility: hidden;
+  }
+
+  .login-card-wrapper.htmx-request .css-spinner {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: -1rem 0 0 -1rem;
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid rgba(255, 255, 255, 0.25);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: css-spin 0.8s linear infinite;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
+  }
+
+  @keyframes css-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .login-card-wrapper.htmx-request .login-social-container {
+    visibility: hidden;
+    pointer-events: none;
   }
   </style>
 </html>

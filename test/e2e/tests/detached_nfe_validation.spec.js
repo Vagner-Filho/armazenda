@@ -19,6 +19,8 @@ import { test, expect } from '@playwright/test';
 import { faker } from '@faker-js/faker';
 import { execSync } from 'child_process';
 import { login } from '../utils/auth';
+import { createContact, deleteContact } from '../utils/contact-helpers';
+import { generateCNPJ } from '../utils/document-helpers';
 
 const DB = {
   host: 'localhost',
@@ -359,5 +361,111 @@ test.describe('Detached NF-e emission form stepper', () => {
     await page.locator('[data-test-id="preview-detached-nfe"]').evaluate((el) => el.click());
     await previewRequest;
     expect(previews).toHaveLength(1);
+  });
+
+  test('switching from a picked contact submits the typed recipient', async ({ page, browserName }) => {
+    const suffix = `${Date.now().toString(36)}`;
+    const contactID = createContact({
+      farmId: 1,
+      kind: 'natural',
+      name: `Destinatário Contato ${suffix}`,
+      document: '52998224725',
+    });
+    const typedName = `Destinatário Digitado ${suffix}`;
+
+    try {
+      await login(page, browserName);
+      await gotoApp(page, '/nfe/emitir');
+      // Contacts are rendered server-side on the first render.
+      await page.reload();
+
+      // Pick the contact, then switch to "Novo destinatário" and type another
+      // recipient. The picked contact must not be submitted any more.
+      await page.selectOption('#recipientPersonId', String(contactID));
+      await page.locator('input[name="recipientType"][value="new"]').check({ force: true });
+      await expect(page.locator('#recipientPersonId')).toBeDisabled();
+      await page.fill('#recipientName', typedName);
+      await page.fill('#recipientDocument', generateCNPJ());
+      await page.fill('#recipientStreet', 'Rua Digitada');
+      await page.fill('#recipientNumber', '10');
+      await page.fill('#recipientNeighborhood', 'Centro');
+      await page.fill('#recipientCity', 'Cuiabá');
+      await page.fill('#recipientState', 'MT');
+      await page.fill('#recipientCEP', '78000000');
+
+      await goToStep(page, 'transac');
+      await fillFirstItem(page);
+      await goToStep(page, 'trib');
+
+      const previewRequest = page.waitForRequest(
+        (r) => r.url().includes('/nfe/emitir/preview') && r.method() === 'POST'
+      );
+      await page.locator('[data-test-id="preview-detached-nfe"]').evaluate((el) => el.click());
+      const request = await previewRequest;
+      const payload = new URLSearchParams(request.postData() || '');
+
+      // Regression: before the fix the stale contact id was still submitted
+      // and parseDetachedRecipient preferred it over the typed fields.
+      expect(payload.has('recipientPersonId')).toBe(false);
+      expect(payload.get('recipientName')).toBe(typedName);
+    } finally {
+      deleteContact(contactID);
+    }
+  });
+
+  test('a recipient from another farm is rejected at preview', async ({ page, browserName }) => {
+    const suffix = `${Date.now().toString(36)}`;
+    const inscricao = `7${suffix}`.slice(0, 12).padEnd(12, '0');
+    db(`INSERT INTO farm (inscricao_estadual, uf) VALUES ('${inscricao}', 'MT') ON CONFLICT (inscricao_estadual) DO NOTHING`);
+    const otherFarm = Number(db(`SELECT id FROM farm WHERE inscricao_estadual = '${inscricao}'`));
+    const foreignContact = createContact({
+      farmId: otherFarm,
+      kind: 'natural',
+      name: `Destinatário Outra Fazenda ${suffix}`,
+      document: '52998224725',
+    });
+
+    try {
+      await login(page, browserName);
+      await gotoApp(page, '/nfe/emitir');
+
+      // The foreign contact is not one of this farm's options; inject it as a
+      // crafted submission.
+      await page.evaluate(({ id, label }) => {
+        const select = document.getElementById('recipientPersonId');
+        const option = document.createElement('option');
+        option.value = String(id);
+        option.textContent = label;
+        select.appendChild(option);
+        select.value = String(id);
+      }, { id: foreignContact, label: 'Destinatário estrangeiro' });
+
+      await goToStep(page, 'transac');
+      await fillFirstItem(page);
+      await goToStep(page, 'trib');
+
+      const previewResponse = page.waitForResponse(
+        (r) => r.url().includes('/nfe/emitir/preview') && r.request().method() === 'POST'
+      );
+      await page.locator('[data-test-id="preview-detached-nfe"]').evaluate((el) => el.click());
+      const preview = await previewResponse;
+
+      // The e2e fixture carries empty certificate bytes and nfeCertGate
+      // refuses the preview before the farm check (pre-existing environment
+      // limitation). The service-level DB-gated test covers the rejection.
+      const trigger = preview.headers()['hx-trigger'] || '';
+      test.skip(
+        preview.status() === 400 && trigger.includes('Certificado digital'),
+        'environment has no NF-e certificate (nfeCertGate refuses the preview before the farm check)'
+      );
+
+      expect(preview.status()).toBe(400);
+      expect(trigger).toContain('Destinatário inválido');
+      await expect(page.locator('#nfe-detached-preview-panel')).toHaveCount(0);
+      expect(db(`SELECT COUNT(*) FROM person WHERE id = ${foreignContact}`)).toBe('1');
+    } finally {
+      deleteContact(foreignContact);
+      db(`DELETE FROM farm WHERE id = ${otherFarm}`);
+    }
   });
 });

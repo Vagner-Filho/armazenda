@@ -69,7 +69,7 @@ func TestDANFEGenerator_Generate_WithLogo(t *testing.T) {
 	g := service.NewDANFEGenerator()
 
 	data := fullDANFEData()
-	logoBytes, _ := config.DefaultLogoFS.ReadFile("default_logo.png")
+	logoBytes, _ := config.DefaultLogoFS.ReadFile("logo_with_name.jpeg")
 	data.LogoData = logoBytes
 
 	pdfBytes, err := g.Generate(data)

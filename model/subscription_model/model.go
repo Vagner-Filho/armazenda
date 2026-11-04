@@ -38,7 +38,7 @@ func GetSubscriptionModel() *subscriptionModel {
 }
 
 func (sm *subscriptionModel) CreatePendingRegistration(user entity_public.NewUser, stripeSessionID string) (uint32, error) {
-	enc, encErr := bcrypt.GenerateFromPassword([]byte(user.Passwd), 10)
+	enc, encErr := bcrypt.GenerateFromPassword([]byte(user.Passwd), 15)
 	if encErr != nil {
 		return 0, encErr
 	}
@@ -74,7 +74,7 @@ func (sm *subscriptionModel) CreatePendingRegistration(user entity_public.NewUse
 
 func (sm *subscriptionModel) GetPendingRegistrationBySessionID(sessionID string) (*entity_public.PendingRegistration, error) {
 	rows, err := sm.pool.Query(context.Background(),
-		`SELECT id, email, name, passwd, cpf, inscricao_estadual, role, stripe_checkout_session_id, created_at, owner_document, owner_document_type, additional_ies, stripe_price_id, uf
+		`SELECT id, email, name, passwd, cpf, inscricao_estadual, role, stripe_checkout_session_id, created_at, owner_document, owner_document_type, additional_ies, stripe_price_id, uf, farmer_name
 		 FROM pending_registration
 		 WHERE stripe_checkout_session_id = @session_id`,
 		pgx.NamedArgs{"session_id": sessionID})
@@ -93,7 +93,7 @@ func (sm *subscriptionModel) GetPendingRegistrationBySessionID(sessionID string)
 
 func (sm *subscriptionModel) GetPendingRegistrationByID(id uint32) (*entity_public.PendingRegistration, error) {
 	rows, err := sm.pool.Query(context.Background(),
-		`SELECT id, email, name, passwd, cpf, inscricao_estadual, role, stripe_checkout_session_id, created_at, owner_document, owner_document_type, additional_ies, stripe_price_id, uf
+		`SELECT id, email, name, passwd, cpf, inscricao_estadual, role, stripe_checkout_session_id, created_at, owner_document, owner_document_type, additional_ies, stripe_price_id, uf, farmer_name
 		 FROM pending_registration
 		 WHERE id = @id`,
 		pgx.NamedArgs{"id": id})
@@ -112,7 +112,7 @@ func (sm *subscriptionModel) GetPendingRegistrationByID(id uint32) (*entity_publ
 
 func (sm *subscriptionModel) GetPendingRegistrationByEmail(email string) (*entity_public.PendingRegistration, error) {
 	rows, err := sm.pool.Query(context.Background(),
-		`SELECT id, email, name, passwd, cpf, inscricao_estadual, role, stripe_checkout_session_id, created_at, owner_document, owner_document_type, additional_ies, stripe_price_id, uf
+		`SELECT id, email, name, passwd, cpf, inscricao_estadual, role, stripe_checkout_session_id, created_at, owner_document, owner_document_type, additional_ies, stripe_price_id, uf, farmer_name
 		 FROM pending_registration
 		 WHERE email = @email`,
 		pgx.NamedArgs{"email": email})
@@ -131,7 +131,7 @@ func (sm *subscriptionModel) GetPendingRegistrationByEmail(email string) (*entit
 
 func (sm *subscriptionModel) GetPendingRegistrationByCpf(cpf string) (*entity_public.PendingRegistration, error) {
 	rows, err := sm.pool.Query(context.Background(),
-		`SELECT id, email, name, passwd, cpf, inscricao_estadual, role, stripe_checkout_session_id, created_at, owner_document, owner_document_type, additional_ies, stripe_price_id, uf
+		`SELECT id, email, name, passwd, cpf, inscricao_estadual, role, stripe_checkout_session_id, created_at, owner_document, owner_document_type, additional_ies, stripe_price_id, uf, farmer_name
 		 FROM pending_registration
 		 WHERE cpf = @cpf`,
 		pgx.NamedArgs{"cpf": cpf})
@@ -180,12 +180,13 @@ func (sm *subscriptionModel) CreateFarmAndUserFromPending(pending entity_public.
 	for _, ie := range allIEs {
 		var fid uint32
 		createFarmErr := tx.QueryRow(ctx,
-			`INSERT INTO farm (inscricao_estadual, farmer_name)
-			 VALUES (@inscricao_estadual, @farmer_name)
+			`INSERT INTO farm (inscricao_estadual, farmer_name, uf)
+			 VALUES (@inscricao_estadual, @farmer_name, @uf)
 			 RETURNING id`,
 			pgx.NamedArgs{
 				"inscricao_estadual": ie,
 				"farmer_name":        pending.FarmerName,
+				"uf":                 pending.UF,
 			}).Scan(&fid)
 		if createFarmErr != nil {
 			return 0, nil, createFarmErr
@@ -260,12 +261,13 @@ func (sm *subscriptionModel) CompletePendingRegistrationFromLogin(pending entity
 
 	for _, ie := range allIEs {
 		farmRow := tx.QueryRow(ctx,
-			`INSERT INTO farm (inscricao_estadual, uf)
-			 VALUES (@inscricao_estadual, @uf) RETURNING id
+			`INSERT INTO farm (inscricao_estadual, farmer_name, uf)
+			 VALUES (@inscricao_estadual, @farmer_name, @uf) RETURNING id
 			 ON CONFLICT (inscricao_estadual) DO NOTHING`,
 			pgx.NamedArgs{
 				"inscricao_estadual": ie,
 				"farmer_name":        pending.FarmerName,
+				"uf":                 pending.UF,
 			},
 		)
 		var farmId int

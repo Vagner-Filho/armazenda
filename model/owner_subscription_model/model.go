@@ -13,8 +13,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/stripe/stripe-go/v85"
-	"github.com/stripe/stripe-go/v85/product"
+	"github.com/stripe/stripe-go/v87"
+	"github.com/stripe/stripe-go/v87/product"
 )
 
 type ownerSubscriptionModel struct {

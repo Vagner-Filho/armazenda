@@ -86,7 +86,7 @@ func (um *userModel) GetUserByEmail(email string) (*entity_public.User, error) {
 }
 
 func (um *userModel) CreateUserApproval(user entity_public.NewUser, farmId uint32) (bool, error) {
-	enc, encErr := bcrypt.GenerateFromPassword([]byte(user.Passwd), 10)
+	enc, encErr := bcrypt.GenerateFromPassword([]byte(user.Passwd), 15)
 
 	if encErr != nil {
 		return false, encErr

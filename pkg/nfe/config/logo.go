@@ -2,5 +2,5 @@ package config
 
 import "embed"
 
-//go:embed default_logo.png
+//go:embed logo_with_name.jpeg
 var DefaultLogoFS embed.FS

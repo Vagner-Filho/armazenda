@@ -210,6 +210,15 @@ func (s *NFeService) prepareDetachedBuildData(input DetachedInvoiceInput, dryRun
 		return empty, entity_public.GetWarningToast("Fazenda não encontrada", "complete o cadastro da fazenda")
 	}
 
+	// Resolve the picked transportadora contact before the recipient branch,
+	// so a cross-farm contact is refused before any write and the resolved
+	// group is the one validated and mapped below. It is read-only.
+	transportInput, transportToast := s.resolveTransportContact(input)
+	if transportToast.Type == entity_public.ErrorToast || transportToast.Type == entity_public.WarningToast {
+		return empty, transportToast
+	}
+	input.Transport = transportInput
+
 	// Resolve or create recipient
 	recipientID, recipient, toast := s.resolveOrCreateRecipient(input.Recipient, input.FarmID, nfeModel, dryRun)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
@@ -478,6 +487,37 @@ func (s *NFeService) BuildDetachedInvoice(input DetachedInvoiceInput) (DetachedI
 	)
 }
 
+// resolveTransportContact resolves the picked transportadora contact into the
+// Transportadora group. With no contact it returns the parsed input unchanged.
+// The contact must belong to the request's farm; it replaces the whole inline
+// Transportadora group (Veículo and Volumes are preserved). Read-only: no
+// person row is created and the invoice is not linked to the contact.
+func (s *NFeService) resolveTransportContact(input DetachedInvoiceInput) (DetachedTransportInput, entity_public.Toast) {
+	if input.Transport.PersonID == nil {
+		return input.Transport, entity_public.Toast{}
+	}
+
+	pModel := person_model.GetPersonModel()
+	belongs, farmErr := pModel.PersonBelongsToFarm(*input.Transport.PersonID, input.FarmID)
+	if farmErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("PersonBelongsToFarm (transport) error: %v", farmErr.Error()))
+		return input.Transport, entity_public.GetErrorToast("Falha ao buscar transportadora", "")
+	}
+	if !belongs {
+		return input.Transport, entity_public.GetWarningToast(
+			"Transportadora inválida",
+			"A transportadora selecionada não pertence à sua fazenda")
+	}
+
+	person, personErr := pModel.GetFullPersonById(*input.Transport.PersonID)
+	if personErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("GetFullPersonById (transport) error: %v", personErr.Error()))
+		return input.Transport, entity_public.GetErrorToast("Falha ao buscar transportadora", "")
+	}
+
+	return transportInputFromPerson(input.Transport, person), entity_public.Toast{}
+}
+
 // resolveOrCreateRecipient resolves an existing recipient or maps a new
 // inline recipient. When dryRun is false the inline recipient is also
 // persisted as a person row; when true (preview) only the mapping runs and
@@ -486,6 +526,16 @@ func (s *NFeService) resolveOrCreateRecipient(input DetachedRecipient, farmID ui
 	// If PersonID is set, fetch existing person
 	if input.PersonID != nil {
 		pModel := person_model.GetPersonModel()
+		belongs, farmErr := pModel.PersonBelongsToFarm(*input.PersonID, farmID)
+		if farmErr != nil {
+			model_error.GetLoggerModel().Log(fmt.Sprintf("PersonBelongsToFarm error: %v", farmErr.Error()))
+			return 0, entity.RecipientData{}, entity_public.GetErrorToast("Falha ao buscar destinatário", "")
+		}
+		if !belongs {
+			return 0, entity.RecipientData{}, entity_public.GetWarningToast(
+				"Destinatário inválido",
+				"O destinatário selecionado não pertence à sua fazenda")
+		}
 		person, personErr := pModel.GetFullPersonById(*input.PersonID)
 		if personErr != nil {
 			model_error.GetLoggerModel().Log(fmt.Sprintf("GetFullPersonById error: %v", personErr.Error()))

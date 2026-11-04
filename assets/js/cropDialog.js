@@ -46,7 +46,11 @@ function cropDialogSetup() {
 
                 const name = form.querySelector('input#crop-name')?.value || '';
                 const grain = form.querySelector('select#grain-selector')?.selectedOptions[0]?.textContent || '';
-                const startDate = form.querySelector('input#start-date')?.value || '';
+                const rawStartDate = form.querySelector('input#start-date')?.value || '';
+                const startDateParts = rawStartDate ? rawStartDate.split('-') : [];
+                const startDate = startDateParts.length === 3
+                    ? `${startDateParts[2]}/${startDateParts[1]}/${startDateParts[0]}`
+                    : rawStartDate;
 
                 const result = await window.Swal.fire({
                     title: 'Confirmar cadastro de safra',

@@ -71,6 +71,7 @@
                 <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 pb-2 mb-2 w-full">
                     Destinatário
                 </legend>
+                {{ $recipientIsNew := eq .RecipientType "new" }}
 
                 <div class="flex gap-4 mb-4">
                     <label class="flex items-center gap-2 cursor-pointer">
@@ -86,7 +87,7 @@
                 <!-- Existing recipient selection -->
                 <div id="existing-recipient-section" {{ if eq .RecipientType "new" }}class="hidden"{{ end }}>
                     <div class="flex flex-col-reverse">
-                        <select name="recipientPersonId" id="recipientPersonId" class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 w-full">
+                        <select name="recipientPersonId" id="recipientPersonId" {{ if $recipientIsNew }}disabled{{ end }} class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 w-full">
                             <option value="">Selecione um destinatário</option>
                             {{ range .People }}
                             <option value="{{ .Id }}" {{ if .Selected }}selected{{ end }}>{{ .Name }}</option>
@@ -102,7 +103,7 @@
                 <div id="new-recipient-section" class="{{ if ne .RecipientType "new" }}hidden {{ end }}space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientName" id="recipientName" value="{{ .RecipientName }}"
+                            <input type="text" name="recipientName" id="recipientName" value="{{ .RecipientName }}" {{ if not $recipientIsNew }}disabled{{ end }}
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="Nome / Razão Social">
                             <label for="recipientName" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -110,7 +111,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientDocument" id="recipientDocument" value="{{ .RecipientDocument }}"
+                            <input type="text" name="recipientDocument" id="recipientDocument" value="{{ .RecipientDocument }}" {{ if not $recipientIsNew }}disabled{{ end }}
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="CPF / CNPJ">
                             <label for="recipientDocument" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -118,7 +119,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientIE" id="recipientIE" value="{{ .RecipientIE }}"
+                            <input type="text" name="recipientIE" id="recipientIE" value="{{ .RecipientIE }}" {{ if not $recipientIsNew }}disabled{{ end }}
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="Inscrição Estadual">
                             <label for="recipientIE" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -126,7 +127,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientPhone" id="recipientPhone" value="{{ .RecipientPhone }}"
+                            <input type="text" name="recipientPhone" id="recipientPhone" value="{{ .RecipientPhone }}" {{ if not $recipientIsNew }}disabled{{ end }}
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="Telefone">
                             <label for="recipientPhone" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -134,7 +135,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="email" name="recipientEmail" id="recipientEmail" value="{{ .RecipientEmail }}"
+                            <input type="email" name="recipientEmail" id="recipientEmail" value="{{ .RecipientEmail }}" {{ if not $recipientIsNew }}disabled{{ end }}
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="E-mail">
                             <label for="recipientEmail" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -145,7 +146,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="flex flex-col-reverse md:col-span-2">
-                            <input type="text" name="recipientStreet" id="recipientStreet" value="{{ .RecipientStreet }}"
+                            <input type="text" name="recipientStreet" id="recipientStreet" value="{{ .RecipientStreet }}" {{ if not $recipientIsNew }}disabled{{ end }}
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="Logradouro">
                             <label for="recipientStreet" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -153,7 +154,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientNumber" id="recipientNumber" value="{{ .RecipientNumber }}"
+                            <input type="text" name="recipientNumber" id="recipientNumber" value="{{ .RecipientNumber }}" {{ if not $recipientIsNew }}disabled{{ end }}
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="Número">
                             <label for="recipientNumber" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -161,7 +162,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientNeighborhood" id="recipientNeighborhood" value="{{ .RecipientNeighborhood }}"
+                            <input type="text" name="recipientNeighborhood" id="recipientNeighborhood" value="{{ .RecipientNeighborhood }}" {{ if not $recipientIsNew }}disabled{{ end }}
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="Bairro">
                             <label for="recipientNeighborhood" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -169,7 +170,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientCity" id="recipientCity" value="{{ .RecipientCity }}"
+                            <input type="text" name="recipientCity" id="recipientCity" value="{{ .RecipientCity }}" {{ if not $recipientIsNew }}disabled{{ end }}
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="Cidade">
                             <label for="recipientCity" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -177,7 +178,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientState" id="recipientState" value="{{ .RecipientState }}"
+                            <input type="text" name="recipientState" id="recipientState" value="{{ .RecipientState }}" {{ if not $recipientIsNew }}disabled{{ end }}
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="UF">
                             <label for="recipientState" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -185,7 +186,7 @@
                             </label>
                         </div>
                         <div class="flex flex-col-reverse">
-                            <input type="text" name="recipientCEP" id="recipientCEP" value="{{ .RecipientCEP }}"
+                            <input type="text" name="recipientCEP" id="recipientCEP" value="{{ .RecipientCEP }}" {{ if not $recipientIsNew }}disabled{{ end }}
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="CEP">
                             <label for="recipientCEP" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -387,62 +388,92 @@
                 </div>
 
                 <h3 class="text-xs text-white/70 uppercase tracking-wider mt-2">Transportadora</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="flex flex-col-reverse md:col-span-2">
-                        <input type="text" name="transportNome" id="transportNome"
-                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                            placeholder="Nome / Razão Social">
-                        <label for="transportNome" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                            Nome / Razão Social
+                {{ $transportIsExisting := ne .TransportType "new" }}
+                <div class="flex gap-4 mb-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="transportType" value="existing" class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white" {{ if $transportIsExisting }}checked{{ end }}>
+                        <span class="text-white/80 text-sm">Selecionar existente</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="transportType" value="new" class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white" {{ if not $transportIsExisting }}checked{{ end }}>
+                        <span class="text-white/80 text-sm">Novo transportador</span>
+                    </label>
+                </div>
+
+                <!-- Existing transportadora contact -->
+                <div id="existing-transport-section" {{ if not $transportIsExisting }}class="hidden"{{ end }}>
+                    <div class="flex flex-col-reverse">
+                        <select name="transportPersonId" id="transportPersonId" {{ if not $transportIsExisting }}disabled{{ end }} class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 w-full">
+                            <option value="">Nenhuma transportadora</option>
+                            {{ range .TransportPeople }}
+                            <option value="{{ .Id }}">{{ .Name }}</option>
+                            {{ end }}
+                        </select>
+                        <label for="transportPersonId" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                            Transportadora
                         </label>
                     </div>
-                    <div class="flex flex-col-reverse">
-                        <input type="text" name="transportDocumento" id="transportDocumento"
-                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                            placeholder="CPF / CNPJ">
-                        <label for="transportDocumento" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                            CPF / CNPJ
-                        </label>
-                    </div>
-                    <div class="flex flex-col-reverse">
-                        <input type="text" name="transportIE" id="transportIE"
-                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                            placeholder="Inscrição Estadual">
-                        <label for="transportIE" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                            Inscrição Estadual
-                        </label>
-                    </div>
-                    <div class="flex flex-col-reverse">
-                        <input type="text" name="transportLogradouro" id="transportLogradouro"
-                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                            placeholder="Logradouro">
-                        <label for="transportLogradouro" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                            Logradouro
-                        </label>
-                    </div>
-                    <div class="flex flex-col-reverse">
-                        <input type="text" name="transportNumero" id="transportNumero"
-                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                            placeholder="Número">
-                        <label for="transportNumero" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                            Número
-                        </label>
-                    </div>
-                    <div class="flex flex-col-reverse">
-                        <input type="text" name="transportMunicipio" id="transportMunicipio"
-                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
-                            placeholder="Município">
-                        <label for="transportMunicipio" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                            Município
-                        </label>
-                    </div>
-                    <div class="flex flex-col-reverse">
-                        <input type="text" name="transportUF" id="transportUF" maxlength="2"
-                            class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 uppercase"
-                            placeholder="UF">
-                        <label for="transportUF" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
-                            UF
-                        </label>
+                </div>
+
+                <!-- New transportadora form -->
+                <div id="new-transport-section" class="{{ if $transportIsExisting }}hidden {{ end }}">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="flex flex-col-reverse md:col-span-2">
+                            <input type="text" name="transportNome" id="transportNome" {{ if $transportIsExisting }}disabled{{ end }}
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="Nome / Razão Social">
+                            <label for="transportNome" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Nome / Razão Social
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="transportDocumento" id="transportDocumento" {{ if $transportIsExisting }}disabled{{ end }}
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="CPF / CNPJ">
+                            <label for="transportDocumento" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                CPF / CNPJ
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="transportIE" id="transportIE" {{ if $transportIsExisting }}disabled{{ end }}
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="Inscrição Estadual">
+                            <label for="transportIE" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Inscrição Estadual
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="transportLogradouro" id="transportLogradouro" {{ if $transportIsExisting }}disabled{{ end }}
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="Logradouro">
+                            <label for="transportLogradouro" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Logradouro
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="transportNumero" id="transportNumero" {{ if $transportIsExisting }}disabled{{ end }}
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="Número">
+                            <label for="transportNumero" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Número
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="transportMunicipio" id="transportMunicipio" {{ if $transportIsExisting }}disabled{{ end }}
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
+                                placeholder="Município">
+                            <label for="transportMunicipio" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                Município
+                            </label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" name="transportUF" id="transportUF" maxlength="2" {{ if $transportIsExisting }}disabled{{ end }}
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 uppercase"
+                                placeholder="UF">
+                            <label for="transportUF" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
+                                UF
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -809,41 +840,6 @@
         </dialog>
 
         <script nonce="{{ .CSPNonce }}">
-            // Toggle between existing and new recipient
-            document.querySelectorAll('input[name="recipientType"]').forEach(radio => {
-                radio.addEventListener('change', (e) => {
-                    const existingSection = document.getElementById('existing-recipient-section');
-                    const newSection = document.getElementById('new-recipient-section');
-
-                    const isExisting = e.target.value === 'existing';
-
-                    existingSection.classList.toggle('hidden', !isExisting);
-                    newSection.classList.toggle('hidden', isExisting);
-
-                    // Keep `required` in sync with visibility: a hidden required
-                    // input blocks submission with "An invalid form control ...
-                    // is not focusable".
-                    //
-                    // The recipient is exclusive, and the server agrees
-                    // (parseDetachedRecipient): either a picked person or the
-                    // inline name/document, never a mix. So the person select
-                    // is required only while "Selecionar existente" is active,
-                    // and the inline fields only while "Novo destinatário" is.
-                    document.getElementById('recipientPersonId').toggleAttribute('required', isExisting);
-                    [document.getElementById('recipientName'), document.getElementById('recipientDocument')].forEach(input => {
-                        input.toggleAttribute('required', !isExisting);
-                    });
-                });
-            });
-
-            // Apply the initial state (existing recipient is checked by default,
-            // so the person select is the required one and the hidden
-            // new-recipient inputs must not be).
-            const initialRecipientType = document.querySelector('input[name="recipientType"]:checked');
-            if (initialRecipientType) {
-                initialRecipientType.dispatchEvent(new Event('change'));
-            }
-
             // "Usar taxa padrão" keeps the five rate inputs disabled so they are
             // not submitted and the service falls back to the farm config.
             // Unchecking enables per-emission percentage overrides.
@@ -1127,6 +1123,86 @@
             import { initCfopSelectors } from "/public/assets/js/cfopSelector.js"
             import { initDetachedNFeTabs } from "/public/assets/js/detachedNFeTabs.js"
             import { initDetachedNFeValidation } from "/public/assets/js/detachedNFeValidation.js"
+            import { applySourceMode } from "/public/assets/js/detachedNFeModes.js"
+
+            // Destinatário and Transporte each have two exclusive sources: a
+            // picked farm contact ("existing") or inline fields ("new"). Only
+            // the active source is visible and submitted; the inactive one is
+            // hidden and its controls are disabled (disabled controls are not
+            // submitted and are not focusable). The server renders the initial
+            // state; this re-applies it on load and keeps it in sync.
+            function sectionControls(sectionId) {
+                const section = document.getElementById(sectionId);
+                if (!section) return [];
+                return Array.from(section.querySelectorAll('input, select, textarea'));
+            }
+
+            const recipientSources = {
+                existing: {
+                    section: document.getElementById('existing-recipient-section'),
+                    controls: [document.getElementById('recipientPersonId')].filter(Boolean),
+                },
+                new: {
+                    section: document.getElementById('new-recipient-section'),
+                    controls: sectionControls('new-recipient-section'),
+                },
+            };
+
+            const transportSources = {
+                existing: {
+                    section: document.getElementById('existing-transport-section'),
+                    controls: [document.getElementById('transportPersonId')].filter(Boolean),
+                },
+                new: {
+                    section: document.getElementById('new-transport-section'),
+                    controls: sectionControls('new-transport-section'),
+                },
+            };
+
+            function checkedMode(name, fallback) {
+                const checked = document.querySelector(`input[name="${name}"]:checked`);
+                return checked ? checked.value : fallback;
+            }
+
+            function applyRecipientMode(mode) {
+                applySourceMode(mode, recipientSources);
+
+                // Keep `required` in sync with visibility: a hidden required
+                // input blocks submission with "An invalid form control ...
+                // is not focusable". The recipient is exclusive, and the server
+                // agrees (parseDetachedRecipient): either a picked person or
+                // the inline name/document, never a mix. So the person select
+                // is required only while "Selecionar existente" is active, and
+                // the inline fields only while "Novo destinatário" is.
+                const isExisting = mode === 'existing';
+                const personSelect = document.getElementById('recipientPersonId');
+                if (personSelect) personSelect.toggleAttribute('required', isExisting);
+                [document.getElementById('recipientName'), document.getElementById('recipientDocument')]
+                    .filter(Boolean)
+                    .forEach(input => input.toggleAttribute('required', !isExisting));
+            }
+
+            function applyTransportMode(mode) {
+                applySourceMode(mode, transportSources);
+            }
+
+            function wireSourceRadio(name, apply) {
+                document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
+                    radio.addEventListener('change', (event) => {
+                        if (event.target.checked) apply(event.target.value);
+                    });
+                });
+            }
+
+            wireSourceRadio('recipientType', applyRecipientMode);
+            wireSourceRadio('transportType', applyTransportMode);
+
+            // Apply the initial state rendered by the server (both blocks
+            // default to "existing", so the selects are the active source and
+            // the hidden inline inputs must not be required or submitted).
+            applyRecipientMode(checkedMode('recipientType', 'existing'));
+            applyTransportMode(checkedMode('transportType', 'existing'));
+
             initCfopSelectors()
             // Order matters: the stepper reveals the first step (and applies the
             // footer button rules) before the validation module reads the steps.
