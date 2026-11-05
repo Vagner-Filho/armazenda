@@ -20,9 +20,24 @@ type FieldProductChartsViewData struct {
 	HasData              bool
 }
 
+// sessionFarmID resolves the authenticated farm from the session cookie.
+// The authenticate middleware already guarantees the cookie exists, but the
+// handlers keep a defensive check so a missing cookie cannot nil-panic.
+func sessionFarmID(c *gin.Context) (uint32, bool) {
+	sessionCookie, err := c.Request.Cookie("session_id")
+	if err != nil || sessionCookie == nil {
+		return 0, false
+	}
+	return user_service.GetFarmFromToken(sessionCookie.Value), true
+}
+
 func TopSupplierCard(c *gin.Context) {
-	sessionCookie, _ := c.Request.Cookie("session_id")
-	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
+	farmId, ok := sessionFarmID(c)
+	if !ok {
+		c.Header("HX-Redirect", "/")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
 	cropID := parseCropID(c)
 	stat, toast := stats_service.GetTopSupplierStat(farmId, cropID)
 	if toast != nil {
@@ -33,8 +48,12 @@ func TopSupplierCard(c *gin.Context) {
 }
 
 func TopBuyerCard(c *gin.Context) {
-	sessionCookie, _ := c.Request.Cookie("session_id")
-	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
+	farmId, ok := sessionFarmID(c)
+	if !ok {
+		c.Header("HX-Redirect", "/")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
 	cropID := parseCropID(c)
 	stat, toast := stats_service.GetTopBuyerStat(farmId, cropID)
 	if toast != nil {
@@ -45,8 +64,12 @@ func TopBuyerCard(c *gin.Context) {
 }
 
 func MostFrequentSupplierCard(c *gin.Context) {
-	sessionCookie, _ := c.Request.Cookie("session_id")
-	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
+	farmId, ok := sessionFarmID(c)
+	if !ok {
+		c.Header("HX-Redirect", "/")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
 	cropID := parseCropID(c)
 	stat, toast := stats_service.GetMostFrequentSupplierStat(farmId, cropID)
 	if toast != nil {
@@ -57,8 +80,12 @@ func MostFrequentSupplierCard(c *gin.Context) {
 }
 
 func BestQualitySupplierCard(c *gin.Context) {
-	sessionCookie, _ := c.Request.Cookie("session_id")
-	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
+	farmId, ok := sessionFarmID(c)
+	if !ok {
+		c.Header("HX-Redirect", "/")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
 	cropID := parseCropID(c)
 	stat, toast := stats_service.GetBestQualitySupplierStat(farmId, cropID)
 	if toast != nil {
@@ -69,8 +96,12 @@ func BestQualitySupplierCard(c *gin.Context) {
 }
 
 func WorstQualitySupplierCard(c *gin.Context) {
-	sessionCookie, _ := c.Request.Cookie("session_id")
-	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
+	farmId, ok := sessionFarmID(c)
+	if !ok {
+		c.Header("HX-Redirect", "/")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
 	cropID := parseCropID(c)
 	stat, toast := stats_service.GetWorstQualitySupplierStat(farmId, cropID)
 	if toast != nil {
@@ -83,8 +114,8 @@ func WorstQualitySupplierCard(c *gin.Context) {
 func GetAnalysisPage(c *gin.Context) {
 	nonce, exists := c.Get("csp_nonce")
 	if exists == false {
-		c.Status(http.StatusForbidden)
 		c.Redirect(http.StatusTemporaryRedirect, "/")
+		return
 	}
 
 	farmId := uint32(0)
@@ -179,8 +210,12 @@ func buildFieldProductSeries(rows []entity_public.FieldProductTotal, metric func
 }
 
 func GetFieldProductCharts(c *gin.Context) {
-	sessionCookie, _ := c.Request.Cookie("session_id")
-	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
+	farmId, ok := sessionFarmID(c)
+	if !ok {
+		c.Header("HX-Redirect", "/")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
 	cropID := parseCropID(c)
 	charts, toast := stats_service.GetFieldProductTotals(farmId, cropID)
 	if toast != nil {
@@ -212,8 +247,12 @@ func GetFieldProductCharts(c *gin.Context) {
 }
 
 func ProductTotals(c *gin.Context) {
-	sessionCookie, _ := c.Request.Cookie("session_id")
-	farmId := user_service.GetFarmFromToken(sessionCookie.Value)
+	farmId, ok := sessionFarmID(c)
+	if !ok {
+		c.Header("HX-Redirect", "/")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
 	cropID := parseCropID(c)
 	totals, toast := stats_service.GetProductTotals(farmId, cropID)
 	if toast != nil {

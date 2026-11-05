@@ -61,6 +61,7 @@
       import {formatDateToDisplay} from "/public/assets/js/date.js"
       import {formatWeight} from "/public/assets/js/weight.js";
       import {formatAllDepartureListItems} from "/public/assets/js/departureListItem.js"
+      import { setupClearFilter } from "/public/assets/js/filter.js";
 
     function handleToggle(clickedButton) {
       const buttons = clickedButton.currentTarget.parentElement.querySelectorAll('button');
@@ -106,8 +107,10 @@
       if (evt.detail.successful && ((romaneioListPattern.test(evt.detail.requestConfig.path) && evt.detail.requestConfig.verb === 'get') || (romaneioFilterPattern.test(evt.detail.requestConfig.path) && evt.detail.requestConfig.verb === 'post'))) {
           if (evt.detail.requestConfig.path.includes('departure')) {
             formatAllDepartureListItems();
+            setupClearFilter('button[hx-target="form#departure-filters-form"]', 'button[form="departure-filters-form"]');
           } else if (evt.detail.requestConfig.path.includes('entry')) {
             formatEntryListItem();
+            setupClearFilter('button[hx-target="form#entry-filters-form"]', 'button[form="entry-filters-form"]');
           }
       }
     });

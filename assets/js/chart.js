@@ -22,6 +22,10 @@ function getProductColor(productName, fallbackIndex) {
     return FIELD_PROD_COLORS[fallbackIndex % FIELD_PROD_COLORS.length];
 }
 
+// One chart per canvas id, kept so a re-render (e.g. after an htmx swap)
+// destroys the previous instance instead of leaking it.
+const productCharts = new Map();
+
 /**
  * Stacked bar chart: labels are fields and each dataset is a product, so
  * every field's bar is stacked by product. Colors are assigned per dataset
@@ -32,7 +36,26 @@ function getProductColor(productName, fallbackIndex) {
  * @param {{product: string, values: number[]}[]} datasets - one series per product
  */
 export function setupProductStackedChart(elementId, title, labels, datasets) {
-    new Chart(document.getElementById(elementId), {
+    const canvas = document.getElementById(elementId);
+    if (!canvas) {
+        return;
+    }
+
+    // The previous chart is bound to a canvas that htmx already replaced;
+    // destroy it so it does not stay registered in memory.
+    const previous = productCharts.get(elementId);
+    if (previous) {
+        previous.destroy();
+        productCharts.delete(elementId);
+    }
+
+    // Safety net in case a chart is still attached to this exact canvas.
+    const bound = Chart.getChart(canvas);
+    if (bound) {
+        bound.destroy();
+    }
+
+    const chart = new Chart(canvas, {
         type: 'bar',
         data: {
             labels: labels,
@@ -82,4 +105,6 @@ export function setupProductStackedChart(elementId, title, labels, datasets) {
             },
         }
     });
+
+    productCharts.set(elementId, chart);
 }

@@ -14,7 +14,7 @@
     <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/weight.js"></script>
     <script nonce="{{ .CSPNonce }}" type="module" src="/public/assets/js/stats.js"></script>
     <script nonce="{{ .CSPNonce }}" src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" defer></script>
-    <script nonce="{{ .CSPNonce }}" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script nonce="{{ .CSPNonce }}" src="https://cdn.jsdelivr.net/npm/chart.js@4.6.1"></script>
   </head>
   <body class="main-bg">
     {{ template "navbar" . }}
@@ -28,7 +28,7 @@
           Estude a eficiência operacional do seu armazém.
         </p>
       </header>
-      <div class="glass-panel rounded-xl shadow-center p-4 overflow-y-auto">
+      <div class="glass-panel rounded-xl shadow-center p-4 overflow-y-auto default-style-scroll">
         <details id="analise-filters" class="group w-full mb-4">
           <summary class="outline-none list-none flex items-center justify-between px-3 py-2 group-open:mb-2 cursor-pointer hover:bg-gray-800 rounded-xl">
             <span class="text-lg font-medium text-gray-200">Filtros</span>
@@ -37,7 +37,7 @@
                 <iconify-icon icon="mingcute:filter-line" width="18" height="18"></iconify-icon>
                 <span>Filtrar</span>
               </button>
-              <button type="button" hx-trigger="click" hx-get="/analise/filters" hx-target="form#analise-filters-form" hx-swap="outerHTML" class="hidden group-open:flex items-center gap-2 px-3 py-1.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-all duration-200 text-sm font-medium" title="Limpar Filtro">
+              <button type="button" hx-trigger="click" hx-get="/analise/filters" hx-target="form#analise-filters-form" hx-swap="outerHTML" class="hidden group-open:flex items-center gap-2 px-3 py-1.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-all duration-200 text-sm font-medium" title="Limpar Filtro" id="clear-filter">
                 <iconify-icon icon="hugeicons:clean" width="18" height="18"></iconify-icon>
                 <span>Limpar</span>
               </button>
@@ -57,6 +57,7 @@
     </section>
     <script nonce="{{ .CSPNonce }}" type="module">
       import { setupProductStackedChart } from "/public/assets/js/chart.js";
+      import { setupClearFilter } from "/public/assets/js/filter.js";
 
       document.body.addEventListener('htmx:afterSwap', function(evt) {
         const container = evt.detail.elt;
@@ -70,6 +71,8 @@
           setupProductStackedChart('fieldProductivityChart', 'Produtividade por Talhão e Produto (Peso Líquido / hectare)', relativeLabels, relativeDatasets);
         }
       });
+
+      setupClearFilter('button#clear-filter', 'button[form="analise-filters-form"]');
     </script>
   </body>
 </html>
