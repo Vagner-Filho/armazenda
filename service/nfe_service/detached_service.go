@@ -951,7 +951,7 @@ func (s *NFeService) buildDetachedDANFEData(input entity.InvoiceInput) entity.DA
 	}
 
 	products := make([]entity.DANFEProduct, 0, len(input.Items))
-	var vProd, vbc, vicms, vpis, vcofins, vbcIBSCBS, vibs, vcbs decimal.Decimal
+	var vProd, vbc, vicms, vpis, vcofins, vbcIBSCBS, vibs, vcbs, vDesc decimal.Decimal
 	for _, item := range input.Items {
 		product := item.Produto
 		imp := item.Imposto
@@ -973,6 +973,7 @@ func (s *NFeService) buildDetachedDANFEData(input entity.InvoiceInput) entity.DA
 			Quantity:  product.QCom,
 			UnitPrice: product.VUnCom,
 			Total:     product.VProd,
+			VDesc:     product.VDesc,
 			UTrib:     product.UTrib,
 			QTrib:     product.QTrib,
 			VUnTrib:   product.VUnTrib,
@@ -993,6 +994,7 @@ func (s *NFeService) buildDetachedDANFEData(input entity.InvoiceInput) entity.DA
 		})
 
 		vProd = vProd.Add(product.VProd)
+		vDesc = vDesc.Add(product.VDesc)
 		vbc = vbc.Add(imp.ICMS.VBC)
 		vicms = vicms.Add(imp.ICMS.VICMS)
 		vpis = vpis.Add(imp.PIS.VPIS)
@@ -1036,6 +1038,7 @@ func (s *NFeService) buildDetachedDANFEData(input entity.InvoiceInput) entity.DA
 		Products:            products,
 		TotalValue:          input.TotalValue,
 		VProd:               vProd,
+		VDesc:               vDesc,
 		VBC:                 vbc,
 		VICMS:               vicms,
 		VPIS:                vpis,

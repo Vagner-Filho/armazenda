@@ -957,12 +957,9 @@ func rateDisplayString(rate *decimal.Decimal) string {
 // keeping two decimal places of precision.
 func percentDisplay(rate decimal.Decimal) string {
 	if rate.IsZero() {
-		return ""
+		return "0.00"
 	}
-	pct := rate.Mul(decimal.NewFromInt(100))
-	// Use a fixed two-decimal representation; the shopspring/decimal String()
-	// method preserves trailing zeros for the value but does not pad.
-	return pct.StringFixed(2)
+	return rate.Mul(decimal.NewFromInt(100)).StringFixed(2)
 }
 
 // parseInvoiceOverrides extracts optional per-emission override fields from the

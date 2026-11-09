@@ -36,15 +36,17 @@
     </div>
     <main class="login-card-wrapper" id="login-card">
       <h2 class="login-title">Login</h2>
-      <form hx-post="/login" hx-target="#error-indicator-space" hx-indicator="#login-card" class="login-form">
+      <form hx-post="/login" hx-target="#error-indicator-space" hx-indicator="#login-card" class="login-form" hx-disabled-elt="input#password, input#cpf">
         {{ template "login-cpf-field" . }}
         <div class="login-field">
           <label for="password" class="login-label">Senha</label>
           <input type="password" id="password" name="passwd" required aria-placeholder="senha" placeholder="*********" class="login-input">
         </div>
         <div class="login-btn-container" id="login-btn-container">
-          <button type="submit" class="login-btn-primary">Entrar</button>
-          <span class="htmx-indicator css-spinner" role="status" aria-label="Carregando..."></span>
+          <button type="submit" class="login-btn-primary">
+            Entrar
+          </button>
+          <img height="50px" src="/public/assets/static/tractor_svg_small_15s.gif" class="htmx-indicator css-spinner" role="status" aria-label="Carregando..." loading="lazy" decoding="async" >
         </div>
       </form>
       <div class="login-social-container">
@@ -392,33 +394,22 @@
 
   .login-card-wrapper .css-spinner {
     display: none;
+    margin: 0 auto;
   }
 
   .login-card-wrapper.htmx-request .login-btn-container button {
-    visibility: hidden;
+    display: none;
   }
 
   .login-card-wrapper.htmx-request .css-spinner {
     display: block;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    margin: -1rem 0 0 -1rem;
-    width: 2rem;
-    height: 2rem;
-    border: 3px solid rgba(255, 255, 255, 0.25);
-    border-top-color: #ffffff;
-    border-radius: 50%;
-    animation: css-spin 0.8s linear infinite;
-    box-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
   }
 
   @keyframes css-spin {
     to { transform: rotate(360deg); }
   }
 
-  .login-card-wrapper.htmx-request .login-social-container {
-    visibility: hidden;
+  .login-card-wrapper.htmx-request .login-social-container, .login-card-wrapper.htmx-request .login-footer-text {
     pointer-events: none;
   }
   </style>

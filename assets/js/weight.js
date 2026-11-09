@@ -1,3 +1,9 @@
+const kgFormatter = Intl.NumberFormat('pt-BR', {
+  style: 'unit',
+  unit: 'kilogram',
+  unitDisplay: 'short' // or 'long', 'narrow'
+});
+
 /**
  * Formats a numeric value as a weight string in kilograms with Brazilian Portuguese locale.
  * Handles non-numeric or invalid inputs gracefully by returning 'N/A'.
@@ -20,95 +26,26 @@ export function formatWeight(value) {
 }
 
 /**
- * Parses a weight string, extracting integer and decimal parts.
- * Handles both dot (server format) and comma (user format) as decimal separators.
- * Dots are treated as thousands separators unless they are the last separator
- * with 1-2 digits after them (server decimal format).
- *
- * @param {string} value
- * @returns {{isEmpty: boolean, intNum: number, decimalStr: string, hasDecimal: boolean}}
- */
-function parseWeightValue(value) {
-  // Strip the " kg" suffix and any whitespace from previous formatting
-  let workingValue = value.replace(/\s*kg\s*$/i, '').replace(/\s/g, '');
-
-  // Step 1: Detect decimal separator
-  const commaIndex = workingValue.indexOf(',');
-
-  if (commaIndex !== -1) {
-    // Comma is the decimal separator — remove all dots (thousands separators)
-    workingValue = workingValue.replace(/\./g, '');
-  } else {
-    // No comma — check if the last dot is a decimal separator
-    const lastDotIndex = workingValue.lastIndexOf('.');
-    if (lastDotIndex !== -1) {
-      const afterDot = workingValue.substring(lastDotIndex + 1);
-      // If 1-2 digits after the last dot, treat it as a decimal separator
-      if (/^\d{1,2}$/.test(afterDot)) {
-        // Keep this dot as decimal, remove other dots (thousands separators)
-        const beforeDot = workingValue.substring(0, lastDotIndex).replace(/\./g, '');
-        workingValue = beforeDot + '.' + afterDot;
-      } else {
-        // All dots are thousands separators
-        workingValue = workingValue.replace(/\./g, '');
-      }
-    }
-  }
-
-  // Step 2: Clean to only digits, comma, and dot
-  const cleaned = workingValue.replace(/[^0-9,.]/g, '');
-
-  if (cleaned === '') {
-    return { isEmpty: true, intNum: 0, decimalStr: '', hasDecimal: false };
-  }
-
-  // Step 3: Extract integer and decimal parts
-  const finalCommaIndex = cleaned.indexOf(',');
-  const finalDotIndex = cleaned.indexOf('.');
-
-  let integerStr = cleaned;
-  let decimalStr = '';
-  let hasDecimal = false;
-
-  if (finalCommaIndex !== -1) {
-    integerStr = cleaned.substring(0, finalCommaIndex);
-    decimalStr = cleaned.substring(finalCommaIndex + 1).replace(/[,.]/g, '').substring(0, 2);
-    hasDecimal = true;
-  } else if (finalDotIndex !== -1) {
-    integerStr = cleaned.substring(0, finalDotIndex);
-    decimalStr = cleaned.substring(finalDotIndex + 1).replace(/[,.]/g, '').substring(0, 2);
-    hasDecimal = true;
-  }
-
-  const intNum = parseInt(integerStr || '0', 10);
-  return { isEmpty: false, intNum, decimalStr, hasDecimal };
-}
-
-/**
  * Formats a weight value for display without padding decimals.
  *
- * @param {string} value - The raw or partially formatted input value.
+ * @param {string} value - The completely raw value.
+ * @param {boolean} hasDotDecimal - Avoid stripping decimal if it is a dot.
  * @returns {{formatted: string, raw: string}}
  */
-function formatForDisplay(value) {
-  const parsed = parseWeightValue(value);
+function formatForDisplay(value, hasDotDecimal) {
+  // makes sure value is raw and valid decimal.
+  const withDecimal = hasDotDecimal ? value : value.replace(/[^0-9,]/g, '').replace(',', '.');
+  if (withDecimal[withDecimal.length - 1] === '.') {
+    return { formatted: value, raw: withDecimal.substring(0, withDecimal.length - 1) };
+  }
 
-  if (parsed.isEmpty) {
+  const formatted = kgFormatter.format(withDecimal);
+
+  if (withDecimal === '') {
     return { formatted: '', raw: '' };
   }
 
-  let formatted = parsed.intNum.toLocaleString('pt-BR');
-  let raw = parsed.intNum.toString();
-
-  if (parsed.hasDecimal) {
-    formatted += ',' + parsed.decimalStr;
-    if (parsed.decimalStr) {
-      raw += '.' + parsed.decimalStr;
-    }
-  }
-
-  formatted += ' kg';
-  return { formatted, raw };
+  return { formatted, raw: withDecimal };
 }
 
 /**
@@ -144,12 +81,13 @@ function computeCursorPosition(oldValue, oldCursor, newValue) {
   // Find the position in newValue where we've passed the same number of significant chars
   let count = 0;
   for (let i = 0; i < newValue.length; i++) {
-    if (/[0-9]/.test(newValue[i]) || newValue[i] === ',') {
+    if (/[0-9]/.test(newValue[i]) || newValue[i] === ',' || newValue[i] === '.') {
       count++;
     }
-    if (count >= significantCount) {
-      return i + 1;
-    }
+  }
+
+  if (count >= significantCount) {
+    return count;
   }
 
   return newValue.length;
@@ -226,11 +164,9 @@ export function setupWeightInput(input, signal) {
 
   // Initialize: handle both raw numeric and pre-formatted initial values
   const initialValue = input.value;
-  const parsed = parseWeightValue(initialValue);
-  if (!parsed.isEmpty) {
-    const raw = parsed.intNum + (parsed.decimalStr ? '.' + parsed.decimalStr : '');
-    input.dataset.raw = raw;
-    const result = formatForDisplay(initialValue);
+  const result = formatForDisplay(initialValue, true);
+  if (result.raw !== '') {
+    input.dataset.raw = result.raw;
     input.value = result.formatted;
   }
 
