@@ -180,7 +180,7 @@ test.describe('Transporte section of the detached NF-e form', () => {
     await expect(page.locator('#volQtd')).toHaveValue('1');
     await expect(page.locator('#volEsp')).toHaveValue('Granel');
     await expect(page.locator('#volPesoL')).toHaveValue('10');
-    await expect(page.locator('#volPesoB')).toHaveValue('10.2');
+    await expect(page.locator('#volPesoB')).toHaveValue('10,2');
 
     // A user edit stops that field's auto-update; others keep mirroring.
     await page.fill('#volPesoL', '999');
@@ -196,7 +196,7 @@ test.describe('Transporte section of the detached NF-e form', () => {
     // Back to the Transporte tab to check the prefill outcome.
     await goToTab(page, 'transp');
     await expect(page.locator('#volPesoL')).toHaveValue('999'); // user-edited
-    await expect(page.locator('#volPesoB')).toHaveValue('10.2'); // still mirrored (unchanged sums)
+    await expect(page.locator('#volPesoB')).toHaveValue('10,2'); // still mirrored (unchanged sums)
     await expect(page.locator('#volQtd')).toHaveValue('1');
   });
 

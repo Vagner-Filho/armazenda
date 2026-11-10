@@ -185,7 +185,7 @@
                 </label>
             </div>
             <div class="flex flex-col-reverse">
-                <input type="text" inputmode="decimal" name="icmsRate" id="icmsRate"
+                <input type="text" inputmode="decimal" name="icmsRate" id="icmsRate" data-mask="decimal" data-decimals="2"
                     value="{{ .ICMSRatePct }}"
                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                     placeholder="17,00">
@@ -194,7 +194,7 @@
                 </label>
             </div>
             <div class="flex flex-col-reverse">
-                <input type="text" inputmode="decimal" name="pisRate" id="pisRate"
+                <input type="text" inputmode="decimal" name="pisRate" id="pisRate" data-mask="decimal" data-decimals="2"
                     value="{{ .PISRatePct }}"
                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                     placeholder="1,65">
@@ -203,7 +203,7 @@
                 </label>
             </div>
             <div class="flex flex-col-reverse">
-                <input type="text" inputmode="decimal" name="cofinsRate" id="cofinsRate"
+                <input type="text" inputmode="decimal" name="cofinsRate" id="cofinsRate" data-mask="decimal" data-decimals="2"
                     value="{{ .COFINSRatePct }}"
                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                     placeholder="7,60">
@@ -212,7 +212,7 @@
                 </label>
             </div>
             <div class="flex flex-col-reverse">
-                <input type="text" inputmode="decimal" name="ibsRate" id="ibsRate"
+                <input type="text" inputmode="decimal" name="ibsRate" id="ibsRate" data-mask="decimal" data-decimals="2"
                     value="{{ .IBSRatePct }}"
                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                     placeholder="0,10">
@@ -221,7 +221,7 @@
                 </label>
             </div>
             <div class="flex flex-col-reverse">
-                <input type="text" inputmode="decimal" name="cbsRate" id="cbsRate"
+                <input type="text" inputmode="decimal" name="cbsRate" id="cbsRate" data-mask="decimal" data-decimals="2"
                     value="{{ .CBSRatePct }}"
                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                     placeholder="0,90">
@@ -282,8 +282,14 @@
 </form>
 <script type="module">
 import {setupPersonCND} from "/public/assets/js/personCnd.js"
+import {setupDecimalMasks, wireDecimalParamOverride} from "/public/assets/js/decimalMask.js"
 
 setupPersonCND({{ .Config.ExpDate }}, "form#nfe-config-form input#expDate")
+
+// pt-BR decimal mask on the rate inputs: comma decimals on screen, dot-decimal
+// raw submitted (the server contract).
+setupDecimalMasks(document.getElementById('nfe-config-form'))
+wireDecimalParamOverride()
 </script>
 <script>
 (function() {

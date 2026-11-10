@@ -29,7 +29,7 @@
                             Valores e Identificação Fiscal
                         </legend>
                         <div class="flex flex-col-reverse">
-                            <input type="text" inputmode="decimal" name="unitPrice" id="unitPrice" required
+                            <input type="text" inputmode="decimal" name="unitPrice" id="unitPrice" required data-mask="decimal" data-decimals="2"
                                 class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                 placeholder="0,00">
                             <label for="unitPrice"
@@ -250,13 +250,13 @@
                                 <label for="volMarca" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs 2xl:text-sm font-medium uppercase tracking-wider">Marca</label>
                             </div>
                             <div class="flex flex-col-reverse">
-                                <input type="text" inputmode="decimal" name="volPesoL" id="volPesoL" value="{{ .DefaultVolPesoL }}"
+                                <input type="text" inputmode="decimal" name="volPesoL" id="volPesoL" value="{{ .DefaultVolPesoL }}" data-mask="decimal"
                                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                     placeholder="0,000">
                                 <label for="volPesoL" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs 2xl:text-sm font-medium uppercase tracking-wider">Peso líquido</label>
                             </div>
                             <div class="flex flex-col-reverse">
-                                <input type="text" inputmode="decimal" name="volPesoB" id="volPesoB" value="{{ .DefaultVolPesoB }}"
+                                <input type="text" inputmode="decimal" name="volPesoB" id="volPesoB" value="{{ .DefaultVolPesoB }}" data-mask="decimal"
                                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                     placeholder="0,000">
                                 <label for="volPesoB" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs 2xl:text-sm font-medium uppercase tracking-wider">Peso bruto</label>
@@ -346,7 +346,7 @@
                             </label>
                             <div class="grid grid-cols-2 gap-3 pl-2 border-l border-white/10">
                                 <div class="flex flex-col-reverse col-span-2">
-                                    <input type="text" inputmode="decimal" name="icmsRate" id="icmsRate"
+                                    <input type="text" inputmode="decimal" name="icmsRate" id="icmsRate" data-mask="decimal" data-decimals="2"
                                         value="{{ .DefaultICMSRate }}" disabled
                                         class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
                                         placeholder="17,00">
@@ -356,7 +356,7 @@
                                     </label>
                                 </div>
                                 <div class="flex flex-col-reverse">
-                                    <input type="text" inputmode="decimal" name="pisRate" id="pisRate"
+                                    <input type="text" inputmode="decimal" name="pisRate" id="pisRate" data-mask="decimal" data-decimals="2"
                                         value="{{ .DefaultPISRate }}" disabled
                                         class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
                                         placeholder="1,65">
@@ -366,7 +366,7 @@
                                     </label>
                                 </div>
                                 <div class="flex flex-col-reverse">
-                                    <input type="text" inputmode="decimal" name="cofinsRate" id="cofinsRate"
+                                    <input type="text" inputmode="decimal" name="cofinsRate" id="cofinsRate" data-mask="decimal" data-decimals="2"
                                         value="{{ .DefaultCOFINSRate }}" disabled
                                         class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
                                         placeholder="7,60">
@@ -376,7 +376,7 @@
                                     </label>
                                 </div>
                                 <div class="flex flex-col-reverse">
-                                    <input type="text" inputmode="decimal" name="ibsRate" id="ibsRate"
+                                    <input type="text" inputmode="decimal" name="ibsRate" id="ibsRate" data-mask="decimal" data-decimals="2"
                                         value="{{ .DefaultIBSRate }}" disabled
                                         class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
                                         placeholder="0,10">
@@ -386,7 +386,7 @@
                                     </label>
                                 </div>
                                 <div class="flex flex-col-reverse">
-                                    <input type="text" inputmode="decimal" name="cbsRate" id="cbsRate"
+                                    <input type="text" inputmode="decimal" name="cbsRate" id="cbsRate" data-mask="decimal" data-decimals="2"
                                         value="{{ .DefaultCBSRate }}" disabled
                                         class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed"
                                         placeholder="0,90">

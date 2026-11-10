@@ -172,8 +172,8 @@ test.describe('Rascunho de NF-e', () => {
     await expect(itemRows).toHaveCount(2);
     await expect(itemRows.nth(0).locator('select[name$=".cfop"]')).toHaveValue('5101');
     await expect(itemRows.nth(1).locator('select[name$=".cfop"]')).toHaveValue('5102');
-    await expect(itemRows.nth(0).locator('input[name$=".unitPrice"]')).toHaveValue('150.25');
-    await expect(itemRows.nth(1).locator('input[name$=".unitPrice"]')).toHaveValue('120.75');
+    await expect(itemRows.nth(0).locator('input[name$=".unitPrice"]')).toHaveValue('150,25');
+    await expect(itemRows.nth(1).locator('input[name$=".unitPrice"]')).toHaveValue('120,75');
     await expect(itemRows.nth(0).locator('input[name$=".productName"]')).toHaveValue('Soja E2E');
     // Quantity and gross weight are per-emission inputs and stay empty.
     await expect(itemRows.nth(0).locator('input[name$=".quantity"]')).toHaveValue('');

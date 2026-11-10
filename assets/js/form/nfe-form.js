@@ -1,3 +1,5 @@
+import { setupDecimalMasks, wireDecimalParamOverride } from "../decimalMask.js";
+
 function handleNFeResponse(evt) {
     const reqPath = evt.detail.requestConfig.path;
     if (evt.detail.successful && reqPath.includes('/nfe/build/') && evt.detail.requestConfig.verb === 'post') {
@@ -70,5 +72,10 @@ export function setupNFeForm() {
         dialogEl.showModal();
         dialogEl.addEventListener('close', closeNFeFormDialog, { signal })
         setupTaxRateToggle(dialogEl);
+        // pt-BR decimal mask on the modal's numeric inputs: comma decimals on
+        // screen, dot-decimal raw submitted (the server contract). One document
+        // listener serves every modal render (WeakSet-bounded).
+        setupDecimalMasks(dialogEl, signal);
+        wireDecimalParamOverride();
     }
 }

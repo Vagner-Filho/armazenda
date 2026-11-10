@@ -118,8 +118,9 @@ test('departure NF-e payment, billing, transport and code choices survive previe
       ['transportRNTC', '12345'],
       ['volQtd', '2'],
       ['volEsp', 'Sacas'],
-      ['volPesoL', '95,5'],
-      ['volPesoB', '100,25'],
+      // The decimal mask submits the dot-decimal raw, so the server echoes it.
+      ['volPesoL', '95.5'],
+      ['volPesoB', '100.25'],
       ['icmsCST', '51'],
       ['pisCST', '08'],
       ['cofinsCST', '08'],

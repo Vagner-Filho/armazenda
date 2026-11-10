@@ -26,6 +26,11 @@ Thumbs.db
 *.swp
 *.swo
 
+# Build artifacts
+# The e2e Go app binary produced by global-setup.js (go build -o ./.test-server).
+# It changes size on every build, so it must not be tracked.
+/.test-server
+
 # Temporary files
 *.tmp
 *.go-server.pid

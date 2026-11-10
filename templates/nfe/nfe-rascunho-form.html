@@ -85,7 +85,7 @@
                                 </label>
                             </div>
                             <div class="flex flex-col-reverse">
-                                <input type="text" inputmode="decimal" name="items[{{ $index }}].unitPrice" value="{{ $item.UnitPrice }}" required
+                                <input type="text" inputmode="decimal" name="items[{{ $index }}].unitPrice" value="{{ $item.UnitPrice }}" required data-mask="decimal" data-decimals="2"
                                     class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40"
                                     data-test-id="rascunho-item-preco" placeholder="0,00">
                                 <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
@@ -223,35 +223,35 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-l border-white/10 pl-2">
                     <div class="flex flex-col-reverse">
-                        <input type="text" inputmode="decimal" name="icmsRate" id="rascunhoIcmsRate" value="{{ .ICMSRate }}"
+                        <input type="text" inputmode="decimal" name="icmsRate" id="rascunhoIcmsRate" value="{{ .ICMSRate }}" data-mask="decimal" data-decimals="2"
                             class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed" placeholder="17,00">
                         <label for="rascunhoIcmsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             Alíquota ICMS (%)
                         </label>
                     </div>
                     <div class="flex flex-col-reverse">
-                        <input type="text" inputmode="decimal" name="pisRate" id="rascunhoPisRate" value="{{ .PISRate }}"
+                        <input type="text" inputmode="decimal" name="pisRate" id="rascunhoPisRate" value="{{ .PISRate }}" data-mask="decimal" data-decimals="2"
                             class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed" placeholder="1,65">
                         <label for="rascunhoPisRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             Alíquota PIS (%)
                         </label>
                     </div>
                     <div class="flex flex-col-reverse">
-                        <input type="text" inputmode="decimal" name="cofinsRate" id="rascunhoCofinsRate" value="{{ .COFINSRate }}"
+                        <input type="text" inputmode="decimal" name="cofinsRate" id="rascunhoCofinsRate" value="{{ .COFINSRate }}" data-mask="decimal" data-decimals="2"
                             class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed" placeholder="7,60">
                         <label for="rascunhoCofinsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             Alíquota COFINS (%)
                         </label>
                     </div>
                     <div class="flex flex-col-reverse">
-                        <input type="text" inputmode="decimal" name="ibsRate" id="rascunhoIbsRate" value="{{ .IBSRate }}"
+                        <input type="text" inputmode="decimal" name="ibsRate" id="rascunhoIbsRate" value="{{ .IBSRate }}" data-mask="decimal" data-decimals="2"
                             class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed" placeholder="0,10">
                         <label for="rascunhoIbsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             Alíquota IBS (%)
                         </label>
                     </div>
                     <div class="flex flex-col-reverse">
-                        <input type="text" inputmode="decimal" name="cbsRate" id="rascunhoCbsRate" value="{{ .CBSRate }}"
+                        <input type="text" inputmode="decimal" name="cbsRate" id="rascunhoCbsRate" value="{{ .CBSRate }}" data-mask="decimal" data-decimals="2"
                             class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none read-only:bg-white/5 read-only:text-white/60 read-only:cursor-not-allowed" placeholder="0,90">
                         <label for="rascunhoCbsRate" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">
                             Alíquota CBS (%)
@@ -273,6 +273,7 @@
     <script nonce="{{ .CSPNonce }}" type="module">
         import {removeEmptyFields} from "/public/assets/js/form.js"
         import {initCfopSelectors} from "/public/assets/js/cfopSelector.js"
+        import {setupDecimalMasks, wireDecimalParamOverride} from "/public/assets/js/decimalMask.js"
         initCfopSelectors()
         const dialogEl = document.querySelector("#addNfeRascunhoDialog")
         if (dialogEl) {
@@ -293,6 +294,12 @@
             if (cancelButton) {
                 cancelButton.addEventListener('click', closeRascunhoFormDialog, { signal });
             }
+
+            // pt-BR decimal mask on the rate and item-price inputs: comma
+            // decimals on screen, dot-decimal raw submitted (server contract).
+            setupDecimalMasks(dialogEl, signal)
+            wireDecimalParamOverride()
+
             document.body.addEventListener('htmx:configRequest', function (evt) {
                 evt.detail.parameters = removeEmptyFields(evt.detail.parameters);
             }, { signal });
@@ -394,6 +401,9 @@
                     window.htmx.process(template);
                 }
                 initCfopSelectors(template);
+                // Clone-source rows bind fresh mask listeners (cloneNode does
+                // not copy events; setup also clears stale raw data).
+                setupDecimalMasks(template);
                 reindexItems();
             });
 
