@@ -59,7 +59,7 @@
                                 <select name="items[{{ $index }}].farmProductId" class="farm-product-select peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg px-3 py-2 focus:outline-none focus:border-white/40 truncate">
                                     <option value="">Produto cadastrado (opcional)</option>
                                     {{ range $.FarmProducts }}
-                                    <option value="{{ .Id }}" data-name="{{ .Name }}" data-ncm="{{ .NCM }}" {{ if eq (printf "%v" .Id) $item.FarmProductID }}selected{{ end }}>{{ .Name }}</option>
+                                    <option value="farm:{{ .Id }}" data-name="{{ .Name }}" data-ncm="{{ .NCM }}" {{ if eq (printf "farm:%v" .Id) $item.FarmProductID }}selected{{ end }}>{{ .Name }}</option>
                                     {{ end }}
                                 </select>
                                 <label class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs lg:text-sm font-medium uppercase tracking-wider">

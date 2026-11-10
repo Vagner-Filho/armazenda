@@ -63,6 +63,33 @@ func TestParseDetachedItems_PerItemCFOP(t *testing.T) {
 	}
 }
 
+func TestParseNamespacedProductIDs(t *testing.T) {
+	if got := parseNamespacedFarmProductID("farm:7"); got == nil || *got != 7 {
+		t.Fatalf("farm parse: got %v", got)
+	}
+	if got := parseNamespacedFarmProductID("global:3"); got != nil {
+		t.Fatalf("global should yield nil farm id, got %v", got)
+	}
+	if got := parseNamespacedFarmProductID("7"); got == nil || *got != 7 {
+		t.Fatalf("legacy parse: got %v", got)
+	}
+	if got := parseNamespacedFarmProductID(""); got != nil {
+		t.Fatalf("blank parse: got %v", got)
+	}
+	if got := parseNamespacedGlobalProductID("global:3"); got == nil || *got != 3 {
+		t.Fatalf("global parse: got %v", got)
+	}
+	if got := parseNamespacedGlobalProductID("farm:7"); got != nil {
+		t.Fatalf("farm should yield nil global id, got %v", got)
+	}
+	if got := namespacedProductRef(func() *uint16 { v := uint16(7); return &v }(), nil); got != "farm:7" {
+		t.Fatalf("farm ref: got %q", got)
+	}
+	if got := namespacedProductRef(nil, func() *uint8 { v := uint8(3); return &v }()); got != "global:3" {
+		t.Fatalf("global ref: got %q", got)
+	}
+}
+
 func TestParseDetachedItems_RejectsMalformedCFOP(t *testing.T) {
 	values := url.Values{
 		"itemCount":            {"1"},
@@ -309,7 +336,7 @@ func TestDetachedProfileFormView_Rates(t *testing.T) {
 		if len(rows) != 1 {
 			t.Fatalf("expected 1 row, got %d", len(rows))
 		}
-		if rows[0].FarmProductID != "3" || rows[0].UnitPrice != "150.25" || rows[0].CFOP != "5101" {
+		if rows[0].FarmProductID != "farm:3" || rows[0].UnitPrice != "150.25" || rows[0].CFOP != "5101" {
 			t.Fatalf("unexpected row %+v", rows[0])
 		}
 	})
@@ -355,7 +382,7 @@ func TestDetachedPreviewItems_RoundTrip(t *testing.T) {
 	if items[0].Quantity != "10000" || items[1].GrossWeight != "5100" {
 		t.Errorf("expected quantity/weight round-trip, got %q/%q", items[0].Quantity, items[1].GrossWeight)
 	}
-	if items[0].FarmProductID != "9" || items[0].CEST != "0100101" {
+	if items[0].FarmProductID != "farm:9" || items[0].CEST != "0100101" {
 		t.Errorf("expected optional references to round-trip, got %q/%q", items[0].FarmProductID, items[0].CEST)
 	}
 	if items[0].InfAdProd != "SERIE ABC123" {

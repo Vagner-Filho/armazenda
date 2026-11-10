@@ -65,7 +65,7 @@ func detachedProfileFormRows(profile *nfe_model.DetachedProfile) []detachedProfi
 	if profile != nil {
 		for _, item := range profile.Items {
 			rows = append(rows, detachedProfileFormRow{
-				FarmProductID: uint16PtrString(item.FarmProductID),
+				FarmProductID: namespacedProductRef(item.FarmProductID, nil),
 				ProductName:   item.ProductName,
 				NCM:           item.NCM,
 				CEST:          safePtrString(item.CEST),
@@ -233,10 +233,7 @@ func parseDetachedProfileItems(c *gin.Context) ([]nfe_service.DetachedProfileIte
 
 		var farmProductID *uint16
 		if fpIDStr := c.PostForm(prefix + "farmProductId"); fpIDStr != "" {
-			if fpID, parseErr := strconv.ParseUint(fpIDStr, 10, 16); parseErr == nil {
-				v := uint16(fpID)
-				farmProductID = &v
-			}
+			farmProductID = parseNamespacedFarmProductID(fpIDStr)
 		}
 
 		cfop := strings.TrimSpace(c.PostForm(prefix + "cfop"))

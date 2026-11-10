@@ -14,15 +14,16 @@ import (
 
 // DetachedInvoiceItem represents a single item in a detached invoice
 type DetachedInvoiceItem struct {
-	FarmProductID *uint16         `json:"farm_product_id,omitempty"`
-	ProductName   string          `json:"product_name"`
-	NCM           string          `json:"ncm"`
-	CEST          *string         `json:"cest,omitempty"`
-	CFOP          string          `json:"cfop"`
-	Unit          string          `json:"unit"`
-	Quantity      decimal.Decimal `json:"quantity"`
-	GrossWeight   decimal.Decimal `json:"gross_weight"`
-	UnitPrice     decimal.Decimal `json:"unit_price"`
+	FarmProductID   *uint16         `json:"farm_product_id,omitempty"`
+	GlobalProductID *uint8          `json:"global_product_id,omitempty"`
+	ProductName     string          `json:"product_name"`
+	NCM             string          `json:"ncm"`
+	CEST            *string         `json:"cest,omitempty"`
+	CFOP            string          `json:"cfop"`
+	Unit            string          `json:"unit"`
+	Quantity        decimal.Decimal `json:"quantity"`
+	GrossWeight     decimal.Decimal `json:"gross_weight"`
+	UnitPrice       decimal.Decimal `json:"unit_price"`
 	// Discount is the optional per-item discount (prod/vDesc, BRL).
 	// omitempty keeps the JSONB of pre-existing rows (no discount key)
 	// valid; zero is the default for items emitted without discounts.

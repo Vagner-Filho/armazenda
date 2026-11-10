@@ -1262,10 +1262,14 @@ func validateRecipient(dest entity.RecipientData) []string {
 	if dest.Type == 2 {
 		if dest.CPF == "" {
 			errs = append(errs, "CPF do destinatário não informado")
+		} else if !isValidCPF(cleanDigits(dest.CPF)) {
+			errs = append(errs, "CPF do destinatário inválido")
 		}
 	} else {
 		if dest.CNPJ == "" {
 			errs = append(errs, "CNPJ do destinatário não informado")
+		} else if !isValidCNPJ(cleanDigits(dest.CNPJ)) {
+			errs = append(errs, "CNPJ do destinatário inválido")
 		}
 	}
 	if dest.XNome == "" {

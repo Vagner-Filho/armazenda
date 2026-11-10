@@ -118,16 +118,33 @@ type detachedPageView struct {
 // rascunho is provided its values prefill the form. Resolution is rascunho
 // value -> farm NF-e configuration -> existing system fallback, and an
 // explicitly stored zero rate stays zero.
-func buildDetachedPageView(farmID uint32, profile *nfe_model.DetachedProfile) detachedPageView {
+func buildDetachedPageView(farmID uint32, profile *nfe_model.DetachedProfile) (detachedPageView, error) {
 	nfeModel := nfe_model.GetNFeModel()
-	farmNFeConfig, _ := nfeModel.GetFarmConfig(farmID)
+	farmNFeConfig, err := nfeModel.GetFarmConfig(farmID)
+	if err != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("buildDetachedPageView GetFarmConfig error: %v", err))
+		return detachedPageView{}, err
+	}
 
 	pModel := person_model.GetPersonModel()
-	people, _ := pModel.GetPeopleByFarm(farmID)
+	people, err := pModel.GetPeopleByFarm(farmID)
+	if err != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("buildDetachedPageView GetPeopleByFarm error: %v", err))
+		return detachedPageView{}, err
+	}
 
-	farmProducts, _ := farm_product_model.GetFarmProductModel().GetFarmProductsByFarm(farmID)
-	systemProducts, _ := product_model.GetProductModel().GetProducts()
+	farmProducts, err := farm_product_model.GetFarmProductModel().GetFarmProductsByFarm(farmID)
+	if err != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("buildDetachedPageView GetFarmProductsByFarm error: %v", err))
+		return detachedPageView{}, err
+	}
+	systemProducts, err := product_model.GetProductModel().GetProducts()
+	if err != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("buildDetachedPageView GetProducts error: %v", err))
+		return detachedPageView{}, err
+	}
 	var productOptions []entity_public.FarmProduct
+
 	for i := range farmProducts {
 		productOptions = append(productOptions, farmProducts[i])
 	}
@@ -185,7 +202,7 @@ func buildDetachedPageView(farmID uint32, profile *nfe_model.DetachedProfile) de
 
 	if profile == nil {
 		view.Items = []detachedPageItem{{CFOP: defaultCFOP, Unit: farmDefaultUnit(farmNFeConfig)}}
-		return view
+		return view, nil
 	}
 
 	// Applied rascunho: prefill the items, recipient and operation/tax values.
@@ -204,7 +221,7 @@ func buildDetachedPageView(farmID uint32, profile *nfe_model.DetachedProfile) de
 			cfop = defaultCFOP
 		}
 		view.Items = append(view.Items, detachedPageItem{
-			FarmProductID: uint16PtrString(item.FarmProductID),
+			FarmProductID: namespacedProductRef(item.FarmProductID, nil),
 			ProductName:   item.ProductName,
 			NCM:           item.NCM,
 			CEST:          safePtrString(item.CEST),
@@ -275,7 +292,7 @@ func buildDetachedPageView(farmID uint32, profile *nfe_model.DetachedProfile) de
 		view.UseDefaultTaxRates = !explicit
 	}
 
-	return view
+	return view, nil
 }
 
 // getDetachedNFePage renders the full page for detached NF-e emission.
@@ -283,7 +300,11 @@ func getDetachedNFePage(c *gin.Context) {
 	sid, _ := c.Cookie("session_id")
 	farmID := user_service.GetFarmFromToken(sid)
 
-	view := buildDetachedPageView(farmID, nil)
+	view, viewErr := buildDetachedPageView(farmID, nil)
+	if viewErr != nil {
+		c.String(http.StatusInternalServerError, "Falha ao carregar a página de NF-e")
+		return
+	}
 	nonce, _ := c.Get("csp_nonce")
 	view.CSPNonce = nonce.(string)
 	view.TierKey = user_service.GetTierKeyFromContext(c)
@@ -301,7 +322,11 @@ func getDetachedNFePageFromProfile(c *gin.Context) {
 
 	profileID, err := strconv.Atoi(c.Param("rascunhoId"))
 	if err != nil || profileID < 1 {
-		view := buildDetachedPageView(farmID, nil)
+		view, viewErr := buildDetachedPageView(farmID, nil)
+		if viewErr != nil {
+			c.String(http.StatusInternalServerError, "Falha ao carregar a página de NF-e")
+			return
+		}
 		view.Warning = "Rascunho não encontrado"
 		renderDetachedPage(c, view)
 		return
@@ -310,13 +335,22 @@ func getDetachedNFePageFromProfile(c *gin.Context) {
 	svc := nfe_service.NewNFeService()
 	profile, toast := svc.GetDetachedProfile(farmID, profileID)
 	if isFailureToast(toast) {
-		view := buildDetachedPageView(farmID, nil)
+		view, viewErr := buildDetachedPageView(farmID, nil)
+		if viewErr != nil {
+			c.String(http.StatusInternalServerError, "Falha ao carregar a página de NF-e")
+			return
+		}
 		view.Warning = toast.Message
 		renderDetachedPage(c, view)
 		return
 	}
 
-	renderDetachedPage(c, buildDetachedPageView(farmID, profile))
+	view, viewErr := buildDetachedPageView(farmID, profile)
+	if viewErr != nil {
+		c.String(http.StatusInternalServerError, "Falha ao carregar a página de NF-e")
+		return
+	}
+	renderDetachedPage(c, view)
 }
 
 // renderDetachedPage attaches the request-scoped template data and renders the
@@ -773,7 +807,7 @@ func detachedPreviewItems(parsed []nfe_service.DetachedItemInput) []detachedPrev
 	for i, item := range parsed {
 		items = append(items, detachedPreviewItem{
 			Index:         i,
-			FarmProductID: uint16PtrString(item.FarmProductID),
+			FarmProductID: namespacedProductRef(item.FarmProductID, item.GlobalProductID),
 			ProductName:   item.ProductName,
 			NCM:           item.NCM,
 			CEST:          safePtrString(item.CEST),
@@ -978,6 +1012,55 @@ func previewDetachedNFe(c *gin.Context) {
 	c.HTML(http.StatusOK, "nfe-detached-preview", buildDetachedPreviewViewData(farmID, form, pdfBytes, nonce.(string)))
 }
 
+// parseNamespacedFarmProductID extracts a farm product ID from a namespaced
+// ("farm:<id>") or legacy bare-numeric value. Global selections and blanks
+// yield nil.
+func parseNamespacedFarmProductID(raw string) *uint16 {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	if strings.HasPrefix(raw, "global:") {
+		return nil
+	}
+	if strings.HasPrefix(raw, "farm:") {
+		raw = strings.TrimPrefix(raw, "farm:")
+	}
+	v, err := strconv.ParseUint(raw, 10, 16)
+	if err != nil {
+		return nil
+	}
+	id := uint16(v)
+	return &id
+}
+
+// parseNamespacedGlobalProductID extracts a global catalog product ID from a
+// namespaced ("global:<id>") value. Farm selections and blanks yield nil.
+func parseNamespacedGlobalProductID(raw string) *uint8 {
+	raw = strings.TrimSpace(raw)
+	if !strings.HasPrefix(raw, "global:") {
+		return nil
+	}
+	v, err := strconv.ParseUint(strings.TrimPrefix(raw, "global:"), 10, 8)
+	if err != nil {
+		return nil
+	}
+	id := uint8(v)
+	return &id
+}
+
+// namespacedProductRef renders a stored farm/global product reference as the
+// namespaced string used by the <select> and hidden inputs.
+func namespacedProductRef(farm *uint16, global *uint8) string {
+	if farm != nil {
+		return "farm:" + strconv.FormatUint(uint64(*farm), 10)
+	}
+	if global != nil {
+		return "global:" + strconv.FormatUint(uint64(*global), 10)
+	}
+	return ""
+}
+
 // uint16PtrString formats an optional uint16 identifier for a hidden input.
 func uint16PtrString(p *uint16) string {
 	if p == nil {
@@ -1091,19 +1174,21 @@ func parseDetachedItems(c *gin.Context) ([]nfe_service.DetachedItemInput, entity
 	for i := 0; i < itemCount; i++ {
 		prefix := fmt.Sprintf("items[%d].", i)
 
-		// Check if using farm product
+		// Check which product (if any) was selected. Values are namespaced
+		// ("farm:<id>" / "global:<id>") to avoid collisions between the two
+		// independent small-int key spaces; bare numerics are accepted for
+		// backward compatibility and treated as farm products.
 		var farmProductID *uint16
+		var globalProductID *uint8
 		if fpIDStr := c.PostForm(prefix + "farmProductId"); fpIDStr != "" {
-			if fpID, err := strconv.ParseUint(fpIDStr, 10, 16); err == nil {
-				v := uint16(fpID)
-				farmProductID = &v
-			}
+			farmProductID = parseNamespacedFarmProductID(fpIDStr)
+			globalProductID = parseNamespacedGlobalProductID(fpIDStr)
 		}
 
 		// Parse quantity
 		quantityStr := c.PostForm(prefix + "quantity")
 		quantity, err := decimal.NewFromString(quantityStr)
-		if err != nil || quantity.IsZero() {
+		if err != nil || !quantity.IsPositive() {
 			return nil, entity_public.GetWarningToast(
 				"Quantidade inválida",
 				fmt.Sprintf("Item %d: informe uma quantidade válida", i+1))
@@ -1119,7 +1204,7 @@ func parseDetachedItems(c *gin.Context) ([]nfe_service.DetachedItemInput, entity
 		// Parse unit price
 		unitPriceStr := c.PostForm(prefix + "unitPrice")
 		unitPrice, err := decimal.NewFromString(unitPriceStr)
-		if err != nil || unitPrice.IsZero() {
+		if err != nil || !unitPrice.IsPositive() {
 			return nil, entity_public.GetWarningToast(
 				"Preço unitário inválido",
 				fmt.Sprintf("Item %d: informe um preço unitário válido", i+1))
@@ -1173,17 +1258,18 @@ func parseDetachedItems(c *gin.Context) ([]nfe_service.DetachedItemInput, entity
 		}
 
 		items = append(items, nfe_service.DetachedItemInput{
-			FarmProductID: farmProductID,
-			ProductName:   productName,
-			NCM:           ncm,
-			CEST:          cest,
-			CFOP:          cfop,
-			Quantity:      quantity,
-			GrossWeight:   grossWeight,
-			UnitPrice:     unitPrice,
-			Unit:          unit,
-			Discount:      discount,
-			InfAdProd:     infAdProd,
+			FarmProductID:   farmProductID,
+			GlobalProductID: globalProductID,
+			ProductName:     productName,
+			NCM:             ncm,
+			CEST:            cest,
+			CFOP:            cfop,
+			Quantity:        quantity,
+			GrossWeight:     grossWeight,
+			UnitPrice:       unitPrice,
+			Unit:            unit,
+			Discount:        discount,
+			InfAdProd:       infAdProd,
 		})
 	}
 

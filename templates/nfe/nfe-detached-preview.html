@@ -18,7 +18,8 @@
     </div>
 
     <form class="flex flex-col gap-4" hx-post="/nfe/emitir/build" hx-target="#nfe-detached-preview" hx-swap="innerHTML"
-        hx-indicator="#detached-nfe-confirm-spinner">
+        hx-indicator="#detached-nfe-confirm-spinner" hx-sync="this:drop"
+        hx-disabled-elt="button[type='submit'], #detached-nfe-preview-back">
         {{ if .PersonID }}
         <input type="hidden" name="recipientPersonId" value="{{ .PersonID }}">
         {{ else }}

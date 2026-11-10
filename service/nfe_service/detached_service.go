@@ -45,8 +45,9 @@ type DetachedRecipient struct {
 
 // DetachedItemInput represents a single item in a detached invoice
 type DetachedItemInput struct {
-	FarmProductID *uint16 // nullable - if using a farm product
-	// If FarmProductID is nil, use these fields directly
+	FarmProductID   *uint16 // nullable - if using a farm product
+	GlobalProductID *uint8  // nullable - if using a global catalog product
+	// If both IDs are nil, use these fields directly
 	ProductName string
 	NCM         string
 	CEST        *string
@@ -178,6 +179,24 @@ func (s *NFeService) prepareDetachedBuildData(input DetachedInvoiceInput, dryRun
 	// Item-level wiring validations run before any writes: in the emission
 	// path the inline recipient person row is created only when the whole
 	// input resolves cleanly (see resolveOrCreateRecipient).
+	// Quantity and unit price must be strictly positive: a negative value
+	// here would otherwise slip through (e.g. both negatives yield a positive
+	// gross total) and only fail at SEFAZ after number allocation.
+	var qtyErrs, priceErrs []string
+	for i, item := range input.Items {
+		if !item.Quantity.IsPositive() {
+			qtyErrs = append(qtyErrs, fmt.Sprintf("Item %d: informe uma quantidade válida", i+1))
+		}
+		if !item.UnitPrice.IsPositive() {
+			priceErrs = append(priceErrs, fmt.Sprintf("Item %d: informe um preço unitário válido", i+1))
+		}
+	}
+	if len(qtyErrs) > 0 {
+		return empty, entity_public.GetWarningToast("Quantidade inválida", strings.Join(qtyErrs, "; "))
+	}
+	if len(priceErrs) > 0 {
+		return empty, entity_public.GetWarningToast("Preço unitário inválido", strings.Join(priceErrs, "; "))
+	}
 	if errs := validateItemDiscounts(input.Items); len(errs) > 0 {
 		return empty, entity_public.GetWarningToast("Desconto inválido", strings.Join(errs, "; "))
 	}
@@ -218,6 +237,38 @@ func (s *NFeService) prepareDetachedBuildData(input DetachedInvoiceInput, dryRun
 		return empty, transportToast
 	}
 	input.Transport = transportInput
+
+	// Validate an inline recipient's document (and IE) before any writes so a
+	// malformed CPF/CNPJ or IE is rejected before person creation and number
+	// allocation. Picked recipients (PersonID set) are already validated.
+	if input.Recipient.PersonID == nil {
+		docDigits := cleanDigits(input.Recipient.Document)
+		var recipientErrs []string
+		switch len(docDigits) {
+		case 11:
+			if !isValidCPF(docDigits) {
+				recipientErrs = append(recipientErrs, "CPF do destinatário inválido")
+			}
+		case 14:
+			if !isValidCNPJ(docDigits) {
+				recipientErrs = append(recipientErrs, "CNPJ do destinatário inválido")
+			}
+		default:
+			recipientErrs = append(recipientErrs, "Documento do destinatário deve ter 11 dígitos (CPF) ou 14 (CNPJ)")
+		}
+		if input.Recipient.IE != nil && strings.TrimSpace(*input.Recipient.IE) != "" {
+			ie := strings.TrimSpace(*input.Recipient.IE)
+			if !strings.EqualFold(ie, "ISENTO") {
+				cleaned := cleanIE(ie)
+				if cleaned == "" || len(cleaned) > 14 {
+					recipientErrs = append(recipientErrs, "IE do destinatário inválida")
+				}
+			}
+		}
+		if len(recipientErrs) > 0 {
+			return empty, entity_public.GetWarningToast("Destinatário inválido", strings.Join(recipientErrs, "; "))
+		}
+	}
 
 	// Resolve or create recipient
 	recipientID, recipient, toast := s.resolveOrCreateRecipient(input.Recipient, input.FarmID, nfeModel, dryRun)
@@ -559,10 +610,19 @@ func (s *NFeService) resolveOrCreateRecipient(input DetachedRecipient, farmID ui
 
 	// Create person record (emission only)
 	pModel := person_model.GetPersonModel()
+	cleanedDoc := cleanDigits(input.Document)
+	var cleanedIE *string
+	if input.IE != nil {
+		v := cleanIE(*input.IE)
+		if strings.EqualFold(strings.TrimSpace(*input.IE), "ISENTO") {
+			v = "ISENTO"
+		}
+		cleanedIE = &v
+	}
 	recipientInput := person_model.DetachedRecipientInput{
 		Name:         input.Name,
-		Document:     input.Document,
-		IE:           input.IE,
+		Document:     cleanedDoc,
+		IE:           cleanedIE,
 		Street:       input.Street,
 		Number:       input.Number,
 		Neighborhood: input.Neighborhood,
@@ -599,16 +659,22 @@ func (s *NFeService) mapInlineRecipientData(input DetachedRecipient, nfeModel *n
 		IndIEDest:  "9",
 	}
 
+	cleanDoc := cleanDigits(input.Document)
 	if detachedDocumentType(input.Document) == 2 {
 		recipient.Type = 1 // CNPJ
-		recipient.CNPJ = input.Document
+		recipient.CNPJ = cleanDoc
 	} else {
 		recipient.Type = 2 // CPF
-		recipient.CPF = input.Document
+		recipient.CPF = cleanDoc
 	}
 
-	if input.IE != nil && *input.IE != "" {
-		recipient.IE = *input.IE
+	if input.IE != nil && strings.TrimSpace(*input.IE) != "" {
+		cleanedIE := cleanIE(*input.IE)
+		if strings.EqualFold(strings.TrimSpace(*input.IE), "ISENTO") {
+			recipient.IE = "ISENTO"
+		} else {
+			recipient.IE = cleanedIE
+		}
 		recipient.IndIEDest = "1"
 	}
 	if input.Street != nil {
@@ -649,10 +715,11 @@ func (s *NFeService) mapInlineRecipientData(input DetachedRecipient, nfeModel *n
 	return recipient
 }
 
-// detachedDocumentType infers the person type from the document length:
-// 2 (legal / CNPJ) above 11 characters, 1 (natural / CPF) otherwise.
+// detachedDocumentType infers the person type from the document's digit count:
+// 2 (legal / CNPJ) when it has more than 11 digits, 1 (natural / CPF) otherwise.
+// Mask characters are ignored so a masked CPF is not misclassified as a CNPJ.
 func detachedDocumentType(document string) int {
-	if len(document) > 11 {
+	if len(cleanDigits(document)) > 11 {
 		return 2
 	}
 	return 1
@@ -892,18 +959,19 @@ func (s *NFeService) buildDetachedItems(inputs []DetachedItemInput, farmConfig *
 		// gross minus discount; existing rows without the discount key
 		// retain their original gross values via the JSONB default).
 		itemForDB := nfe_model.DetachedInvoiceItem{
-			FarmProductID: input.FarmProductID,
-			ProductName:   productName,
-			NCM:           ncm,
-			CEST:          cest,
-			CFOP:          cfop,
-			Unit:          unit,
-			Quantity:      input.Quantity,
-			GrossWeight:   input.GrossWeight,
-			UnitPrice:     input.UnitPrice,
-			Discount:      input.Discount,
-			InfAdProd:     input.InfAdProd,
-			TotalValue:    itemNet,
+			FarmProductID:   input.FarmProductID,
+			GlobalProductID: input.GlobalProductID,
+			ProductName:     productName,
+			NCM:             ncm,
+			CEST:            cest,
+			CFOP:            cfop,
+			Unit:            unit,
+			Quantity:        input.Quantity,
+			GrossWeight:     input.GrossWeight,
+			UnitPrice:       input.UnitPrice,
+			Discount:        input.Discount,
+			InfAdProd:       input.InfAdProd,
+			TotalValue:      itemNet,
 		}
 		itemsForDB = append(itemsForDB, itemForDB)
 	}

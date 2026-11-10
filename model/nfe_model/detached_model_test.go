@@ -60,6 +60,25 @@ func TestDetachedInvoiceItem_WithFarmProductID(t *testing.T) {
 	}
 }
 
+func TestDetachedInvoiceItem_WithGlobalProductID(t *testing.T) {
+	globalProductID := uint8(7)
+	item := nfe_model.DetachedInvoiceItem{
+		GlobalProductID: &globalProductID,
+		ProductName:     "Soja",
+		NCM:             "12019000",
+		CFOP:            "5101",
+		Unit:            "KG",
+		Quantity:        decimal.NewFromFloat(10000.0),
+		GrossWeight:     decimal.NewFromFloat(10200.0),
+		UnitPrice:       decimal.NewFromFloat(150.0),
+		TotalValue:      decimal.NewFromFloat(1500000.0),
+	}
+
+	if item.GlobalProductID == nil || *item.GlobalProductID != 7 {
+		t.Errorf("expected GlobalProductID 7, got %v", item.GlobalProductID)
+	}
+}
+
 func TestDetachedInvoice_StructFields(t *testing.T) {
 	naturezaOp := "Venda de produção"
 	modFrete := 1
