@@ -202,6 +202,47 @@ test.describe('pt-BR decimal mask on the detached NF-e form', () => {
     expect(trigger).not.toContain('alíquotas');
   });
 
+  // Keyboard case: pressSequentially presses each key like a physical
+  // keyboard — the comma is the only typable separator (the mask's keydown
+  // filter blocks dot keystrokes), while paste-only dots stay covered by the
+  // fill-based cases above.
+  test('keyboard-typed comma values submit dot-decimal raws without the parse toasts', async ({ page, browserName }) => {
+    await gotoEmitPage(page, browserName);
+
+    await fillInlineRecipient(page, 'Digitado');
+
+    await goToTab(page, 'transac');
+    const row = page.locator('#items-container .item-row').first();
+    await row.locator('input[name="items[0].productName"]').fill('Soja Digitada E2E');
+    await selectCfop(row, '5101');
+    const quantity = row.locator('input[name="items[0].quantity"]');
+    const unitPrice = row.locator('input[name="items[0].unitPrice"]');
+
+    await quantity.pressSequentially('1250,90');
+    await unitPrice.pressSequentially('17,00');
+
+    // The live display groups while data-raw keeps the dot contract.
+    await expect(quantity).toHaveValue('1.250,90');
+    await expect(quantity).toHaveAttribute('data-raw', '1250.90');
+    await expect(unitPrice).toHaveValue('17,00');
+    await expect(unitPrice).toHaveAttribute('data-raw', '17.00');
+
+    await goToTab(page, 'transp');
+    await page.locator('input[name="transportType"][value="new"]').check({ force: true });
+    await page.fill('#transportPlaca', `${faker.string.alpha({ length: 3 }).toUpperCase()}${faker.string.numeric(4)}`);
+
+    const { previewRequest, previewResponse } = await submitPreview(page);
+    const params = bodyParams(await previewRequest);
+    expect(params.get('items[0].quantity')).toBe('1250.90');
+    expect(params.get('items[0].unitPrice')).toBe('17.00');
+
+    const response = await previewResponse;
+    const trigger = (await response.headerValue('HX-Trigger')) || '';
+    expect(trigger).toContain('Certificado digital');
+    expect(trigger).not.toContain('Quantidade');
+    expect(trigger).not.toContain('alíquotas');
+  });
+
   test('comma-typed rates submit dot-decimal raws without the rate parse toast', async ({ page, browserName }) => {
     await gotoEmitPage(page, browserName);
 

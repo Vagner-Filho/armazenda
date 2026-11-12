@@ -109,6 +109,17 @@ func addDeparture(c *gin.Context) {
 	departure, toast := departure_service.AddDeparture(df)
 	if toast != nil {
 		c.Header("HX-Trigger", toast.ToJsonStr())
+		// Failure: refuse the swap so the form keeps the user's input and
+		// no empty row lands in the table (the dialog stays open on
+		// non-2xx responses).
+		if toast.Type == entity_public.ErrorToast {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		if toast.Type == entity_public.WarningToast {
+			c.Status(http.StatusBadRequest)
+			return
+		}
 	}
 
 	c.HTML(http.StatusCreated, "departure-list-item", departure)
@@ -133,6 +144,16 @@ func putDeparture(c *gin.Context) {
 
 	updatedDeparture, toast := departure_service.PutDeparture(df)
 	c.Header("HX-Trigger", string(toast.ToJson()))
+	// Failure: refuse the swap so the table keeps the untouched row instead
+	// of the zero value (same contract as the draft handlers).
+	if toast.Type == entity_public.ErrorToast {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if toast.Type == entity_public.WarningToast {
+		c.Status(http.StatusBadRequest)
+		return
+	}
 
 	c.HTML(http.StatusOK, "departure-list-item", updatedDeparture)
 }

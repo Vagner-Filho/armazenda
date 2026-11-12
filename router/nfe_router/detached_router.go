@@ -127,10 +127,15 @@ func buildDetachedPageView(farmID uint32, profile *nfe_model.DetachedProfile) (d
 	}
 
 	pModel := person_model.GetPersonModel()
-	people, err := pModel.GetPeopleByFarm(farmID)
-	if err != nil {
-		model_error.GetLoggerModel().Log(fmt.Sprintf("buildDetachedPageView GetPeopleByFarm error: %v", err))
-		return detachedPageView{}, err
+	// GetPeopleByFarm returns *model_error.ModelError, not the `error`
+	// interface: a nil result boxed into the shared interface-typed `err`
+	// above would compare non-nil even on success (typed-nil trap). The
+	// dedicated variable keeps the concrete pointer type so the nil check
+	// is a plain pointer comparison.
+	people, peopleErr := pModel.GetPeopleByFarm(farmID)
+	if peopleErr != nil {
+		model_error.GetLoggerModel().Log(fmt.Sprintf("buildDetachedPageView GetPeopleByFarm error: %v", peopleErr))
+		return detachedPageView{}, peopleErr
 	}
 
 	farmProducts, err := farm_product_model.GetFarmProductModel().GetFarmProductsByFarm(farmID)

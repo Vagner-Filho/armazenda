@@ -82,7 +82,33 @@ Commands:
 
 - `cd test/e2e && bunx playwright test tests/detached_decimals.spec.js` (focused; Docker must be available — global-setup handles DB/app/seed)
 
-## Phase 3 — Completion gates & bookkeeping
+## Amendment 1 — weight mask paste fix & tracked-state machine (2026-11-11)
+
+The full E2E battery exposed `weight.js` as the last unguarded surface: its input regex stripped dots from paste-like `fill` events (`47148.55` → `4714855` → SQLSTATE 22003 on `NUMERIC(12,6)`), and both masks re-parsed their own formatted displays (`"50.000"` read back as `50.000`, folding typed integers ÷1000 on blur and mid-typing). This amendment implements the user's contract — **comma is the only typable separator, dots are paste-only artifacts the parser digests** — and covers both input methods (`fill` and `pressSequentially`) as separate test cases.
+
+### Phase A1 — shared tracked-state core (`assets/js/decimalMask.js`)
+- Export `parseToRaw` (full parse: committed comma → last comma is decimal; comma-less strict pt-BR groups of three → grouping; otherwise the last dot is the decimal), `applyInputToRaw(prevRaw, prevValue, newValue)` (single-character edits diffed against the mask's own rendering — the display is never re-parsed; larger edits fall back to `parseToRaw`), `caretAfterDigit` (digit-count caret mapping), `splitRaw`.
+- Keydown: block the dot keystroke (paste-only separator); comma allowed until one is committed.
+- `setupDecimalMaskInput` keeps per-input state in an `inputState` WeakMap (rendered string + canonical raw, trailing point allowed); blur finalizes from the tracked raw; `refreshMask` parses external programmatic writes fresh; the focus swap preserves the browser selection when no rewrite is needed.
+- Unit tests: extend `decimalMask.test.js` usage via the new `weightMask.test.js` sequences (see Phase A3).
+
+### Phase A2 — `assets/js/weight.js` on the shared machine
+- Rebuild `formatForDisplay(raw)` (kg display, trailing-point live comma, submission-safe raw) and rewire `setupWeightInput` handlers to the tracked state. Fixes both the departure and the entry forms.
+- Regression tests: `test/unit/weightMask.test.js` — paste (dot decimal, grouped display, `kg`-suffixed display), typed sequences through the state machine, blur finalization (no fold), empty input.
+
+### Phase A3 — E2E coverage per input method
+- `departure.spec.js`: keep the `fill` paste case (dot decimal + grouped string) with `data-raw` guards; add a `pressSequentially` keyboard case (comma-typed weights) asserting display + raw + the created row.
+- `detached_decimals.spec.js`: add a keyboard-typed comma case (quantity + unit price → dot-decimal payload, certificate-gate toast instead of parse toasts).
+- Prefilled-field edits (modal volumes, rascunho editor price, transport volume edit) use **clear-then-fill** — the deterministic replace, per the SW note above (a fill over a non-empty masked field inserts at the caret, matching paste-at-caret semantics).
+
+### Phase A4 — backend: no silent failure
+- `model/departure_model/model.go` `AddDeparture`: return the query/collect `ModelError` (logger + `IsServerErr`) instead of printing and returning a zero row.
+- `router/departure_router/router.go` `addDeparture`/`putDeparture`: on failure toasts set the status (500/400) and refuse the swap so the dialog keeps the input (mirrors the draft handlers).
+
+### Phase A5 — gates
+- `cd test && bun test unit/`; focused chromium specs; `make test-go` (baseline result set unchanged: the 3 `indPag` failures are a separate work item); full `make test-e2e`.
+
+## Phase 3 — Completion gates & bookkeeping (original feature)
 
 - `make test-js`, then `make test-e2e` (Docker); `make test-go` as the **unchanged-backend sanity gate** — must reproduce the Phase 0 baseline exactly (AC6). Record exact commands and PASS/FAIL/NOT RUN in the spec's Verification Results; keep the spec accurate if scope moved.
 - `git diff --stat` review to confirm the diff touches only `assets/js/**`, `templates/**`, `test/e2e/**`, `docs/sdd/decimal_comma_mask/**` — no Go files (AC6).

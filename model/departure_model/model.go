@@ -213,12 +213,14 @@ func (dm *departureModel) AddDeparture(d entity_public.Departure) (entity_public
 		"originId":      d.Origin,
 	})
 	if queryErr != nil {
-		fmt.Printf("\nadd departure query err:\n%v", queryErr.Error())
+		model_error.GetLoggerModel().Log(fmt.Sprintf("add departure query error: %v", queryErr.Error()))
+		return entity_public.DisplayDeparture{}, &model_error.ModelError{Message: queryErr.Error(), IsServerErr: true}
 	}
 
 	departure, collectErr := pgx.CollectOneRow(row, pgx.RowToStructByPos[entity_public.DisplayDeparture])
 	if collectErr != nil {
-		fmt.Printf("\nadd departure collect err:\n%v", collectErr.Error())
+		model_error.GetLoggerModel().Log(fmt.Sprintf("add departure collect error: %v", collectErr.Error()))
+		return entity_public.DisplayDeparture{}, &model_error.ModelError{Message: collectErr.Error(), IsServerErr: true}
 	}
 
 	return departure, nil

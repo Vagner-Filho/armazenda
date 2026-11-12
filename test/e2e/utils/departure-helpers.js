@@ -78,14 +78,32 @@ async function getDepartureDependencies(page, args = { cropName: faker.lorem.wor
  * @param {Object} data - Entry data
  * @param {string} [data.crop] - Crop ID (if null, will use first available)
  * @param {string} [data.vehicle] - Vehicle ID (if null, will use first available)
- * @param {number} data.grossWeight - Gross weight in kg
- * @param {number} data.tare - Tare weight in kg
+ * @param {number|string} data.grossWeight - Gross weight in kg (a string is used
+ *   as-is, e.g. "9.845,13" to paste a grouped value)
+ * @param {number|string} data.tare - Tare weight in kg
  * @param {string} [data.arrivalDate] - Arrival date in datetime-local format
  * @param {number} data.humidity - Humidity percentage
  * @param {number} data.impurity - Impurity percentage
  * @param {number} data.damage - Damage percentage
+ * @param {Object} [options] - Input options
+ * @param {'fill'|'type'} [options.weightMethod='fill'] - How the masked weight
+ *   inputs receive their value: 'fill' sets it in one event (paste-like, the
+ *   path dots reach the field through), 'type' presses each key
+ *   (pressSequentially — the comma is the only typable separator, so pass
+ *   comma values like "47148,55").
  */
-async function fillDepartureForm(page, data) {
+async function fillDepartureForm(page, data, options = {}) {
+	const weightMethod = options.weightMethod === 'type' ? 'type' : 'fill';
+
+	const fillWeight = async (selector, value) => {
+		const input = page.locator(selector);
+		if (weightMethod === 'type') {
+			await input.pressSequentially(String(value));
+		} else {
+			await input.fill(String(value));
+		}
+	};
+
 	if (data.crop) {
 		await page.locator('select#crop-selector').selectOption(data.crop);
 		await page.waitForTimeout(200);
@@ -101,9 +119,9 @@ async function fillDepartureForm(page, data) {
 		await page.waitForTimeout(200);
 	}
 
-	await page.fill('input#grossWeight', data.grossWeight.toString());
+	await fillWeight('input#grossWeight', data.grossWeight);
 
-	await page.fill('input#tare', data.tare.toString());
+	await fillWeight('input#tare', data.tare);
 
 	if (data.arrivalDate) {
 		await page.fill('input#arrival-date', data.arrivalDate);

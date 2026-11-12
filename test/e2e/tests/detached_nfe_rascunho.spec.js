@@ -197,7 +197,11 @@ test.describe('Rascunho de NF-e', () => {
     await expect(editDialog.locator('select[name$=".cfop"]').nth(1)).toHaveValue('5102');
 
     const editRows = editDialog.locator('.rascunho-item-row');
-    await editRows.nth(0).locator('[data-test-id="rascunho-item-preco"]').fill('151.00');
+    // Clear-then-fill: the editor price is server-prefilled and a fill over a
+    // non-empty masked field inserts at the caret (paste-at-caret semantics).
+    const editPrice = editRows.nth(0).locator('[data-test-id="rascunho-item-preco"]');
+    await editPrice.fill('');
+    await editPrice.fill('151.00');
     await editDialog.locator('[data-test-id="rascunho-form-nome"]').fill(editedName);
 
     const updateResponse = page.waitForResponse(

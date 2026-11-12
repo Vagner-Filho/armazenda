@@ -102,3 +102,42 @@ SW clearance notes recorded during development (implementation learnings, do not
 - WebKit hangs on protocol-level `.click()` inside the emission dialog (documented in-repo in the rascunho/cfop specs); the decimal specs use `el.evaluate(el => el.click())` for tabs/buttons and `el.evaluate(el => el.focus())` for focus assertions (synthetic clicks do not focus on Firefox/WebKit).
 - The main emission page's item/volume wiring lives in a classic `<script>` block; the mask helpers are bridged through `window.*` from the module block (same pattern as `window.initCfopSelectors`), with optional-call guards so load-time invocations (before the module bridge) stay no-ops.
 - `parseDepartureDecimal` already accepted comma form values before this feature (its own established contract). The mask submits dot-decimals there as well, which is accepted input; its round-trip e2e expectations were updated to the echoed dot form (server code untouched).
+
+## Amendment 1 — unified mask contract: comma-only typing, paste-digesting dots, tracked state (2026-11-11)
+
+### Goal
+The original feature left `weight.js` untouched (AC8), and the full E2E battery surfaced two follow-up defects that this amendment fixes:
+
+1. **`weight.js` mangled pasted/filled dot-decimals.** `fill` sets the value in one input event (paste-like, as a real ctrl+v does); the mask's input regex stripped dots, so `47148.55` became `4714855` (×100), which overflowed `departure.grossWeight NUMERIC(12,6)` with SQLSTATE 22003. `departure_model.AddDeparture` only printed the DB error and returned a zero-value row with a success toast — the "empty plate" symptom in the table.
+2. **The masks re-parsed their own formatted display.** A grouped display like `50.000` read back as the decimal `50.000` (the blur of a typed integer folded ÷1000, and mid-typing inserts folded the same way), so a typed integer `50000` blurred into `50`.
+
+### Contract (user decision)
+- The **comma is the only typable decimal separator** — both masks block the dot keystroke in the keydown filter.
+- **The dot reaches the field only through paste/fill**, and the parser digests it — as a decimal (`47148.55`) or as grouping (`47.148,55`).
+- Tests cover **both input methods as separate cases**: `fill` (paste-like) and `pressSequentially` (keyboard).
+
+### Changes
+- **`assets/js/decimalMask.js`**: exports the pure state machine (`parseToRaw`, `applyInputToRaw`, `caretAfterDigit`, `splitRaw`); the keydown filter blocks the dot; the input handler **tracks its own rendering** (an `inputState` WeakMap holding the exact rendered string + its canonical raw) and applies single-character edits by diffing against that state — the mask's own display is never re-parsed (a grouping dot of `50.000` must not read back as `50.000`). Larger edits (multi-char pastes/fills, selection replacements, clears) fall back to the full parse: a committed comma makes the last comma the decimal and dots grouping; a comma-less value with strict pt-BR groups of three is grouping; otherwise the last dot is the decimal. `refreshMask` detects external programmatic writes and parses them fresh; blur finalizes from the tracked raw. The focus swap (display → editable comma raw) leaves the browser selection untouched when no rewrite is needed, and re-applies the captured selection clamped when it rewrites.
+- **`assets/js/weight.js`**: rebuilt on the same machine with the kg-suffix display preserved (`formatForDisplay(raw)` exported, DOM-free); the dot-strip bug is gone.
+- **`model/departure_model/model.go`**: `AddDeparture` returns the query/collect `ModelError` (`IsServerErr: true`, logged via the logger model) instead of printing and returning a zero-value row.
+- **`router/departure_router/router.go`**: `addDeparture`/`putDeparture` honor failure toasts (400/500 and no swap) so the dialog keeps the user's input and no empty row lands in the table.
+- **Tests**: new `test/unit/weightMask.test.js` (display + full-parse + typed sequences); `departure.spec.js` gains a keyboard-typed case (`pressSequentially`) alongside the fill case, with pre-submit `data-raw` guards; `detached_decimals.spec.js` gains a keyboard case; edits over **server-prefilled** masked fields use **clear-then-fill** — the deterministic replace pattern (a fill over a non-empty masked field inserts at the caret, which is exactly paste-at-caret semantics for a user; replacing a derived value is a clear-then-paste).
+
+### Acceptance criteria (amendment)
+| # | Criterion | Verification |
+|---|-----------|--------------|
+| A1 | `fill("47148.55")` (paste, dot decimal) and a grouped `"9.845,13"` paste into empty masked weight inputs keep `data-raw` `47148.55`/`9845.13`; the departure posts clean weights and the row renders plate `ABC123` + `37.303,42 kg` (no 22003, no empty plate). | E2E `departure.spec.js` "analysis values" |
+| A2 | `pressSequentially("47148,55")` (keyboard) shows the grouped kg display, keeps `data-raw="47148.55"`, and creates the same row. | E2E `departure.spec.js` "comma-typed weights via keyboard" |
+| A3 | A typed integer `50000` keeps its raw through live formatting and blur (`50.000 kg`, raw `50000`) — no ÷1000 fold; the keydown filter blocks dot keystrokes (paste-only dots). | Unit `weightMask.test.js` + e2e keyboard cases |
+| A4 | A departure DB failure surfaces as a pt-br toast and no empty row is swapped (dialog stays open). | Go service/router path (`IsServerErr` → error toast; handler 500 without swap) |
+| A5 | Existing comma-mask behavior stays green (nfe-emit fill cases, volume prefill via `refreshMask`, draft round-trip, modal comma fields). | `detached_decimals.spec.js` + `departure_nfe_decimals.spec.js` |
+| A6 | Keyboard-typed comma values on the nfe-emit form submit dot-decimals without the parse toasts. | E2E `detached_decimals.spec.js` keyboard case |
+
+### Verification results (amendment)
+| Command | Result |
+|---------|--------|
+| `cd test && bun test unit/` | PASS — 95 pass / 0 fail (incl. the new weightMask suite) |
+| Focused chromium: `departure.spec.js` + `detached_decimals.spec.js` | PASS — 9/9 (integers, paste, keyboard) |
+| Focused chromium: `departure_nfe_decimals` + `transport` + `rascunho` + `inf_ad_prod` | PASS — except the two pre-existing certificate-gate failures (transport/rascunho preview 400 — Group B2 of the battery audit, unrelated) |
+| `make test-go` | PASS — same result set as the baseline (3 pre-existing `indPag`/`includeCobranca` failures, unrelated to this amendment) |
+| `make test-e2e` (full, all browsers) | PASS-with-known-failures — **41 fail / 155 pass / 11 skip** (baseline before this amendment: 45 fail / 145 pass). Delta: the departure paste case is green on chromium and firefox (Group A fixed); the 2 new keyboard cases pass on chromium/firefox and join the pre-existing WebKit environment cluster; the WebKit/Firefox flake class shifted a few items (e.g. cfop `:305`, decimals draft-save, two transport items healed; transport `:128` joined the cluster). Remaining failures are the pre-existing certificate-gate set (12), the `indPag`/`includeCobranca` wiring (3) and the WebKit environment cluster — all documented in the battery audit, none introduced here |

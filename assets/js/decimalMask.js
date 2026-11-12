@@ -15,6 +15,9 @@
  *   attribute) exactly like `weight.js` does.
  * - SUBMISSION: `wireDecimalParamOverride()` replaces matching htmx
  *   parameters with the raw value so the dot-only contract is respected.
+ * - TYPING: the comma is the only typable decimal separator — the keydown
+ *   filter blocks the dot. Dots reach the field only through paste, where
+ *   the parser digests them (as decimal or grouping) instead of choking.
  *
  * If this module never runs (stale cached JS, no script), the display value
  * reaches the server as-is and the existing toasts fire — a loud failure,
@@ -78,6 +81,208 @@ function parseMaskedValue(value) {
 /** Groups thousands with dots: "12500" → "12.500". */
 function groupIntDigits(intDigits) {
     return intDigits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+export { parseMaskedValue, groupIntDigits, splitRaw };
+
+/**
+ * Canonical raw of the tracked input state: digits with at most one decimal
+ * point ("47148", "47148.", "47148.55"). A trailing point means the user
+ * committed a decimal separator whose fraction is still empty.
+ */
+
+function digitsOnly(text) {
+    let out = '';
+    for (const ch of text) {
+        if (ch >= '0' && ch <= '9') out += ch;
+    }
+    return out;
+}
+
+/** Splits a canonical raw into its digit parts. */
+function splitRaw(raw) {
+    const text = raw == null ? '' : String(raw);
+    const point = text.indexOf('.');
+    if (point === -1) {
+        return { intDigits: digitsOnly(text), fracDigits: '', hasPoint: false };
+    }
+    return {
+        intDigits: digitsOnly(text.slice(0, point)),
+        fracDigits: digitsOnly(text.slice(point + 1)),
+        hasPoint: true,
+    };
+}
+
+/** Joins the digit parts back into a canonical raw. */
+function buildRaw(intDigits, fracDigits, hasPoint) {
+    let int = intDigits;
+    if (hasPoint && int === '') int = '0';
+    if (int === '' && fracDigits === '') return '';
+    if (!hasPoint) return int;
+    return `${int}.${fracDigits}`;
+}
+
+/** Number of digits before position p of value. */
+function digitCountBefore(value, p) {
+    let n = 0;
+    const end = Math.min(p, value.length);
+    for (let i = 0; i < end; i++) {
+        if (value[i] >= '0' && value[i] <= '9') n++;
+    }
+    return n;
+}
+
+/**
+ * Full parse of a value that did not come from this mask's own rendering
+ * (pasted text, a Playwright/multi-char fill, a programmatic write):
+ *
+ * - a committed comma makes the LAST comma the decimal separator and every
+ *   dot grouping noise ("47.148,55" → 47148.55);
+ * - a comma-less value matching strict pt-BR grouping (groups of exactly
+ *   three) is grouping noise ("50.000" → 50000 — the mask's own display and
+ *   pt-BR-formatted pastes round-trip);
+ * - otherwise the LAST dot is the decimal separator ("47148.55" → 47148.55).
+ *
+ * The dot-only cases are inherently ambiguous; the strict-3 rule resolves
+ * them towards the pt-BR display convention, which is the common one.
+ *
+ * @param {string|number|null} value
+ * @returns {string} canonical raw ("" when there are no digits).
+ */
+export function parseToRaw(value) {
+    const cleaned = String(value ?? '').replace(/[^0-9.,]/g, '');
+    if (cleaned === '') return '';
+    if (cleaned.includes(',')) {
+        const { intDigits, fracDigits, hasSep } = parseMaskedValue(cleaned);
+        if (!hasSep) return intDigits;
+        return `${intDigits || '0'}.${fracDigits}`;
+    }
+    if (/^\d{1,3}(?:\.\d{3})+$/.test(cleaned)) {
+        return digitsOnly(cleaned);
+    }
+    const { intDigits, fracDigits, hasSep } = parseMaskedValue(cleaned);
+    if (!hasSep) return intDigits;
+    return `${intDigits || '0'}.${fracDigits}`;
+}
+
+/**
+ * Applies one input event to the tracked mask state without re-parsing the
+ * mask's own display.
+ *
+ * The mask renders formatted values (grouping dots, unit suffixes) into the
+ * field, and re-parsing that display is ambiguous — a grouping dot of
+ * "50.000" would read back as the decimal 50.000. Instead, the caller
+ * remembers the exact string it last rendered (`prevValue`) together with its
+ * canonical raw (`prevRaw`), and this function:
+ *
+ * - single-character edits (typing and one-char pastes): locate the edit by
+ *   diffing against `prevValue`, map its position into the raw's digit
+ *   stream, and apply it there;
+ * - larger edits (multi-char pastes/fills, selection replacements, clears):
+ *   fall back to the full `parseToRaw` of the new value.
+ *
+ * A comma keystroke commits the decimal point at its digit position (a
+ * trailing point marks an empty fraction); deleting the display comma
+ * un-commits it; deleting a grouping dot or unit text leaves the raw alone.
+ *
+ * @param {string} prevRaw canonical raw of the previously rendered value.
+ * @param {string} prevValue exact string previously rendered into the field.
+ * @param {string} newValue the field's value after the edit.
+ * @returns {{raw: string, caretDigits: number}} new canonical raw plus the
+ *   number of digits that sit before the caret after the edit (feed it to
+ *   `caretAfterDigit` once the new display is rendered).
+ */
+export function applyInputToRaw(prevRaw, prevValue, newValue) {
+    prevValue = prevValue == null ? '' : String(prevValue);
+    newValue = newValue == null ? '' : String(newValue);
+
+    // Common prefix/suffix diff: the edit lives between them.
+    let start = 0;
+    const maxStart = Math.min(prevValue.length, newValue.length);
+    while (start < maxStart && prevValue[start] === newValue[start]) start++;
+    let endPrev = prevValue.length;
+    let endNew = newValue.length;
+    while (endPrev > start && endNew > start && prevValue[endPrev - 1] === newValue[endNew - 1]) {
+        endPrev--;
+        endNew--;
+    }
+    const removed = prevValue.slice(start, endPrev);
+    const inserted = newValue.slice(start, endNew);
+
+    const { intDigits, fracDigits, hasPoint } = splitRaw(prevRaw);
+
+    if (inserted.length === 1 && removed === '') {
+        const k = digitCountBefore(prevValue, start);
+        const ch = inserted;
+        if (ch >= '0' && ch <= '9') {
+            if (!hasPoint || k < intDigits.length) {
+                const newInt = intDigits.slice(0, k) + ch + intDigits.slice(k);
+                return { raw: buildRaw(newInt, fracDigits, hasPoint), caretDigits: k + 1 };
+            }
+            const fi = k - intDigits.length;
+            const newFrac = fracDigits.slice(0, fi) + ch + fracDigits.slice(fi);
+            return { raw: buildRaw(intDigits, newFrac, true), caretDigits: k + 1 };
+        }
+        if (ch === ',' || ch === '.') {
+            const allDigits = intDigits + fracDigits;
+            return { raw: buildRaw(allDigits.slice(0, k), allDigits.slice(k), true), caretDigits: k };
+        }
+        return { raw: prevRaw, caretDigits: k };
+    }
+
+    if (inserted === '' && removed.length === 1) {
+        const removedChar = removed;
+        const k = digitCountBefore(prevValue, start);
+        if (removedChar >= '0' && removedChar <= '9') {
+            if (!hasPoint || k < intDigits.length) {
+                const newInt = intDigits.slice(0, k) + intDigits.slice(k + 1);
+                return { raw: buildRaw(newInt, fracDigits, hasPoint), caretDigits: k };
+            }
+            const fi = k - intDigits.length;
+            const newFrac = fracDigits.slice(0, fi) + fracDigits.slice(fi + 1);
+            return { raw: buildRaw(intDigits, newFrac, true), caretDigits: k };
+        }
+        if (removedChar === ',') {
+            // Un-commit the decimal: the digits stay in order.
+            const allDigits = intDigits + fracDigits;
+            return { raw: buildRaw(allDigits, '', false), caretDigits: k };
+        }
+        // Grouping dots and unit-suffix text are not part of the raw.
+        return { raw: prevRaw, caretDigits: k };
+    }
+
+    const fullRaw = parseToRaw(newValue);
+    return { raw: fullRaw, caretDigits: splitRaw(fullRaw).intDigits.length + splitRaw(fullRaw).fracDigits.length };
+}
+
+/** Position just after the n-th digit of a display value (end when fewer). */
+function positionAfterDigit(display, n) {
+    let seen = 0;
+    for (let i = 0; i < display.length; i++) {
+        if (display[i] >= '0' && display[i] <= '9') {
+            seen++;
+            if (seen === n) return i + 1;
+        }
+    }
+    return display.length;
+}
+
+/**
+ * Caret position after reformatting: keep the caret just after the same
+ * digit index the edit touched (or at the end for appends). Counting digits
+ * instead of digits-plus-separators keeps the caret from drifting one slot
+ * earlier per grouping dot; a separator immediately following the caret
+ * (e.g. the just-typed decimal comma) is stepped over.
+ *
+ * @param {string} newDisplay the freshly rendered display value.
+ * @param {number} digitIndex number of digits that sit before the caret.
+ * @returns {number}
+ */
+export function caretAfterDigit(newDisplay, digitIndex) {
+    if (digitIndex <= 0) return 0;
+    let pos = positionAfterDigit(newDisplay, digitIndex);
+    while (pos < newDisplay.length && (newDisplay[pos] === ',' || newDisplay[pos] === '.')) pos++;
+    return pos;
 }
 
 /**
@@ -179,40 +384,49 @@ function maskOptions(input) {
 }
 
 /**
- * Recomputes the display and the `data-raw` of a single masked input from its
- * current value (no cursor bookkeeping). Exported for programmatic value
- * writes, which do not fire `input` events.
+ * Per-input tracked state: exactly what the mask last rendered into the
+ * field (`value`) and its canonical raw (`raw`, which may carry a trailing
+ * point for a committed-but-empty fraction). The WeakMap keeps cloned rows
+ * and dynamic forms independent.
+ */
+const inputState = new WeakMap();
+
+/** The submitted `data-raw` never carries a trailing point ("47148."). */
+function submissionRaw(raw) {
+    const point = String(raw).indexOf('.');
+    if (point !== -1 && String(raw).slice(point + 1) === '') return String(raw).slice(0, point);
+    return String(raw);
+}
+
+/**
+ * Recomputes the display and the `data-raw` of a single masked input.
+ * Exported for programmatic value writes, which do not fire `input` events:
+ * when the field's value differs from what the mask last rendered, the
+ * written value is parsed fresh (it did not come from the mask's own
+ * rendering); otherwise the tracked raw is re-rendered.
  *
  * @param {HTMLInputElement} input
+ * @param {{final?: boolean}} [options] finalize (blur) drops a trailing separator.
  */
-export function refreshMask(input) {
+export function refreshMask(input, options = {}) {
     if (!input || !boundInputs.has(input)) return;
-    const result = formatDecimalInput(input.value, maskOptions(input));
+    const state = inputState.get(input) || { raw: '', value: '' };
+    let raw = state.raw;
+    if (input.value !== state.value) {
+        raw = parseToRaw(input.value);
+    }
+    if (raw === '') {
+        input.value = '';
+        input.dataset.raw = '';
+        inputState.set(input, { raw: '', value: '' });
+        return;
+    }
+    const result = formatDecimalInput(raw, { ...maskOptions(input), ...options });
     input.dataset.raw = result.raw;
     if (result.formatted !== input.value) {
         input.value = result.formatted;
     }
-}
-
-/** Re-run the display formatting without moving the caret (blur-style). */
-function formatFinal(input) {
-    const hasDigits = /[\d]/.test(input.value || '');
-    if (!hasDigits) {
-        input.value = '';
-        input.dataset.raw = '';
-        return;
-    }
-    const result = formatDecimalInput(input.value, { ...maskOptions(input), final: true });
-    input.value = result.formatted;
-    input.dataset.raw = result.raw;
-}
-
-/** Show the editable comma-decimal raw (no grouping) on focus. */
-function showRaw(maskedInput) {
-    const raw = maskedInput.dataset.raw;
-    if (raw && raw !== '') {
-        maskedInput.value = raw.replace('.', ',');
-    }
+    inputState.set(input, { raw, value: result.formatted });
 }
 
 /**
@@ -225,24 +439,50 @@ function showRaw(maskedInput) {
 function setupDecimalMaskInput(input, signal) {
     if (!input || boundInputs.has(input)) return;
     boundInputs.add(input);
+    inputState.set(input, { raw: '', value: '' });
 
     function handleInput() {
-        const oldValue = input.value;
-        const oldCursor = input.selectionStart || 0;
+        const newValue = input.value;
+        const state = inputState.get(input);
 
-        const result = formatDecimalInput(oldValue, maskOptions(input));
+        // Diff against exactly what the mask last rendered — the mask's own
+        // display is never re-parsed (a grouping dot of "50.000" would read
+        // back as the decimal 50.000).
+        const { raw: newRaw, caretDigits } = applyInputToRaw(state.raw, state.value, newValue);
+        state.raw = newRaw;
+
+        const result = formatDecimalInput(newRaw, maskOptions(input));
         input.dataset.raw = result.raw;
 
-        // Skip if nothing changed (prevents cursor jumps and loops)
-        if (result.formatted === oldValue) return;
+        if (result.formatted === '') {
+            input.value = '';
+            state.value = '';
+            return;
+        }
 
-        input.value = result.formatted;
-        const newCursor = computeCursorPosition(oldValue, oldCursor, result.formatted);
-        input.setSelectionRange(newCursor, newCursor);
+        if (result.formatted !== newValue) {
+            input.value = result.formatted;
+        }
+        const caret = caretAfterDigit(result.formatted, caretDigits);
+        if (typeof input.setSelectionRange === 'function') {
+            input.setSelectionRange(caret, caret);
+        }
+        state.value = result.formatted;
     }
 
     function handleBlur() {
-        formatFinal(input);
+        const state = inputState.get(input);
+        if (state.raw === '') {
+            input.value = '';
+            input.dataset.raw = '';
+            state.value = '';
+            return;
+        }
+        // Finalize from the tracked raw — never re-parse the rendered display.
+        const result = formatDecimalInput(state.raw, { ...maskOptions(input), final: true });
+        input.value = result.formatted;
+        input.dataset.raw = result.raw;
+        state.value = result.formatted;
     }
 
     function handleKeydown(e) {
@@ -252,12 +492,17 @@ function setupDecimalMaskInput(input, signal) {
         if (['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) {
             return;
         }
-        // Allow comma or dot for the decimal separator (treat dot same as comma);
-        // block once the editor already committed one.
-        if (e.key === ',' || e.key === '.') {
+        // The comma is the only typable decimal separator; block once the
+        // editor already committed one. The dot is a paste-only separator
+        // (digested by the parser), so typing it is always blocked.
+        if (e.key === ',') {
             if ((input.value || '').includes(',')) {
                 e.preventDefault();
             }
+            return;
+        }
+        if (e.key === '.') {
+            e.preventDefault();
             return;
         }
         // Allow digits
@@ -268,18 +513,43 @@ function setupDecimalMaskInput(input, signal) {
 
     input.addEventListener('input', handleInput, signal ? { signal } : undefined);
     input.addEventListener('blur', handleBlur, signal ? { signal } : undefined);
-    // showRaw is a module-scoped helper taking the element; wrap it so the
-    // focus handler binds the input (an addEventListener'd function receives
-    // the event object, not the element).
-    input.addEventListener('focus', () => showRaw(input), signal ? { signal } : undefined);
+    // Focus shows the editable comma raw and records it as the rendered
+    // value, so the next input event diffs against what is actually in the
+    // field. When the value needs no rewrite (the display already equals the
+    // editable raw) the browser selection is left untouched — a select-all
+    // (Playwright's fill selects before focusing) survives it. When the value
+    // IS rewritten, the browser collapses the selection to the caret, so the
+    // captured selection is re-applied clamped to the rewritten value.
+    input.addEventListener('focus', () => {
+        const state = inputState.get(input);
+        if (state.raw !== '') {
+            const editable = state.raw.replace('.', ',');
+            if (input.value === editable) {
+                state.value = editable;
+                return;
+            }
+            const selStart = typeof input.selectionStart === 'number' ? input.selectionStart : null;
+            const selEnd = typeof input.selectionEnd === 'number' ? input.selectionEnd : null;
+            input.value = editable;
+            state.value = editable;
+            if (selStart !== null && selEnd !== null) {
+                input.setSelectionRange(
+                    Math.min(selStart, editable.length),
+                    Math.min(selEnd, editable.length),
+                );
+            }
+        }
+    }, signal ? { signal } : undefined);
     input.addEventListener('keydown', handleKeydown, signal ? { signal } : undefined);
 
     // Normalize any server-prefilled value ("17.00" → display "17,00",
     // data-raw keeps the dot form). Always recomputed so cleansed clear the
     // stale clone data (cloned rows carry data-raw attributes).
-    const initial = formatDecimalInput(input.value, maskOptions(input));
+    const initialRaw = parseToRaw(input.value);
+    const initial = formatDecimalInput(initialRaw, maskOptions(input));
     input.dataset.raw = initial.raw;
     input.value = initial.formatted;
+    inputState.set(input, { raw: initialRaw, value: initial.formatted });
 }
 
 /**

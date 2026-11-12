@@ -183,6 +183,10 @@ test.describe('Transporte section of the detached NF-e form', () => {
     await expect(page.locator('#volPesoB')).toHaveValue('10,2');
 
     // A user edit stops that field's auto-update; others keep mirroring.
+    // Clear-then-fill: the field is prefilled and a fill over a non-empty
+    // masked field inserts at the caret (paste-at-caret semantics) — the
+    // deterministic replace is clear-then-fill.
+    await page.fill('#volPesoL', '');
     await page.fill('#volPesoL', '999');
 
     // Add a second item (on the Transação tab): quantity sum changes from 10 to 30.

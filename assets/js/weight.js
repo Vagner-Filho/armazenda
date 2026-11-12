@@ -1,3 +1,5 @@
+import { applyInputToRaw, caretAfterDigit, groupIntDigits, parseToRaw } from "./decimalMask.js";
+
 const kgFormatter = Intl.NumberFormat('pt-BR', {
   style: 'unit',
   unit: 'kilogram',
@@ -26,115 +28,140 @@ export function formatWeight(value) {
 }
 
 /**
- * Formats a weight value for display without padding decimals.
+ * Formats a canonical raw ("47148", "47148.", "47148.55") for display and
+ * keeps the submitted raw.
  *
- * @param {string} value - The completely raw value.
- * @param {boolean} hasDotDecimal - Avoid stripping decimal if it is a dot.
- * @returns {{formatted: string, raw: string}}
+ * The display is the pt-BR kg formatting ("47.148,55 kg"); a trailing point
+ * (a committed-but-empty fraction) renders as a live trailing comma without
+ * the unit suffix, and finalizing (blur) drops it. The returned raw is
+ * submission-safe: a trailing point never reaches the server.
+ *
+ * DOM-free core, exported for unit tests (the decimalMask pattern). Parsing
+ * of pasted/typed display text lives in decimalMask.js (`parseToRaw` /
+ * `applyInputToRaw`) — this function only renders the canonical raw.
+ *
+ * @param {string} raw - the canonical raw value.
+ * @param {{final?: boolean}} [options] - final (blur) drops a trailing separator.
+ * @returns {{formatted: string, raw: string}} display + dot-decimal raw.
+ *   Both strings are empty when the value has no digits.
  */
-function formatForDisplay(value, hasDotDecimal) {
-  // makes sure value is raw and valid decimal.
-  const withDecimal = hasDotDecimal ? value : value.replace(/[^0-9,]/g, '').replace(',', '.');
-  if (withDecimal[withDecimal.length - 1] === '.') {
-    return { formatted: value, raw: withDecimal.substring(0, withDecimal.length - 1) };
-  }
-
-  const formatted = kgFormatter.format(withDecimal);
-
-  if (withDecimal === '') {
+export function formatForDisplay(raw, options = {}) {
+  const final = options.final ?? false;
+  const text = raw == null ? '' : String(raw);
+  const point = text.indexOf('.');
+  const intDigits = point === -1 ? digitsOnly(text) : digitsOnly(text.slice(0, point));
+  const fracDigits = point === -1 ? '' : digitsOnly(text.slice(point + 1));
+  if (intDigits === '' && fracDigits === '') {
     return { formatted: '', raw: '' };
   }
 
-  return { formatted, raw: withDecimal };
+  const trailing = point !== -1 && fracDigits === '';
+  const rawOut = point !== -1 && fracDigits !== '' ? `${intDigits || '0'}.${fracDigits}` : intDigits;
+
+  let formatted;
+  if (trailing && !final) {
+    formatted = `${groupIntDigits(intDigits)},`;
+  } else {
+    formatted = kgFormatter.format(point !== -1 ? `${intDigits || '0'}.${fracDigits}` : intDigits);
+  }
+
+  return { formatted, raw: rawOut };
+}
+
+/**
+ * Digits of a string, in order.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+function digitsOnly(text) {
+  let out = '';
+  for (const ch of text) {
+    if (ch >= '0' && ch <= '9') out += ch;
+  }
+  return out;
 }
 
 /**
  * Sets up a weight input with live formatting.
- * On init, formats any existing numeric value to XX.XXX kg.
- * On input, formats in real-time with thousands separators and " kg" suffix.
+ * On init, normalizes any existing server value to the display form.
+ * On input, formats in real-time with thousands separators and " kg" suffix,
+ * tracked against the mask's own rendering (never re-parsed).
  * On blur, shows the final formatted value.
- * On focus, shows raw editable value.
+ * On focus, shows the raw editable value.
  *
  * @param {HTMLInputElement} input - The input element.
  * @param {AbortSignal} signal - AbortSignal for cleanup.
  */
-/**
- * Computes the new cursor position after reformatting by matching the number
- * of significant characters (digits + decimal separator) before the old cursor.
- *
- * @param {string} oldValue
- * @param {number} oldCursor
- * @param {string} newValue
- * @returns {number}
- */
-function computeCursorPosition(oldValue, oldCursor, newValue) {
-  if (oldCursor <= 0) return 0;
-
-  // Count significant chars (digits and the decimal separator) before old cursor
-  let significantCount = 0;
-  for (let i = 0; i < oldCursor && i < oldValue.length; i++) {
-    if (/[0-9]/.test(oldValue[i]) || oldValue[i] === ',' || oldValue[i] === '.') {
-      significantCount++;
-    }
-  }
-
-  // Find the position in newValue where we've passed the same number of significant chars
-  let count = 0;
-  for (let i = 0; i < newValue.length; i++) {
-    if (/[0-9]/.test(newValue[i]) || newValue[i] === ',' || newValue[i] === '.') {
-      count++;
-    }
-  }
-
-  if (count >= significantCount) {
-    return count;
-  }
-
-  return newValue.length;
-}
-
 export function setupWeightInput(input, signal) {
   if (!input) return;
 
+  // Tracked state: exactly what the mask last rendered into the field and
+  // its canonical raw (which may carry a trailing point for a committed
+  // but-empty fraction). The mask's own display is never re-parsed.
+  let stateRaw = '';
+  let renderedValue = '';
+
   function handleInput() {
-    const oldValue = input.value;
-    const oldCursor = input.selectionStart || 0;
+    const newValue = input.value;
 
-    const result = formatForDisplay(oldValue);
-    if (result.formatted === '') {
-      input.value = '';
-      input.dataset.raw = '';
-      return;
-    }
+    const { raw: newRaw, caretDigits } = applyInputToRaw(stateRaw, renderedValue, newValue);
+    stateRaw = newRaw;
 
-    // Skip if nothing changed (prevents cursor jumps and loops)
-    if (result.formatted === oldValue) {
-      input.dataset.raw = result.raw;
-      return;
-    }
-
-    input.value = result.formatted;
+    const result = formatForDisplay(newRaw);
     input.dataset.raw = result.raw;
 
-    const newCursor = computeCursorPosition(oldValue, oldCursor, result.formatted);
-    input.setSelectionRange(newCursor, newCursor);
+    if (result.formatted === '') {
+      input.value = '';
+      renderedValue = '';
+      return;
+    }
+
+    if (result.formatted !== newValue) {
+      input.value = result.formatted;
+    }
+    const caret = caretAfterDigit(result.formatted, caretDigits);
+    input.setSelectionRange(caret, caret);
+    renderedValue = result.formatted;
   }
 
   function handleBlur() {
-    if (!input.value || input.value.replace(/[^0-9]/g, '') === '') {
+    if (stateRaw === '') {
       input.value = '';
       input.dataset.raw = '';
+      renderedValue = '';
       return;
     }
-    const result = formatForDisplay(input.value);
+    // Finalize from the tracked raw — never re-parse the rendered display.
+    const result = formatForDisplay(stateRaw, { final: true });
     input.value = result.formatted;
     input.dataset.raw = result.raw;
+    renderedValue = result.formatted;
   }
 
+  // Focus shows the raw editable value and records it as the rendered
+  // value. When the value needs no rewrite (the display already equals the
+  // editable raw) the browser selection is left untouched — a select-all
+  // (Playwright's fill selects before focusing) survives it. When the value
+  // IS rewritten, the browser collapses the selection to the caret, so the
+  // captured selection is re-applied clamped to the rewritten value.
   function handleFocus() {
-    const raw = input.dataset.raw;
-    if (raw && raw !== '') {
-      input.value = raw.replace('.', ',');
+    if (stateRaw !== '') {
+      const editable = stateRaw.replace('.', ',');
+      if (input.value === editable) {
+        renderedValue = editable;
+        return;
+      }
+      const selStart = typeof input.selectionStart === 'number' ? input.selectionStart : null;
+      const selEnd = typeof input.selectionEnd === 'number' ? input.selectionEnd : null;
+      input.value = editable;
+      renderedValue = editable;
+      if (selStart !== null && selEnd !== null) {
+        input.setSelectionRange(
+          Math.min(selStart, editable.length),
+          Math.min(selEnd, editable.length),
+        );
+      }
     }
   }
 
@@ -147,11 +174,17 @@ export function setupWeightInput(input, signal) {
     if (['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) {
       return;
     }
-    // Allow comma or dot for decimal separator (treat dot same as comma)
-    if (e.key === ',' || e.key === '.') {
+    // The comma is the only typable decimal separator; block once the
+    // editor already committed one. The dot is a paste-only separator
+    // (digested by the parser), so typing it is always blocked.
+    if (e.key === ',') {
       if (input.value.includes(',')) {
         e.preventDefault();
       }
+      return;
+    }
+    if (e.key === '.') {
+      e.preventDefault();
       return;
     }
     // Allow digits
@@ -162,12 +195,15 @@ export function setupWeightInput(input, signal) {
     e.preventDefault();
   }
 
-  // Initialize: handle both raw numeric and pre-formatted initial values
-  const initialValue = input.value;
-  const result = formatForDisplay(initialValue, true);
+  // Initialize: normalize any existing server or pasted value to the display
+  // form ("47148.55" → "47.148,55 kg", raw keeps the dot-decimal).
+  const initialRaw = parseToRaw(input.value);
+  const result = formatForDisplay(initialRaw);
+  stateRaw = initialRaw;
   if (result.raw !== '') {
     input.dataset.raw = result.raw;
     input.value = result.formatted;
+    renderedValue = result.formatted;
   }
 
   input.addEventListener('input', handleInput, { signal });

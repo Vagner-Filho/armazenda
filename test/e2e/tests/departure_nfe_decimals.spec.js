@@ -91,12 +91,20 @@ test('comma-typed unit price and volumes in the emission modal submit dot-decima
     await expect(unitPrice).toHaveValue('85,50');
     await expect(unitPrice).toHaveAttribute('data-raw', '85.50');
 
+    // Clear-then-fill for the server-prefilled volume fields (the SDD's
+    // deterministic pattern): a fill over a non-empty masked field inserts at
+    // the caret — Playwright selects, but the mask's focus swap (display →
+    // editable raw) resets the selection — so the pasted text appends. A real
+    // user's ctrl+v behaves the same way at a caret; replacing the derived
+    // value is a clear-then-paste.
     const volPesoL = modal.locator('#volPesoL');
+    await volPesoL.fill('');
     await volPesoL.fill('95,5');
     await expect(volPesoL).toHaveValue('95,5');
     await expect(volPesoL).toHaveAttribute('data-raw', '95.5');
 
     const volPesoB = modal.locator('#volPesoB');
+    await volPesoB.fill('');
     await volPesoB.fill('100,25');
     await expect(volPesoB).toHaveValue('100,25');
     await expect(volPesoB).toHaveAttribute('data-raw', '100.25');
