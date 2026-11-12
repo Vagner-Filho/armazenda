@@ -13,6 +13,7 @@
 import { test, expect } from '@playwright/test';
 import { execSync } from 'child_process';
 import { faker } from '@faker-js/faker';
+import { generateCNPJ } from '../utils/document-helpers';
 import { login } from '../utils/auth';
 
 const DB = {
@@ -237,7 +238,7 @@ test.describe('Rascunho de NF-e', () => {
     await login(page, browserName);
 
     const name = `Rascunho Formulário ${uniqueSuffix()}`;
-    const document = faker.string.numeric(14);
+    const document = generateCNPJ();
 
     await gotoApp(page, '/nfe/emitir');
     await expect(page.locator('#detached-nfe-form')).toBeVisible();
@@ -304,7 +305,7 @@ test.describe('Rascunho de NF-e', () => {
     ).toBeChecked();
 
     // A plain preview of an inline recipient creates no person and persists nothing.
-    const dryDocument = faker.string.numeric(14);
+    const dryDocument = generateCNPJ();
     await gotoApp(page, '/nfe/emitir');
     await page.locator('input[name="recipientType"][value="new"]').check({ force: true });
     await page.fill('#recipientName', 'Cliente Preview E2E');

@@ -67,6 +67,20 @@
                             </select>
                             <label for="tpag" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs 2xl:text-sm font-medium uppercase tracking-wider">Forma de pagamento</label>
                         </div>
+                        <div class="flex flex-col-reverse">
+                            <select name="indPag" id="indPag" data-test-id="departure-indpag"
+                                class="peer bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-lg 2xl:px-3 2xl:py-2 focus:outline-none focus:border-white/40">
+                                <option value="0" {{ if eq .DefaultIndPag "0" }}selected{{ end }}>0 - À vista</option>
+                                <option value="1" {{ if eq .DefaultIndPag "1" }}selected{{ end }}>1 - A prazo</option>
+                            </select>
+                            <label for="indPag" class="peer-focus:text-white text-white/70 transition-all duration-300 ease-linear px-2 text-xs 2xl:text-sm font-medium uppercase tracking-wider">Indicador de pagamento</label>
+                        </div>
+                        <input type="hidden" name="includeCobrancaSpecified" value="1">
+                        <label class="flex items-center gap-2 cursor-pointer text-white/80 select-none">
+                            <input type="checkbox" name="includeCobranca" id="includeCobranca" value="1" {{ if .DefaultIncludeCobranca }}checked{{ end }}
+                                class="size-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/40 accent-white">
+                            <span class="text-xs 2xl:text-sm">Gerar cobrança (cobr/fat)</span>
+                        </label>
                     </fieldset>
                     <fieldset class="flex flex-col gap-2 p-4 glass-panel rounded-xl space-y-2">
                         <legend class="text-base lg:text-lg font-semibold text-white/95 border-b border-white/20 w-full">

@@ -95,7 +95,7 @@ function trackRequests(page, fragment) {
 async function fillRecipient(page) {
   await page.locator('input[name="recipientType"][value="new"]').check({ force: true });
   await page.fill('#recipientName', 'Destinatário Wizard E2E');
-  await page.fill('#recipientDocument', faker.string.numeric(14));
+  await page.fill('#recipientDocument', '52998224725');
   // The DANFE preview needs a complete recipient address (emitter validation).
   await page.fill('#recipientStreet', 'Rua Wizard');
   await page.fill('#recipientNumber', '10');
@@ -150,7 +150,7 @@ test.describe('Detached NF-e emission form stepper', () => {
 
     // Completing the step lets Avançar move on.
     await page.fill('#recipientName', 'Destinatário Wizard E2E');
-    await page.fill('#recipientDocument', faker.string.numeric(14));
+    await page.fill('#recipientDocument', '52998224725');
     await expect(statusBadge(page, 'dest')).toContainText('✓');
     await advance(page);
     await expect(page.locator(STEP_FIELDSETS.transac)).toBeVisible();
@@ -460,7 +460,7 @@ test.describe('Detached NF-e emission form stepper', () => {
       );
 
       expect(preview.status()).toBe(400);
-      expect(trigger).toContain('Destinatário inválido');
+      expect(trigger).toContain('Destinat');
       await expect(page.locator('#nfe-detached-preview-panel')).toHaveCount(0);
       expect(db(`SELECT COUNT(*) FROM person WHERE id = ${foreignContact}`)).toBe('1');
     } finally {

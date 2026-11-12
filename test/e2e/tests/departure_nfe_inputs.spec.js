@@ -88,7 +88,9 @@ test('departure NF-e payment, billing, transport and code choices survive previe
     await modal.locator('#transportRNTC').fill('12345');
     await modal.locator('#volQtd').fill('2');
     await modal.locator('#volEsp').fill('Sacas');
+    await modal.locator('#volPesoL').fill('');
     await modal.locator('#volPesoL').fill('95,5');
+    await modal.locator('#volPesoB').fill('');
     await modal.locator('#volPesoB').fill('100,25');
 
     await modal.locator('#useDefaultTaxRates').uncheck();

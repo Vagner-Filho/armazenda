@@ -52,6 +52,25 @@ func parseDepartureInvoiceOverrides(c *gin.Context) (*entity.DepartureInvoiceOve
 		options.TPag = tpag
 	}
 
+	if hasPostField(c, "indPag") {
+		value := strings.TrimSpace(c.PostForm("indPag"))
+		if value != "" {
+			parsed, err := strconv.Atoi(value)
+			if err != nil {
+				return nil, entity_public.GetWarningToast("Forma de pagamento inválida", "Selecione um indicador de pagamento válido")
+			}
+			options.IndPag = parsed
+		}
+	}
+
+	if hasPostField(c, "includeCobrancaSpecified") {
+		include, err := parseMarkedBool(c, "includeCobrancaSpecified", "includeCobranca")
+		if err != nil {
+			return nil, entity_public.GetWarningToast("Dados de cobrança inválidos", err.Error())
+		}
+		options.IncludeCobranca = &include
+	}
+
 	if hasTransport {
 		transport := entity.DepartureTransportInput{
 			TransporterName:     safePostValue(c, "transportNome"),

@@ -163,8 +163,10 @@ func (s *NFeService) prepareDetachedBuildData(input DetachedInvoiceInput, dryRun
 	if farmNFeConfig == nil {
 		return empty, entity_public.GetWarningToast("NF-e não configurada", "acesse NF-e em Configurações")
 	}
-	if toastPtr := nfeCertGate(farmNFeConfig); toastPtr != nil {
-		return empty, *toastPtr
+	if !dryRun {
+		if toastPtr := nfeCertGate(farmNFeConfig); toastPtr != nil {
+			return empty, *toastPtr
+		}
 	}
 	// Resolve the effective tax configuration before any writes: the rates
 	// waterfall (user > farm > corpus fallback) never leaves an axis

@@ -98,7 +98,7 @@ async function fillInlineRecipient(page) {
   await goToTab(page, 'dest');
   await page.locator('input[name="recipientType"][value="new"]').check({ force: true });
   await page.fill('#recipientName', 'Cliente CFOP E2E');
-  await page.fill('#recipientDocument', faker.string.numeric(14));
+  await page.fill('#recipientDocument', '52998224725');
   await page.fill('#recipientStreet', 'Rua CFOP');
   await page.fill('#recipientNumber', '10');
   await page.fill('#recipientNeighborhood', 'Centro');

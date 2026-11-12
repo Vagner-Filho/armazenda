@@ -79,9 +79,8 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 	if farmNFeConfig == nil {
 		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast("NF-e não configurada", "acesse NF-e em Configurações")
 	}
-	if toastPtr := nfeCertGate(farmNFeConfig); toastPtr != nil {
-		return emptyInput, departure, farmNFeConfig, entity_public.Product{}, emissionTaxSnapshot{}, *toastPtr
-	}
+	// Certificate presence is enforced by the emission path (BuildInvoiceFromDeparture),
+	// not here, so the non-fiscal preview can render without a certificate.
 	// Get full farm data for emitter address
 	farmConfigModel := farm_config_model.GetFarmConfigModel()
 	farmData, farmErr := farmConfigModel.GetFarmConfig(farmID)
@@ -319,6 +318,9 @@ func (s *NFeService) BuildInvoiceFromDeparture(departureID uint32, unitPrice dec
 	input, departure, farmNFeConfig, product, snap, toast := s.prepareInvoiceBuildData(departureID, unitPrice, farmID, cfop, userRates, overrides, nil)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
 		return "", toast
+	}
+	if toastPtr := nfeCertGate(farmNFeConfig); toastPtr != nil {
+		return "", *toastPtr
 	}
 
 	nfeModel := nfe_model.GetNFeModel()

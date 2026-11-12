@@ -37,6 +37,9 @@
         <input type="hidden" name="cClassTrib" value="{{ .CClassTrib }}">
         <input type="hidden" name="infCpl" value="{{ .InfCpl }}">
         <input type="hidden" name="tpag" value="{{ .TPag }}">
+        <input type="hidden" name="indPag" value="{{ .IndPag }}">
+        <input type="hidden" name="includeCobrancaSpecified" value="1">
+        <input type="hidden" name="includeCobranca" value="{{ if .IncludeCobranca }}1{{ else }}0{{ end }}">
         <input type="hidden" name="transportFieldsSpecified" value="1">
         <input type="hidden" name="transportNome" value="{{ .TransportNome }}">
         <input type="hidden" name="transportDocumento" value="{{ .TransportDocumento }}">
