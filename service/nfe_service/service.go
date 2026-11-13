@@ -57,6 +57,12 @@ func (s *NFeService) prepareInvoiceBuildData(departureID uint32, unitPrice decim
 		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast(err.Message, "")
 	}
 
+	// Verify the departure belongs to the requesting farm (IDOR guard).
+	if departure.Farm != farmID {
+		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{},
+			entity_public.GetWarningToast("Esta saída não pertence à sua fazenda", "")
+	}
+
 	// Validate departure type for NF-e: only "Self -> Third Party" qualifies
 	if departure.Origin != nil {
 		return emptyInput, departure, nil, entity_public.Product{}, emissionTaxSnapshot{}, entity_public.GetWarningToast(

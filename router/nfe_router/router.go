@@ -37,11 +37,28 @@ func buildNFe(c *gin.Context) {
 		return
 	}
 
+	sid, _ := c.Cookie("session_id")
+	farmID := user_service.GetFarmFromToken(sid)
+
+	// Verify the departure belongs to the authenticated user's farm (IDOR guard).
+	dModel := departure_model.GetDepartureModel()
+	departure, depErr := dModel.GetDeparture(uint32(departureID))
+	if depErr != nil {
+		c.String(http.StatusInternalServerError, "Falha ao obter romaneio")
+		return
+	}
+	if departure.Farm != farmID {
+		toast := entity_public.GetWarningToast("Esta saída não pertence à sua fazenda", "")
+		c.Header("HX-Trigger", toast.ToJsonStr())
+		c.Status(http.StatusForbidden)
+		return
+	}
+
 	unitPriceStr := c.PostForm("unitPrice")
 	unitPrice, err := decimal.NewFromString(unitPriceStr)
 	if err != nil {
 		toast := entity_public.GetWarningToast("Falhamos ao identificar o preço unitário", "")
-		c.Header("HX-Trigger", string(toast.ToJson()))
+		c.Header("HX-Trigger", toast.ToJsonStr())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -51,26 +68,23 @@ func buildNFe(c *gin.Context) {
 	userRates, rateErr := parseUserTaxRates(c)
 	if rateErr != nil {
 		toast := entity_public.GetWarningToast("Falhamos ao identificar as alíquotas", rateErr.Error())
-		c.Header("HX-Trigger", string(toast.ToJson()))
+		c.Header("HX-Trigger", toast.ToJsonStr())
 		c.Status(http.StatusBadRequest)
 		return
 	}
 
 	overrides, overrideToast := parseDepartureFormOverrides(c)
 	if overrideToast.Type == entity_public.WarningToast || overrideToast.Type == entity_public.ErrorToast {
-		c.Header("HX-Trigger", string(overrideToast.ToJson()))
+		c.Header("HX-Trigger", overrideToast.ToJsonStr())
 		c.Status(http.StatusBadRequest)
 		return
 	}
 
-	sid, _ := c.Cookie("session_id")
-	farm := user_service.GetFarmFromToken(sid)
-
 	service := nfe_service.NewNFeService()
-	signedXML, toast := service.BuildInvoiceFromDeparture(uint32(departureID), unitPrice, farm, cfop, userRates, overrides)
+	signedXML, toast := service.BuildInvoiceFromDeparture(uint32(departureID), unitPrice, farmID, cfop, userRates, overrides)
 
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
-		c.Header("HX-Trigger", string(toast.ToJson()))
+		c.Header("HX-Trigger", toast.ToJsonStr())
 		if toast.Type == entity_public.WarningToast {
 			c.Status(http.StatusBadRequest)
 		} else {
@@ -79,7 +93,7 @@ func buildNFe(c *gin.Context) {
 		return
 	}
 
-	c.Header("HX-Trigger", string(toast.ToJson()))
+	c.Header("HX-Trigger", toast.ToJsonStr())
 	c.Header("Content-Type", "application/xml")
 	c.String(http.StatusOK, signedXML)
 }
@@ -92,11 +106,28 @@ func previewNFe(c *gin.Context) {
 		return
 	}
 
+	sid, _ := c.Cookie("session_id")
+	farmID := user_service.GetFarmFromToken(sid)
+
+	// Verify the departure belongs to the authenticated user's farm (IDOR guard).
+	dModel := departure_model.GetDepartureModel()
+	departure, depErr := dModel.GetDeparture(uint32(departureID))
+	if depErr != nil {
+		c.String(http.StatusInternalServerError, "Falha ao obter romaneio")
+		return
+	}
+	if departure.Farm != farmID {
+		toast := entity_public.GetWarningToast("Esta saída não pertence à sua fazenda", "")
+		c.Header("HX-Trigger", toast.ToJsonStr())
+		c.Status(http.StatusForbidden)
+		return
+	}
+
 	unitPriceStr := c.PostForm("unitPrice")
 	unitPrice, err := decimal.NewFromString(unitPriceStr)
 	if err != nil {
 		toast := entity_public.GetWarningToast("Falhamos ao identificar o preço unitário", "")
-		c.Header("HX-Trigger", string(toast.ToJson()))
+		c.Header("HX-Trigger", toast.ToJsonStr())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -106,7 +137,7 @@ func previewNFe(c *gin.Context) {
 	userRates, rateErr := parseUserTaxRates(c)
 	if rateErr != nil {
 		toast := entity_public.GetWarningToast("Falhamos ao identificar as alíquotas", rateErr.Error())
-		c.Header("HX-Trigger", string(toast.ToJson()))
+		c.Header("HX-Trigger", toast.ToJsonStr())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -118,13 +149,10 @@ func previewNFe(c *gin.Context) {
 		return
 	}
 
-	sid, _ := c.Cookie("session_id")
-	farm := user_service.GetFarmFromToken(sid)
-
 	svc := nfe_service.NewNFeService()
-	pdfBytes, toast := svc.GeneratePreviewDANFE(uint32(departureID), unitPrice, farm, cfop, userRates, overrides)
+	pdfBytes, toast := svc.GeneratePreviewDANFE(uint32(departureID), unitPrice, farmID, cfop, userRates, overrides)
 	if toast.Type == entity_public.ErrorToast || toast.Type == entity_public.WarningToast {
-		c.Header("HX-Trigger", string(toast.ToJson()))
+		c.Header("HX-Trigger", toast.ToJsonStr())
 		if toast.Type == entity_public.WarningToast {
 			c.Status(http.StatusBadRequest)
 		} else {
@@ -133,8 +161,7 @@ func previewNFe(c *gin.Context) {
 		return
 	}
 
-	dModel := departure_model.GetDepartureModel()
-	departure, depErr := dModel.GetDeparture(uint32(departureID))
+	departure, depErr = dModel.GetDeparture(uint32(departureID))
 	if depErr != nil {
 		c.String(http.StatusInternalServerError, "Failed to get departure")
 		return
@@ -565,7 +592,9 @@ func downloadNFeXML(c *gin.Context) {
 	dModel := departure_model.GetDepartureModel()
 	departure, depErr := dModel.GetDeparture(invoice.DepartureID)
 	if depErr != nil || departure.Farm != farmID {
-		c.String(http.StatusForbidden, "Access denied")
+		toast := entity_public.GetWarningToast("Esta NF-e não pertence à sua fazenda", "")
+		c.Header("HX-Trigger", toast.ToJsonStr())
+		c.Status(http.StatusForbidden)
 		return
 	}
 
@@ -600,7 +629,9 @@ func downloadNFeDANFE(c *gin.Context) {
 	dModel := departure_model.GetDepartureModel()
 	departure, depErr := dModel.GetDeparture(invoice.DepartureID)
 	if depErr != nil || departure.Farm != farmID {
-		c.String(http.StatusForbidden, "Access denied")
+		toast := entity_public.GetWarningToast("Esta NF-e não pertence à sua fazenda", "")
+		c.Header("HX-Trigger", toast.ToJsonStr())
+		c.Status(http.StatusForbidden)
 		return
 	}
 
@@ -672,6 +703,16 @@ func getNFeEmitModal(c *gin.Context) {
 		return
 	}
 
+	// Verify the departure belongs to the authenticated user's farm (IDOR guard).
+	sid, _ := c.Cookie("session_id")
+	farmID := user_service.GetFarmFromToken(sid)
+	if departure.Farm != farmID {
+		toast := entity_public.GetWarningToast("Esta saída não pertence à sua fazenda", "")
+		c.Header("HX-Trigger", toast.ToJsonStr())
+		c.Status(http.StatusForbidden)
+		return
+	}
+
 	// Check if an invoice already exists for this departure
 	nfeModel := nfe_model.GetNFeModel()
 	invoice, invErr := nfeModel.GetInvoiceByDeparture(uint32(departureID))
@@ -700,8 +741,6 @@ func getNFeEmitModal(c *gin.Context) {
 	// Load the farm's NFe config to pre-populate the rate inputs with the
 	// configured defaults. Missing config is non-fatal — the form will simply
 	// show empty defaults.
-	sid, _ := c.Cookie("session_id")
-	farmID := user_service.GetFarmFromToken(sid)
 	var defaultICMS, defaultPIS, defaultCOFINS, defaultIBS, defaultCBS decimal.Decimal
 	var defaultNaturezaOp, defaultCEST, defaultUnit, defaultICMSCST, defaultPISCST, defaultCOFINSCST *string
 	var defaultCBSCST, defaultIBSCST, defaultCClassTrib *string
@@ -831,7 +870,9 @@ func getNFeCancelModal(c *gin.Context) {
 	dModel := departure_model.GetDepartureModel()
 	departure, depErr := dModel.GetDeparture(invoice.DepartureID)
 	if depErr != nil || departure.Farm != farmID {
-		c.String(http.StatusForbidden, "Access denied")
+		toast := entity_public.GetWarningToast("Esta NF-e não pertence à sua fazenda", "")
+		c.Header("HX-Trigger", toast.ToJsonStr())
+		c.Status(http.StatusForbidden)
 		return
 	}
 

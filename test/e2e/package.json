@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "End-to-end tests for Armazenda using Playwright",
   "scripts": {
-    "test": "playwright test",
+    "test": "playwright test --project=chromium --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
@@ -21,8 +22,8 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@faker-js/faker": "^10.3.0",
-    "@playwright/test": "^1.58.2",
-    "playwright-core": "^1.58.2"
+    "@faker-js/faker": "^10.6.0",
+    "@playwright/test": "^1.65.0",
+    "playwright-core": "^1.65.0"
   }
 }

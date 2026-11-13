@@ -6,6 +6,7 @@
 #   make test-go      Run all Go tests
 #   make test-js      Run JavaScript unit tests
 #   make test-e2e     Run Playwright E2E tests only
+#   make test-e2e-webkit     Run Playwright E2E tests in webkit only
 #   make build        Build everything (CSS + WASM + Go)
 #   make build-go     Build only the main Go binary
 #   make clean        Remove build artifacts
@@ -17,7 +18,7 @@ BUN      ?= bun
 OUTPUT_DIR ?= ./tmp
 
 # --- Default target ---
-.PHONY: all test test-unit test-go test-js test-e2e build build-css build-wasm build-go clean
+.PHONY: all test test-unit test-go test-js test-e2e test-e2e-webkit build build-css build-wasm build-go clean
 
 all: test build
 
@@ -34,6 +35,9 @@ test-js:
 
 test-e2e:
 	cd test && $(BUN) run test:e2e
+
+test-e2e-webkit:
+	cd test && $(BUN) run test:e2e:webkit
 
 # --- Build targets ---
 build: build-css build-wasm build-go
